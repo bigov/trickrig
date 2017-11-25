@@ -75,7 +75,7 @@ SET( MY_FLAGS "-m64 -std=c++14 -fexceptions -Werror -Wpedantic -Wextra\
 #
 if( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
     SET( CMAKE_CXX_FLAGS "${MY_FLAGS} --static ${WIN_GUI}" )
-    SET( LIBS mingw32 opengl32 glfw pthread freetype png_static z m gdi32 )
+    SET( LIBS mingw32 opengl32 glfw pthread freetype png_static gdi32 )
 endif( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
 
 ###
