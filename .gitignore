@@ -17,6 +17,7 @@
 *.qm
 .#*
 .hg
+_dbg_
 *.*#
 core
 !core/

@@ -1,3 +1,0 @@
-F:/dev_CPP/_devs_/TrickRig/dev/_dbg_/CMakeFiles/rebuild_cache.dir
-F:/dev_CPP/_devs_/TrickRig/dev/_dbg_/CMakeFiles/app_dbg.dir
-F:/dev_CPP/_devs_/TrickRig/dev/_dbg_/CMakeFiles/edit_cache.dir
