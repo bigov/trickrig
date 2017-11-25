@@ -10,9 +10,9 @@ tags$
 ^DEBUG$
 ^bin$
 ^_dbg_$
+^.git$
 re:.*/tags$
 re:.*/tmp$
 ^tr.*\.cbp$
 ^tr.*\.depend$
 ^tr.*\.layout$
-

@@ -1,1 +1,0 @@
-fix build in msys2 static
