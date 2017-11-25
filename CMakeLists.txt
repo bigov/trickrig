@@ -25,9 +25,28 @@
 
 cmake_minimum_required( VERSION 3.0 )    # Проверка версии CMake.
 project( Trickrig )
+SET( CMAKE_VERBOSE_MAKEFILE OFF )
 
-include_directories( include lib ) # где искать заголовки
-SET( CMAKE_VERBOSE_MAKEFILE ON )
+# библиотека LIBPNG
+SET(PNG_SHARED OFF CACHE BOOL "Build shared lib" FORCE)
+SET(PNG_TESTS OFF CACHE BOOL "Build libpng tests" FORCE)
+add_subdirectory( "../ext_libs/libpng" "libpng" EXCLUDE_FROM_ALL)
+
+# библиотека freetype2
+add_subdirectory( "../ext_libs/freetype" "freetype" EXCLUDE_FROM_ALL)
+
+# библиотека GLFW3
+SET(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs" FORCE)
+SET(GLFW_BUILD_TESTS OFF CACHE BOOL "Build the GLFW test programs" FORCE)
+SET(GLFW_BUILD_DOCS OFF CACHE BOOL "Build the GLFW documentation" FORCE)
+SET(GLFW_VULKAN_STATIC OFF CACHE BOOL "Use the Vulkan" FORCE)
+add_subdirectory( "../ext_libs/glfw" "glfw" EXCLUDE_FROM_ALL)
+
+# где искать заголовки
+include_directories( include lib "${CMAKE_CURRENT_BINARY_DIR}/libpng"
+    "../ext_libs/freetype/include"
+    "../ext_libs/glfw/include"
+    "../ext_libs/libpng")
 
 if( NOT DEFINED ${CMAKE_BUILD_TYPE} )
     SET( CMAKE_BUILD_TYPE "Debug" )
@@ -49,14 +68,14 @@ endif ()
 
 SET( MY_FLAGS "-m64 -std=c++14 -fexceptions -Werror -Wpedantic -Wextra\
  -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor -Wall\
- -Wconversion -Winit-self -Wunreachable-code -Weffc++ -I/usr/include/freetype2" )
+ -Wconversion -Winit-self -Wunreachable-code -Weffc++" )
 
 ###
 #  Установка параметров для сборки в MinGW-W64 под MS Windows
 #
 if( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
     SET( CMAKE_CXX_FLAGS "${MY_FLAGS} --static ${WIN_GUI}" )
-    SET( LIBS mingw32 opengl32 glfw3 pthread freetype png16 z m gdi32 )
+    SET( LIBS mingw32 opengl32 glfw pthread freetype png_static z m gdi32 )
 endif( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
 
 ###

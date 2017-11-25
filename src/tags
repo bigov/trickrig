@@ -1032,45 +1032,45 @@ trNormal	f:\dev_CPP\_devs_\TrickRig\dev\include\io.hpp	/^	extern f3d trNormal(co
 tr::trNormal	f:\dev_CPP\_devs_\TrickRig\dev\include\io.hpp	/^	extern f3d trNormal(const unsigned char);$/;"	p	namespace:tr	signature:(const unsigned char)
 main.hpp	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	1;"	F
 __MAIN_HPP__	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	9;"	d
-GLM_FORCE_RADIANS	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	38;"	d
-GLM_ENABLE_EXPERIMENTAL	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	43;"	d
-ERR	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	48;"	d
-WIDTH_0	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	51;"	d
+GLM_FORCE_RADIANS	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	36;"	d
+GLM_ENABLE_EXPERIMENTAL	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	41;"	d
+ERR	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	46;"	d
+WIDTH_0	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	49;"	d
 tr	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^namespace tr {$/;"	n
-evInput	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	struct evInput$/;"	s	namespace:tr
-tr::evInput	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	struct evInput$/;"	s	namespace:tr
-dx	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		float dx, dy;   \/\/ смещение указателя мыши в активном окне$/;"	m	struct:tr::evInput	access:public
-tr::evInput::dx	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		float dx, dy;   \/\/ смещение указателя мыши в активном окне$/;"	m	struct:tr::evInput	access:public
-dy	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		float dx, dy;   \/\/ смещение указателя мыши в активном окне$/;"	m	struct:tr::evInput	access:public
-tr::evInput::dy	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		float dx, dy;   \/\/ смещение указателя мыши в активном окне$/;"	m	struct:tr::evInput	access:public
-fb	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		int fb, rl, ud, \/\/ управление направлением движения в 3D пространстве$/;"	m	struct:tr::evInput	access:public
-tr::evInput::fb	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		int fb, rl, ud, \/\/ управление направлением движения в 3D пространстве$/;"	m	struct:tr::evInput	access:public
-rl	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		int fb, rl, ud, \/\/ управление направлением движения в 3D пространстве$/;"	m	struct:tr::evInput	access:public
-tr::evInput::rl	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		int fb, rl, ud, \/\/ управление направлением движения в 3D пространстве$/;"	m	struct:tr::evInput	access:public
-ud	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		int fb, rl, ud, \/\/ управление направлением движения в 3D пространстве$/;"	m	struct:tr::evInput	access:public
-tr::evInput::ud	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		int fb, rl, ud, \/\/ управление направлением движения в 3D пространстве$/;"	m	struct:tr::evInput	access:public
-key_scancode	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		key_scancode, key_mods, mouse_mods,$/;"	m	struct:tr::evInput	access:public
-tr::evInput::key_scancode	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		key_scancode, key_mods, mouse_mods,$/;"	m	struct:tr::evInput	access:public
-key_mods	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		key_scancode, key_mods, mouse_mods,$/;"	m	struct:tr::evInput	access:public
-tr::evInput::key_mods	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		key_scancode, key_mods, mouse_mods,$/;"	m	struct:tr::evInput	access:public
-mouse_mods	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		key_scancode, key_mods, mouse_mods,$/;"	m	struct:tr::evInput	access:public
-tr::evInput::mouse_mods	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		key_scancode, key_mods, mouse_mods,$/;"	m	struct:tr::evInput	access:public
-fps	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		fps; \/\/ частота кадров (для коррекции скорости движения)$/;"	m	struct:tr::evInput	access:public
-tr::evInput::fps	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^		fps; \/\/ частота кадров (для коррекции скорости движения)$/;"	m	struct:tr::evInput	access:public
-pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	const	float pi = glm::pi<glm::float_t>();$/;"	m	namespace:tr
-tr::pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	const	float pi = glm::pi<glm::float_t>();$/;"	m	namespace:tr
-two_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	const	float two_pi = glm::two_pi<glm::float_t>();$/;"	m	namespace:tr
-tr::two_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	const	float two_pi = glm::two_pi<glm::float_t>();$/;"	m	namespace:tr
-half_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	const	float half_pi = glm::half_pi<glm::float_t>();$/;"	m	namespace:tr
-tr::half_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	const	float half_pi = glm::half_pi<glm::float_t>();$/;"	m	namespace:tr
-_half_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	const	float _half_pi = 0 - half_pi;$/;"	m	namespace:tr
-tr::_half_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	const	float _half_pi = 0 - half_pi;$/;"	m	namespace:tr
-look_up	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	const	float look_up = half_pi - 0.01f;$/;"	m	namespace:tr
-tr::look_up	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	const	float look_up = half_pi - 0.01f;$/;"	m	namespace:tr
-look_down	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	const	float look_down = 0 - half_pi + 0.01f;$/;"	m	namespace:tr
-tr::look_down	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	const	float look_down = 0 - half_pi + 0.01f;$/;"	m	namespace:tr
-three_over_two_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	const	float three_over_two_pi  = glm::three_over_two_pi<glm::float_t>();$/;"	m	namespace:tr
-tr::three_over_two_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^	const	float three_over_two_pi  = glm::three_over_two_pi<glm::float_t>();$/;"	m	namespace:tr
+evInput	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    struct evInput$/;"	s	namespace:tr
+tr::evInput	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    struct evInput$/;"	s	namespace:tr
+dx	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        float dx, dy;   \/\/ смещение указателя мыши в активном окне$/;"	m	struct:tr::evInput	access:public
+tr::evInput::dx	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        float dx, dy;   \/\/ смещение указателя мыши в активном окне$/;"	m	struct:tr::evInput	access:public
+dy	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        float dx, dy;   \/\/ смещение указателя мыши в активном окне$/;"	m	struct:tr::evInput	access:public
+tr::evInput::dy	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        float dx, dy;   \/\/ смещение указателя мыши в активном окне$/;"	m	struct:tr::evInput	access:public
+fb	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        int fb, rl, ud, \/\/ управление направлением движения в 3D пространстве$/;"	m	struct:tr::evInput	access:public
+tr::evInput::fb	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        int fb, rl, ud, \/\/ управление направлением движения в 3D пространстве$/;"	m	struct:tr::evInput	access:public
+rl	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        int fb, rl, ud, \/\/ управление направлением движения в 3D пространстве$/;"	m	struct:tr::evInput	access:public
+tr::evInput::rl	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        int fb, rl, ud, \/\/ управление направлением движения в 3D пространстве$/;"	m	struct:tr::evInput	access:public
+ud	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        int fb, rl, ud, \/\/ управление направлением движения в 3D пространстве$/;"	m	struct:tr::evInput	access:public
+tr::evInput::ud	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        int fb, rl, ud, \/\/ управление направлением движения в 3D пространстве$/;"	m	struct:tr::evInput	access:public
+key_scancode	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        key_scancode, key_mods, mouse_mods,$/;"	m	struct:tr::evInput	access:public
+tr::evInput::key_scancode	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        key_scancode, key_mods, mouse_mods,$/;"	m	struct:tr::evInput	access:public
+key_mods	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        key_scancode, key_mods, mouse_mods,$/;"	m	struct:tr::evInput	access:public
+tr::evInput::key_mods	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        key_scancode, key_mods, mouse_mods,$/;"	m	struct:tr::evInput	access:public
+mouse_mods	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        key_scancode, key_mods, mouse_mods,$/;"	m	struct:tr::evInput	access:public
+tr::evInput::mouse_mods	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        key_scancode, key_mods, mouse_mods,$/;"	m	struct:tr::evInput	access:public
+fps	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        fps; \/\/ частота кадров (для коррекции скорости движения)$/;"	m	struct:tr::evInput	access:public
+tr::evInput::fps	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^        fps; \/\/ частота кадров (для коррекции скорости движения)$/;"	m	struct:tr::evInput	access:public
+pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    const   float pi = glm::pi<glm::float_t>();$/;"	m	namespace:tr
+tr::pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    const   float pi = glm::pi<glm::float_t>();$/;"	m	namespace:tr
+two_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    const   float two_pi = glm::two_pi<glm::float_t>();$/;"	m	namespace:tr
+tr::two_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    const   float two_pi = glm::two_pi<glm::float_t>();$/;"	m	namespace:tr
+half_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    const   float half_pi = glm::half_pi<glm::float_t>();$/;"	m	namespace:tr
+tr::half_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    const   float half_pi = glm::half_pi<glm::float_t>();$/;"	m	namespace:tr
+_half_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    const   float _half_pi = 0 - half_pi;$/;"	m	namespace:tr
+tr::_half_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    const   float _half_pi = 0 - half_pi;$/;"	m	namespace:tr
+look_up	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    const   float look_up = half_pi - 0.01f;$/;"	m	namespace:tr
+tr::look_up	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    const   float look_up = half_pi - 0.01f;$/;"	m	namespace:tr
+look_down	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    const   float look_down = 0 - half_pi + 0.01f;$/;"	m	namespace:tr
+tr::look_down	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    const   float look_down = 0 - half_pi + 0.01f;$/;"	m	namespace:tr
+three_over_two_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    const   float three_over_two_pi  = glm::three_over_two_pi<glm::float_t>();$/;"	m	namespace:tr
+tr::three_over_two_pi	f:\dev_CPP\_devs_\TrickRig\dev\include\main.hpp	/^    const   float three_over_two_pi  = glm::three_over_two_pi<glm::float_t>();$/;"	m	namespace:tr
 rigs.hpp	f:\dev_CPP\_devs_\TrickRig\dev\include\rigs.hpp	1;"	F
 __RIGS_HPP__	f:\dev_CPP\_devs_\TrickRig\dev\include\rigs.hpp	9;"	d
 tr	f:\dev_CPP\_devs_\TrickRig\dev\include\rigs.hpp	/^namespace tr$/;"	n
