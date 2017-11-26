@@ -51,6 +51,9 @@ add_subdirectory( "../ext_libs/libpng" "${SUFFIX}/libpng" EXCLUDE_FROM_ALL)
 # библиотека freetype2
 add_subdirectory( "../ext_libs/freetype" "${SUFFIX}/freetype" EXCLUDE_FROM_ALL)
 
+# библиотека glcore33
+add_subdirectory( "../ext_libs/glcore33" "${SUFFIX}/glcore33" EXCLUDE_FROM_ALL)
+
 # библиотека GLFW3
 SET(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs" FORCE)
 SET(GLFW_BUILD_TESTS OFF CACHE BOOL "Build the GLFW test programs" FORCE)
@@ -63,7 +66,8 @@ include_directories( "include" "lib"
  "${CMAKE_CURRENT_BINARY_DIR}/${SUFFIX}/libpng"
  "../ext_libs/freetype/include"
  "../ext_libs/glfw/include"
- "../ext_libs/libpng")
+ "../ext_libs/libpng"
+ "../ext_libs/glcore33")
 
 SET( MY_FLAGS "-m64 -std=c++14 -fexceptions -Werror -Wpedantic -Wextra\
  -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor -Wall\
@@ -78,7 +82,8 @@ if( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
 		SET( CMAKE_CXX_FLAGS "--static ${CMAKE_CXX_FLAGS} ${WIN_GUI}" )
 		MESSAGE( WARNING "\n*** Static link is enabled. ***")
 	endif()
-	SET( LIBS mingw32 opengl32 glfw pthread freetype png_static gdi32 )
+#	SET( LIBS mingw32 opengl32 glcore33 glfw pthread freetype png_static gdi32 )
+	SET( LIBS mingw32 pthread glcore33 glfw freetype png_static gdi32 )
 endif( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
 
 ###
@@ -90,7 +95,8 @@ SET( LIBS glfw GL m pthread freetype png )
 endif( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
 
 # список исходников
-file( GLOB SRC "src/*.cpp" "lib/gl_core33.c" )
+file( GLOB SRC "src/*.cpp" )
+#"lib/gl_core33.c" )
 
 add_executable( ${EXEC_NAME} ${SRC} )
 target_link_libraries( ${EXEC_NAME} ${LIBS} )
