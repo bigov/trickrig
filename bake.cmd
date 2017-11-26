@@ -1,6 +1,10 @@
 ::
 :: Ключи командной строки:
 ::
+:: clang - компиляция программой clang
+:: clang release - компиляция программой clang без отладки
+:: gcc release   - компиляция программой gcc без отладки
+::
 :: clean - полная очистка и пересборка
 :: init - создание Makefile без сборки бинарника
 ::
@@ -10,10 +14,14 @@ PUSHD
 SETLOCAL
 SET "WD=_dbg_"
 
+SET "n2=dbg"
+SET "n3=gcc"
+
 :: Если для сборки использовать clang
 IF "%1"=="clang" (
-	SET "CC=C:/usr/bin/clang"
-	SET "CXX=C:/usr/bin/clang++"
+	SET "CC=f:/usr/bin/clang.exe"
+	SET "CXX=f:/usr/bin/clang++.exe"
+	SET "n3=clang"
 )
 
 IF EXIST CMakeLists.txt (
@@ -30,10 +38,15 @@ IF EXIST CMakeLists.txt (
 IF "%1"=="clean" (
 	RD /Q /S CMakeFiles
 	DEL /Q *make*.*
-	DEL /Q app*.exe
+	GOTO _eof
 )
 
-cmake -DCMAKE_BUILD_TYPE=Debug ..\ -G "MinGW Makefiles"
+IF "%2"=="release" (
+	cmake -DCMAKE_BUILD_TYPE=Release ..\ -G "MinGW Makefiles"
+	SET "n2=rel"
+) ELSE (
+	cmake -DCMAKE_BUILD_TYPE=Debug ..\ -G "MinGW Makefiles"
+)
 
 IF "%1"=="init" GOTO _eof
 IF "%2"=="init" GOTO _eof
@@ -48,7 +61,7 @@ IF ERRORLEVEL 1 (
 	GOTO _eof
 )
 
-CALL app_dbg.exe
+CALL app_%n2%_%n3%.exe
 IF ERRORLEVEL 1 pause
 
 :_eof

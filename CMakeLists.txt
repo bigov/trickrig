@@ -19,19 +19,27 @@ project( trickrig )
 SET( CMAKE_VERBOSE_MAKEFILE OFF )
 
 # Для сборки релиза следует указать: "-D CMAKE_BUILD_TYPE=Release"
-if ( "_${CMAKE_BUILD_TYPE}" MATCHES "^_Rel" )
-    OPTION( WITH_DEBUG_MODE "Build with debug mode" OFF )
-    SET( CMAKE_BUILD_TYPE "Release")
-    SET( SUFFIX "_rel")
-    SET( WIN_GUI "-mwindows -Wl,-subsystem,windows" )
-    MESSAGE( WARNING "\n--- CMAKE_BUILD_TYPE: Release ---")
+if( "_${CMAKE_BUILD_TYPE}" MATCHES "^_Rel" )
+	OPTION( WITH_DEBUG_MODE "Build with debug mode" OFF )
+	SET( CMAKE_BUILD_TYPE "Release")
+	SET( SUFFIX "_rel")
+	SET( WIN_GUI "-mwindows -Wl,-subsystem,windows" )
+	MESSAGE( WARNING "\n--- CMAKE_BUILD_TYPE: Release ---")
 else() # Иначе собирается "Debug"
-    OPTION( WITH_DEBUG_MODE "Build with debug mode" ON )
-    SET( CMAKE_BUILD_TYPE "Debug")
-    SET( SUFFIX "_dbg")
-    SET( WIN_GUI "" )
-    MESSAGE( WARNING "\n--- CMAKE_BUILD_TYPE: Debug ---")
-endif ()
+	OPTION( WITH_DEBUG_MODE "Build with debug mode" ON )
+	SET( CMAKE_BUILD_TYPE "Debug")
+	SET( SUFFIX "_dbg")
+	SET( WIN_GUI "" )
+	MESSAGE( WARNING "\n--- CMAKE_BUILD_TYPE: Debug ---")
+endif()
+
+if("_$ENV{CC}" MATCHES "clang")
+	SET( SUFFIX "${SUFFIX}_clang")
+	SET(CLANG TRUE)
+else()
+	SET( SUFFIX "${SUFFIX}_gcc")
+	SET(CLANG FALSE)
+endif()
 
 SET( EXEC_NAME "app${SUFFIX}" )
 
@@ -52,10 +60,10 @@ add_subdirectory( "../ext_libs/glfw" "${SUFFIX}/glfw" EXCLUDE_FROM_ALL)
 
 # где искать заголовки
 include_directories( "include" "lib"
-    "${CMAKE_CURRENT_BINARY_DIR}/${SUFFIX}/libpng"
-    "../ext_libs/freetype/include"
-    "../ext_libs/glfw/include"
-    "../ext_libs/libpng")
+ "${CMAKE_CURRENT_BINARY_DIR}/${SUFFIX}/libpng"
+ "../ext_libs/freetype/include"
+ "../ext_libs/glfw/include"
+ "../ext_libs/libpng")
 
 SET( MY_FLAGS "-m64 -std=c++14 -fexceptions -Werror -Wpedantic -Wextra\
  -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor -Wall\
@@ -65,8 +73,12 @@ SET( MY_FLAGS "-m64 -std=c++14 -fexceptions -Werror -Wpedantic -Wextra\
 # Установка параметров для сборки в MinGW-W64 под MS Windows
 #
 if( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
-    SET( CMAKE_CXX_FLAGS "${MY_FLAGS} --static ${WIN_GUI}" )
-    SET( LIBS mingw32 opengl32 glfw pthread freetype png_static gdi32 )
+	SET( CMAKE_CXX_FLAGS "${MY_FLAGS}" )
+	if(NOT ${CLANG})
+		SET( CMAKE_CXX_FLAGS "--static ${CMAKE_CXX_FLAGS} ${WIN_GUI}" )
+		MESSAGE( WARNING "\n*** Static link is enabled. ***")
+	endif()
+	SET( LIBS mingw32 opengl32 glfw pthread freetype png_static gdi32 )
 endif( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
 
 ###
