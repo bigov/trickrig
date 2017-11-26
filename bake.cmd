@@ -6,7 +6,15 @@
 ::
 
 @ECHO OFF
+PUSHD
+SETLOCAL
 SET "WD=_dbg_"
+
+:: Если для сборки использовать clang
+IF "%1"=="clang" (
+	SET "CC=C:/usr/bin/clang"
+	SET "CXX=C:/usr/bin/clang++"
+)
 
 IF EXIST CMakeLists.txt (
 	MKDIR %WD%
@@ -18,12 +26,6 @@ IF EXIST CMakeLists.txt (
 	CALL bake.cmd
 	GOTO _eof
 )
-
-:: Обновление базы тегов
-CD ..
-CALL .tags.cmd
-CD %WD%
-
 
 IF "%1"=="clean" (
 	RD /Q /S CMakeFiles
@@ -51,3 +53,5 @@ IF ERRORLEVEL 1 pause
 
 :_eof
 ECHO.
+ENDLOCAL
+POPD
