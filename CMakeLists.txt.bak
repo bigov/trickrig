@@ -1,10 +1,19 @@
 #
-# Сборка приложения - при вызове команды "cmake" НЕОБХОДИМО указать тип сборки:
-# -DCMAKE_BUILD_TYPE=Release ../ -G "MinGW Makefiles"
-
+# Сборка приложения из папки ~BIN:
+#
+# Под Windows:
+# > cmake ../ -G "MinGW Makefiles"
+#
+# На Linux
+# $ cmake ../
+#
 # Потом (для всех)
 #   cmake --build .
-
+#
+# При вызове команды "cmake" НЕОБХОДИМО указать тип сборки:
+#
+# -DCMAKE_BUILD_TYPE=Debug
+# -DCMAKE_BUILD_TYPE=Release
 #
 # Под Linux можно собрать так:
 #
@@ -25,7 +34,7 @@ if ( "_${CMAKE_BUILD_TYPE}" MATCHES "^_Rel" )
     SET( SUFFIX "_rel")
     SET( WIN_GUI "-mwindows -Wl,-subsystem,windows" )
     MESSAGE( WARNING "\n--- CMAKE_BUILD_TYPE: Release ---")
-else() # Иначе собирается "Debug"
+else()
     OPTION( WITH_DEBUG_MODE "Build with debug mode" ON )
     SET( CMAKE_BUILD_TYPE "Debug")
     SET( SUFFIX "_dbg")
