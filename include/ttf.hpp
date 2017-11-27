@@ -25,8 +25,8 @@ struct Symbol
 class TTF
 {
   public:
-    TTF() {};
-    ~TTF() {};
+    TTF() {}
+    ~TTF() {}
     void load_chars(std::wstring chars_row);
     std::map<wchar_t, Symbol> chars {};
     void init(const std::string &file_name, FT_UInt font_size);

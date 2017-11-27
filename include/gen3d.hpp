@@ -37,8 +37,8 @@ namespace tr
   class Gen3d
   {
     public:
-      Gen3d(void){};
-      ~Gen3d(void) { delete[] ref_Rig; };
+      Gen3d(void){}
+      ~Gen3d(void) { delete[] ref_Rig; }
       void init(tr::Rigs*);
       void draw(const evInput&);
 

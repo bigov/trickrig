@@ -11,7 +11,6 @@
 #include "glfw.hpp"
 
 //##
-//
 int main()
 {
   try

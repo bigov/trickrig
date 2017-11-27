@@ -41,7 +41,7 @@ namespace tr
       int value = 0;
 
     public:
-      Config(void){};
+      Config(void){}
 
       static GuiParams gui;
       static std::unordered_map<tr::FileDestination, std::string> fp_name;
