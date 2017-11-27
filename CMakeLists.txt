@@ -46,28 +46,28 @@ SET( EXEC_NAME "app${SUFFIX}" )
 # библиотека LIBPNG
 SET(PNG_SHARED OFF CACHE BOOL "Build shared lib" FORCE)
 SET(PNG_TESTS OFF CACHE BOOL "Build libpng tests" FORCE)
-add_subdirectory( "../ext_libs/libpng" "${SUFFIX}/libpng" EXCLUDE_FROM_ALL)
+add_subdirectory( ".extlibs/libpng" "${SUFFIX}/libpng" EXCLUDE_FROM_ALL)
 
 # библиотека freetype2
-add_subdirectory( "../ext_libs/freetype" "${SUFFIX}/freetype" EXCLUDE_FROM_ALL)
+add_subdirectory( ".extlibs/freetype2" "${SUFFIX}/freetype" EXCLUDE_FROM_ALL)
 
 # библиотека glcore33
-add_subdirectory( "../ext_libs/glcore33" "${SUFFIX}/glcore33" EXCLUDE_FROM_ALL)
+add_subdirectory( ".extlibs/glcore33" "${SUFFIX}/glcore33" EXCLUDE_FROM_ALL)
 
 # библиотека GLFW3
 SET(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs" FORCE)
 SET(GLFW_BUILD_TESTS OFF CACHE BOOL "Build the GLFW test programs" FORCE)
 SET(GLFW_BUILD_DOCS OFF CACHE BOOL "Build the GLFW documentation" FORCE)
 SET(GLFW_VULKAN_STATIC OFF CACHE BOOL "Use the Vulkan" FORCE)
-add_subdirectory( "../ext_libs/glfw" "${SUFFIX}/glfw" EXCLUDE_FROM_ALL)
+add_subdirectory( ".extlibs/glfw" "${SUFFIX}/glfw" EXCLUDE_FROM_ALL)
 
 # где искать заголовки
 include_directories( "include" "lib"
  "${CMAKE_CURRENT_BINARY_DIR}/${SUFFIX}/libpng"
- "../ext_libs/freetype/include"
- "../ext_libs/glfw/include"
- "../ext_libs/libpng"
- "../ext_libs/glcore33")
+ ".extlibs/freetype2/include"
+ ".extlibs/glfw/include"
+ ".extlibs/libpng"
+ ".extlibs/glcore33")
 
 SET( MY_FLAGS "-m64 -std=c++14 -fexceptions -Werror -Wpedantic -Wextra\
  -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor -Wall\
