@@ -19,6 +19,7 @@
 .#*
 .hg
 _dbg_
+CMakeLists.txt.user
 *.*#
 core
 !core/
