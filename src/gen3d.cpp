@@ -422,6 +422,8 @@ namespace tr
     prog3d.use();   // включить шейдерную программу
     prog3d.set_uniform("mvp", MatProjection * MatView);
     prog3d.set_uniform("HalfSide", rigs->gage/2);
+    // подсветка выбраного блока
+    // TODO: изменить на подсветку плоскости, а не объема
     prog3d.set_uniform("Selected", Selected);
   
     glBindVertexArray(vao_3d);

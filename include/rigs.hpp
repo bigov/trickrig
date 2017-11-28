@@ -52,8 +52,8 @@ namespace tr
                                       // Если значение == 64, то данных нет
     int time; // время создания
     std::list<GLsizeiptr> idx {}; // адреса атрибутов инстансов в VBO_Inst
-    Rig(): time(get_msec()) {};
-    Rig(short t): type(t), time(get_msec()) {};
+    Rig(): time(get_msec()) {}
+    Rig(short t): type(t), time(get_msec()) {}
     void idx_update(GLsizeiptr idSource, GLsizeiptr idTarget);
   };
 
@@ -69,14 +69,14 @@ namespace tr
       GLuint vert_count = 0; // сумма вершин всей сцены, переданных в буфер
       float gage = 1.f;   // размер/масштаб эементов в данном блоке
 
-      Rigs(void){};
+      Rigs(void){}
       Rig* get(const f3d&);
       Rig* get(float x, float y, float z);
       f3d search_down(float x, float y, float z);
       f3d search_down(const glm::vec3&);
       size_t size(void) { return db.size(); }
       void emplace(float x, float y, float z, short t);
-      void stop_emplacing(void) { emplace_complete = true; };
+      void stop_emplacing(void) { emplace_complete = true; }
       bool is_empty(float x, float y, float z);
       bool exist(float x, float y, float z);
       unsigned char sides_map(const f3d&);

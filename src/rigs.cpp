@@ -155,10 +155,13 @@ namespace tr
   //
   f3d Rigs::search_down(const glm::vec3& v)
   { return search_down(v.x, v.y, v.z); }
+
+  //## поиск ближайшего нижнего блока по координатам точки
+  //
   f3d Rigs::search_down(float x, float y, float z)
   {
     if(y < yMin) ERR("Y downflow"); if(y > yMax) ERR("Y overflow");
-    
+
     x = fround(x); y = fround(y); z = fround(z);
 
     while(y > yMin)

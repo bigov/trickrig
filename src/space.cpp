@@ -168,6 +168,10 @@ namespace tr
 
   //## Рендеринг
   //
+  // Кадр сцены рисуется в виде изображения на (2D) "холсте" фреймбуфера,
+  // после чего это изображение в виде текстуры накладывается на прямоугольник
+  // окна. Курсор и дополнительные (HUD) элементы сцены изображаются
+  // аналогично - как наложеные сверху рисунки с (полу-)прозрачным фоном
   void Scene::draw(const evInput& ev)
   {
     glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
@@ -182,6 +186,7 @@ namespace tr
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, text);
 
+    // Табличка с ткстом на экране отображается в виде наложенной картинки
     show_fps.img.clear();
     show_fps.img.assign(show_fps.size, 0xCD);
     ttf.set_cursor(2,1);

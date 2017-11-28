@@ -47,9 +47,9 @@ namespace tr
       Gen3d operator=(const tr::Gen3d&);
 
       tr::Rigs* rigs = nullptr; // База данных пространства
-      tr::Glsl prog3d {};  // GLSL программа шейдеров
-      tr::VBO VBO_Inst {}; // VBO буфер атрибутов инстансов
-      
+      tr::Glsl prog3d {};       // GLSL программа шейдеров
+      tr::VBO VBO_Inst {};      // VBO буфер атрибутов инстансов
+
       // Буфер обмена индексами из VBO_Inst
       std::list<GLsizeiptr> idx_ref {};
 
