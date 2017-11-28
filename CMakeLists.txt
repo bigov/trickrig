@@ -66,12 +66,13 @@ include_directories( "include" "lib"
  "${CMAKE_CURRENT_BINARY_DIR}/${SUFFIX}/libpng"
  ".extlibs/freetype2/include"
  ".extlibs/glfw/include"
+ ".extlibs/glm"
  ".extlibs/libpng"
  ".extlibs/glcore33")
 
 SET( MY_FLAGS "-m64 -std=c++14 -fexceptions -Werror -Wpedantic -Wextra\
  -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor -Wall\
- -Wconversion -Winit-self -Wunreachable-code -Weffc++" )
+ -Winit-self -Wunreachable-code" )
 
 ###
 # Установка параметров для сборки в MinGW-W64 под MS Windows

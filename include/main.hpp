@@ -43,6 +43,7 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+
 #define ERR throw std::runtime_error
 
 // Длина стороны пространства (должна быть нечетным числом)
