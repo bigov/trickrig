@@ -1,6 +1,6 @@
 [submodule "wiki"]
 	path = wiki
-	url = ssh://git@bitbucket.org/bigov/trickrig.git/wiki
+	url = https://bigov@bitbucket.org/bigov/trickrig.git/wiki
 [submodule ".extlibs/freetype2"]
 	path = .extlibs/freetype2
 	url = https://git.savannah.gnu.org/git/freetype/freetype2.git
