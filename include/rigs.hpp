@@ -57,7 +57,7 @@ namespace tr
     void idx_update(GLsizeiptr idSource, GLsizeiptr idTarget);
   };
 
-  //## База данных элементов пространства
+  //## Клас для управления базой данных элементов пространства.
   //
   class Rigs
   {

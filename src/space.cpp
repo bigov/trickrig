@@ -29,7 +29,7 @@ namespace tr
     show_fps.img.assign(
       show_fps.size, 0x00);
 
-    // Загрузка из файла
+    // Загрузка обрамления окна (HUD) из файла
     pngImg image = get_png_img(tr::Config::filepath(HUD));
 
     glGenTextures(1, &text);
