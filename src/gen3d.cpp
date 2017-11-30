@@ -232,7 +232,7 @@ namespace tr
       for(float y = -5.f; y <= 5.f; y += rigs->gage)
       {
         r = rigs->get(x, y, z);
-          if(nullptr != r) idx_ref.splice(idx_ref.end(), r->idx);
+        if(nullptr != r) idx_ref.splice(idx_ref.end(), r->idx);
       }
 
     x = VFx - space_f0_radius * direction;

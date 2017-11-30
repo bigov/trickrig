@@ -23,17 +23,6 @@ namespace tr
   // у которых тип элемента (переменная t) изменяется во времени.
   extern int get_msec(void);
 
-  struct Instance
-  {
-    //для начала настроим только изменение origin
-    float origin[3] = {0.0f}; // положение центральной точки
-
-    //остальное пока отключено
-    //float normal[3] = {0.0f}; // координаты нормали
-    //float gage      = 1.0f;    // масштаб элемента)
-    //int tex2d[2]    = {0, 0}; // смещение координат на текстурной карте
-  };
-
   //##  элемент пространства
   //
   // содержит значения
@@ -52,6 +41,7 @@ namespace tr
                                       // Если значение == 64, то данных нет
     int time; // время создания
     std::list<GLsizeiptr> idx {}; // адреса атрибутов инстансов в VBO_Inst
+
     Rig(): time(get_msec()) {}
     Rig(short t): type(t), time(get_msec()) {}
     void idx_update(GLsizeiptr idSource, GLsizeiptr idTarget);
