@@ -91,7 +91,7 @@ endif( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
 # Установка параметров для сборки на Linux
 #
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
-SET( CMAKE_CXX_FLAGS "${MY_FLAGS}" )
+SET( CMAKE_CXX_FLAGS "${MY_FLAGS} -no-pie" )
 SET( LIBS pthread glcore33 glfw freetype png )
 endif( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
 

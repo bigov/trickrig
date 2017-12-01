@@ -3,7 +3,7 @@
 
 #include "main.hpp"
 #include "config.hpp"
-#include "space.hpp"
+#include "scene.hpp"
 
 namespace tr
 {

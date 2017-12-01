@@ -7,7 +7,7 @@
 //============================================================================
 #include "main.hpp"
 #include "io.hpp"
-#include "space.hpp"
+#include "scene.hpp"
 #include "glfw.hpp"
 
 //##

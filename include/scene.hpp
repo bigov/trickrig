@@ -1,10 +1,12 @@
 //============================================================================
 //
-// file: space.hpp
+// file: scene.hpp
+//
+// Управление объектами сцены
 //
 //============================================================================
-#ifndef __SPACE_HPP__
-#define __SPACE_HPP__
+#ifndef __SCENE_HPP__
+#define __SCENE_HPP__
 
 #include "main.hpp"
 #include "config.hpp"
