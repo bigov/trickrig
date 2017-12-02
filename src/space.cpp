@@ -5,15 +5,57 @@
 // Управление пространством 3D сцены
 //
 //============================================================================
-#include "gen3d.hpp"
+#include "space.hpp"
 
 namespace tr
 {
-  //## заполнение 3D сцены
+  //## Формирование 3D пространства
   //
-  void Gen3d::space_load(void)
+  Space::Space(void)
   {
-    f3d pt = rigs->search_down(ViewFrom); // ближайший блок снизу
+    init();
+    vbo_allocate_mem();
+
+    glClearColor(0.5f, 0.69f, 1.0f, 1.0f);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glFrontFace(GL_CCW);
+    glCullFace(GL_BACK);
+    glEnable(GL_CULL_FACE); // после загрузки сцены опция выключается
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_LINE_SMOOTH);
+    glEnable(GL_BLEND); // поддержка прозрачности
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    // Загрузка из файла данных текстуры
+    pngImg image = get_png_img(tr::Config::filepath(TEXTURE));
+
+    glGenTextures(1, &m_textureObj);
+    glActiveTexture(GL_TEXTURE0); // можно загрузить не меньше 48
+    glBindTexture(GL_TEXTURE_2D, m_textureObj);
+
+    GLint level_of_details = 0;
+    GLint frame = 0;
+    glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
+      image.w, image.h, frame, GL_RGBA, GL_UNSIGNED_BYTE, image.img.data());
+
+    // Установка опций отрисовки текстур
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+      GL_NEAREST_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    space_load();
+    return;
+  }
+
+  //## Загрузка в VBO (графическую память) данных отображаемых объектов 3D сцены
+  //
+  void Space::space_load(void)
+  {
+    f3d pt = rigs_db.search_down(ViewFrom); // ближайший блок снизу
     MoveFrom = {pt.x, pt.y, pt.z};
 
     float
@@ -25,26 +67,58 @@ namespace tr
       zMin = pt.z - space_f0_radius;
 
     // Загрузить в графический буфер атрибуты элементов
-    for(float x = xMin; x<= xMax; x += rigs->gage)
-    for(float y = yMin; y<= yMax; y += rigs->gage)
-    for(float z = zMin; z<= zMax; z += rigs->gage)
-      if(rigs->exist(x, y, z)) vbo_data_send(x, y, z);
+    for(float x = xMin; x<= xMax; x += rigs_db.gage)
+    for(float y = yMin; y<= yMax; y += rigs_db.gage)
+    for(float z = zMin; z<= zMax; z += rigs_db.gage)
+      if(rigs_db.exist(x, y, z)) vbo_data_send(x, y, z);
 
     glDisable(GL_CULL_FACE); // включить отображение обратных поверхностей
 
     return;
   }
 
+  //## Генерация виртуального 3D пространства из составных элементов
+  //
+  // TODO: должно быть заменено на загрузку пространства из базы данных
+  //
+  void Space::init(void)
+  {
+    float s = 50.f;
+    float y;
+
+    std::default_random_engine generator;
+    std::normal_distribution<double> distribution(5.0, 2.0);
+
+    for (float x = 0.f - s; x < s; x += 1.f)
+      for (float z = 0.f - s; z < s; z += 1.f)
+      {
+        double r = distribution(generator);
+        y = 0.f;
+        if( r > 8.0 ) y = 1.f;
+        if(x == 49.f || x == -50.f || z == 49.f || z == -50.f)
+        {
+          rigs_db.emplace(x, y      , z, 2);
+          rigs_db.emplace(x, y + 1.f, z, 2);
+          rigs_db.emplace(x, y + 2.f, z, 2);
+        }
+        else
+        {
+          rigs_db.emplace(x, y, z, 1);
+        }
+      }
+    return;
+  }
+
   //## Размещение инстанса в графическом буфере и запись индекса
   // положения атрибутов VBO для последующей модификации
   //
-  void Gen3d::inst_write(f3d& pt, unsigned char s)
+  void Space::inst_write(f3d& pt, unsigned char s)
   {
     f3d n = trNormal(s);
 
     GLfloat data[] = {
       pt.x, pt.y, pt.z, n.x, n.y, n.z,
-      static_cast<GLfloat>(rigs->edges_map(pt, s))
+      static_cast<GLfloat>(rigs_db.edges_map(pt, s))
     };
 
     GLsizeiptr id;
@@ -61,8 +135,8 @@ namespace tr
     }
     
     auto refId = static_cast<size_t>(id/InstDataSize);
-    ref_Rig[refId] = rigs->get(pt);
-    rigs->post_key(pt, id);
+    ref_Rig[refId] = rigs_db.get(pt);
+    rigs_db.post_key(pt, id);
 
     return;
   }
@@ -70,10 +144,10 @@ namespace tr
   //## Вычисление отображаемых сторон, 
   // и размещение атрибутов инстансов в графическом буфере
   //
-  void Gen3d::vbo_data_send(float x, float y, float z)
+  void Space::vbo_data_send(float x, float y, float z)
   {
     f3d pt = {x, y, z};
-    unsigned char sides = rigs->sides_map(pt);
+    unsigned char sides = rigs_db.sides_map(pt);
 
     glBindVertexArray(vao_3d);
 
@@ -90,7 +164,7 @@ namespace tr
 
   //## инициализировать и заполнить данными VBO
   //
-  void Gen3d::vbo_allocate_mem(void)
+  void Space::vbo_allocate_mem(void)
   {
     prog3d.attach_shaders(
       tr::Config::filepath(VERT_SHADER),
@@ -175,51 +249,9 @@ namespace tr
     return;
   }
 
-  //## Формирование 3D пространства
-  //
-  void Gen3d::init(tr::Rigs* R)
-  {
-    rigs = R;
-    vbo_allocate_mem();
-
-    glClearColor(0.5f, 0.69f, 1.0f, 1.0f);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    glFrontFace(GL_CCW);
-    glCullFace(GL_BACK);
-    glEnable(GL_CULL_FACE); // после загрузки сцены опция выключается
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_LINE_SMOOTH);
-    glEnable(GL_BLEND); // поддержка прозрачности
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    // Загрузка из файла данных текстуры
-    pngImg image = get_png_img(tr::Config::filepath(TEXTURE));
-
-    glGenTextures(1, &m_textureObj);
-    glActiveTexture(GL_TEXTURE0); // можно загрузить не меньше 48
-    glBindTexture(GL_TEXTURE_2D, m_textureObj);
-
-    GLint level_of_details = 0;
-    GLint frame = 0;
-    glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-      image.w, image.h, frame, GL_RGBA, GL_UNSIGNED_BYTE, image.img.data());
-
-    // Установка опций отрисовки текстур
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-      GL_NEAREST_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    space_load();
-    return;
-  }
-
   //## Перестроение границ области по оси X
   //
-  void Gen3d::recalc_border_x(float direction, float VFx, float VFz)
+  void Space::recalc_border_x(float direction, float VFx, float VFz)
   {
     Rig* r;
     float x = MoveFrom.x + space_f0_radius * direction;
@@ -227,10 +259,10 @@ namespace tr
     float Max = MoveFrom.z + space_f0_radius;
     
     // Сбор индексов VBO_Inst по оси X с удаляемой линии границы области
-    for(float z = Min; z <= Max; z += rigs->gage)
-      for(float y = -5.f; y <= 5.f; y += rigs->gage)
+    for(float z = Min; z <= Max; z += rigs_db.gage)
+      for(float y = -5.f; y <= 5.f; y += rigs_db.gage)
       {
-        r = rigs->get(x, y, z);
+        r = rigs_db.get(x, y, z);
         if(nullptr != r) idx_ref.splice(idx_ref.end(), r->idx);
       }
 
@@ -239,9 +271,9 @@ namespace tr
     Max = VFz + space_f0_radius;
 
     // Построение линии по оси X по направлению движения
-    for(float z = Min; z <= Max; z += rigs->gage)
-      for(float y = -5.f; y <= 5.f; y += rigs->gage)
-        if(rigs->exist(x, y, z))
+    for(float z = Min; z <= Max; z += rigs_db.gage)
+      for(float y = -5.f; y <= 5.f; y += rigs_db.gage)
+        if(rigs_db.exist(x, y, z))
           vbo_data_send(fround(x), fround(y), fround(z));
     
     MoveFrom.x = VFx;
@@ -250,7 +282,7 @@ namespace tr
 
   //## Перестроение границ области по оси Z
   //
-  void Gen3d::recalc_border_z(float direction, float VFx, float VFz)
+  void Space::recalc_border_z(float direction, float VFx, float VFz)
   {
     Rig* r;
     float z = MoveFrom.z + space_f0_radius * direction;
@@ -258,10 +290,10 @@ namespace tr
     float Max = MoveFrom.x + space_f0_radius;
 
     // Сбор индексов VBO_Inst по оси Z с удаляемой линии границы области
-    for(float x = Min; x <= Max; x += rigs->gage)
-      for(float y = -5.f; y <= 5.f; y += rigs->gage)
+    for(float x = Min; x <= Max; x += rigs_db.gage)
+      for(float y = -5.f; y <= 5.f; y += rigs_db.gage)
       {
-        r = rigs->get(x, y, z);
+        r = rigs_db.get(x, y, z);
         if(nullptr != r) idx_ref.splice(idx_ref.end(), r->idx);
       }
 
@@ -270,9 +302,9 @@ namespace tr
     Max = VFx + space_f0_radius;
 
     // Построение линии по оси Z по направлению движения
-    for(float x = Min; x <= Max; x += rigs->gage)
-      for(float y = -5.f; y <= 5.f; y += rigs->gage)
-        if(rigs->exist(x, y, z))
+    for(float x = Min; x <= Max; x += rigs_db.gage)
+      for(float y = -5.f; y <= 5.f; y += rigs_db.gage)
+        if(rigs_db.exist(x, y, z))
           vbo_data_send(fround(x), fround(y), fround(z));
       
     MoveFrom.z = VFz;
@@ -292,7 +324,7 @@ namespace tr
   // - если меньше, то на место свободных переносим данные из конца и 
   //   уменьшаем счетчик отсекая лишние.
   //
-  void Gen3d::recalc_borders(void)
+  void Space::recalc_borders(void)
   {
     float 
       VFx = fround(ViewFrom.x),
@@ -304,8 +336,8 @@ namespace tr
       abs_dx = static_cast<float>(fabs(dx)),
       abs_dz = static_cast<float>(fabs(dz));
 
-    if (abs_dx >= rigs->gage) recalc_border_x(dx / abs_dx, VFx, VFz);
-    if (abs_dz >= rigs->gage) recalc_border_z(dz / abs_dz, VFx, VFz);
+    if (abs_dx >= rigs_db.gage) recalc_border_x(dx / abs_dx, VFx, VFz);
+    if (abs_dz >= rigs_db.gage) recalc_border_z(dz / abs_dz, VFx, VFz);
     
     // Очистка неиспользованных элементов
     if( 0 != idx_ref.size() ) reduce_keys();
@@ -319,7 +351,7 @@ namespace tr
   // перемещаем атрибуты рабочих инстансов из конца буфера, и уменьшаем
   // счетчик отображаемых элементов, отсекая отображение лишних.
   //
-  void Gen3d::reduce_keys(void)
+  void Space::reduce_keys(void)
   {
     GLsizeiptr idSource = InstDataSize * (count - 1); // крайний индекс VBO_Int
     
@@ -352,7 +384,7 @@ namespace tr
 
   //## Расчет положения и направления движения камеры
   //
-  void Gen3d::calc_position(const evInput & ev)
+  void Space::calc_position(const evInput & ev)
   {
     look_a += ev.dx * k_mouse;
     if(look_a > two_pi) look_a -= two_pi;
@@ -384,7 +416,7 @@ namespace tr
     glm::vec3 check_step = { LookDir.x/8.f, LookDir.y/8.f, LookDir.z/8.f };
     for(int i = 0; i < 24; ++i)
     {
-      if(rigs->exist(Selected.x, Selected.y, Selected.z))
+      if(rigs_db.exist(Selected.x, Selected.y, Selected.z))
       {
         Selected.x = fround(Selected.x);
         Selected.y = fround(Selected.y);
@@ -403,7 +435,7 @@ namespace tr
 
   //## Декремент числа инстансов
   //
-  void Gen3d::cutback(void)
+  void Space::cutback(void)
   {
     --count;
     VBO_Inst.Resize( InstDataSize * count );
@@ -412,7 +444,7 @@ namespace tr
 
   //## Функция, вызываемая из цикла окна для рендера сцены
   //
-  void Gen3d::draw(const evInput & ev)
+  void Space::draw(const evInput & ev)
   {
     calc_position(ev);
 
@@ -420,7 +452,7 @@ namespace tr
     // она единичная и на положение элементов влияние не оказывает
     prog3d.use();   // включить шейдерную программу
     prog3d.set_uniform("mvp", MatProjection * MatView);
-    prog3d.set_uniform("HalfSide", rigs->gage/2);
+    prog3d.set_uniform("HalfSide", rigs_db.gage/2);
     // подсветка выбраного блока
     // TODO: изменить на подсветку плоскости, а не объема
     prog3d.set_uniform("Selected", Selected);

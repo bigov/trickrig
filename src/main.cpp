@@ -17,8 +17,14 @@ int main()
   {
     tr::Config cfg = {};
     cfg.load();
+
+    // настройка общих опций и создание контекста OpenGL
     tr::WindowGLFW win(&cfg);
+
+
+    // сборка всех частей сцены для моделирования виртуального пространства
     tr::Scene scene(&cfg);
+
     win.show(scene);
     cfg.save();
   }

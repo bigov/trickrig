@@ -2,8 +2,7 @@
 //
 // file: gen3d.hpp
 //
-// Заголовок класса управления пространством 3D сцены
-//
+// Заголовок класса управления виртуальным пространством
 //    pY
 //    |
 //    |_____ pX
@@ -34,21 +33,20 @@
 namespace tr
 {
 
-  class Gen3d
+  class Space
   {
     public:
-      Gen3d(void){}
-      ~Gen3d(void) { delete[] ref_Rig; }
-      void init(tr::Rigs*);
+      Space(void);
+      ~Space(void) {}
       void draw(const evInput&);
 
     private:
-      Gen3d(const tr::Gen3d&);
-      Gen3d operator=(const tr::Gen3d&);
+      Space(const tr::Space&);
+      Space operator=(const tr::Space&);
 
-      tr::Rigs* rigs = nullptr; // База данных пространства
-      tr::Glsl prog3d {};       // GLSL программа шейдеров
-      tr::VBO VBO_Inst {};      // VBO буфер атрибутов инстансов
+      tr::Rigs rigs_db {};           // структура 3D пространства
+      tr::Glsl prog3d {};         // GLSL программа шейдеров
+      tr::VBO VBO_Inst {};        // VBO буфер атрибутов инстансов
 
       // Буфер обмена индексами из VBO_Inst
       std::list<GLsizeiptr> idx_ref {};
@@ -83,6 +81,7 @@ namespace tr
         ViewTo {},
         upward {0.0, 1.0, 0.0}; // направление наверх
 
+      void init(void);
       void calc_position(const tr::evInput &);
       void space_load(void);
       void vbo_allocate_mem(void);

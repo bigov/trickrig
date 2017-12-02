@@ -111,7 +111,7 @@ namespace tr
   }
 
   ////////
-  // Constructor
+  // Создание нового окна с обработчиками ввода и настройка контекста отображения OpenGL
   //
   WindowGLFW::WindowGLFW(tr::Config * c): cfg(c)
   {

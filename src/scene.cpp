@@ -13,10 +13,8 @@ namespace tr
   //
   Scene::Scene(tr::Config *c): cfg(c)
   {
-    space_generate();
     program2d_init();
     framebuffer_init();
-    gen3d.init(&rigs); // Формирование 3D пространства
 
     // Загрузка символов для отображения fps
     ttf.init(tr::Config::filepath(FONT), 9);
@@ -136,36 +134,6 @@ namespace tr
     return;
   }
 
-  //## Генерация 3D пространства
-  //
-  void Scene::space_generate(void)
-  {
-    float s = 50.f;
-    float y;
-
-    std::default_random_engine generator;
-    std::normal_distribution<double> distribution(5.0, 2.0);
-
-    for (float x = 0.f - s; x < s; x += 1.f)
-      for (float z = 0.f - s; z < s; z += 1.f)
-      {
-        double r = distribution(generator);
-        y = 0.f;
-        if( r > 8.0 ) y = 1.f;
-        if(x == 49.f || x == -50.f || z == 49.f || z == -50.f)
-        {
-          rigs.emplace(x, y      , z, 2);
-          rigs.emplace(x, y + 1.f, z, 2);
-          rigs.emplace(x, y + 2.f, z, 2);
-        }
-        else
-        {
-          rigs.emplace(x, y, z, 1);
-        }
-      }
-    return;
-  }
-
   //## Рендеринг
   //
   // Кадр сцены рисуется в виде изображения на (2D) "холсте" фреймбуфера,
@@ -175,7 +143,7 @@ namespace tr
   void Scene::draw(const evInput& ev)
   {
     glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
-    gen3d.draw(ev);
+    space.draw(ev);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glBindVertexArray(vaoQuad);

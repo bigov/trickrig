@@ -19,8 +19,8 @@ SET "n3=gcc"
 
 :: Если для сборки использовать clang
 IF "%1"=="clang" (
-	SET "CC=f:/usr/bin/clang.exe"
-	SET "CXX=f:/usr/bin/clang++.exe"
+	SET "CC=clang.exe"
+	SET "CXX=clang++.exe"
 	SET "n3=clang"
 )
 

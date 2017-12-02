@@ -10,8 +10,7 @@
 
 #include "main.hpp"
 #include "config.hpp"
-#include "rigs.hpp"
-#include "gen3d.hpp"
+#include "space.hpp"
 #include "ttf.hpp"
 
 namespace tr
@@ -28,14 +27,12 @@ namespace tr
         text = 0,
         frameBuffer = 0;
 
-      tr::Config* cfg = nullptr;
-      tr::TTF ttf {};
-      tr::Rigs rigs {};
-      tr::Gen3d gen3d {};
-      tr::pngImg show_fps {};
-      tr::Glsl screenShaderProgram {};
+      tr::Config* cfg = nullptr;        // управление настройками
+      tr::TTF ttf {};                   // создание надписей
+      tr::Space space {};               // виртуальное пространство
+      tr::pngImg show_fps {};           // табличка с fps
+      tr::Glsl screenShaderProgram {};  // шейдерная программа
 
-      void space_generate(void);
       void framebuffer_init(void);
       void program2d_init(void);
 
