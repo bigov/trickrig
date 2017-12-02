@@ -10,7 +10,6 @@
 namespace tr
 {
   //## Формирование 3D пространства
-  //
   Space::Space(void)
   {
     init();
@@ -52,7 +51,6 @@ namespace tr
   }
 
   //## Загрузка в VBO (графическую память) данных отображаемых объектов 3D сцены
-  //
   void Space::space_load(void)
   {
     f3d pt = rigs_db.search_down(ViewFrom); // ближайший блок снизу
@@ -77,12 +75,12 @@ namespace tr
     return;
   }
 
-  //## Генерация виртуального 3D пространства из составных элементов
+  //## Генерация элементов виртуального 3D пространства
+  void Space::init(void)
+  {
   //
   // TODO: должно быть заменено на загрузку пространства из базы данных
   //
-  void Space::init(void)
-  {
     float s = 50.f;
     float y;
 
@@ -109,61 +107,36 @@ namespace tr
     return;
   }
 
-  //## Размещение инстанса в графическом буфере и запись индекса
-  // положения атрибутов VBO для последующей модификации
-  //
-  void Space::inst_write(f3d& pt, unsigned char s)
+  //## размещение атрибутов инстанса в графическом буфере
+  // и запись индекса положения атрибутов VBO для последующей модификации
+  void Space::vbo_data_send(float x, float y, float z)
   {
-    f3d n = trNormal(s);
+    glBindVertexArray(vao_3d);
 
-    GLfloat data[] = {
-      pt.x, pt.y, pt.z, n.x, n.y, n.z,
-      static_cast<GLfloat>(rigs_db.edges_map(pt, s))
-    };
-
+    GLfloat data[] = { x, y, z, 0.0f, 1.0f, 0.0f };
     GLsizeiptr id;
-    
+
     if(idx_ref.empty())
     {
       id = VBO_Inst.SubData(InstDataSize, data);
       ++count;
     }
-    else 
+    else
     {
       id = idx_ref.front(); idx_ref.pop_front();
       VBO_Inst.SubData(InstDataSize, data, id);
     }
-    
+
     auto refId = static_cast<size_t>(id/InstDataSize);
-    ref_Rig[refId] = rigs_db.get(pt);
-    rigs_db.post_key(pt, id);
-
-    return;
-  }
-
-  //## Вычисление отображаемых сторон, 
-  // и размещение атрибутов инстансов в графическом буфере
-  //
-  void Space::vbo_data_send(float x, float y, float z)
-  {
-    f3d pt = {x, y, z};
-    unsigned char sides = rigs_db.sides_map(pt);
-
-    glBindVertexArray(vao_3d);
-
-    if (sides & TR_TpX) inst_write(pt, TR_TpX);
-    if (sides & TR_TnX) inst_write(pt, TR_TnX);
-    if (sides & TR_TpY) inst_write(pt, TR_TpY);
-    if (sides & TR_TnY) inst_write(pt, TR_TnY);
-    if (sides & TR_TpZ) inst_write(pt, TR_TpZ);
-    if (sides & TR_TnZ) inst_write(pt, TR_TnZ);
+    ref_Rig[refId] = rigs_db.get(x, y, z);
+    if(nullptr == ref_Rig[refId]) ERR("ERR: call post_key for empty space.");
+    else ref_Rig[refId]->idx.push_back(id);
 
     glBindVertexArray(0);
     return;
   }
 
-  //## инициализировать и заполнить данными VBO
-  //
+  //## Инициализировать VBO и заполнить данными
   void Space::vbo_allocate_mem(void)
   {
     prog3d.attach_shaders(
@@ -206,20 +179,16 @@ namespace tr
 
     // массив инстансов ----------------
 
-    // Количество байт на группу атрибутов (3 координаты, 3 нормали, 1 маска):
+    // Количество байт на группу атрибутов (3 координаты + 3 нормали):
     auto stride =  static_cast<GLsizei>(InstDataSize);
 
-    // число элементов в кубическом блоке c длиной стороны space_x1_size:
+    // число элементов в кубе равно кубу длины стороны:
     auto n = pow(space_i0_length, 3);
 
-    // Каждый блок состоит из 6 сторон/инстансов, но отобразить одновременно
-    // все 6 сторон каждого блока можно только если пространство заполнено
-    // в шахматном порядке, т.е. для половины от макисмального числа блоков.
-    // Или, аналогично, по 3 стороны * максимальное число блоков. Поэтому
-    // выделяем память для массива размером:
-    VBO_Inst.Allocate(static_cast<GLsizeiptr>( 3 * n * stride ));
+    // В каждом блоке по инстансу, поэтому выделяем память под массив по числу блоков:
+    VBO_Inst.Allocate(static_cast<GLsizeiptr>(n * stride));
 
-    auto reserved_size = static_cast<size_t>(3 * n);
+    auto reserved_size = static_cast<size_t>(n);
     ref_Rig = new Rig* [reserved_size];
 
     GLuint attrib = 0;
@@ -237,12 +206,6 @@ namespace tr
     VBO_Inst.Attrib(attrib, 3, GL_FLOAT, GL_FALSE, stride, pointer);
     glVertexAttribDivisor(attrib, 1);
 
-    // 2.3 Карта яркости на кромках
-    attrib = prog3d.attrib_location_get("Ring");
-    pointer = reinterpret_cast<GLvoid*>(6 * sizeof(GLfloat));
-    VBO_Inst.Attrib(attrib, 1, GL_FLOAT, GL_FALSE, stride, pointer);
-    glVertexAttribDivisor(attrib, 1);
-  
     glBindVertexArray(0);
     prog3d.unuse();
 
@@ -250,7 +213,6 @@ namespace tr
   }
 
   //## Перестроение границ области по оси X
-  //
   void Space::recalc_border_x(float direction, float VFx, float VFz)
   {
     Rig* r;
@@ -281,7 +243,6 @@ namespace tr
   }
 
   //## Перестроение границ области по оси Z
-  //
   void Space::recalc_border_z(float direction, float VFx, float VFz)
   {
     Rig* r;
@@ -312,6 +273,8 @@ namespace tr
   }
   
   //## Перестроение границ активной области при перемещении камеры
+  void Space::recalc_borders(void)
+  {
   //
   // - cобираем список смещений атрибутов в VBO_Inst для элементов,
   //   которые вышли за границу отображения.
@@ -321,12 +284,10 @@ namespace tr
   //
   // - если новых инстансов оказалось больше, то дописываем их в конец.
   //
-  // - если меньше, то на место свободных переносим данные из конца и 
+  // - если меньше, то на место свободных переносим данные из конца и
   //   уменьшаем счетчик отсекая лишние.
   //
-  void Space::recalc_borders(void)
-  {
-    float 
+    float
       VFx = fround(ViewFrom.x),
       VFz = fround(ViewFrom.z),
       dx = MoveFrom.x - VFx,
@@ -345,14 +306,14 @@ namespace tr
   }
 
   //## Покадровое уменьшение счетчика для лишних инстансов
+  void Space::reduce_keys(void)
+  {
   //
   // Когда после перемещения камеры в графическом буфере остаются
   // неиспользованные при перестроении новых границ элементы, на их место
   // перемещаем атрибуты рабочих инстансов из конца буфера, и уменьшаем
   // счетчик отображаемых элементов, отсекая отображение лишних.
   //
-  void Space::reduce_keys(void)
-  {
     GLsizeiptr idSource = InstDataSize * (count - 1); // крайний индекс VBO_Int
     
     // Если крайний индекс в кэше свободных - уменьшаем число элементов
@@ -383,7 +344,6 @@ namespace tr
   }
 
   //## Расчет положения и направления движения камеры
-  //
   void Space::calc_position(const evInput & ev)
   {
     look_a += ev.dx * k_mouse;
@@ -434,7 +394,6 @@ namespace tr
   }
 
   //## Декремент числа инстансов
-  //
   void Space::cutback(void)
   {
     --count;
@@ -443,7 +402,6 @@ namespace tr
   }
 
   //## Функция, вызываемая из цикла окна для рендера сцены
-  //
   void Space::draw(const evInput & ev)
   {
     calc_position(ev);

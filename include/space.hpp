@@ -1,6 +1,6 @@
 //============================================================================
 //
-// file: gen3d.hpp
+// file: space.hpp
 //
 // Заголовок класса управления виртуальным пространством
 //    pY
@@ -44,9 +44,9 @@ namespace tr
       Space(const tr::Space&);
       Space operator=(const tr::Space&);
 
-      tr::Rigs rigs_db {};           // структура 3D пространства
-      tr::Glsl prog3d {};         // GLSL программа шейдеров
-      tr::VBO VBO_Inst {};        // VBO буфер атрибутов инстансов
+      tr::Rigs rigs_db {};  // структура 3D пространства
+      tr::Glsl prog3d {};   // GLSL программа шейдеров
+      tr::VBO VBO_Inst {};  // VBO буфер атрибутов инстансов
 
       // Буфер обмена индексами из VBO_Inst
       std::list<GLsizeiptr> idx_ref {};
@@ -54,8 +54,8 @@ namespace tr
       // Массив ссылок на активные риги, индекс привязан к индексу в VBO_Inst
       tr::Rig** ref_Rig = nullptr;
 
-      // Размер группы атрибутов инстанса в буфере VBO_Inst
-      GLsizeiptr InstDataSize = static_cast<GLsizeiptr>(7 * sizeof(GLfloat));
+      // Размер группы атрибутов инстанса в буфере VBO_Inst = 3 координаты + 3 нормали
+      GLsizeiptr InstDataSize = static_cast<GLsizeiptr>(6 * sizeof(GLfloat));
 
       int   space_i0_length = WIDTH_0;
       int   space_i0_radius = WIDTH_0/2;
@@ -68,9 +68,9 @@ namespace tr
 
       float
         rl=0.f, ud=0.f, fb=0.f, // скорость движения по направлениям
-        look_a = 3.928f, // азимут (0 - X)
-        look_t = -0.276f, // тангаж (0 - горизОнталь, пи/2 - вертикаль)
-        k_sense = 4.0f,   // TODO: чувствительность через Config
+        look_a = 3.928f,        // азимут (0 - X)
+        look_t = -0.276f,       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
+        k_sense = 4.0f,         // TODO: чувствительность через Config
         k_mouse = 0.002f;
 
       glm::mat4 MatView {};
@@ -86,7 +86,6 @@ namespace tr
       void space_load(void);
       void vbo_allocate_mem(void);
       void vbo_data_send(float, float, float);
-      void inst_write(f3d&, unsigned char);
       void recalc_borders(void);
       void reduce_keys(void);
       void cutback(void);

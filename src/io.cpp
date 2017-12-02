@@ -10,21 +10,6 @@
 
 namespace tr
 {
-
-  f3d trNormal(const unsigned char i)
-  {
-    switch(i)
-    {
-      case TR_TpX: return { 1.0f,  0.0f,  0.0f };
-      case TR_TnX: return {-1.0f,  0.0f,  0.0f };
-      case TR_TpY: return { 0.0f,  1.0f,  0.0f };
-      case TR_TnY: return { 0.0f, -1.0f,  0.0f };
-      case TR_TpZ: return { 0.0f,  0.0f,  1.0f };
-      case TR_TnZ: return { 0.0f,  0.0f, -1.0f };
-      default: ERR ("Call trNormal with wrong argument");
-    }
-  }
-
   ////////
   // Для обеспечения работы контейнера map c ключем f2d
   // 

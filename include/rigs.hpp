@@ -24,20 +24,19 @@ namespace tr
   extern int get_msec(void);
 
   //##  элемент пространства
-  //
-  // содержит значения
-  // - координат центральной точки, в которой расположен;
-  // - углов поворота по трем осям
-  // - масштаб/размер
-  // - индекс типа элемента по которому выбирается текстура и поведение
-  // - время установки (оспользуется для динамических блоков
-  //
   struct Rig
   {
+    // содержит значения
+    // - координат центральной точки, в которой расположен;
+    // - углов поворота по трем осям
+    // - масштаб/размер
+    // - индекс типа элемента по которому выбирается текстура и поведение
+    // - время установки (оспользуется для динамических блоков
+    //
     float angle[3] = {0.f, 0.f, 0.f}; // угол поворота
 
     short int type = 0; // тип элемента (текстура, поведение, физика и т.п)
-    unsigned char neighbors = TR_T00; // маска расположения соседних блоков.
+    //unsigned char neighbors = TR_T00; // маска расположения соседних блоков.
                                       // Если значение == 64, то данных нет
     int time; // время создания
     std::list<GLsizeiptr> idx {}; // адреса атрибутов инстансов в VBO_Inst
@@ -60,7 +59,6 @@ namespace tr
       float gage = 1.f;   // размер/масштаб эементов в данном блоке
 
       Rigs(void){}
-      Rig* get(const f3d&);
       Rig* get(float x, float y, float z);
       f3d search_down(float x, float y, float z);
       f3d search_down(const glm::vec3&);
@@ -69,9 +67,6 @@ namespace tr
       void stop_emplacing(void) { emplace_complete = true; }
       bool is_empty(float x, float y, float z);
       bool exist(float x, float y, float z);
-      unsigned char sides_map(const f3d&);
-      GLint edges_map(const f3d&, const unsigned char);
-      void post_key(const f3d& c, GLsizeiptr i);
   };
 
 } //namespace tr

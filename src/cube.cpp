@@ -34,8 +34,10 @@ namespace tr
 
 //============================ Cube class ====================================
 
-  ////////
-  // Заполнение массива данных
+
+  //## Заполнение массива данных
+  void Cube::position_set(GLfloat x, GLfloat y, GLfloat z)
+  {
   //
   //  Очередность сторон у куба выберем на основании:
   //
@@ -51,14 +53,12 @@ namespace tr
   //  left, right, top, bottom, face, back
   //  ------------------------------------
   //
-  void Cube::position_set(GLfloat x, GLfloat y, GLfloat z)
-  {
     location = {x, y, z};
     unit_update();
     return;
   }
 
-  //### Обнуление массива данных и связанных с ним чсетчиков
+  //## Обнуление массива данных и связанных с ним чсетчиков
   void Cube::unit_clear(void)
   {
     f_coord3d = 0;
@@ -80,8 +80,7 @@ namespace tr
     return;
   }
 
-  //### добавление индекса для обхода стороны куба
-  //
+  //## добавление индекса для обхода стороны куба
   void Cube::place_side(void)
   {
     // insert one side indices
@@ -103,23 +102,10 @@ namespace tr
     return;
   }
 
-  //### Ввод координат для одной вершины
-  //
+  //## Ввод координат для одной вершины
   void Cube::insert_vertex(float x, float y, float z,
     float nx, float ny, float nz, float u, float v)
   {
-    /*
-    // общий массив
-    unit[f_unit++] = x;  // 3d координаты вершины
-    unit[f_unit++] = y;
-    unit[f_unit++] = z;
-    unit[f_unit++] = nx; // 3d вектор нормали
-    unit[f_unit++] = ny;
-    unit[f_unit++] = nz;
-    unit[f_unit++] = u;  // координаты текстуры
-    unit[f_unit++] = v;
-    */
-
     coord3d[f_coord3d++] = x;
     coord3d[f_coord3d++] = y;
     coord3d[f_coord3d++] = z;
@@ -134,8 +120,7 @@ namespace tr
     return;
   }
 
-  //### Пересчет отображаемых граней куба в зависимости от наличия соседей
-  //
+  //## Пересчет отображаемых граней куба в зависимости от наличия соседей
   void Cube::unit_update(void)
   {
     GLfloat
@@ -146,65 +131,15 @@ namespace tr
     GLfloat * t = texture_map;
 
     unit_clear();
-    // +X
-    if (sides_mask & TR_TpX)
-    {
-      place_side();
-      insert_vertex(x+S, y-S, z+S, 1.f, 0.f, 0.f, t[0], t[1]);
-      insert_vertex(x+S, y-S, z-S, 1.f, 0.f, 0.f, t[2], t[3]);
-      insert_vertex(x+S, y+S, z-S, 1.f, 0.f, 0.f, t[4], t[5]);
-      insert_vertex(x+S, y+S, z+S, 1.f, 0.f, 0.f, t[6], t[7]);
-    }
-    // -X
-    if (sides_mask & TR_TnX)
-    {
-      place_side();
-      insert_vertex(x-S, y-S, z-S, -1.f, 0.f, 0.f, t[8],  t[9]);
-      insert_vertex(x-S, y-S, z+S, -1.f, 0.f, 0.f, t[10], t[11]);
-      insert_vertex(x-S, y+S, z+S, -1.f, 0.f, 0.f, t[12], t[13]);
-      insert_vertex(x-S, y+S, z-S, -1.f, 0.f, 0.f, t[14], t[15]);
-    }
-    // +Y
-    if (sides_mask & TR_TpY)
-    {
-      place_side();
-      insert_vertex(x-S, y+S, z+S, 0.f, 1.f, 0.f, t[16], t[17]);
-      insert_vertex(x+S, y+S, z+S, 0.f, 1.f, 0.f, t[18], t[19]);
-      insert_vertex(x+S, y+S, z-S, 0.f, 1.f, 0.f, t[20], t[21]);
-      insert_vertex(x-S, y+S, z-S, 0.f, 1.f, 0.f, t[22], t[23]);
-    }
-    // -Y
-    if (sides_mask & TR_TnY)
-    {
-      place_side();
-      insert_vertex(x-S, y-S, z-S, 0.f, -1.f, 0.f, t[24], t[25]);
-      insert_vertex(x+S, y-S, z-S, 0.f, -1.f, 0.f, t[26], t[27]);
-      insert_vertex(x+S, y-S, z+S, 0.f, -1.f, 0.f, t[28], t[29]);
-      insert_vertex(x-S, y-S, z+S, 0.f, -1.f, 0.f, t[30], t[31]);
-    }
-    // +Z
-    if (sides_mask & TR_TpZ)
-    {
-      place_side();
-      insert_vertex(x-S, y-S, z+S, 0.f, 0.f, 1.f, t[32], t[33]);
-      insert_vertex(x+S, y-S, z+S, 0.f, 0.f, 1.f, t[34], t[35]);
-      insert_vertex(x+S, y+S, z+S, 0.f, 0.f, 1.f, t[36], t[37]);
-      insert_vertex(x-S, y+S, z+S, 0.f, 0.f, 1.f, t[38], t[39]);
-    }
-    // -Z
-    if (sides_mask & TR_TnZ)
-    {
-      place_side();
-      insert_vertex(x+S, y-S, z-S, 0.f, 0.f, -1.f, t[40], t[41]);
-      insert_vertex(x-S, y-S, z-S, 0.f, 0.f, -1.f, t[42], t[43]);
-      insert_vertex(x-S, y+S, z-S, 0.f, 0.f, -1.f, t[44], t[45]);
-      insert_vertex(x+S, y+S, z-S, 0.f, 0.f, -1.f, t[46], t[47]);
-    }
+    place_side();
+    insert_vertex(x-S, y+S, z+S, 0.f, 1.f, 0.f, t[16], t[17]);
+    insert_vertex(x+S, y+S, z+S, 0.f, 1.f, 0.f, t[18], t[19]);
+    insert_vertex(x+S, y+S, z-S, 0.f, 1.f, 0.f, t[20], t[21]);
+    insert_vertex(x-S, y+S, z-S, 0.f, 1.f, 0.f, t[22], t[23]);
     return;
   }
 
   //## Начальная настройка объекта
-  //
   void Cube::setup(GLfloat x, GLfloat y, GLfloat z, int t, GLuint start_idx)
   {
     f_index = 0;
@@ -216,7 +151,6 @@ namespace tr
   }
 
   //## Конструктор
-  //
   Cube::Cube(GLfloat x, GLfloat y, GLfloat z, int t, float l,
     unsigned char s, GLuint start_idx): side_lenght(l), sides_mask(s)
   {
@@ -224,15 +158,14 @@ namespace tr
     return;
   }
 
-  ////////
-  // Заполнение массива координат текстуры для одной стороны куба
+  //## Заполнение массива координат текстуры для одной стороны куба
+  void Cube::texture_array_fill(GLfloat * t, GLfloat x0, GLfloat y0)
+  {
   //
   // Тут производится заполнение координат текстуры для трех последующих
   // точек по значению координат текстуры начальной точки.
   // Интервалы соответствуют константе шага текстурной сетки (tS)
   //
-  void Cube::texture_array_fill(GLfloat * t, GLfloat x0, GLfloat y0)
-  {
     GLfloat
       x1 = x0 + tS,
       y1 = y0 + tS;
@@ -284,9 +217,8 @@ namespace tr
     return;
   }
 
-  ////////
-  //
-  //
+
+  //## Установка текстуры
   void Cube::texture_set(int id)
   {
     texture_select(id);
@@ -294,9 +226,7 @@ namespace tr
     return;
   }
 
-  ////////
-  // Декодирование индекса в текстурную карту для куба
-  //
+  //## Декодирование индекса в текстурную карту для куба
   void Cube::texture_select(int t_id)
   {
     switch(t_id)

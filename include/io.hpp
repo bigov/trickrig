@@ -11,18 +11,6 @@
 
 namespace tr
 {
-  // Для работы с битовыми полями есть STL модуль <bitset>, в котором
-  // определена утилита  std::bitset<N> - битовый набор из N бит
-
-  const unsigned char // маски для дешифровки отображения сторон
-    TR_TpX = 1,
-    TR_TnX = 2,
-    TR_TpY = 4,
-    TR_TnY = 8,
-    TR_TpZ = 16,
-    TR_TnZ = 32,
-    TR_T00 = 64; // нет сторон
-
   struct pngImg
   {
     GLsizei w = 0;
@@ -61,8 +49,6 @@ namespace tr
 
   struct f2d { float x = 0.f, z = 0.f; };
   extern bool operator< (f2d const& left, f2d const& right);
-
-  extern f3d trNormal(const unsigned char);
 }
 
 #endif //__IO_HPP__
