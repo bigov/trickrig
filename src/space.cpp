@@ -285,7 +285,7 @@ namespace tr
   // - если новых инстансов оказалось больше, то дописываем их в конец.
   //
   // - если меньше, то на место свободных переносим данные из конца и
-  //   уменьшаем счетчик отсекая лишние.
+  //   передвигаем границу счетчика, отсекая лишние.
   //
     float
       VFx = fround(ViewFrom.x),
@@ -343,6 +343,15 @@ namespace tr
     return;
   }
 
+  //## Декремент числа инстансов
+  void Space::cutback(void)
+  {
+    --count;
+    // сдвиг границы актуальных данных в буфере
+    VBO_Inst.Resize( InstDataSize * count );
+    return;
+  }
+
   //## Расчет положения и направления движения камеры
   void Space::calc_position(const evInput & ev)
   {
@@ -393,13 +402,6 @@ namespace tr
     return;
   }
 
-  //## Декремент числа инстансов
-  void Space::cutback(void)
-  {
-    --count;
-    VBO_Inst.Resize( InstDataSize * count );
-    return;
-  }
 
   //## Функция, вызываемая из цикла окна для рендера сцены
   void Space::draw(const evInput & ev)
