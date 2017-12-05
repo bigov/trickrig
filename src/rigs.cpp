@@ -65,13 +65,12 @@ namespace tr
   }
 
   //## Поиск элемента с указанными координатами
+  Rig* Rigs::get(float x, float y, float z)
+  {
   //
   // Возвращает адрес памяти, в которой расположен элемент
   // с указанными в аргументе функции координатами.
   //
-  //Rig* Rigs::get(const f3d& c) { return get(c.x, c.y, c.z); }
-  Rig* Rigs::get(float x, float y, float z)
-  {
     if(y < yMin) ERR("Y downflow");
     if(y > yMax) ERR("Y overflow");
 

@@ -37,7 +37,7 @@ namespace tr
   {
     public:
       Space(void);
-      ~Space(void) {}
+      ~Space(void);
       void draw(const evInput&);
 
     private:
@@ -51,7 +51,8 @@ namespace tr
       // Буфер обмена индексами из VBO_Inst
       std::list<GLsizeiptr> idx_ref {};
 
-      // Массив ссылок на активные риги, индекс привязан к индексу в VBO_Inst
+      // Массив ссылок на риги, отбражаемые на экране. Массив индексируется
+      // поррядковыми номерами блоков данных в VBO_Inst
       tr::Rig** ref_Rig = nullptr;
 
       // Размер группы атрибутов инстанса в буфере VBO_Inst = 3 координаты + 3 нормали

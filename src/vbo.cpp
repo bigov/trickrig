@@ -89,7 +89,6 @@ namespace tr
 
   //## Сжатие буфера атрибутов за счет перемещения данных из хвоста
   // в неиспользуемый промежуток и уменьшение текущего индекса
-  //
   void VBO::Reduce(GLintptr src, GLintptr dst, GLsizeiptr d_size)
   {
     //return;
@@ -100,10 +99,13 @@ namespace tr
     return;
   }
 
-  //## Внесение данных с контролем границы максимального размера буфера
-  //
-  GLsizeiptr VBO::SubData(GLsizeiptr d_size, const GLvoid* data)
+  //## Внесение данных с контролем границы максимально выделенного размера буфера
+  GLsizeiptr VBO::SubDataAppend(GLsizeiptr d_size, const GLvoid* data)
   {
+    // вносим данные в буфер по указателю конца блока (size), возвращаем положение
+    // указателя по которому разместили данные и увеличиваем значение указателя на
+    // размер внесенных данных для последующего использования
+
     #ifndef NDEBUG //--проверка свободного места в буфере----------------------
     if ((allocated - size) < d_size) ERR("FAILURE: VBO is overflow");
     #endif //------------------------------------------------------------------
@@ -116,10 +118,8 @@ namespace tr
     return res;
   }
 
-  //## Внесение данных на место указанной группы атрибутов
-  // с контролем границы максимального размера буфера
-  //
-  void VBO::SubData(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr idx)
+  //## Замена указанной группы атрибутов с контролем границы размера буфера
+  void VBO::SubDataUpdate(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr idx)
   {
     #ifndef NDEBUG //--проверка свободного места в буфере----------------------
     if (idx > (size - d_size)) ERR("VBO: bad index for update attrib group");

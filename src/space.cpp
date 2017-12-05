@@ -50,6 +50,12 @@ namespace tr
     return;
   }
 
+  Space::~Space(void)
+  {
+    delete [] ref_Rig;
+    return;
+  }
+
   //## Загрузка в VBO (графическую память) данных отображаемых объектов 3D сцены
   void Space::space_load(void)
   {
@@ -82,61 +88,60 @@ namespace tr
   // TODO: должно быть заменено на загрузку пространства из базы данных
   //
     float s = 50.f;
-    float y;
-
-    //std::default_random_engine generator;
-    //std::normal_distribution<double> distribution(5.0, 2.0);
+    float y = 0.f;
 
     for (float x = 0.f - s; x < s; x += 1.f)
       for (float z = 0.f - s; z < s; z += 1.f)
-      {
-        //double r = distribution(generator);
-        y = 0.f;
-        //if( r > 8.0 ) y = 1.f;
-        //if(x == 49.f || x == -50.f || z == 49.f || z == -50.f)
-        //{
-        //  rigs_db.emplace(x, y      , z, 2);
-        //  rigs_db.emplace(x, y + 1.f, z, 2);
-        //  rigs_db.emplace(x, y + 2.f, z, 2);
-        //}
-        //else
-        //{
         rigs_db.emplace(x, y, z, 1);
-        //}
-      }
     return;
   }
 
-  //## размещение атрибутов инстанса в графическом буфере
-  // и запись индекса положения атрибутов VBO для последующей модификации
+  //## размещение атрибутов инстанса в графический буфер
   void Space::vbo_data_send(float x, float y, float z)
   {
+    // Через эту функцию производится запись данных в графический буфер
+    // как при первоначальной настройке сцены, так и при перемещениях
+    // камеры, когда производится запись индекса положения блока атрибутов в VBO
+    // для последующей модификации буфера
+    //
+    // Индексы размещенных в VBO данных, которые при перемещении камеры вышли
+    // за границу отображения, запоминаются в кэше (idx_ref), чтобы на их место
+    // записать данные точек, которые вошли в поле зрения с другой стороны.
+
     glBindVertexArray(vao_3d);
 
     GLfloat data[] = { x, y, z, 0.0f, 1.0f, 0.0f };
+    auto sizeof_data = sizeof(data);
     GLsizeiptr id;
 
+    // Если в кэше нет индексов, то дописываем данные в конец VBO
     if(idx_ref.empty())
     {
-      id = VBO_Inst.SubData(InstDataSize, data);
+      id = VBO_Inst.SubDataAppend(sizeof_data, data);
       ++count;
     }
-    else
-    {
+    else // если в кэше есть индекс освободившегося блока, то
+    {    // меняем данные по месту, на которое он указывает
       id = idx_ref.front(); idx_ref.pop_front();
-      VBO_Inst.SubData(InstDataSize, data, id);
+      VBO_Inst.SubDataUpdate(sizeof_data, data, id);
     }
-
-    auto refId = static_cast<size_t>(id/InstDataSize);
-    ref_Rig[refId] = rigs_db.get(x, y, z);
-    if(nullptr == ref_Rig[refId]) ERR("ERR: call post_key for empty space.");
-    else ref_Rig[refId]->idx.push_back(id);
-
     glBindVertexArray(0);
+
+    // запишем в Риг адрес, по которому в VBO записаны его данные
+    auto r = rigs_db.get(x, y, z);
+    #ifndef NDEBUG
+    if(nullptr == r) ERR("ERR: call post_key for empty space.");
+    #endif
+    r->idx.push_back(id);
+
+    // порядковым номером блока данных в VBO индексируем массив ссылок, в котором
+    // храним адреса расположеных там Rig-ов
+    ref_Rig[static_cast<size_t>(id/sizeof_data)] = r;
+
     return;
   }
 
-  //## Инициализировать VBO и заполнить данными
+  //## Инициализировать, настроить VBO и заполнить данными
   void Space::vbo_allocate_mem(void)
   {
     prog3d.attach_shaders(
@@ -165,13 +170,13 @@ namespace tr
       0.000f, 0.000f, 0.125f, 0.000f, 0.000f, 0.125f, 0.125f, 0.125f,
     };
 
-    // Создать буфер координат
+    // Создать буфер координат базового элемента
     VBO v0 {};
     v0.Allocate(3 * sizeof(float) * 4, arr_c3df);
     v0.Attrib
       (prog3d.attrib_location_get("C3df"), 3, GL_FLOAT, GL_FALSE, 0, nullptr);
 
-    // Создать буфер текстур
+    // Создать буфер текстур базового элемента
     VBO v1 {};
     v1.Allocate(2 * sizeof(float) * 4, arr_txco);
     v1.Attrib
@@ -188,6 +193,7 @@ namespace tr
     // В каждом блоке по инстансу, поэтому выделяем память под массив по числу блоков:
     VBO_Inst.Allocate(static_cast<GLsizeiptr>(n * stride));
 
+    // Резервирование массива под хранение ссылок
     auto reserved_size = static_cast<size_t>(n);
     ref_Rig = new Rig* [reserved_size];
 
@@ -412,9 +418,6 @@ namespace tr
     // она единичная и на положение элементов влияние не оказывает
     prog3d.use();   // включить шейдерную программу
     prog3d.set_uniform("mvp", MatProjection * MatView);
-    prog3d.set_uniform("HalfSide", rigs_db.gage/2);
-    // подсветка выбраного блока
-    // TODO: изменить на подсветку плоскости, а не объема
     prog3d.set_uniform("Selected", Selected);
   
     glBindVertexArray(vao_3d);

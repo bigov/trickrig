@@ -26,8 +26,8 @@ class VBO {
     void Attrib(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*);
     void AttribI(GLuint, GLint, GLenum, GLsizei, const GLvoid*);
     void Reduce(GLintptr, GLintptr, GLsizeiptr);
-    GLsizeiptr SubData(GLsizeiptr data_size, const GLvoid* data);
-    void SubData(GLsizeiptr, const GLvoid*, GLsizeiptr);
+    GLsizeiptr SubDataAppend(GLsizeiptr data_size, const GLvoid* data);
+    void SubDataUpdate(GLsizeiptr, const GLvoid*, GLsizeiptr);
     void Resize(GLsizeiptr size);
 };
 
