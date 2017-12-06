@@ -54,7 +54,7 @@ namespace tr
   //## Как-бы, дык типа ента...
   Space::~Space(void)
   {
-    delete [] ref_Rig;
+    delete [] visible_rigs;
     return;
   }
 
@@ -112,31 +112,36 @@ namespace tr
 
     GLfloat data[] = { x, y, z, 0.0f, 1.0f, 0.0f };
     auto sizeof_data = sizeof(data);
-    GLsizeiptr id;
+    GLsizeiptr offset;
 
     // Если в кэше нет индексов, то размещаем данные в конце VBO
     if(cashe_vbo_ptr.empty())
     {
-      id = VBO_Inst.SubDataAppend(sizeof_data, data);
+      offset = VBO_Inst.SubDataAppend(sizeof_data, data);
       ++count;
     }
-    else // если в кэше есть индекс блока вышеднего за границу
-    {    // отображения, то меняем данные по месту его размещения в VBO
-      id = cashe_vbo_ptr.front(); cashe_vbo_ptr.pop_front();
-      VBO_Inst.SubDataUpdate(sizeof_data, data, id);
+    else // если в кэше есть свободный индекс блока (вышеднего за границу
+    {    // отображения), то меняем данные по месту его размещения в VBO
+      offset = cashe_vbo_ptr.front();
+      cashe_vbo_ptr.pop_front();
+      VBO_Inst.SubDataUpdate(sizeof_data, data, offset);
     }
     glBindVertexArray(0);
 
-    // запишем в Риг адрес, по которому его данные записаны в VBO
     auto r = rigs_db0.get(x, y, z);
     #ifndef NDEBUG
     if(nullptr == r) ERR("ERR: call post_key for empty space.");
     #endif
-    r->idx.push_back(id);
+
+    // Запишем в Риг адрес смещения его данных в VBO. Это значение
+    // потребуется при замене блока данных после выхода за границу
+    // отображаемой области.
+
+    r->vbo_offset.push_back(offset);
 
     // порядковым номером блока данных в VBO индексируем массив ссылок, в котором
     // храним адреса расположеных там Rig-ов
-    ref_Rig[static_cast<size_t>(id/sizeof_data)] = r;
+    visible_rigs[static_cast<size_t>(offset/sizeof_data)] = r;
 
     return;
   }
@@ -195,7 +200,7 @@ namespace tr
 
     // Резервирование массива под хранение ссылок
     auto reserved_size = static_cast<size_t>(n);
-    ref_Rig = new Rig* [reserved_size];
+    visible_rigs = new Rig* [reserved_size];
 
     GLuint attrib = 0;
     GLvoid* pointer = nullptr;
@@ -233,7 +238,7 @@ namespace tr
       for(float y = -5.f; y <= 5.f; y += rigs_db0.gage)
       {
         r = rigs_db0.get(x, y, z);
-        if(nullptr != r) cashe_vbo_ptr.splice(cashe_vbo_ptr.end(), r->idx);
+        if(nullptr != r) cashe_vbo_ptr.splice(cashe_vbo_ptr.end(), r->vbo_offset);
       }
 
     x = VFx - space_f0_radius * direction;
@@ -265,7 +270,7 @@ namespace tr
       for(float y = -5.f; y <= 5.f; y += rigs_db0.gage)
       {
         r = rigs_db0.get(x, y, z);
-        if(nullptr != r) cashe_vbo_ptr.splice(cashe_vbo_ptr.end(), r->idx);
+        if(nullptr != r) cashe_vbo_ptr.splice(cashe_vbo_ptr.end(), r->vbo_offset);
       }
 
     z = VFz - space_f0_radius * direction;
@@ -285,6 +290,8 @@ namespace tr
   //## Перестроение границ активной области при перемещении камеры
   void Space::recalc_borders(void)
   {
+  // Функция вызвается при каждом изменении положения камеры.
+  //
   // - cобираем в кэш список адресов VBO по которым (были) расположены блоки
   //    атрибутов (старых) элементов, вышедшие за границу отображения.
   //
@@ -320,42 +327,53 @@ namespace tr
   //## Покадровое уменьшение счетчика для лишних инстансов
   void Space::reduce_keys(void)
   {
+  // Функция вызывается при наличии данных в cashe_vbo_ptr
   //
   // Когда после перемещения камеры в графическом буфере остаются
   // неиспользованные при перестроении новых границ элементы, на их место
   // перемещаем атрибуты рабочих инстансов из конца буфера, и уменьшаем
   // счетчик отображаемых элементов, отсекая отображение лишних.
   //
-    GLsizeiptr idSource = InstDataSize * (count - 1); // крайний индекс VBO_Int
+
+    // Выбираем  крайний по счетчику границы индекс в VBO
+    GLsizeiptr idSource = InstDataSize * (count - 1);
+
+    // Если он оказался в кэше освободившихся, то просто сдвигаем границу,
+    // уменьшая число элементов в счетчике и выходим,
+    auto refSize = cashe_vbo_ptr.size();
+    cashe_vbo_ptr.remove(idSource);
+    if ( (refSize - cashe_vbo_ptr.size()) > 0 )
+    {
+       cutback();
+       return;
+     }
     
-    // Если крайний индекс в кэше свободных - уменьшаем число элементов
-    auto refSize = cashe_vbo_ptr.size(); cashe_vbo_ptr.remove(idSource);
-    if ( (refSize - cashe_vbo_ptr.size()) > 0 ) { cutback(); return; }
-    
-    GLsizeiptr idTarget = cashe_vbo_ptr.front(); // индекс, куда перемещаем данные
+    // если нет, то выбираем из кэша первый свободный индекс (idTarget)
+    GLsizeiptr idTarget = cashe_vbo_ptr.front();
     cashe_vbo_ptr.pop_front();
 
-    // Перенос данных инстанса из конца VBO_Inst на свободное место
+    // и переносим блок данных из конца VBO (idSource) на место idTarget.
     VBO_Inst.Reduce(idSource, idTarget, InstDataSize);
     cutback();
     
     auto id_ref_Source = static_cast<size_t>(idSource / InstDataSize);
     auto id_ref_Target = static_cast<size_t>(idTarget / InstDataSize);
 
-    // Находим через массив ref_Rig активный риг и обновляем в его списке
+    // Находим через массив visible_rigs активный риг и обновляем в его списке
     // адрес инстанса, который был перемещен в VBO_Inst.
-    Rig* r = ref_Rig[id_ref_Source];
-    if(nullptr == r) ERR("Failure in ref_Rig[id_ref_Source]");
+    Rig* r = visible_rigs[id_ref_Source];
+    if(nullptr == r) ERR("Failure in visible_rigs[id_ref_Source]");
 
-    ref_Rig[id_ref_Source] = nullptr;
-    ref_Rig[id_ref_Target] = r;
+    visible_rigs[id_ref_Source] = nullptr;
+    visible_rigs[id_ref_Target] = r;
 
-    r->idx_update(idSource, idTarget);
+    r->vbo_offset.clear();
+    r->vbo_offset.push_back(idTarget);
 
     return;
   }
 
-  //## Декремент числа инстансов
+  //## Декремент числа блоков данных в VBO и сдвиг границы
   void Space::cutback(void)
   {
     --count;

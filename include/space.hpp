@@ -53,7 +53,7 @@ namespace tr
 
       // Массив ссылок на риги, отбражаемые на экране. Массив индексируется
       // поррядковыми номерами блоков данных в VBO_Inst
-      tr::Rig** ref_Rig = nullptr;
+      tr::Rig** visible_rigs = nullptr;
 
       // Размер группы атрибутов инстанса в буфере VBO_Inst = 3 координаты + 3 нормали
       GLsizeiptr InstDataSize = static_cast<GLsizeiptr>(6 * sizeof(GLfloat));

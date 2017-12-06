@@ -27,11 +27,10 @@ namespace tr
 
     short int type = 0; // тип элемента (текстура, поведение, физика и т.п)
     int time; // время создания
-    std::list<GLsizeiptr> idx {}; // смещение адреса блока в VBO
+    std::list<GLsizeiptr> vbo_offset {}; // смещение адреса блока в VBO
 
     Rig(): time(get_msec()) {}
     Rig(short t): type(t), time(get_msec()) {}
-    void idx_update(GLsizeiptr idSource, GLsizeiptr idTarget);
   };
 
   //## Клас для управления базой данных элементов пространства одного LOD.

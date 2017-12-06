@@ -12,18 +12,6 @@ namespace tr
   float yMin = -100.f;
   float yMax = 100.f;
 
-  // Замена указанного значения в списке
-  void Rig::idx_update(GLsizeiptr idSource, GLsizeiptr idTarget)
-  {
-    for(auto& id: idx)
-      if(id == idSource)
-      {
-        id = idTarget;
-        return;
-      }
-    return;
-  }
-
   //## Проверка наличия блока в заданных координатах
   bool Rigs::exist(float x, float y, float z)
   {
