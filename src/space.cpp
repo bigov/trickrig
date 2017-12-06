@@ -188,14 +188,10 @@ namespace tr
 
     // массив инстансов ----------------
 
-    // Количество байт на группу атрибутов (3 координаты + 3 нормали):
-    auto stride =  static_cast<GLsizei>(InstDataSize);
-
-    // число элементов в кубе равно кубу длины стороны:
-    auto n = pow(space_i0_length, 3);
-
-    // В каждом блоке по инстансу, поэтому выделяем память под массив по числу блоков:
-    VBO_Inst.Allocate(static_cast<GLsizeiptr>(n * stride));
+    // Число элементов в кубе равно кубу длины стороны, в каждом риге
+    // по одному элементу - поэтому выделяем память для VBO по числу блоков,
+    // умноженному на число байт в одном блоке данных:
+    VBO_Inst.Allocate(InstDataSize * pow(space_i0_length, 3));
 
     // Резервирование массива под хранение ссылок. Число элементов равно
     // числу Ригов в видимой зоне + 1 по каждой координате (под буфер кэша)
@@ -204,17 +200,17 @@ namespace tr
 
     GLuint attrib = 0;
     GLvoid* pointer = nullptr;
-    
+
     // 2.1 Центральная точка инстанса
     attrib = prog3d.attrib_location_get("Origin");
     pointer = nullptr;
-    VBO_Inst.Attrib(attrib, 3, GL_FLOAT, GL_FALSE, stride, pointer);
+    VBO_Inst.Attrib(attrib, 3, GL_FLOAT, GL_FALSE, InstDataSize, pointer);
     glVertexAttribDivisor(attrib, 1);
 
     // 2.2 Вектор нормали
     attrib = prog3d.attrib_location_get("Norm");
     pointer = reinterpret_cast<GLvoid*>(3 * sizeof(GLfloat));
-    VBO_Inst.Attrib(attrib, 3, GL_FLOAT, GL_FALSE, stride, pointer);
+    VBO_Inst.Attrib(attrib, 3, GL_FLOAT, GL_FALSE, InstDataSize, pointer);
     glVertexAttribDivisor(attrib, 1);
 
     glBindVertexArray(0);
@@ -335,7 +331,7 @@ namespace tr
   // счетчик отображаемых элементов, отсекая отображение лишних.
   //
 
-    // Выбираем  крайний по счетчику границы индекс в VBO
+    // Выбираем  крайний, по счетчику границы, индекс в VBO
     GLsizeiptr idSource = InstDataSize * (count - 1);
 
     // Если он оказался в кэше освободившихся, то просто сдвигаем границу,

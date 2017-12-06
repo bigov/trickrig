@@ -1,3 +1,4 @@
+==============================================================================
 
 ТЕСТ БЫСТРОДЕЙСТВИЯ
 ---------------------------------------------------------------------
@@ -7,7 +8,7 @@
 Переходная (поверхности) блочная версия: 429 (linux)
 
 
-========================================================================================
+==============================================================================
 
 Смена структуры базового элемента
 ---------------------------------
@@ -18,3 +19,74 @@
 
 В этот буфер помещается информация в виде блоков по 6 чисел на инстанс:
 координаты точки (из базы данных) + вектор нормали.
+
+==============================================================================
+                         С П Р А В К А
+------------------------------------------------------------------------------
+Построение поверхностей методом GL_TRIANGLE_STRIP:
+описание: http://www.learnopengles.com/android-lesson-eight-an-introduction-to-index-buffer-objects-ibos/
+алгоритм: https://stackoverflow.com/questions/5915753/generate-a-plane-with-triangle-strips
+реализация алгоритма:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+int width;
+int height;
+float* vertices = 0;
+int* indices = 0;
+
+int getVerticesCount( int width, int height ) {
+    return width * height * 3;
+}
+
+int getIndicesCount( int width, int height ) {
+    return (width*height) + (width-1)*(height-2);
+}
+
+float* getVertices( int width, int height ) {
+    if ( vertices ) return vertices;
+
+    vertices = new float[ getVerticesCount( width, height ) ];
+    int i = 0;
+
+    for ( int row=0; row<height; row++ ) {
+        for ( int col=0; col<width; col++ ) {
+            vertices[i++] = (float) col;
+            vertices[i++] = 0.0f;
+            vertices[i++] = (float) row;
+        }
+    }
+
+    return vertices;
+}
+
+int* getIndices( int width, int height ) {
+    if ( indices ) return indices;
+
+    indices = new int[ iSize ];
+    int i = 0;
+
+    for ( int row=0; row<height-1; row++ ) {
+        if ( (row&1)==0 ) { // even rows
+            for ( int col=0; col<width; col++ ) {
+                indices[i++] = col + row * width;
+                indices[i++] = col + (row+1) * width;
+            }
+        } else { // odd rows
+            for ( int col=width-1; col>0; col-- ) {
+                indices[i++] = col + (row+1) * width;
+                indices[i++] = col - 1 + + row * width;
+            }
+        }
+    }
+    if ( (mHeight&1) && mHeight>2 ) {
+        mpIndices[i++] = (mHeight-1) * mWidth;
+    }
+
+    return indices;
+}
+
+void render() {
+    glEnableClientState( GL_VERTEX_ARRAY );
+    glVertexPointer( 3, GL_FLOAT, 0, getVertices(width,height) );
+    glDrawElements( GL_TRIANGLE_STRIP, getIndicesCount(width,height), GL_UNSIGNED_INT, getIndices(width,height) );
+    glDisableClientState( GL_VERTEX_ARRAY );
+}

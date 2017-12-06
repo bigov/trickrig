@@ -55,7 +55,7 @@ namespace tr
       // поррядковыми номерами блоков данных в VBO_Inst
       tr::Rig** visible_rigs = nullptr;
 
-      // Размер группы атрибутов инстанса в буфере VBO_Inst = 3 координаты + 3 нормали
+      // Размер (в байтах) группы атрибутов в VBO = 3 координаты + 3 нормали
       GLsizeiptr InstDataSize = static_cast<GLsizeiptr>(6 * sizeof(GLfloat));
 
       int   space_i0_length = WIDTH_0;
