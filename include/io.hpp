@@ -23,7 +23,7 @@ namespace tr
   extern std::vector<char> get_txt_chars(const std::string &);
   extern int sh2int(short, short);
   extern void info(const std::string &);
-  extern int get_msec(void);
+  extern int get_msec(void);   // число миллисекунд от начала суток.
   extern int random_int(void);
   extern short random_short(void);
   inline float fround( float x) { return static_cast<float>(round(x)); }

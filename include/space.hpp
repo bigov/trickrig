@@ -44,12 +44,12 @@ namespace tr
       Space(const tr::Space&);
       Space operator=(const tr::Space&);
 
-      tr::Rigs rigs_db {};  // структура 3D пространства
-      tr::Glsl prog3d {};   // GLSL программа шейдеров
-      tr::VBO VBO_Inst {};  // VBO буфер атрибутов инстансов
+      tr::Rigs rigs_db0 {};  // структура 3D пространства LOD-0
+      tr::Glsl prog3d {};    // GLSL программа шейдеров
+      tr::VBO VBO_Inst {};   // VBO буфер атрибутов инстансов
 
       // Буфер обмена индексами из VBO_Inst
-      std::list<GLsizeiptr> idx_ref {};
+      std::list<GLsizeiptr> cashe_vbo_ptr {};
 
       // Массив ссылок на риги, отбражаемые на экране. Массив индексируется
       // поррядковыми номерами блоков данных в VBO_Inst
@@ -82,9 +82,10 @@ namespace tr
         ViewTo {},
         upward {0.0, 1.0, 0.0}; // направление наверх
 
-      void init(void);
+      void db_connect(void);
       void calc_position(const tr::evInput &);
-      void space_load(void);
+      void calc_selected_area(glm::vec3 & sight_direction);
+      void upload_vbo(void);
       void vbo_allocate_mem(void);
       void vbo_data_send(float, float, float);
       void recalc_borders(void);

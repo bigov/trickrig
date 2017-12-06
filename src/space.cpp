@@ -12,7 +12,8 @@ namespace tr
   //## Формирование 3D пространства
   Space::Space(void)
   {
-    init();
+    rigs_db0.gage = 1.0f; // размер стороны для ДЩВ
+    db_connect();
     vbo_allocate_mem();
 
     glClearColor(0.5f, 0.69f, 1.0f, 1.0f);
@@ -46,10 +47,11 @@ namespace tr
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    space_load();
+    upload_vbo();
     return;
   }
 
+  //## Как-бы, дык типа ента...
   Space::~Space(void)
   {
     delete [] ref_Rig;
@@ -57,12 +59,15 @@ namespace tr
   }
 
   //## Загрузка в VBO (графическую память) данных отображаемых объектов 3D сцены
-  void Space::space_load(void)
+  void Space::upload_vbo(void)
   {
-    f3d pt = rigs_db.search_down(ViewFrom); // ближайший блок снизу
+  // TODO: тут должны загружаться в графическую память все части LOD,
+  //       но пока загружается только нулевой уровень
+
+    f3d pt = rigs_db0.search_down(ViewFrom); // ближайший к камере снизу блок
     MoveFrom = {pt.x, pt.y, pt.z};
 
-    float
+    float // границы нулевого уровеня LOD
       xMax = pt.x + space_f0_radius,
       yMax = pt.y + space_f0_radius,
       zMax = pt.z + space_f0_radius,
@@ -71,39 +76,34 @@ namespace tr
       zMin = pt.z - space_f0_radius;
 
     // Загрузить в графический буфер атрибуты элементов
-    for(float x = xMin; x<= xMax; x += rigs_db.gage)
-    for(float y = yMin; y<= yMax; y += rigs_db.gage)
-    for(float z = zMin; z<= zMax; z += rigs_db.gage)
-      if(rigs_db.exist(x, y, z)) vbo_data_send(x, y, z);
+    for(float x = xMin; x<= xMax; x += rigs_db0.gage)
+    for(float y = yMin; y<= yMax; y += rigs_db0.gage)
+    for(float z = zMin; z<= zMax; z += rigs_db0.gage)
+      if(rigs_db0.exist(x, y, z)) vbo_data_send(x, y, z);
 
     glDisable(GL_CULL_FACE); // включить отображение обратных поверхностей
 
     return;
   }
 
-  //## Генерация элементов виртуального 3D пространства
-  void Space::init(void)
+  //## Соединение с БД, в которой хранится виртуальное 3D пространство
+  void Space::db_connect(void)
   {
-  //
-  // TODO: должно быть заменено на загрузку пространства из базы данных
-  //
+  // TODO: должно быть заменено на подключение к базе данных пространства,
+  // а пока имитируем небольшую (100х100) базу данных структурой "rigs_db"
     float s = 50.f;
     float y = 0.f;
+    short block_type = 1;
 
     for (float x = 0.f - s; x < s; x += 1.f)
       for (float z = 0.f - s; z < s; z += 1.f)
-        rigs_db.emplace(x, y, z, 1);
+        rigs_db0.emplace(x, y, z, block_type);
     return;
   }
 
-  //## размещение атрибутов инстанса в графический буфер
+  //## запись данных в графический буфер
   void Space::vbo_data_send(float x, float y, float z)
   {
-    // Через эту функцию производится запись данных в графический буфер
-    // как при первоначальной настройке сцены, так и при перемещениях
-    // камеры, когда производится запись индекса положения блока атрибутов в VBO
-    // для последующей модификации буфера
-    //
     // Индексы размещенных в VBO данных, которые при перемещении камеры вышли
     // за границу отображения, запоминаются в кэше (idx_ref), чтобы на их место
     // записать данные точек, которые вошли в поле зрения с другой стороны.
@@ -114,21 +114,21 @@ namespace tr
     auto sizeof_data = sizeof(data);
     GLsizeiptr id;
 
-    // Если в кэше нет индексов, то дописываем данные в конец VBO
-    if(idx_ref.empty())
+    // Если в кэше нет индексов, то размещаем данные в конце VBO
+    if(cashe_vbo_ptr.empty())
     {
       id = VBO_Inst.SubDataAppend(sizeof_data, data);
       ++count;
     }
-    else // если в кэше есть индекс освободившегося блока, то
-    {    // меняем данные по месту, на которое он указывает
-      id = idx_ref.front(); idx_ref.pop_front();
+    else // если в кэше есть индекс блока вышеднего за границу
+    {    // отображения, то меняем данные по месту его размещения в VBO
+      id = cashe_vbo_ptr.front(); cashe_vbo_ptr.pop_front();
       VBO_Inst.SubDataUpdate(sizeof_data, data, id);
     }
     glBindVertexArray(0);
 
-    // запишем в Риг адрес, по которому в VBO записаны его данные
-    auto r = rigs_db.get(x, y, z);
+    // запишем в Риг адрес, по которому его данные записаны в VBO
+    auto r = rigs_db0.get(x, y, z);
     #ifndef NDEBUG
     if(nullptr == r) ERR("ERR: call post_key for empty space.");
     #endif
@@ -218,20 +218,22 @@ namespace tr
     return;
   }
 
-  //## Перестроение границ области по оси X
+  //## Построение границы области по оси X по ходу движения
   void Space::recalc_border_x(float direction, float VFx, float VFz)
   {
+    // TODO: ВНИМАНИЕ! проверяется только 10 уровней Y
+    //       надо добавить перестроение всего слоя на rigs_db.gage по Y
     Rig* r;
     float x = MoveFrom.x + space_f0_radius * direction;
     float Min = MoveFrom.z - space_f0_radius;
     float Max = MoveFrom.z + space_f0_radius;
     
-    // Сбор индексов VBO_Inst по оси X с удаляемой линии границы области
-    for(float z = Min; z <= Max; z += rigs_db.gage)
-      for(float y = -5.f; y <= 5.f; y += rigs_db.gage)
+    // Сбор индексов VBO по оси X с удаляемой линии границы области
+    for(float z = Min; z <= Max; z += rigs_db0.gage)
+      for(float y = -5.f; y <= 5.f; y += rigs_db0.gage)
       {
-        r = rigs_db.get(x, y, z);
-        if(nullptr != r) idx_ref.splice(idx_ref.end(), r->idx);
+        r = rigs_db0.get(x, y, z);
+        if(nullptr != r) cashe_vbo_ptr.splice(cashe_vbo_ptr.end(), r->idx);
       }
 
     x = VFx - space_f0_radius * direction;
@@ -239,29 +241,31 @@ namespace tr
     Max = VFz + space_f0_radius;
 
     // Построение линии по оси X по направлению движения
-    for(float z = Min; z <= Max; z += rigs_db.gage)
-      for(float y = -5.f; y <= 5.f; y += rigs_db.gage)
-        if(rigs_db.exist(x, y, z))
+    for(float z = Min; z <= Max; z += rigs_db0.gage)
+      for(float y = -5.f; y <= 5.f; y += rigs_db0.gage)
+        if(rigs_db0.exist(x, y, z))
           vbo_data_send(fround(x), fround(y), fround(z));
     
     MoveFrom.x = VFx;
     return;
   }
 
-  //## Перестроение границ области по оси Z
+  //## Построение границы области по оси Z по ходу движения
   void Space::recalc_border_z(float direction, float VFx, float VFz)
   {
+    // TODO: ВНИМАНИЕ! проверяется только 10 уровней Y
+    //       надо добавить перестроение всего слоя на rigs_db.gage по Y
     Rig* r;
     float z = MoveFrom.z + space_f0_radius * direction;
     float Min = MoveFrom.x - space_f0_radius;
     float Max = MoveFrom.x + space_f0_radius;
 
-    // Сбор индексов VBO_Inst по оси Z с удаляемой линии границы области
-    for(float x = Min; x <= Max; x += rigs_db.gage)
-      for(float y = -5.f; y <= 5.f; y += rigs_db.gage)
+    // Сбор индексов VBO по оси Z с удаляемой линии границы области
+    for(float x = Min; x <= Max; x += rigs_db0.gage)
+      for(float y = -5.f; y <= 5.f; y += rigs_db0.gage)
       {
-        r = rigs_db.get(x, y, z);
-        if(nullptr != r) idx_ref.splice(idx_ref.end(), r->idx);
+        r = rigs_db0.get(x, y, z);
+        if(nullptr != r) cashe_vbo_ptr.splice(cashe_vbo_ptr.end(), r->idx);
       }
 
     z = VFz - space_f0_radius * direction;
@@ -269,9 +273,9 @@ namespace tr
     Max = VFx + space_f0_radius;
 
     // Построение линии по оси Z по направлению движения
-    for(float x = Min; x <= Max; x += rigs_db.gage)
-      for(float y = -5.f; y <= 5.f; y += rigs_db.gage)
-        if(rigs_db.exist(x, y, z))
+    for(float x = Min; x <= Max; x += rigs_db0.gage)
+      for(float y = -5.f; y <= 5.f; y += rigs_db0.gage)
+        if(rigs_db0.exist(x, y, z))
           vbo_data_send(fround(x), fround(y), fround(z));
       
     MoveFrom.z = VFz;
@@ -281,33 +285,35 @@ namespace tr
   //## Перестроение границ активной области при перемещении камеры
   void Space::recalc_borders(void)
   {
+  // - cобираем в кэш список адресов VBO по которым (были) расположены блоки
+  //    атрибутов (старых) элементов, вышедшие за границу отображения.
   //
-  // - cобираем список смещений атрибутов в VBO_Inst для элементов,
-  //   которые вышли за границу отображения.
+  // - атрибуты новых элементов, которые следует добавить в сцену, заносим
+  //   в VBO на места старых, перезаписывая их данные.
   //
-  // - атрибуты новых инстансов, которые следует добавить в сцену, пишем
-  //   в графический буфер на их места, перезаписывая старые данные.
+  // - если новых элементов оказалось больше, то дописываем их в конец буфера.
   //
-  // - если новых инстансов оказалось больше, то дописываем их в конец.
+  // - если меньше, то пока весь кэш не очистится, на освободившееся место
+  //   переносим данные из конца буфера и сдвигаем границу отображения, отсекая
+  //   отрисовку лишних элементов
   //
-  // - если меньше, то на место свободных переносим данные из конца и
-  //   передвигаем границу счетчика, отсекая лишние.
-  //
+  // - За границей конца буфера следит счетчик числа отображаемых элементов
+
     float
       VFx = fround(ViewFrom.x),
       VFz = fround(ViewFrom.z),
-      dx = MoveFrom.x - VFx,
-      dz = MoveFrom.z - VFz;
+      dx = MoveFrom.x - VFx, // смещение камеры по оси x
+      dz = MoveFrom.z - VFz; // смещение камеры по оси z
   
     float
       abs_dx = static_cast<float>(fabs(dx)),
       abs_dz = static_cast<float>(fabs(dz));
 
-    if (abs_dx >= rigs_db.gage) recalc_border_x(dx / abs_dx, VFx, VFz);
-    if (abs_dz >= rigs_db.gage) recalc_border_z(dz / abs_dz, VFx, VFz);
+    if (abs_dx >= rigs_db0.gage) recalc_border_x(dx / abs_dx, VFx, VFz);
+    if (abs_dz >= rigs_db0.gage) recalc_border_z(dz / abs_dz, VFx, VFz);
     
     // Очистка неиспользованных элементов
-    if( 0 != idx_ref.size() ) reduce_keys();
+    if( 0 != cashe_vbo_ptr.size() ) reduce_keys();
     return;
   }
 
@@ -323,11 +329,11 @@ namespace tr
     GLsizeiptr idSource = InstDataSize * (count - 1); // крайний индекс VBO_Int
     
     // Если крайний индекс в кэше свободных - уменьшаем число элементов
-    auto refSize = idx_ref.size(); idx_ref.remove(idSource);
-    if ( (refSize - idx_ref.size()) > 0 ) { cutback(); return; }
+    auto refSize = cashe_vbo_ptr.size(); cashe_vbo_ptr.remove(idSource);
+    if ( (refSize - cashe_vbo_ptr.size()) > 0 ) { cutback(); return; }
     
-    GLsizeiptr idTarget = idx_ref.front(); // индекс, куда перемещаем данные
-    idx_ref.pop_front();
+    GLsizeiptr idTarget = cashe_vbo_ptr.front(); // индекс, куда перемещаем данные
+    cashe_vbo_ptr.pop_front();
 
     // Перенос данных инстанса из конца VBO_Inst на свободное место
     VBO_Inst.Reduce(idSource, idTarget, InstDataSize);
@@ -386,12 +392,27 @@ namespace tr
     ViewFrom += glm::vec3(fb *_ca + rl*sin(look_a - pi), ud,  fb*_sa + rl*_ca);
     ViewTo = ViewFrom + LookDir;
 
-    // Координаты блока на который направлена камера
+    // Расчет матрицы вида
+    MatView = glm::lookAt(ViewFrom, ViewTo, upward);
+
+    calc_selected_area(LookDir);
+    recalc_borders();
+    return;
+  }
+
+  //## Расчет координат ближнего блока, на который направлен взгляд
+  void Space::calc_selected_area(glm::vec3 & s_dir)
+  {
+  // временно отключено
+     Selected = ViewFrom - s_dir;
+     return;
+
+  // ----------------------- отключено -----------------------------
     Selected = ViewTo;
-    glm::vec3 check_step = { LookDir.x/8.f, LookDir.y/8.f, LookDir.z/8.f };
+    glm::vec3 check_step = { s_dir.x/8.f, s_dir.y/8.f, s_dir.z/8.f };
     for(int i = 0; i < 24; ++i)
     {
-      if(rigs_db.exist(Selected.x, Selected.y, Selected.z))
+      if(rigs_db0.exist(Selected.x, Selected.y, Selected.z))
       {
         Selected.x = fround(Selected.x);
         Selected.y = fround(Selected.y);
@@ -401,21 +422,17 @@ namespace tr
       Selected += check_step;
     }
 
-    // Расчет матрицы вида
-    MatView = glm::lookAt(ViewFrom, ViewTo, upward);
-
-    recalc_borders();
     return;
   }
-
 
   //## Функция, вызываемая из цикла окна для рендера сцены
   void Space::draw(const evInput & ev)
   {
-    calc_position(ev);
-
     // Матрицу модели в расчетах не используем, так как
     // она единичная и на положение элементов влияние не оказывает
+
+    calc_position(ev);
+
     prog3d.use();   // включить шейдерную программу
     prog3d.set_uniform("mvp", MatProjection * MatView);
     prog3d.set_uniform("Selected", Selected);

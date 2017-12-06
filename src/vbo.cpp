@@ -10,7 +10,6 @@
 namespace tr
 {
   //## Настройка границы контроля данных буфера
-  //
   void VBO::Resize(GLsizeiptr new_size)
   {
     if(new_size == size) return;
@@ -20,9 +19,7 @@ namespace tr
     return;
   }
 
-
   //## Cоздание нового буфера указанного в параметре рамера
-  //    
   void VBO::Allocate(GLsizeiptr al)
   {
     if(0 != id) ERR("ERROR: trying to re-init VBO");
@@ -43,7 +40,6 @@ namespace tr
   }
 
   //## Cоздание и заполнение буфера с указанным в параметрах данными
-  //    
   void VBO::Allocate(GLsizeiptr al, const GLvoid* data)
   {
     if(0 != id) ERR("ERROR: trying to re-init VBO");
@@ -64,7 +60,6 @@ namespace tr
   }
 
   //## Настройка атрибутов для float
-  //
   void VBO::Attrib(GLuint index, GLint d_size, GLenum type, GLboolean normalized,
     GLsizei stride, const GLvoid* pointer)
   {
@@ -76,7 +71,6 @@ namespace tr
   }
 
   //## Настройка атрибутов для int
-  //
   void VBO::AttribI(GLuint index, GLint d_size, GLenum type,
     GLsizei stride, const GLvoid* pointer)
   {

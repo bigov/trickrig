@@ -79,12 +79,12 @@ namespace tr
   }
 
   //## Вставка нового элемента в базу данных
-  void Rigs::emplace(float x, float y, float z, short t)
+  void Rigs::emplace(float x, float y, float z, short rig_type)
   {
     if (emplace_complete) ERR("Rigs emplaced is closed now.");
     // новые точки создаются только в местах без дробной части
     f3d point {fround(x), fround(y), fround(z)};
-    db[point] = {t};
+    db[point] = {rig_type};
     return;
   }
 

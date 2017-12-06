@@ -10,19 +10,16 @@
 
 namespace tr
 {
-  ////////
-  // Для обеспечения работы контейнера map c ключем f2d
-  // 
+
+  //## Для обеспечения работы контейнера map c ключем f2d
   bool operator< (f2d const& left, f2d const& right)
   {
     if (left.x != right.x) return left.x < right.x;
     else return left.z < right.z;
   }
 
-  ////////
-  // Для обеспечения работы контейнера map c ключем 3d
-  // 
 
+  //## Для обеспечения работы контейнера map c ключем 3d
   bool operator< (f3d const& left, f3d const& right)
   {
     if (left.x != right.x)      {return left.x < right.x;}
@@ -37,9 +34,7 @@ namespace tr
     else                        {return left.z < right.z;}
   }
 
-  ////////
-  // Генератор случайных положительных int
-  //
+  //## Генератор случайных положительных int
   int random_int()
   {
     std::srand(static_cast<unsigned>(std::time(nullptr)));
@@ -47,7 +42,6 @@ namespace tr
   }
 
   //## Генератор случайных положительных short
-  //
   short random_short()
   {
     return
@@ -55,7 +49,6 @@ namespace tr
   }
 
   //## Вычисляет число миллисекунд от начала суток
-  //
   int get_msec(void)
   {
     std::chrono::milliseconds ms =
@@ -66,7 +59,6 @@ namespace tr
   }
 
   //## Чтение файла в формате PNG
-  //
   pngImg get_png_img(const std::string & f_n)
   {
     const char * filename = f_n.c_str();
