@@ -12,7 +12,7 @@ namespace tr
   //## Формирование 3D пространства
   Space::Space(void)
   {
-    rigs_db0.gage = 1.0f; // размер стороны для ДЩВ
+    rigs_db0.gage = 1.0f; // размер стороны для LOD-0
     db_connect();
     vbo_allocate_mem();
 
@@ -136,8 +136,7 @@ namespace tr
     // Запишем в Риг адрес смещения его данных в VBO. Это значение
     // потребуется при замене блока данных после выхода за границу
     // отображаемой области.
-
-    r->vbo_offset.push_back(offset);
+    r->vbo_offset = offset;
 
     // порядковым номером блока данных в VBO индексируем массив ссылок, в котором
     // храним адреса расположеных там Rig-ов
@@ -198,8 +197,9 @@ namespace tr
     // В каждом блоке по инстансу, поэтому выделяем память под массив по числу блоков:
     VBO_Inst.Allocate(static_cast<GLsizeiptr>(n * stride));
 
-    // Резервирование массива под хранение ссылок
-    auto reserved_size = static_cast<size_t>(n);
+    // Резервирование массива под хранение ссылок. Число элементов равно
+    // числу Ригов в видимой зоне + 1 по каждой координате (под буфер кэша)
+    auto reserved_size = static_cast<size_t>(pow(space_i0_length + 1, 3));
     visible_rigs = new Rig* [reserved_size];
 
     GLuint attrib = 0;
@@ -238,7 +238,7 @@ namespace tr
       for(float y = -5.f; y <= 5.f; y += rigs_db0.gage)
       {
         r = rigs_db0.get(x, y, z);
-        if(nullptr != r) cashe_vbo_ptr.splice(cashe_vbo_ptr.end(), r->vbo_offset);
+        if(nullptr != r) cashe_vbo_ptr.push_back(r->vbo_offset);
       }
 
     x = VFx - space_f0_radius * direction;
@@ -270,7 +270,7 @@ namespace tr
       for(float y = -5.f; y <= 5.f; y += rigs_db0.gage)
       {
         r = rigs_db0.get(x, y, z);
-        if(nullptr != r) cashe_vbo_ptr.splice(cashe_vbo_ptr.end(), r->vbo_offset);
+        if(nullptr != r) cashe_vbo_ptr.push_back(r->vbo_offset);
       }
 
     z = VFz - space_f0_radius * direction;
@@ -367,8 +367,7 @@ namespace tr
     visible_rigs[id_ref_Source] = nullptr;
     visible_rigs[id_ref_Target] = r;
 
-    r->vbo_offset.clear();
-    r->vbo_offset.push_back(idTarget);
+    r->vbo_offset = idTarget;
 
     return;
   }

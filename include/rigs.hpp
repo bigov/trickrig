@@ -27,7 +27,7 @@ namespace tr
 
     short int type = 0; // тип элемента (текстура, поведение, физика и т.п)
     int time; // время создания
-    std::list<GLsizeiptr> vbo_offset {}; // смещение адреса блока в VBO
+    GLsizeiptr vbo_offset = 0; // смещение адреса блока в VBO
 
     Rig(): time(get_msec()) {}
     Rig(short t): type(t), time(get_msec()) {}
