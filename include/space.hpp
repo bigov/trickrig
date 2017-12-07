@@ -44,9 +44,10 @@ namespace tr
       Space(const tr::Space&);
       Space operator=(const tr::Space&);
 
-      tr::Rigs rigs_db0 {};  // структура 3D пространства LOD-0
-      tr::Glsl prog3d {};    // GLSL программа шейдеров
-      tr::VBO VBO_Inst {};   // VBO буфер атрибутов инстансов
+      tr::Rigs RigsDb0 {};  // структура 3D пространства LOD-0
+      tr::Glsl Prog3d {};   // GLSL программа шейдеров
+      tr::VBO VBOsurf {};   // VBO буфер атрибутов вершин поверхности
+      GLuint VBOidx = 0;    // индексный буфер
 
       // Буфер обмена индексами из VBO_Inst
       std::list<GLsizeiptr> cashe_vbo_ptr {};
@@ -55,17 +56,19 @@ namespace tr
       // поррядковыми номерами блоков данных в VBO_Inst
       tr::Rig** visible_rigs = nullptr;
 
-      // Размер (в байтах) группы атрибутов в VBO = 3 координаты + 3 нормали
-      GLsizeiptr InstDataSize = static_cast<GLsizeiptr>(6 * sizeof(GLfloat));
+      // 14 чисел float (4 координаты + 4 нормаль + 4 цвет + 2 текстура)
+      GLsizeiptr BytesByVertex = static_cast<GLsizeiptr>(14 * sizeof(GLfloat));
+      // Размер (в байтах) группы атрибутов четырехугольника в VBO:
+      GLsizeiptr BytesByQuad = 4 * BytesByVertex;
 
       int   space_i0_length = WIDTH_0;
       int   space_i0_radius = WIDTH_0/2;
       float space_f0_length = static_cast<float>(space_i0_length);
       float space_f0_radius = static_cast<float>(space_i0_radius);
 
-      GLuint vao_3d = 0; // ID VAO
+      GLuint space_vao = 0; // ID VAO
       GLuint m_textureObj = 0;
-      GLsizei count = 0; // число отображаемых в сцене инстансов
+      GLsizei count = 0; // число отображаемых вершин
 
       float
         rl=0.f, ud=0.f, fb=0.f, // скорость движения по направлениям

@@ -19,7 +19,7 @@ namespace tr
     return;
   }
 
-  //## Cоздание нового буфера указанного в параметре рамера
+  //## Cоздание нового буфера указанного в параметре размера
   void VBO::Allocate(GLsizeiptr al)
   {
     if(0 != id) ERR("ERROR: trying to re-init VBO");
