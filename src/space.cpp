@@ -127,8 +127,8 @@ namespace tr
       x+x3, y+y3, z+z3, 1.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u3, v3,
     };
 
-    GLuint idx[] = { 0, 1, 2, 2, 3, 0 };
-    auto num_idx = sizeof(idx);
+    GLsizei idx[] = { 0 + count, 1 + count, 2 + count, 2 + count, 3 + count, 0 + count };
+    auto sizeof_idx = sizeof(idx);
 
     glBindVertexArray(space_vao);
     auto sizeof_data = sizeof(data);
@@ -151,8 +151,9 @@ namespace tr
 
     VBOsurf.SubDataAppend(sizeof_data, data);
 
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, count, num_idx, idx);
-    count += num_idx;
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, count, sizeof_idx, idx);
+    count += sizeof_idx;
+    std::cout << count << "\n";
 
     glBindVertexArray(0);
 
