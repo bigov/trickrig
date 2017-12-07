@@ -63,7 +63,7 @@ namespace tr
   {
   // TODO: тут должны загружаться в графическую память все части LOD,
   //       но пока загружается только нулевой уровень
-
+    /*
     f3d pt = RigsDb0.search_down(ViewFrom); // ближайший к камере снизу блок
     MoveFrom = {pt.x, pt.y, pt.z};
 
@@ -80,6 +80,13 @@ namespace tr
     for(float y = yMin; y<= yMax; y += RigsDb0.gage)
     for(float z = zMin; z<= zMax; z += RigsDb0.gage)
       if(RigsDb0.exist(x, y, z)) vbo_data_send(x, y, z);
+  */
+    //float x = 0.f;
+    //for(x = -2.0f; x < 3.0f; x += 1.0f)
+    //  for(float z = -2.0f; z < 3.0f; z += 1.0f)
+
+    vbo_data_send(0.0f, 0.0f, 0.0f);
+    vbo_data_send(1.0f, 0.25f, 0.0f);
 
     glDisable(GL_CULL_FACE); // включить отображение обратных поверхностей
 
@@ -126,12 +133,10 @@ namespace tr
       x+x2, y+y2, z+z2, 1.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u2, v2,
       x+x3, y+y3, z+z3, 1.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u3, v3,
     };
-
-    GLsizei idx[] = { 0 + count, 1 + count, 2 + count, 2 + count, 3 + count, 0 + count };
-    auto sizeof_idx = sizeof(idx);
+    auto sizeof_data     = sizeof(data);
+    auto sizeof_quad_idx = sizeof(quad_idx);
 
     glBindVertexArray(space_vao);
-    auto sizeof_data = sizeof(data);
 
     /*
     GLsizeiptr offset;
@@ -151,16 +156,22 @@ namespace tr
 
     VBOsurf.SubDataAppend(sizeof_data, data);
 
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, count, sizeof_idx, idx);
-    count += sizeof_idx;
-    std::cout << count << "\n";
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, count, sizeof_quad_idx, quad_idx);
+
+    count += sizeof_quad_idx;
+    for (auto i = 0; i < 6; ++i) quad_idx[i] += 4;
+
+
+    //std::cout << count << "\n";
 
     glBindVertexArray(0);
 
+    /*
     auto r = RigsDb0.get(x, y, z);
     #ifndef NDEBUG
     if(nullptr == r) ERR("ERR: call post_key for empty space.");
     #endif
+    */
 
     // Запишем в Риг адрес смещения его данных в VBO. Это значение
     // потребуется при замене блока данных после выхода за границу
@@ -459,7 +470,7 @@ namespace tr
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, NULL);
+    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, NULL);
 
     glBindVertexArray(0);
   

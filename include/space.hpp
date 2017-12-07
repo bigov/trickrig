@@ -69,17 +69,19 @@ namespace tr
       GLuint space_vao = 0; // ID VAO
       GLuint m_textureObj = 0;
       GLsizei count = 0; // число отображаемых вершин
+      GLsizei quad_idx[6] = { 0, 1, 2, 2, 3, 0 }; // индекс вершин для построения четырехугольника
 
       float
         rl=0.f, ud=0.f, fb=0.f, // скорость движения по направлениям
         look_a = 3.928f,        // азимут (0 - X)
-        look_t = -0.276f,       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
+        //look_t = -0.276f,       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
+        look_t = -1.7f,       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
         k_sense = 4.0f,         // TODO: чувствительность через Config
         k_mouse = 0.002f;
 
       glm::mat4 MatView {};
       glm::vec3
-        ViewFrom {3.f, 4.f, 3.f},
+        ViewFrom {0.f, 14.f, 0.f},
         Selected {},
         MoveFrom {},
         ViewTo {},
