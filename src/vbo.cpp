@@ -10,52 +10,52 @@
 namespace tr
 {
   //## Настройка границы контроля данных буфера
-  void VBO::Resize(GLsizeiptr new_size)
+  void VBO::Resize(GLsizeiptr new_hem)
   {
-    if(new_size == size) return;
-    if(new_size < 0) ERR("VBO: negative value of new size");
-    if(new_size > allocated) ERR("VBO: overfolw value of new size");
-    size = new_size;
+    if(new_hem == hem) return;
+    if(new_hem < 0) ERR("VBO: negative value of new size");
+    if(new_hem > allocated) ERR("VBO: overfolw value of new size");
+    hem = new_hem;
     return;
   }
 
   //## Cоздание нового буфера указанного в параметре размера
   void VBO::Allocate(GLsizeiptr al)
   {
-    if(0 != id) ERR("ERROR: trying to re-init VBO");
+    if(0 != id) ERR("VBO::Allocate trying to re-init exist object.");
     allocated = al;
     glGenBuffers(1, &id);
-    glBindBuffer(GL_ARRAY_BUFFER, id);
-    glBufferData(GL_ARRAY_BUFFER, allocated, 0, GL_STATIC_DRAW);
+    glBindBuffer(gl_buffer_type, id);
+    glBufferData(gl_buffer_type, allocated, 0, GL_STATIC_DRAW);
 
     #ifndef NDEBUG //--контроль создания буфера--------------------------------
     GLint d_size = 0;
-    glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &d_size);
+    glGetBufferParameteriv(gl_buffer_type, GL_BUFFER_SIZE, &d_size);
     assert(allocated == d_size);
     #endif //------------------------------------------------------------------
     
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    size = 0;
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, 0);
+    hem = 0;
     return;
   }
 
   //## Cоздание и заполнение буфера с указанным в параметрах данными
   void VBO::Allocate(GLsizeiptr al, const GLvoid* data)
   {
-    if(0 != id) ERR("ERROR: trying to re-init VBO");
+    if(0 != id) ERR("VBO::Allocate trying to re-init exist object.");
     allocated = al;
     glGenBuffers(1, &id);
-    glBindBuffer(GL_ARRAY_BUFFER, id);
-    glBufferData(GL_ARRAY_BUFFER, allocated, data, GL_STATIC_DRAW);
+    glBindBuffer(gl_buffer_type, id);
+    glBufferData(gl_buffer_type, allocated, data, GL_STATIC_DRAW);
 
     #ifndef NDEBUG //--контроль создания буфера--------------------------------
     GLint d_size = 0;
-    glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &d_size);
+    glGetBufferParameteriv(gl_buffer_type, GL_BUFFER_SIZE, &d_size);
     assert(allocated == d_size);
     #endif //------------------------------------------------------------------
     
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    size = al;
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, 0);
+    hem = al;
     return;
   }
 
@@ -64,9 +64,9 @@ namespace tr
     GLsizei stride, const GLvoid* pointer)
   {
     glEnableVertexAttribArray(index);
-    glBindBuffer(GL_ARRAY_BUFFER, id);
+    glBindBuffer(gl_buffer_type, id);
     glVertexAttribPointer(index, d_size, type, normalized, stride, pointer);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(gl_buffer_type, 0);
     return;
   }
 
@@ -75,9 +75,9 @@ namespace tr
     GLsizei stride, const GLvoid* pointer)
   {
     glEnableVertexAttribArray(index);
-    glBindBuffer(GL_ARRAY_BUFFER, id);
+    glBindBuffer(gl_buffer_type, id);
     glVertexAttribIPointer(index, d_size, type, stride, pointer);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(gl_buffer_type, 0);
     return;
   }
 
@@ -85,30 +85,33 @@ namespace tr
   // в неиспользуемый промежуток и уменьшение текущего индекса
   void VBO::Reduce(GLintptr src, GLintptr dst, GLsizeiptr d_size)
   {
-    //return;
-    glBindBuffer(GL_ARRAY_BUFFER, id);
-    glCopyBufferSubData(GL_ARRAY_BUFFER, GL_ARRAY_BUFFER, src, dst, d_size);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    size -= d_size;
+    #ifndef NDEBUG // контроль точки переноса
+      if(dst > (src - d_size)) ERR("VBO::Reduce got err dst");
+    #endif
+
+    glBindBuffer(gl_buffer_type, id);
+    glCopyBufferSubData(gl_buffer_type, gl_buffer_type, src, dst, d_size);
+    glBindBuffer(gl_buffer_type, 0);
+    hem -= d_size;
     return;
   }
 
   //## Внесение данных с контролем границы максимально выделенного размера буфера
   GLsizeiptr VBO::SubDataAppend(GLsizeiptr d_size, const GLvoid* data)
   {
-    // вносим данные в буфер по указателю конца блока (size), возвращаем положение
-    // указателя по которому разместили данные и увеличиваем значение указателя на
-    // размер внесенных данных для последующего использования
+  /* вносим данные в буфер по указателю конца блока (size), возвращаем положение
+   * указателя по которому разместили данные и увеличиваем значение указателя на
+   * размер внесенных данных для последующего использования */
 
-    #ifndef NDEBUG //--проверка свободного места в буфере----------------------
-    if ((allocated - size) < d_size) ERR("FAILURE: VBO is overflow");
+    #ifndef NDEBUG
+      if((allocated - hem) < d_size) ERR("VBO::SubDataAppend got overflow buffer");
     #endif //------------------------------------------------------------------
 
-    glBindBuffer(GL_ARRAY_BUFFER, id);
-    glBufferSubData(GL_ARRAY_BUFFER, size, d_size, data);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    GLsizeiptr res = size;
-    size += d_size;
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, id);
+    glBufferSubData(gl_buffer_type, hem, d_size, data);
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, 0);
+    GLsizeiptr res = hem;
+    hem += d_size;
     return res;
   }
 
@@ -116,13 +119,13 @@ namespace tr
   void VBO::SubDataUpdate(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr idx)
   {
     #ifndef NDEBUG //--проверка свободного места в буфере----------------------
-    if (idx > (size - d_size)) ERR("VBO: bad index for update attrib group");
-    if ((allocated - size) < d_size) ERR("FAILURE: VBO is overflow");
+    if (idx > (hem - d_size)) ERR("VBO::SubDataUpdate got bad index for update attrib group");
+    if ((allocated - hem) < d_size) ERR("VBO::SubDataUpdate overflow buffer");
     #endif //------------------------------------------------------------------
 
-    glBindBuffer(GL_ARRAY_BUFFER, id);
-    glBufferSubData(GL_ARRAY_BUFFER, idx, d_size, data);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(gl_buffer_type, id);
+    glBufferSubData(gl_buffer_type, idx, d_size, data);
+    glBindBuffer(gl_buffer_type, 0);
     return;
   }
 

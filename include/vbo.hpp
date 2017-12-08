@@ -16,11 +16,13 @@ namespace tr {
 class VBO {
   private:
     GLuint id = 0;            // индекс VBO
-    GLsizeiptr allocated = 0; // резервировируемый размер буфера
-    GLsizeiptr size  = 0;   // число байт, переданных в VBO буфер GPU
+    GLsizeiptr allocated = 0; // (максимальный) выделяемый размер буфера
+    GLsizeiptr hem = 0;       // граница текущего блока данных в VBO
+    GLenum gl_buffer_type;
 
   public:
-    VBO(void) {};
+    VBO(GLenum type): gl_buffer_type(type) {}
+    ~VBO(void) {}
     void Allocate(GLsizeiptr allocated);
     void Allocate(GLsizeiptr allocated, const GLvoid* data);
     void Attrib(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*);
@@ -28,7 +30,7 @@ class VBO {
     void Reduce(GLintptr, GLintptr, GLsizeiptr);
     GLsizeiptr SubDataAppend(GLsizeiptr data_size, const GLvoid* data);
     void SubDataUpdate(GLsizeiptr, const GLvoid*, GLsizeiptr);
-    void Resize(GLsizeiptr size);
+    void Resize(GLsizeiptr new_hem);
 };
 
 } //tr

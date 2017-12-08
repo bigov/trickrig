@@ -46,8 +46,8 @@ namespace tr
 
       tr::Rigs RigsDb0 {};  // структура 3D пространства LOD-0
       tr::Glsl Prog3d {};   // GLSL программа шейдеров
-      tr::VBO VBOsurf {};   // VBO буфер атрибутов вершин поверхности
-      GLuint VBOidx = 0;    // индексный буфер
+      tr::VBO VBOsurf = {GL_ARRAY_BUFFER};   // атрибуты вершин поверхности
+      tr::VBO VBOsurfIdx = {GL_ELEMENT_ARRAY_BUFFER}; // индексы вершин
 
       // Буфер обмена индексами из VBO_Inst
       std::list<GLsizeiptr> cashe_vbo_ptr {};
@@ -58,8 +58,9 @@ namespace tr
 
       // 14 чисел float (4 координаты + 4 нормаль + 4 цвет + 2 текстура)
       GLsizeiptr BytesByVertex = static_cast<GLsizeiptr>(14 * sizeof(GLfloat));
-      // Размер (в байтах) группы атрибутов четырехугольника в VBO:
-      GLsizeiptr BytesByQuad = 4 * BytesByVertex;
+
+      // четырехугольник в VBO
+      GLsizeiptr BytesByQuad = 4 * BytesByVertex; // размер (в байтах) группы атрибутов
 
       int   space_i0_length = WIDTH_0;
       int   space_i0_radius = WIDTH_0/2;
@@ -68,8 +69,8 @@ namespace tr
 
       GLuint space_vao = 0; // ID VAO
       GLuint m_textureObj = 0;
-      GLsizei count = 0; // число отображаемых вершин
-      GLsizei quad_idx[6] = { 0, 1, 2, 2, 3, 0 }; // индекс вершин для построения четырехугольника
+      GLsizei count_idx = 0; // число индексов для построения поверхности
+      GLsizei count_vtc = 0; // количество индексируемых вершин поверхности
 
       float
         rl=0.f, ud=0.f, fb=0.f, // скорость движения по направлениям

@@ -63,7 +63,7 @@ namespace tr
   {
   // TODO: тут должны загружаться в графическую память все части LOD,
   //       но пока загружается только нулевой уровень
-    /*
+
     f3d pt = RigsDb0.search_down(ViewFrom); // ближайший к камере снизу блок
     MoveFrom = {pt.x, pt.y, pt.z};
 
@@ -80,13 +80,6 @@ namespace tr
     for(float y = yMin; y<= yMax; y += RigsDb0.gage)
     for(float z = zMin; z<= zMax; z += RigsDb0.gage)
       if(RigsDb0.exist(x, y, z)) vbo_data_send(x, y, z);
-  */
-    //float x = 0.f;
-    //for(x = -2.0f; x < 3.0f; x += 1.0f)
-    //  for(float z = -2.0f; z < 3.0f; z += 1.0f)
-
-    vbo_data_send(0.0f, 0.0f, 0.0f);
-    vbo_data_send(1.0f, 0.25f, 0.0f);
 
     glDisable(GL_CULL_FACE); // включить отображение обратных поверхностей
 
@@ -111,16 +104,17 @@ namespace tr
   //## запись данных в графический буфер
   void Space::vbo_data_send(float x, float y, float z)
   {
-    // Индексы размещенных в VBO данных, которые при перемещении камеры вышли
-    // за границу отображения, запоминаются в кэше (idx_ref), чтобы на их место
-    // записать данные точек, которые вошли в поле зрения с другой стороны.
-
-    // Входные параметры вершинного шейдера:
-    //
-    //    vec4 position - 3D координаты вершины
-    //    vec4 color    - цвет вершины
-    //    vec4 normal   - нормаль вершины
-    //    vec2 fragment - 2D коодината в текстурной карте
+  /* Индексы размещенных в VBO данных, которые при перемещении камеры вышли
+   * за границу отображения, запоминаются в кэше (idx_ref), чтобы на их место
+   * записать данные точек, которые вошли в поле зрения с другой стороны.
+   *
+   * Входные параметры вершинного шейдера:
+   *
+   *    vec4 position - 3D координаты вершины
+   *    vec4 color    - цвет вершины
+   *    vec4 normal   - нормаль вершины
+   *    vec2 fragment - 2D коодината в текстурной карте
+   */
     GLfloat
       x0 =  0.5f, y0 = 0.0f, z0 =  0.5f, u0 = 0.0f,   v0 = 0.0f,
       x1 =  0.5f, y1 = 0.0f, z1 = -0.5f, u1 = 0.125f, v1 = 0.0f,
@@ -133,8 +127,13 @@ namespace tr
       x+x2, y+y2, z+z2, 1.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u2, v2,
       x+x3, y+y3, z+z3, 1.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u3, v3,
     };
-    auto sizeof_data     = sizeof(data);
+    GLsizei quad_idx[] = {  // индекс вершин для построения прямоугольника
+      0 + count_vtc, 1 + count_vtc, 2 + count_vtc,
+      2 + count_vtc, 3 + count_vtc, 0 + count_vtc };
+
     auto sizeof_quad_idx = sizeof(quad_idx);
+    count_vtc += 4;
+    count_idx += sizeof_quad_idx;
 
     glBindVertexArray(space_vao);
 
@@ -154,24 +153,14 @@ namespace tr
     }
     */
 
-    VBOsurf.SubDataAppend(sizeof_data, data);
-
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, count, sizeof_quad_idx, quad_idx);
-
-    count += sizeof_quad_idx;
-    for (auto i = 0; i < 6; ++i) quad_idx[i] += 4;
-
-
-    //std::cout << count << "\n";
-
+    VBOsurf.SubDataAppend(sizeof(data), data);
+    VBOsurfIdx.SubDataAppend(sizeof_quad_idx, quad_idx);
     glBindVertexArray(0);
 
-    /*
     auto r = RigsDb0.get(x, y, z);
     #ifndef NDEBUG
     if(nullptr == r) ERR("ERR: call post_key for empty space.");
     #endif
-    */
 
     // Запишем в Риг адрес смещения его данных в VBO. Это значение
     // потребуется при замене блока данных после выхода за границу
@@ -217,10 +206,13 @@ namespace tr
       2, GL_FLOAT, GL_TRUE, stride, (void*)(12 * sizeof(GLfloat)));
 
     // индексный массив
+    /*
     glGenBuffers(1, &VBOidx);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOidx);
     auto count_of_idx = static_cast<size_t>(6 * n * sizeof(GLuint));
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, count_of_idx, 0, GL_STATIC_DRAW);
+    */
+    VBOsurfIdx.Allocate(static_cast<size_t>(6 * n * sizeof(GLuint)));
 
     glBindVertexArray(0);
     Prog3d.unuse();
@@ -341,7 +333,7 @@ namespace tr
   //
 
     // Выбираем  крайний, по счетчику границы, индекс в VBO
-    GLsizeiptr idSource = BytesByQuad * (count - 1);
+    GLsizeiptr idSource = BytesByQuad * (count_idx - 1);
 
     // Если он оказался в кэше освободившихся, то просто сдвигаем границу,
     // уменьшая число элементов в счетчике и выходим,
@@ -380,9 +372,9 @@ namespace tr
   //## Декремент числа блоков данных в VBO и сдвиг границы
   void Space::cutback(void)
   {
-    --count;
+    --count_idx;
     // сдвиг границы актуальных данных в буфере
-    VBOsurf.Resize( BytesByQuad * count );
+    VBOsurf.Resize( BytesByQuad * count_idx );
     return;
   }
 
@@ -461,7 +453,6 @@ namespace tr
 
     Prog3d.set_uniform("light_direction", glm::vec4(0.2f, 0.9f, 0.5f, 0.0));
     Prog3d.set_uniform("light_bright", glm::vec4(0.05f, 0.05f, 0.05f, 0.0));
-
   
     glBindVertexArray(space_vao);
 
@@ -470,7 +461,7 @@ namespace tr
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, NULL);
+    glDrawElements(GL_TRIANGLES, count_idx, GL_UNSIGNED_INT, NULL);
 
     glBindVertexArray(0);
   
