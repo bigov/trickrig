@@ -12,6 +12,20 @@ namespace tr
   float yMin = -100.f;
   float yMax = 100.f;
 
+  //## плоскость по-умолчанию;
+  Quad::Quad(void)
+  {
+    vertices[1].position.z = 1.0f;
+    vertices[1].fragment.u = 0.125f;
+    vertices[2].position.x = 1.0f;
+    vertices[2].position.z = 1.0f;
+    vertices[2].fragment.u = 0.125f;
+    vertices[2].fragment.v = 0.125f;
+    vertices[3].position.z = 1.0f;
+    vertices[3].fragment.v = 0.125f;
+    return;
+  }
+
   //## Проверка наличия блока в заданных координатах
   bool Rigs::exist(float x, float y, float z)
   {

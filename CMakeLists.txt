@@ -83,7 +83,6 @@ if( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
     SET( CMAKE_CXX_FLAGS "--static ${CMAKE_CXX_FLAGS} ${WIN_GUI}" )
     MESSAGE( WARNING "\n*** Static build is enabled. ***")
   endif()
-# SET( LIBS mingw32 pthread opengl32 glcore33 glfw freetype png_static gdi32 )
   SET( LIBS mingw32 pthread glcore33 glfw freetype png_static gdi32 )
 endif( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
 
