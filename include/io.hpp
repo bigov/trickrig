@@ -39,6 +39,10 @@ namespace tr
       x(static_cast<float>(x)),
       y(static_cast<float>(y)),
       z(static_cast<float>(z)) {}
+    f3d(int x, int y, int z):
+      x(static_cast<float>(x)),
+      y(static_cast<float>(y)),
+      z(static_cast<float>(z)) {}
     f3d(glm::vec3 v): x(v[0]), y(v[1]), z(v[2]) {}
   };
 

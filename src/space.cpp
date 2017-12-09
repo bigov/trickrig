@@ -6,6 +6,7 @@
 //
 //============================================================================
 #include "space.hpp"
+#include <iomanip>
 
 namespace tr
 {
@@ -64,6 +65,7 @@ namespace tr
   // TODO: тут должны загружаться в графическую память все части LOD,
   //       но пока загружается только нулевой уровень
 
+
     f3d pt = RigsDb0.search_down(ViewFrom); // ближайший к камере снизу блок
     MoveFrom = {pt.x, pt.y, pt.z};
 
@@ -81,6 +83,8 @@ namespace tr
     for(float z = zMin; z<= zMax; z += RigsDb0.gage)
       if(RigsDb0.exist(x, y, z)) vbo_data_send(x, y, z);
 
+    //vbo_data_send(0, 0, 0);
+
     glDisable(GL_CULL_FACE); // включить отображение обратных поверхностей
 
     return;
@@ -91,13 +95,12 @@ namespace tr
   {
   // TODO: должно быть заменено на подключение к базе данных пространства,
   // а пока имитируем небольшую (100х100) базу данных структурой "rigs_db"
-    float s = 50.f;
-    float y = 0.f;
-    short block_type = 1;
+    int s = 50;
+    int y = 0.f;
 
-    for (float x = 0.f - s; x < s; x += 1.f)
-      for (float z = 0.f - s; z < s; z += 1.f)
-        RigsDb0.emplace(x, y, z, block_type);
+    for (int x = 0 - s; x < s; x += 1)
+      for (int z = 0 - s; z < s; z += 1)
+        RigsDb0.emplace(x, y, z);
     return;
   }
 
@@ -115,25 +118,11 @@ namespace tr
    *    vec4 normal   - нормаль вершины
    *    vec2 fragment - 2D коодината в текстурной карте
    */
-    GLfloat
-      x0 =  0.5f, y0 = 0.0f, z0 =  0.5f, u0 = 0.0f,   v0 = 0.0f,
-      x1 =  0.5f, y1 = 0.0f, z1 = -0.5f, u1 = 0.125f, v1 = 0.0f,
-      x2 = -0.5f, y2 = 0.0f, z2 = -0.5f, u2 = 0.125f, v2 = 0.125f,
-      x3 = -0.5f, y3 = 0.0f, z3 =  0.5f, u3 = 0.0f,   v3 = 0.125f;
 
-    GLfloat data[] = {
-      x+x0, y+y0, z+z0, 1.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u0, v0,
-      x+x1, y+y1, z+z1, 1.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u1, v1,
-      x+x2, y+y2, z+z2, 1.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u2, v2,
-      x+x3, y+y3, z+z3, 1.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, u3, v3,
-    };
-    GLsizei quad_idx[] = {  // индекс вершин для построения прямоугольника
-      0 + count_vtc, 1 + count_vtc, 2 + count_vtc,
-      2 + count_vtc, 3 + count_vtc, 0 + count_vtc };
-
-    auto sizeof_quad_idx = sizeof(quad_idx);
-    count_vtc += 4;
-    count_idx += sizeof_quad_idx;
+    tr::Rig* r = RigsDb0.get(x, y, z);
+    #ifndef NDEBUG
+    if(nullptr == r) ERR("ERR: call post_key for empty space.");
+    #endif
 
     glBindVertexArray(space_vao);
 
@@ -153,14 +142,13 @@ namespace tr
     }
     */
 
-    VBOsurf.SubDataAppend(sizeof(data), data);
-    VBOsurfIdx.SubDataAppend(sizeof_quad_idx, quad_idx);
+    VBOsurf.SubDataAppend(r->area.data_size, r->area.data);
+    VBOsurfIdx.SubDataAppend(r->area.idx_size, r->area.reindex(count_vtc));
+    count_vtc += r->area.num_vertices; // для расчета следующего индекса
+    count_idx += r->area.num_indices;  // подсчет числа вершин в рендере
+
     glBindVertexArray(0);
 
-    auto r = RigsDb0.get(x, y, z);
-    #ifndef NDEBUG
-    if(nullptr == r) ERR("ERR: call post_key for empty space.");
-    #endif
 
     // Запишем в Риг адрес смещения его данных в VBO. Это значение
     // потребуется при замене блока данных после выхода за границу
@@ -199,19 +187,13 @@ namespace tr
     VBOsurf.Attrib(Prog3d.attrib_location_get("position"),
       4, GL_FLOAT, GL_FALSE, stride, (void*)(0 * sizeof(GLfloat)));
     VBOsurf.Attrib(Prog3d.attrib_location_get("color"),
-      4, GL_FLOAT, GL_FALSE, stride, (void*)(4 * sizeof(GLfloat)));
+      4, GL_FLOAT, GL_TRUE, stride, (void*)(4 * sizeof(GLfloat)));
     VBOsurf.Attrib(Prog3d.attrib_location_get("normal"),
-      4, GL_FLOAT, GL_FALSE, stride, (void*)(8 * sizeof(GLfloat)));
+      4, GL_FLOAT, GL_TRUE, stride, (void*)(8 * sizeof(GLfloat)));
     VBOsurf.Attrib(Prog3d.attrib_location_get("fragment"),
       2, GL_FLOAT, GL_TRUE, stride, (void*)(12 * sizeof(GLfloat)));
 
     // индексный массив
-    /*
-    glGenBuffers(1, &VBOidx);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOidx);
-    auto count_of_idx = static_cast<size_t>(6 * n * sizeof(GLuint));
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, count_of_idx, 0, GL_STATIC_DRAW);
-    */
     VBOsurfIdx.Allocate(static_cast<size_t>(6 * n * sizeof(GLuint)));
 
     glBindVertexArray(0);
@@ -452,7 +434,7 @@ namespace tr
     //prog3d.set_uniform("Selected", Selected);
 
     Prog3d.set_uniform("light_direction", glm::vec4(0.2f, 0.9f, 0.5f, 0.0));
-    Prog3d.set_uniform("light_bright", glm::vec4(0.05f, 0.05f, 0.05f, 0.0));
+    Prog3d.set_uniform("light_bright", glm::vec4(0.5f, 0.5f, 0.5f, 0.0));
   
     glBindVertexArray(space_vao);
 

@@ -12,17 +12,58 @@ namespace tr
   float yMin = -100.f;
   float yMax = 100.f;
 
-  //## плоскость по-умолчанию;
-  Quad::Quad(void)
+  Vertex::Vertex(GLfloat *data)
   {
-    vertices[1].position.z = 1.0f;
-    vertices[1].fragment.u = 0.125f;
-    vertices[2].position.x = 1.0f;
-    vertices[2].position.z = 1.0f;
-    vertices[2].fragment.u = 0.125f;
-    vertices[2].fragment.v = 0.125f;
-    vertices[3].position.z = 1.0f;
-    vertices[3].fragment.v = 0.125f;
+    position.x = data++;
+    position.y = data++;
+    position.z = data++;
+    position.w = data++;
+    color.r    = data++;
+    color.g    = data++;
+    color.b    = data++;
+    color.a    = data++;
+    normal.x   = data++;
+    normal.y   = data++;
+    normal.z   = data++;
+    normal.w   = data++;
+    fragment.u = data++;
+    fragment.v = data++;
+    return;
+  }
+
+  //## сдвиг прямоугольника
+  void Quad::relocate(f3d & point)
+  {
+    *vertices[0].position.x += point.x;
+    *vertices[1].position.x += point.x;
+    *vertices[2].position.x += point.x;
+    *vertices[3].position.x += point.x;
+
+    *vertices[0].position.y += point.y;
+    *vertices[1].position.y += point.y;
+    *vertices[2].position.y += point.y;
+    *vertices[3].position.y += point.y;
+
+    *vertices[0].position.z += point.z;
+    *vertices[1].position.z += point.z;
+    *vertices[2].position.z += point.z;
+    *vertices[3].position.z += point.z;
+
+    return;
+  }
+
+  //## сдвиг индексов на опорную точку
+  GLsizei *Quad::reindex(GLsizei stride)
+  {
+    for(size_t i = 0; i < num_indices; i++) idx[i] += stride;
+    return idx;
+  }
+
+  Rig::Rig(f3d point, short t)
+  {
+    type = t;
+    time = get_msec();
+    area.relocate( point );
     return;
   }
 
@@ -80,13 +121,20 @@ namespace tr
     catch (...){ return nullptr; }
   }
 
-  //## Вставка нового элемента в базу данных
-  void Rigs::emplace(float x, float y, float z, short rig_type)
+  //## Вставка элемента в базу данных
+  void Rigs::emplace(int x, int y, int z)
+  {
+    short block_type = 1; // тип блока по-умолчанию
+    emplace(x, y, z, block_type);
+    return;
+  }
+
+  //## Вставка в базу данных элемента c указанием типа
+  void Rigs::emplace(int x, int y, int z, short type)
   {
     if (emplace_complete) ERR("Rigs emplaced is closed now.");
-    // новые точки создаются только в местах без дробной части
-    f3d point {fround(x), fround(y), fround(z)};
-    db[point] = {rig_type};
+    f3d point = {x, y, z};
+    db[point] = {point, type};
     return;
   }
 

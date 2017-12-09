@@ -14,6 +14,6 @@ out vec4 vBright;
 void main(void)
 {
   vFragment = fragment;
-  vBright = (color + vec4(dot(light_direction, normal))) * light_bright;
+  vBright = color * light_bright * max(dot(light_direction, normal), 0.0f);
   gl_Position = mvp * position;
 }

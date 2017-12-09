@@ -17,19 +17,41 @@
 
 namespace tr
 {
+  //## Привязка адресов данных вершина к именам параметров
   struct Vertex
   {
-    struct { GLfloat x = 0.0f, y = 0.0f, z = 0.0f, w = 1.0f; } position;
-    struct { GLfloat r = 0.3f, g = 0.3f, b = 0.3f, a = 1.0f; } color;
-    struct { GLfloat x = 0.0f, y = 1.0f, z = 0.0f, w = 0.0f; } normal;
-    struct { GLfloat u = 0.0f, v = 0.0f; } fragment;
+    GLfloat *data; // адрес начала данных должен передаваться вызывающей функцией
+    struct { GLfloat *x, *y, *z, *w; } position;
+    struct { GLfloat *r, *g, *b, *a; } color;
+    struct { GLfloat *x, *y, *z, *w; } normal;
+    struct { GLfloat *u, *v; } fragment;
+    Vertex(GLfloat *data);
   };
 
+  // Четырехугольник из двух треугольников с индексацией 4-х вершин
   struct Quad
   {
-    tr::Vertex vertices[4];
-    GLsizei indices[6] = {0, 1, 2, 2, 3, 0};
-    Quad(void);
+    static const size_t num_vertices = 4;
+    static const size_t num_indices = 6;
+    static const size_t digits_per_vertex = 14;
+
+    // сформируем слегка выпуклые плитки
+    glm::vec3 n = glm::normalize(glm::vec3{0.3f, 0.5f,  0.3f});
+
+    GLfloat data[digits_per_vertex * num_vertices] = {
+      0.0f, 0.0f, 0.0f, 1.0f, 0.3f, 0.3f, 0.3f, 1.0f,  n.x, n.y,  n.z, 0.0f, 0.0f,   0.0f,
+      0.0f, 0.0f, 1.0f, 1.0f, 0.3f, 0.3f, 0.3f, 1.0f,  n.x, n.y, -n.z, 0.0f, 0.125f, 0.0f,
+      1.0f, 0.0f, 1.0f, 1.0f, 0.3f, 0.3f, 0.3f, 1.0f, -n.x, n.y, -n.z, 0.0f, 0.125f, 0.125f,
+      1.0f, 0.0f, 0.0f, 1.0f, 0.3f, 0.3f, 0.3f, 1.0f, -n.x, n.y,  n.z, 0.0f, 0.0f,   0.125f,
+    };
+    GLsizei idx[num_indices] = {0, 1, 2, 2, 3, 0};
+    tr::Vertex vertices[num_vertices] = {&data[0], &data[14], &data[28], &data[42]};
+
+    GLsizeiptr data_size = sizeof(data);
+    GLsizeiptr idx_size = sizeof(idx);
+
+    void relocate(f3d & point);
+    GLsizei *reindex(GLsizei stride);
   };
 
   //##  элемент пространства
@@ -46,7 +68,7 @@ namespace tr
     tr::Quad area {};
 
     Rig(): time(get_msec()) {}
-    Rig(short t): type(t), time(get_msec()) {}
+    Rig(f3d point, short type);
   };
 
   //## Клас для управления базой данных элементов пространства одного LOD.
@@ -65,7 +87,8 @@ namespace tr
       f3d search_down(float x, float y, float z);
       f3d search_down(const glm::vec3 &);
       size_t size(void) { return db.size(); }
-      void emplace(float x, float y, float z, short t);
+      void emplace(int x, int y, int z);
+      void emplace(int x, int y, int z, short type);
       void stop_emplacing(void) { emplace_complete = true; }
       bool is_empty(float x, float y, float z);
       bool exist(float x, float y, float z);
