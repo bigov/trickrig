@@ -31,8 +31,14 @@ namespace tr
     return;
   }
 
+  //## конструктор по-умолчанию
+  snip::snip(const tr::f3d & p)
+  {
+    relocate(p);
+  }
+
   //## сдвиг прямоугольника
-  void Quad::relocate(f3d & point)
+  void snip::relocate(const tr::f3d & point)
   {
     *vertices[0].position.x += point.x;
     *vertices[1].position.x += point.x;
@@ -53,29 +59,28 @@ namespace tr
   }
 
   //## сдвиг индексов на опорную точку
-  GLsizei *Quad::reindex(GLsizei stride)
+  GLsizei *snip::reindex(GLsizei stride)
   {
-    for(size_t i = 0; i < num_indices; i++) idx[i] += stride;
+    for(size_t i = 0; i < indices_per_snip; i++) idx[i] += stride;
     return idx;
   }
 
-  Rig::Rig(f3d point, short t)
+  rig::rig(const tr::f3d & p)
   {
-    type = t;
     time = get_msec();
-    area.relocate( point );
+    area.emplace_front(p);
     return;
   }
 
   //## Проверка наличия блока в заданных координатах
-  bool Rigs::exist(float x, float y, float z)
+  bool rigs::exist(float x, float y, float z)
   {
     if (nullptr == get(x, y, z)) return false;
     else return true;
   }
 
   //## Проверка отсутствия блока в заданных координатах
-  bool Rigs::is_empty(float x, float y, float z)
+  bool rigs::is_empty(float x, float y, float z)
   {
     return !exist(x, y, z);
   }
@@ -85,11 +90,11 @@ namespace tr
   // При работе изменяет значение полученного аргумента.
   // Если объект найден, то аргумен содержит его координаты
   //
-  f3d Rigs::search_down(const glm::vec3& v)
+  f3d rigs::search_down(const glm::vec3& v)
   { return search_down(v.x, v.y, v.z); }
 
   //## поиск ближайшего нижнего блока по координатам точки
-  f3d Rigs::search_down(float x, float y, float z)
+  f3d rigs::search_down(float x, float y, float z)
   {
     if(y < yMin) ERR("Y downflow"); if(y > yMax) ERR("Y overflow");
 
@@ -108,7 +113,7 @@ namespace tr
   }
 
   //## Поиск элемента с указанными координатами
-  Rig* Rigs::get(float x, float y, float z)
+  rig* rigs::get(float x, float y, float z)
   {
   //
   // Возвращает адрес памяти, в которой расположен элемент
@@ -122,19 +127,10 @@ namespace tr
   }
 
   //## Вставка элемента в базу данных
-  void Rigs::emplace(int x, int y, int z)
+  void rigs::emplace(int x, int y, int z)
   {
-    short block_type = 1; // тип блока по-умолчанию
-    emplace(x, y, z, block_type);
-    return;
-  }
-
-  //## Вставка в базу данных элемента c указанием типа
-  void Rigs::emplace(int x, int y, int z, short type)
-  {
-    if (emplace_complete) ERR("Rigs emplaced is closed now.");
     f3d point = {x, y, z};
-    db[point] = {point, type};
+    db.emplace(std::make_pair(point, point));
     return;
   }
 

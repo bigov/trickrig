@@ -99,9 +99,10 @@ namespace tr
   //## Внесение данных с контролем границы максимально выделенного размера буфера
   GLsizeiptr VBO::SubDataAppend(GLsizeiptr d_size, const GLvoid* data)
   {
-  /* вносим данные в буфер по указателю конца блока (size), возвращаем положение
-   * указателя по которому разместили данные и увеличиваем значение указателя на
-   * размер внесенных данных для последующего использования */
+  /* вносит данные в буфер по указателю границы данных блока (hem), возвращает
+   * положение указателя по которому разместились данные и сдвигает границу
+   * указателя на размер внесенных данных для следующей порции атрибутов
+   */
 
     #ifndef NDEBUG
       if((allocated - hem) < d_size) ERR("VBO::SubDataAppend got overflow buffer");
@@ -115,17 +116,17 @@ namespace tr
     return res;
   }
 
-  //## Замена указанной группы атрибутов с контролем границы размера буфера
-  void VBO::SubDataUpdate(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr idx)
+  //## Замена блока данных в указанном месте с контролем границы размера буфера
+  void VBO::SubDataUpdate(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr offset)
   {
     #ifndef NDEBUG //--проверка свободного места в буфере----------------------
-    if (idx > (hem - d_size)) ERR("VBO::SubDataUpdate got bad index for update attrib group");
+    if (offset > (hem - d_size)) ERR("VBO::SubDataUpdate got bad index for update attrib group");
     if ((allocated - hem) < d_size) ERR("VBO::SubDataUpdate overflow buffer");
     #endif //------------------------------------------------------------------
 
-    glBindBuffer(gl_buffer_type, id);
-    glBufferSubData(gl_buffer_type, idx, d_size, data);
-    glBindBuffer(gl_buffer_type, 0);
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, id);
+    glBufferSubData(gl_buffer_type, offset, d_size, data);
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, 0);
     return;
   }
 

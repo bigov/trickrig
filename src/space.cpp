@@ -100,7 +100,11 @@ namespace tr
 
     for (int x = 0 - s; x < s; x += 1)
       for (int z = 0 - s; z < s; z += 1)
+      {
         RigsDb0.emplace(x, y, z);
+      }
+
+    //RigsDb0.emplace(0, 2, 0);
     return;
   }
 
@@ -119,7 +123,7 @@ namespace tr
    *    vec2 fragment - 2D коодината в текстурной карте
    */
 
-    tr::Rig* r = RigsDb0.get(x, y, z);
+    tr::rig* r = RigsDb0.get(x, y, z);
     #ifndef NDEBUG
     if(nullptr == r) ERR("ERR: call post_key for empty space.");
     #endif
@@ -141,14 +145,15 @@ namespace tr
       VBOsurf.SubDataUpdate(sizeof_data, data, offset);
     }
     */
-
-    VBOsurf.SubDataAppend(r->area.data_size, r->area.data);
-    VBOsurfIdx.SubDataAppend(r->area.idx_size, r->area.reindex(count_vtc));
-    count_vtc += r->area.num_vertices; // для расчета следующего индекса
-    count_idx += r->area.num_indices;  // подсчет числа вершин в рендере
+    for(auto & fragment: r->area)
+    {
+      VBOsurf.SubDataAppend(tr::snip_data_size, fragment.data);
+      VBOsurfIdx.SubDataAppend(tr::snip_idx_size, fragment.reindex(count_vtc));
+      count_vtc += tr::vertices_per_snip; // для расчета следующего индекса
+      count_idx += tr::indices_per_snip;  // подсчет числа вершин в рендере
+    }
 
     glBindVertexArray(0);
-
 
     // Запишем в Риг адрес смещения его данных в VBO. Это значение
     // потребуется при замене блока данных после выхода за границу
@@ -178,7 +183,7 @@ namespace tr
     // Число элементов в кубе с длиной стороны = "space_i0_length" элементов:
     unsigned n = pow(space_i0_length, 3);
     // Резервирование массива под хранение ссылок
-    visible_rigs = new Rig* [n];
+    visible_rigs = new rig* [n];
 
     // число байт для заполнения такого объема прямоугольниками:
     VBOsurf.Allocate(n * BytesByQuad);
@@ -201,13 +206,13 @@ namespace tr
 
     return;
   }
-
+/*
   //## Построение границы области по оси X по ходу движения
   void Space::recalc_border_x(float direction, float VFx, float VFz)
   {
     // TODO: ВНИМАНИЕ! проверяется только 10 уровней Y
     //       надо добавить перестроение всего слоя на rigs_db.gage по Y
-    Rig* r;
+    rig* r;
     float x = MoveFrom.x + space_f0_radius * direction;
     float Min = MoveFrom.z - space_f0_radius;
     float Max = MoveFrom.z + space_f0_radius;
@@ -239,7 +244,7 @@ namespace tr
   {
     // TODO: ВНИМАНИЕ! проверяется только 10 уровней Y
     //       надо добавить перестроение всего слоя на rigs_db.gage по Y
-    Rig* r;
+    rig* r;
     float z = MoveFrom.z + space_f0_radius * direction;
     float Min = MoveFrom.x - space_f0_radius;
     float Max = MoveFrom.x + space_f0_radius;
@@ -340,13 +345,13 @@ namespace tr
 
     // Находим через массив visible_rigs активный риг и обновляем в его списке
     // адрес инстанса, который был перемещен в VBO_Inst.
-    Rig* r = visible_rigs[id_ref_Source];
+    rig* r = visible_rigs[id_ref_Source];
     if(nullptr == r) ERR("Failure in visible_rigs[id_ref_Source]");
 
     visible_rigs[id_ref_Source] = nullptr;
     visible_rigs[id_ref_Target] = r;
 
-    r->vbo_offset = idTarget;
+    //r->vbo_offset = idTarget;
 
     return;
   }
@@ -359,7 +364,7 @@ namespace tr
     VBOsurf.Resize( BytesByQuad * count_idx );
     return;
   }
-
+*/
   //## Расчет положения и направления движения камеры
   void Space::calc_position(const evInput & ev)
   {
@@ -423,6 +428,12 @@ namespace tr
   //## Функция, вызываемая из цикла окна для рендера сцены
   void Space::draw(const evInput & ev)
   {
+   #ifndef NDEBUG
+   static bool first_call = true;
+   if(first_call) std::cout << "count of indices = " << count_idx << "\n";
+   first_call = false;
+   #endif
+
     // Матрицу модели в расчетах не используем, так как
     // она единичная и на положение элементов влияние не оказывает
 

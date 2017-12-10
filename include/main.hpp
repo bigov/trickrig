@@ -14,41 +14,57 @@
 #include <cstdint>
 #include <cstring>
 #include <chrono>
-#include <memory>
-#include <map>
-#include <iostream>
+#include <forward_list>
 #include <fstream>
-#include <string>
+#include <functional>
+#include <iostream>
 #include <list>
 #include <locale>
-#include <vector>
-#include <valarray>
+#include <memory>
+#include <map>
 #include <random>
+#include <string>
+#include <valarray>
+#include <vector>
 #include <unordered_map>
+#include <utility>
 
 #include "gl_core33.h"
-#include <GLFW/glfw3.h>
-#include <png.h>
-#include <ft2build.h>
+#include "GLFW/glfw3.h"
+#include "png.h"
+#include "ft2build.h"
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
 #define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/constants.hpp>
-#include <glm/gtc/integer.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include "glm/glm.hpp"
+#include "glm/gtc/constants.hpp"
+#include "glm/gtc/integer.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 #define GLM_ENABLE_EXPERIMENTAL
-#include <glm/gtx/rotate_vector.hpp>
-#include <glm/gtx/transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include "glm/gtx/rotate_vector.hpp"
+#include "glm/gtx/transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 #define ERR throw std::runtime_error
 
-// Длина стороны пространства (должна быть нечетным числом)
+// Длина стороны области LOD0 (должна быть нечетным числом)
 #define WIDTH_0 31
 
 namespace tr {
+
+  // число вершин в одном снипе
+  static const size_t vertices_per_snip = 4;
+  // число индексов в одном снипе
+  static const size_t indices_per_snip = 6;
+  // количество чисел (GLfloat) в блоке данных одной вершины
+  static const size_t digits_per_vertex = 14;
+  // количество чисел (GLfloat) в блоке данных снипа
+  static const size_t digits_per_snip = digits_per_vertex * vertices_per_snip;
+  // размер (число байт) блока данных снипа
+  static const GLsizeiptr snip_data_size = digits_per_snip * sizeof(GLfloat);
+  // размер (число байт) блока индексов снипа
+  static const GLsizeiptr snip_idx_size = indices_per_snip * sizeof(GLsizei);
 
   struct evInput
   {

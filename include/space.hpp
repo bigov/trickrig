@@ -44,17 +44,17 @@ namespace tr
       Space(const tr::Space&);
       Space operator=(const tr::Space&);
 
-      tr::Rigs RigsDb0 {};  // структура 3D пространства LOD-0
+      tr::rigs RigsDb0 {};  // структура 3D пространства LOD-0
       tr::Glsl Prog3d {};   // GLSL программа шейдеров
       tr::VBO VBOsurf = {GL_ARRAY_BUFFER};   // атрибуты вершин поверхности
       tr::VBO VBOsurfIdx = {GL_ELEMENT_ARRAY_BUFFER}; // индексы вершин
 
-      // Буфер обмена индексами из VBO_Inst
-      std::list<GLsizeiptr> cashe_vbo_ptr {};
+      // Буфер обмена индексами VBO
+      std::list<std::pair<GLsizeiptr, GLsizeiptr>> cashe_vbo_ptr {};
 
       // Массив ссылок на риги, отбражаемые на экране. Массив индексируется
       // поррядковыми номерами блоков данных в VBO_Inst
-      tr::Rig** visible_rigs = nullptr;
+      tr::rig** visible_rigs = nullptr;
 
       // 14 чисел float (4 координаты + 4 нормаль + 4 цвет + 2 текстура)
       GLsizeiptr BytesByVertex = static_cast<GLsizeiptr>(14 * sizeof(GLfloat));
@@ -75,14 +75,14 @@ namespace tr
       float
         rl=0.f, ud=0.f, fb=0.f, // скорость движения по направлениям
         look_a = 3.928f,        // азимут (0 - X)
-        //look_t = -0.276f,       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
-        look_t = -1.7f,       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
+        look_t = -0.276f,       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
+        //look_t = -1.7f,       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
         k_sense = 4.0f,         // TODO: чувствительность через Config
         k_mouse = 0.002f;
 
       glm::mat4 MatView {};
       glm::vec3
-        ViewFrom {0.f, 14.f, 0.f},
+        ViewFrom {0.f, 3.f, 0.f},
         Selected {},
         MoveFrom {},
         ViewTo {},
@@ -94,11 +94,11 @@ namespace tr
       void upload_vbo(void);
       void vbo_allocate_mem(void);
       void vbo_data_send(float, float, float);
-      void recalc_borders(void);
-      void reduce_keys(void);
-      void cutback(void);
-      void recalc_border_x(float, float, float);
-      void recalc_border_z(float, float, float);
+//      void recalc_borders(void);
+//      void reduce_keys(void);
+//      void cutback(void);
+//      void recalc_border_x(float, float, float);
+//      void recalc_border_z(float, float, float);
   };
 
 } //namespace
