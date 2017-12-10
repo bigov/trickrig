@@ -64,7 +64,9 @@ namespace tr {
   // размер (число байт) блока данных снипа
   static const GLsizeiptr snip_data_size = digits_per_snip * sizeof(GLfloat);
   // размер (число байт) блока индексов снипа
-  static const GLsizeiptr snip_idx_size = indices_per_snip * sizeof(GLsizei);
+  static const GLsizeiptr snip_index_size = indices_per_snip * sizeof(GLsizei);
+  // число байт для записи данных одной вершины
+  static const GLsizeiptr snip_vertex_size = digits_per_vertex * sizeof(GLfloat);
 
   struct evInput
   {

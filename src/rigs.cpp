@@ -65,7 +65,33 @@ namespace tr
     return idx;
   }
 
-  rig::rig(const tr::f3d & p)
+  //## добавление данных в буферы VBO
+  void snip::vbo_append(tr::VBO &VBOdata, tr::VBO &VBOidx)
+  {
+  /* Добавляет данные в конец VBO буфера данных и VBO буфера индексов
+   * и запоминает смещение адресов в VBO где данные были записаны
+   */
+    data_offset = VBOdata.SubDataAppend( tr::snip_data_size, data );
+    idx_offset = VBOidx.SubDataAppend( tr::snip_index_size,
+       reindex( data_offset / tr::snip_vertex_size ));
+    return;
+  }
+
+  //## обновление данных в VBO буфере данных и VBO буфере индексов
+  void snip::vbo_update(tr::VBO &VBOdata, tr::VBO &VBOidx, std::pair<GLsizeiptr, GLsizeiptr> &p)
+  {
+    data_offset = p.first;
+    idx_offset = p.second;
+
+    VBOdata.SubDataUpdate( tr::snip_data_size, data, p.first );
+    VBOidx.SubDataUpdate( tr::snip_index_size,
+      reindex( data_offset / tr::snip_vertex_size ), p.second );
+
+    return;
+  }
+
+  //## конструктор по-умолчанию
+  rig::rig(const tr::f3d &p)
   {
     time = get_msec();
     area.emplace_front(p);

@@ -9,12 +9,12 @@
 
 namespace tr
 {
-  //## Настройка границы контроля данных буфера
-  void VBO::Resize(GLsizeiptr new_hem)
+  //## Сжатие границы размещения активных данных в буфере
+  void VBO::shrink(GLsizeiptr delta)
   {
-    if(new_hem == hem) return;
-    if(new_hem < 0) ERR("VBO: negative value of new size");
-    if(new_hem > allocated) ERR("VBO: overfolw value of new size");
+    if(0 == delta) return;
+    auto new_hem = hem - delta;
+    if(new_hem < 0) ERR("VBO::shrink got negative value of new size");
     hem = new_hem;
     return;
   }
@@ -89,9 +89,9 @@ namespace tr
       if(dst > (src - d_size)) ERR("VBO::Reduce got err dst");
     #endif
 
-    glBindBuffer(gl_buffer_type, id);
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, id);
     glCopyBufferSubData(gl_buffer_type, gl_buffer_type, src, dst, d_size);
-    glBindBuffer(gl_buffer_type, 0);
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, 0);
     hem -= d_size;
     return;
   }

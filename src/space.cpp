@@ -55,7 +55,6 @@ namespace tr
   //## Как-бы, дык типа ента...
   Space::~Space(void)
   {
-    delete [] visible_rigs;
     return;
   }
 
@@ -130,39 +129,21 @@ namespace tr
 
     glBindVertexArray(space_vao);
 
-    /*
-    GLsizeiptr offset;
-    // Если в кэше нет индексов, то размещаем данные в конце VBO
-    if(cashe_vbo_ptr.empty())
-    {
-      offset = VBOsurf.SubDataAppend(sizeof_data, data);
-      ++count;
-    }
-    else // если в кэше есть свободный индекс блока (вышеднего за границу
-    {    // отображения), то меняем данные по месту его размещения в VBO
-      offset = cashe_vbo_ptr.front();
-      cashe_vbo_ptr.pop_front();
-      VBOsurf.SubDataUpdate(sizeof_data, data, offset);
-    }
-    */
     for(auto & fragment: r->area)
-    {
-      VBOsurf.SubDataAppend(tr::snip_data_size, fragment.data);
-      VBOsurfIdx.SubDataAppend(tr::snip_idx_size, fragment.reindex(count_vtc));
-      count_vtc += tr::vertices_per_snip; // для расчета следующего индекса
-      count_idx += tr::indices_per_snip;  // подсчет числа вершин в рендере
-    }
+       if(cashe_vbo_ptr.empty()) // Если кэше пустой, то добавляем данные в конец VBO
+      {
+        fragment.vbo_append(VBOsurf, VBOsurfIdx);
+        render_points += tr::indices_per_snip;  // увеличить число точек рендера
+        visible_rigs[fragment.data_offset] = &fragment;
+      }
+      else // если же в кэше есть свободная пара индексов, то заменяем данные
+      {
+        fragment.vbo_update(VBOsurf, VBOsurfIdx, cashe_vbo_ptr.front());
+        cashe_vbo_ptr.pop_front();
+        visible_rigs[fragment.data_offset] = &fragment;
+       }
 
     glBindVertexArray(0);
-
-    // Запишем в Риг адрес смещения его данных в VBO. Это значение
-    // потребуется при замене блока данных после выхода за границу
-    // отображаемой области.
-    //r->vbo_offset = offset;
-
-    // порядковым номером блока данных в VBO индексируем массив ссылок, в котором
-    // храним адреса расположеных там Rig-ов
-    //visible_rigs[static_cast<size_t>(offset/sizeof_data)] = r;
 
     return;
   }
@@ -182,21 +163,18 @@ namespace tr
 
     // Число элементов в кубе с длиной стороны = "space_i0_length" элементов:
     unsigned n = pow(space_i0_length, 3);
-    // Резервирование массива под хранение ссылок
-    visible_rigs = new rig* [n];
 
     // число байт для заполнения такого объема прямоугольниками:
-    VBOsurf.Allocate(n * BytesByQuad);
-    // Количество байт на группу атрибутов одной вершины:
-    auto stride =  static_cast<GLsizei>(BytesByVertex);
+    VBOsurf.Allocate(n * tr::snip_data_size);
+    // настройка положения атрибутов
     VBOsurf.Attrib(Prog3d.attrib_location_get("position"),
-      4, GL_FLOAT, GL_FALSE, stride, (void*)(0 * sizeof(GLfloat)));
+      4, GL_FLOAT, GL_FALSE, tr::snip_vertex_size, (void*)(0 * sizeof(GLfloat)));
     VBOsurf.Attrib(Prog3d.attrib_location_get("color"),
-      4, GL_FLOAT, GL_TRUE, stride, (void*)(4 * sizeof(GLfloat)));
+      4, GL_FLOAT, GL_TRUE, tr::snip_vertex_size, (void*)(4 * sizeof(GLfloat)));
     VBOsurf.Attrib(Prog3d.attrib_location_get("normal"),
-      4, GL_FLOAT, GL_TRUE, stride, (void*)(8 * sizeof(GLfloat)));
+      4, GL_FLOAT, GL_TRUE, tr::snip_vertex_size, (void*)(8 * sizeof(GLfloat)));
     VBOsurf.Attrib(Prog3d.attrib_location_get("fragment"),
-      2, GL_FLOAT, GL_TRUE, stride, (void*)(12 * sizeof(GLfloat)));
+      2, GL_FLOAT, GL_TRUE, tr::snip_vertex_size, (void*)(12 * sizeof(GLfloat)));
 
     // индексный массив
     VBOsurfIdx.Allocate(static_cast<size_t>(6 * n * sizeof(GLuint)));
@@ -307,64 +285,58 @@ namespace tr
     if( 0 != cashe_vbo_ptr.size() ) reduce_keys();
     return;
   }
+  */
 
-  //## Покадровое уменьшение счетчика для лишних инстансов
+  //## Покадровое "сжатие" буферов при наличии данных в cashe_vbo_ptr
   void Space::reduce_keys(void)
   {
-  // Функция вызывается при наличии данных в cashe_vbo_ptr
-  //
-  // Когда после перемещения камеры в графическом буфере остаются
-  // неиспользованные при перестроении новых границ элементы, на их место
-  // перемещаем атрибуты рабочих инстансов из конца буфера, и уменьшаем
-  // счетчик отображаемых элементов, отсекая отображение лишних.
-  //
+  /* Когда после перемещения камеры в буферах остаются неспользуемые
+   * блоки, адреса которых хранятся в списке cashe_vbo_ptr, на их
+   * место перемещаем активные из хвоста буфера */
 
-    // Выбираем  крайний, по счетчику границы, индекс в VBO
-    GLsizeiptr idSource = BytesByQuad * (count_idx - 1);
+    auto cashe = cashe_vbo_ptr.front(); // берем пару свободных адресов
 
-    // Если он оказался в кэше освободившихся, то просто сдвигаем границу,
-    // уменьшая число элементов в счетчике и выходим,
-    auto refSize = cashe_vbo_ptr.size();
-    cashe_vbo_ptr.remove(idSource);
-    if ( (refSize - cashe_vbo_ptr.size()) > 0 )
+    // Выбираем адрес крайнего блока индексов
+    GLsizeiptr data_src = VBOsurf.get_hem() - tr::snip_data_size;
+    GLsizeiptr idx_src = VBOsurfIdx.get_hem() - tr::snip_index_size;
+
+    // Если он совпал с адресом в кэше, то сжимаем границы буферов
+    // на один блок, уменьшаем кэш и удаляем запись из массива "visible_rigs"
+    if ( idx_src == cashe.second )
     {
-       cutback();
+       VBOsurf.shrink(tr::snip_data_size);
+       VBOsurfIdx.shrink(tr::snip_index_size);
+       cashe_vbo_ptr.pop_front();
+
+       auto it = visible_rigs.find(cashe.first);
+       if (it != visible_rigs.end()) visible_rigs.erase(it);
+
        return;
      }
-    
-    // если нет, то выбираем из кэша первый свободный индекс (idTarget)
-    GLsizeiptr idTarget = cashe_vbo_ptr.front();
+
+    // если нет, то переносим данные из хвостов буферов на адреса из кэша
+    VBOsurf.Reduce(data_src, cashe.first, tr::snip_data_size);
+    VBOsurfIdx.Reduce(idx_src, cashe.second, tr::snip_index_size);
+
+    // подрезаем хвосты на длину блоков данных
+    VBOsurf.shrink(tr::snip_data_size);
+    VBOsurfIdx.shrink(tr::snip_index_size);
+    // удаляем запись из кэша
     cashe_vbo_ptr.pop_front();
 
-    // и переносим блок данных из конца VBO (idSource) на место idTarget.
-    VBOsurf.Reduce(idSource, idTarget, BytesByQuad);
-    cutback();
-    
-    auto id_ref_Source = static_cast<size_t>(idSource / BytesByQuad);
-    auto id_ref_Target = static_cast<size_t>(idTarget / BytesByQuad);
+    // найти адрес фрагмента поверхности, данные которого были перемещены
+    auto it = visible_rigs.find(data_src);
+    if (it == visible_rigs.end())  ERR("Failure select visible_rigs[id_ref_Source]");
 
-    // Находим через массив visible_rigs активный риг и обновляем в его списке
-    // адрес инстанса, который был перемещен в VBO_Inst.
-    rig* r = visible_rigs[id_ref_Source];
-    if(nullptr == r) ERR("Failure in visible_rigs[id_ref_Source]");
-
-    visible_rigs[id_ref_Source] = nullptr;
-    visible_rigs[id_ref_Target] = r;
-
-    //r->vbo_offset = idTarget;
+    auto fr = visible_rigs[data_src];  // получить адрес объекта фрагмента поверхности
+    fr->data_offset = cashe.first;     // заменить в нем адрес буфера данных
+    fr->idx_offset = cashe.second;     // заменить в нем адрес буфера индексов
+    visible_rigs[cashe.first] = fr;    // обновить адрес в массиве "visible_rigs"
+    visible_rigs.erase(it);            // удалить запись со ссылкой на перемещенный фрагмент
 
     return;
   }
 
-  //## Декремент числа блоков данных в VBO и сдвиг границы
-  void Space::cutback(void)
-  {
-    --count_idx;
-    // сдвиг границы актуальных данных в буфере
-    VBOsurf.Resize( BytesByQuad * count_idx );
-    return;
-  }
-*/
   //## Расчет положения и направления движения камеры
   void Space::calc_position(const evInput & ev)
   {
@@ -430,7 +402,7 @@ namespace tr
   {
    #ifndef NDEBUG
    static bool first_call = true;
-   if(first_call) std::cout << "count of indices = " << count_idx << "\n";
+   if(first_call) std::cout << "count of render points = " << render_points << "\n";
    first_call = false;
    #endif
 
@@ -454,7 +426,7 @@ namespace tr
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    glDrawElements(GL_TRIANGLES, count_idx, GL_UNSIGNED_INT, NULL);
+    glDrawElements(GL_TRIANGLES, render_points, GL_UNSIGNED_INT, NULL);
 
     glBindVertexArray(0);
   

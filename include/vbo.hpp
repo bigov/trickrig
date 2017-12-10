@@ -17,7 +17,7 @@ class VBO {
   private:
     GLuint id = 0;            // индекс VBO
     GLsizeiptr allocated = 0; // (максимальный) выделяемый размер буфера
-    GLsizeiptr hem = 0;       // граница текущего блока данных в VBO
+    GLsizeiptr hem = 0;       // адрес размещения следующего блока в VBO
     GLenum gl_buffer_type;
 
   public:
@@ -30,7 +30,8 @@ class VBO {
     void Reduce(GLintptr, GLintptr, GLsizeiptr);
     GLsizeiptr SubDataAppend(GLsizeiptr data_size, const GLvoid* data);
     void SubDataUpdate(GLsizeiptr, const GLvoid*, GLsizeiptr offset);
-    void Resize(GLsizeiptr new_hem);
+    void shrink(GLsizeiptr);
+    GLsizeiptr get_hem(void) { return hem; }
 };
 
 } //tr

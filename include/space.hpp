@@ -49,18 +49,11 @@ namespace tr
       tr::VBO VBOsurf = {GL_ARRAY_BUFFER};   // атрибуты вершин поверхности
       tr::VBO VBOsurfIdx = {GL_ELEMENT_ARRAY_BUFFER}; // индексы вершин
 
-      // Буфер обмена индексами VBO
+      // Буфер обмена индексами VBO (данные и индексы к ним)
       std::list<std::pair<GLsizeiptr, GLsizeiptr>> cashe_vbo_ptr {};
 
-      // Массив ссылок на риги, отбражаемые на экране. Массив индексируется
-      // поррядковыми номерами блоков данных в VBO_Inst
-      tr::rig** visible_rigs = nullptr;
-
-      // 14 чисел float (4 координаты + 4 нормаль + 4 цвет + 2 текстура)
-      GLsizeiptr BytesByVertex = static_cast<GLsizeiptr>(14 * sizeof(GLfloat));
-
-      // четырехугольник в VBO
-      GLsizeiptr BytesByQuad = 4 * BytesByVertex; // размер (в байтах) группы атрибутов
+      // Массив ссылок на активные фрагменты.
+      std::map<GLsizeiptr, tr::snip*> visible_rigs {};
 
       int   space_i0_length = WIDTH_0;
       int   space_i0_radius = WIDTH_0/2;
@@ -69,8 +62,7 @@ namespace tr
 
       GLuint space_vao = 0; // ID VAO
       GLuint m_textureObj = 0;
-      GLsizei count_idx = 0; // число индексов для построения поверхности
-      GLsizei count_vtc = 0; // количество индексируемых вершин поверхности
+      GLsizei render_points = 0; // число точек передаваемых в рендер
 
       float
         rl=0.f, ud=0.f, fb=0.f, // скорость движения по направлениям
@@ -95,8 +87,7 @@ namespace tr
       void vbo_allocate_mem(void);
       void vbo_data_send(float, float, float);
 //      void recalc_borders(void);
-//      void reduce_keys(void);
-//      void cutback(void);
+      void reduce_keys(void);
 //      void recalc_border_x(float, float, float);
 //      void recalc_border_z(float, float, float);
   };

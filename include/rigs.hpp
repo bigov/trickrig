@@ -8,7 +8,6 @@
 #ifndef __RIGS_HPP__
 #define __RIGS_HPP__
 
-#include <iostream>
 #include "vbo.hpp"
 #include "glsl.hpp"
 #include "main.hpp"
@@ -29,6 +28,9 @@ namespace tr
   //## Набор данных для формирования в GPU многоугольника с индексацией вершин
   struct snip
   {
+    GLsizeiptr idx_offset  = 0; // смещение начала блока индексов в буфере GPU
+    GLsizeiptr data_offset = 0; // смещение начала блока данных в буфере GPU
+
     // Блок данных для передачи в буфер GPU
     // (нормализованый вектор с небольшим наклоном: 0.46f, 0.76f, 0.46f)
     GLfloat data[tr::digits_per_snip] = {
@@ -46,6 +48,8 @@ namespace tr
     snip(const tr::f3d &);          // конструктор по-умолчанию
     void relocate(const tr::f3d &); // установка 3D координат фигуры
     GLsizei *reindex(GLsizei);      // настройка индексов для VBO
+    void vbo_append(tr::VBO & VBOdata, tr::VBO & VBOidx);
+    void vbo_update(tr::VBO &, tr::VBO &, std::pair<GLsizeiptr, GLsizeiptr> &);
   };
 
   //##  элемент пространства
@@ -61,7 +65,6 @@ namespace tr
 
       short int type = 0;        // тип элемента (текстура, поведение, физика и т.п)
       int time;                  // время создания
-      std::forward_list<std::pair<GLsizeiptr, GLsizeiptr>> vbo_offset {}; // смещение адреса блока в VBO
       std::forward_list<tr::snip> area {};
 
     private:
