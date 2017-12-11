@@ -55,10 +55,10 @@ namespace tr
       // Массив ссылок на активные фрагменты.
       std::map<GLsizeiptr, tr::snip*> visible_rigs {};
 
-      int   space_i0_length = WIDTH_0;
-      int   space_i0_radius = WIDTH_0/2;
-      float space_f0_length = static_cast<float>(space_i0_length);
-      float space_f0_radius = static_cast<float>(space_i0_radius);
+      //int   space_i0_length = WIDTH_0;
+      //int   space_i0_radius = WIDTH_0/2;
+      //float space_f0_length = static_cast<float>(space_i0_length);
+      //float space_f0_radius = static_cast<float>(space_i0_radius);
 
       GLuint space_vao = 0; // ID VAO
       GLuint m_textureObj = 0;
@@ -90,7 +90,8 @@ namespace tr
       void reduce_keys(void);
       void recalc_border_x(float, float, float);
       void redraw_borders_x(void);
-      void recalc_border_z(float, float, float);
+      //void redraw_borders_y(void);
+      void redraw_borders_z(void);
   };
 
 } //namespace

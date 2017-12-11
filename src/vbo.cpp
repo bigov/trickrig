@@ -85,6 +85,7 @@ namespace tr
   // в неиспользуемый промежуток и уменьшение текущего индекса
   void VBO::Reduce(GLintptr src, GLintptr dst, GLsizeiptr d_size)
   {
+    //std::cout << "src: " << src << ", dst: " << dst << ", d_size: " << d_size << "\n";
     #ifndef NDEBUG // контроль точки переноса
       if(dst > (src - d_size)) ERR("VBO::Reduce got err dst");
     #endif

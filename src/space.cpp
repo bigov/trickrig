@@ -129,7 +129,7 @@ namespace tr
     glBindVertexArray(space_vao);
 
     for(auto & fragment: r->area)
-       if(cashe_vbo_ptr.empty()) // Если кэше пустой, то добавляем данные в конец VBO
+      if(cashe_vbo_ptr.empty()) // Если кэше пустой, то добавляем данные в конец VBO
       {
         fragment.vbo_append(VBOsurf, VBOsurfIdx);
         render_points += tr::indices_per_snip;  // увеличить число точек рендера
@@ -161,7 +161,7 @@ namespace tr
     glBindVertexArray(space_vao);
 
     // Число элементов в кубе с длиной стороны = "space_i0_length" элементов:
-    unsigned n = pow(space_i0_length, 3);
+    unsigned n = pow((tr::lod_0 + tr::lod_0 + 1), 3);
 
     // число байт для заполнения такого объема прямоугольниками:
     VBOsurf.Allocate(n * tr::snip_data_size);
@@ -188,52 +188,36 @@ namespace tr
   // TODO: ВНИМАНИЕ! проверяется только 10 слоев по Y
   void Space::redraw_borders_x()
   {
-    rig* r;
     float
-        x_old, x_new,
-        vf_x = floor(ViewFrom.x),
-        vf_z = floor(ViewFrom.z);
+      yMin = -5.f, yMax =  5.f, // Y границы области сбора
+      x_old, x_new,  // координаты линий удаления/вставки новых фрагментов
+      vf_x = floor(ViewFrom.x), vf_z = floor(ViewFrom.z),
+      clod_0 = ceil(tr::lod_0);
 
-    // координата X линии сбора индексов
-    if(MoveFrom.x > vf_x)
-    {
-      x_old = MoveFrom.x + ceil(tr::lod_0);
-      x_new = vf_x - ceil(tr::lod_0);
+    if(MoveFrom.x > vf_x) {
+      x_old = MoveFrom.x + clod_0;
+      x_new = vf_x - clod_0;
+    } else {
+      x_old = MoveFrom.x - clod_0;
+      x_new = vf_x + clod_0;
     }
-    else
-    {
-      x_old = MoveFrom.x - ceil(tr::lod_0);
-      x_new = vf_x + ceil(tr::lod_0);
-    }
-
-    // Y границы области сбора
-    float yMin = -5.f;
-    float yMax =  5.f;
-
     // Z границы области сбора
-    float zMin = MoveFrom.z - ceil(tr::lod_0);
-    float zMax = MoveFrom.z + ceil(tr::lod_0);
-
+    float zMin = MoveFrom.z - clod_0, zMax = MoveFrom.z + clod_0;
+    rig* r;
     // Сбор индексов VBO по оси X с удаляемой линии границы области
-    for(float z = zMin; z <= zMax; z += RigsDb0.gage)
     for(float y = yMin; y <= yMax; y += RigsDb0.gage)
+    for(float z = zMin; z <= zMax; z += RigsDb0.gage)
     {
       r = RigsDb0.get(x_old, y, z);
       if(nullptr != r)
-      {
-        for(auto & fr: r->area)
-          cashe_vbo_ptr.push_front(
-            std::make_pair(fr.data_offset, fr.idx_offset));
-      }
+        for(auto & fr: r->area) cashe_vbo_ptr.push_front(
+          std::make_pair(fr.data_offset, fr.idx_offset));
     }
-
     // Z границы области добавления
-    zMin = vf_z - ceil(tr::lod_0);
-    zMax = vf_z + ceil(tr::lod_0);
-
+    zMin = vf_z - clod_0; zMax = vf_z + clod_0;
     // Построение линии по оси X по направлению движения
     for(float y = yMin; y <= yMax; y += RigsDb0.gage)
-    for(float z = zMin; z <= zMax; z += RigsDb0.gage)
+      for(float z = zMin; z <= zMax; z += RigsDb0.gage)
         if(RigsDb0.exist(x_new, y, z)) vbo_data_send(x_new, y, z);
 
     MoveFrom.x = vf_x;
@@ -241,42 +225,44 @@ namespace tr
   }
 
   //## Построение границы области по оси Z по ходу движения
-  void Space::recalc_border_z(float direction, float VFx, float VFz)
+  // TODO: ВНИМАНИЕ! проверяется только 10 слоев по Y
+  void Space::redraw_borders_z()
   {
-    // TODO: ВНИМАНИЕ! проверяется только 10 уровней Y
-    //       надо добавить перестроение всего слоя на rigs_db.gage по Y
+    float
+      yMin = -5.f, yMax =  5.f, // Y границы области сбора
+      z_old, z_new,  // координаты линий удаления/вставки новых фрагментов
+      vf_z = floor(ViewFrom.z), vf_x = floor(ViewFrom.x),
+      clod_0 = ceil(tr::lod_0);
+
+    if(MoveFrom.z > vf_z) {
+      z_old = MoveFrom.z + clod_0;
+      z_new = vf_z - clod_0;
+    } else {
+      z_old = MoveFrom.z - clod_0;
+      z_new = vf_z + clod_0;
+    }
+    // X границы области сбора
+    float xMin = MoveFrom.x - clod_0, xMax = MoveFrom.x + clod_0;
     rig* r;
-    float z = MoveFrom.z + space_f0_radius * direction;
-    float Min = MoveFrom.x - space_f0_radius;
-    float Max = MoveFrom.x + space_f0_radius;
-
     // Сбор индексов VBO по оси Z с удаляемой линии границы области
-    for(float x = Min; x <= Max; x += RigsDb0.gage)
-      for(float y = -5.f; y <= 5.f; y += RigsDb0.gage)
-      {
-        r = RigsDb0.get(x, y, z);
-        if(nullptr != r)
-        {
-          for(auto & fr: r->area)
-            cashe_vbo_ptr.push_front(
-                  std::make_pair(fr.data_offset, fr.idx_offset));
-        }
-      }
-
-    z = VFz - space_f0_radius * direction;
-    Min = VFx - space_f0_radius;
-    Max = VFx + space_f0_radius;
-
+    for(float y = yMin; y <= yMax; y += RigsDb0.gage)
+    for(float x = xMin; x <= xMax; x += RigsDb0.gage)
+    {
+      r = RigsDb0.get(x, y, z_old);
+      if(nullptr != r)
+        for(auto & fr: r->area) cashe_vbo_ptr.push_front(
+          std::make_pair(fr.data_offset, fr.idx_offset));
+    }
+    // X границы области добавления
+    xMin = vf_x - clod_0; xMax = vf_x + clod_0;
     // Построение линии по оси Z по направлению движения
-    for(float x = Min; x <= Max; x += RigsDb0.gage)
-      for(float y = -5.f; y <= 5.f; y += RigsDb0.gage)
-        if(RigsDb0.exist(x, y, z))
-          vbo_data_send(floor(x), floor(y), floor(z));
-      
-    MoveFrom.z = VFz;
+    for(float y = yMin; y <= yMax; y += RigsDb0.gage)
+      for(float x = xMin; x <= xMax; x += RigsDb0.gage)
+        if(RigsDb0.exist(x, y, z_new)) vbo_data_send(x, y, z_new);
+
+    MoveFrom.z = vf_z;
     return;
   }
-
 
   //## Перестроение границ активной области при перемещении камеры
   void Space::recalc_borders(void)
@@ -297,23 +283,9 @@ namespace tr
    */
 
     if(floor(ViewFrom.x) != MoveFrom.x) redraw_borders_x();
-    //if(floor(ViewFrom.y) != MoveFrom.y) recalc_border_y();
-    //if(floor(ViewFrom.z) != MoveFrom.z) recalc_border_z();
+    //if(floor(ViewFrom.y) != MoveFrom.y) redraw_borders_y();
+    if(floor(ViewFrom.z) != MoveFrom.z) redraw_borders_z();
 
-    /*
-    float
-      VFx = floor(ViewFrom.x),
-      VFz = floor(ViewFrom.z),
-      dx = MoveFrom.x - VFx, // смещение камеры по оси x
-      dz = MoveFrom.z - VFz; // смещение камеры по оси z
-  
-    float
-      abs_dx = static_cast<float>(fabs(dx)),
-      abs_dz = static_cast<float>(fabs(dz));
-
-    if (abs_dx >= RigsDb0.gage) recalc_border_x(dx / abs_dx, VFx, VFz);
-    if (abs_dz >= RigsDb0.gage) recalc_border_z(dz / abs_dz, VFx, VFz);
-    */
 
     // Очистка неиспользованных элементов
     if(!cashe_vbo_ptr.empty()) reduce_keys();

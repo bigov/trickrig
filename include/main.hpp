@@ -48,9 +48,6 @@
 
 #define ERR throw std::runtime_error
 
-// Длина стороны области LOD0 (должна быть нечетным числом)
-#define WIDTH_0 31
-
 namespace tr {
 
   /** Начальная дистанция рендера окружения
@@ -59,7 +56,7 @@ namespace tr {
    * - при значении 0.0f < lod_0 <= 1.0f рисуется площадка из 9 блоков
    * - координаты блока (нулевая точка) вычилсяется через floor(), граница - через ceil()
    */
-  static const float lod_0 = 2.0f;
+  static const float lod_0 = 5.0f;
 
   // число вершин в одном снипе
   static const size_t vertices_per_snip = 4;

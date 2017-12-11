@@ -66,6 +66,7 @@ namespace tr
   //## сдвиг индексов на опорную точку
   GLsizei *snip::reindex(GLsizei stride)
   {
+    stride -= idx[0]; // для возврата индексов в исходное положение
     for(size_t i = 0; i < indices_per_snip; i++) idx[i] += stride;
     return idx;
   }
