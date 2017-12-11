@@ -35,6 +35,11 @@ namespace tr
   snip::snip(const tr::f3d & p)
   {
     relocate(p);
+    if( .0f == p.x && .0f == p.z )
+    {
+      for(size_t i = 0; i < 4; i++)
+        *vertices[i].fragment.v += .375f;
+    }
   }
 
   //## сдвиг прямоугольника
@@ -124,7 +129,7 @@ namespace tr
   {
     if(y < yMin) ERR("Y downflow"); if(y > yMax) ERR("Y overflow");
 
-    x = fround(x); y = fround(y); z = fround(z);
+    x = floor(x); y = floor(y); z = floor(z);
 
     while(y > yMin)
     {
@@ -145,11 +150,11 @@ namespace tr
   // Возвращает адрес памяти, в которой расположен элемент
   // с указанными в аргументе функции координатами.
   //
-    if(y < yMin) ERR("Y downflow");
-    if(y > yMax) ERR("Y overflow");
-
-    try { return &db.at( {fround(x), fround(y), fround(z)}); }
-    catch (...){ return nullptr; }
+    if(y < yMin) ERR("rigs::get -Y is overflow");
+    if(y > yMax) ERR("rigs::get +Y is overflow");
+    // Вначале поищем как указано.
+    try { return &db.at({x, y, z}); }
+    catch (...) { return nullptr; }
   }
 
   //## Вставка элемента в базу данных

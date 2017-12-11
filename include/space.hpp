@@ -74,7 +74,7 @@ namespace tr
 
       glm::mat4 MatView {};
       glm::vec3
-        ViewFrom {0.f, 3.f, 0.f},
+        ViewFrom {0.5f, 3.0f, 0.5f},
         Selected {},
         MoveFrom {},
         ViewTo {},
@@ -86,10 +86,11 @@ namespace tr
       void upload_vbo(void);
       void vbo_allocate_mem(void);
       void vbo_data_send(float, float, float);
-//      void recalc_borders(void);
+      void recalc_borders(void);
       void reduce_keys(void);
-//      void recalc_border_x(float, float, float);
-//      void recalc_border_z(float, float, float);
+      void recalc_border_x(float, float, float);
+      void redraw_borders_x(void);
+      void recalc_border_z(float, float, float);
   };
 
 } //namespace

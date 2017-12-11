@@ -26,7 +26,6 @@ namespace tr
   extern int get_msec(void);   // число миллисекунд от начала суток.
   extern int random_int(void);
   extern short random_short(void);
-  inline float fround( float x) { return static_cast<float>(round(x)); }
 
   // структура для оперирования с трехмерными координатами
   struct f3d
