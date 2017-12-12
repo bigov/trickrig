@@ -113,16 +113,16 @@ namespace tr
     );
     screenShaderProgram.use();
 
-    tr::VBO vboPosition = {GL_ARRAY_BUFFER};
+    tr::vbo vboPosition = {GL_ARRAY_BUFFER};
     GLfloat Position[] = { -1.f, -1.f, 1.f, -1.f, -1.f, 1.f, 1.f, 1.f };
-    vboPosition.Allocate( sizeof(Position), Position );
-    vboPosition.Attrib( screenShaderProgram.attrib_location_get("position"),
+    vboPosition.allocate( sizeof(Position), Position );
+    vboPosition.attrib( screenShaderProgram.attrib_location_get("position"),
         2, GL_FLOAT, GL_FALSE, 0, nullptr );
 
-    tr::VBO vboTexcoord = {GL_ARRAY_BUFFER};
+    tr::vbo vboTexcoord = {GL_ARRAY_BUFFER};
     GLfloat Texcoord[] = { 0.f, 0.f, 1.f, 0.f, 0.f, 1.f, 1.f, 1.f };
-    vboTexcoord.Allocate( sizeof(Texcoord), Texcoord );
-    vboTexcoord.Attrib( screenShaderProgram.attrib_location_get("texcoord"),
+    vboTexcoord.allocate( sizeof(Texcoord), Texcoord );
+    vboTexcoord.attrib( screenShaderProgram.attrib_location_get("texcoord"),
         2, GL_FLOAT, GL_FALSE, 0, nullptr );
 
     glUniform1i(screenShaderProgram.uniform_location_get("texFramebuffer"), 0);

@@ -46,20 +46,14 @@ namespace tr
 
       tr::rigs RigsDb0 {};  // структура 3D пространства LOD-0
       tr::Glsl Prog3d {};   // GLSL программа шейдеров
-      tr::VBO VBOsurf = {GL_ARRAY_BUFFER};   // атрибуты вершин поверхности
-      tr::VBO VBOsurfIdx = {GL_ELEMENT_ARRAY_BUFFER}; // индексы вершин
+      tr::vbo VBOsurf = {GL_ARRAY_BUFFER};   // атрибуты вершин поверхности
+      tr::vbo VBOidx = {GL_ELEMENT_ARRAY_BUFFER}; // индексы вершин
 
-      // Буфер обмена индексами VBO (данные и индексы к ним). Используется для
-      // перераспределения данных в VBO при изменении видимости объектов
-      std::list<std::pair<GLsizeiptr, GLsizeiptr>> CasheVBOptr {};
+      // Карта ссылок на Снипы в рендере.
+      std::unordered_map<GLsizeiptr, tr::snip*> VisibleSnips {};
 
-      // Массив ссылок на активные фрагменты.
-      std::map<GLsizeiptr, tr::snip*> VisibleSnips {};
-
-      //int   space_i0_length = WIDTH_0;
-      //int   space_i0_radius = WIDTH_0/2;
-      //float space_f0_length = static_cast<float>(space_i0_length);
-      //float space_f0_radius = static_cast<float>(space_i0_radius);
+      // Кэш блоков данных в VBO, вышедших за границу рендера
+      std::forward_list<GLsizeiptr> CasheVBOptr {};
 
       GLuint space_vao = 0; // ID VAO
       GLuint m_textureObj = 0;
@@ -68,8 +62,8 @@ namespace tr
       float
         rl=0.f, ud=0.f, fb=0.f, // скорость движения по направлениям
         look_a = 3.928f,        // азимут (0 - X)
-        //look_t = -0.276f,       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
-        look_t = -1.7f,       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
+        //look_t = -0.276f,     // тангаж (0 - горизОнталь, пи/2 - вертикаль)
+        look_t = -1.7f,         // тангаж (0 - горизОнталь, пи/2 - вертикаль)
         k_sense = 4.0f,         // TODO: чувствительность через Config
         k_mouse = 0.002f;
 
@@ -91,7 +85,7 @@ namespace tr
       void reduce_vbo(void);
       void recalc_border_x(float, float, float);
       void redraw_borders_x(void);
-      //void redraw_borders_y(void);
+      //void redraw_borders_y(void); // TODO
       void redraw_borders_z(void);
   };
 

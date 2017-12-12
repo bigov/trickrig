@@ -29,7 +29,6 @@ namespace tr
   //## Набор данных для формирования в GPU многоугольника с индексацией вершин
   struct snip
   {
-    GLsizeiptr idx_offset  = 0; // смещение начала блока индексов в буфере GPU
     GLsizeiptr data_offset = 0; // смещение начала блока данных в буфере GPU
 
     // Блок данных для передачи в буфер GPU
@@ -49,8 +48,9 @@ namespace tr
     snip(const tr::f3d &);          // конструктор по-умолчанию
     void relocate(const tr::f3d &); // установка 3D координат фигуры
     GLsizei *reindex(GLsizei);      // настройка индексов для VBO
-    void vbo_append(tr::VBO & VBOdata, tr::VBO & VBOidx);
-    void vbo_update(tr::VBO &, tr::VBO &, std::pair<GLsizeiptr, GLsizeiptr> &);
+    void vbo_append(tr::vbo & VBOdata, tr::vbo & VBOidx);
+    void vbo_update(tr::vbo &, tr::vbo &, GLsizeiptr offset);
+    void jam_data(vbo &VBOdata, vbo &VBOidx, GLintptr dst);
   };
 
   //##  элемент пространства

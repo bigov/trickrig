@@ -69,7 +69,7 @@ namespace tr {
   // размер (число байт) блока данных снипа
   static const GLsizeiptr snip_data_bytes = digits_per_snip * sizeof(GLfloat);
   // размер (число байт) блока индексов снипа
-  static const GLsizeiptr snip_index_bytes = indices_per_snip * sizeof(GLsizei);
+  static const GLsizeiptr snip_index_bytes = indices_per_snip * sizeof(GLuint);
   // число байт для записи данных одной вершины
   static const GLsizeiptr snip_bytes_per_vertex = digits_per_vertex * sizeof(GLfloat);
 

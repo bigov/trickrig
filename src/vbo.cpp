@@ -10,7 +10,7 @@
 namespace tr
 {
   //## Сжатие границы размещения активных данных в буфере
-  void VBO::shrink(GLsizeiptr delta)
+  void vbo::shrink(GLsizeiptr delta)
   {
     if(0 == delta) return;
     auto new_hem = hem - delta;
@@ -20,7 +20,7 @@ namespace tr
   }
 
   //## Cоздание нового буфера указанного в параметре размера
-  void VBO::Allocate(GLsizeiptr al)
+  void vbo::allocate(GLsizeiptr al)
   {
     if(0 != id) ERR("VBO::Allocate trying to re-init exist object.");
     allocated = al;
@@ -40,7 +40,7 @@ namespace tr
   }
 
   //## Cоздание и заполнение буфера с указанным в параметрах данными
-  void VBO::Allocate(GLsizeiptr al, const GLvoid* data)
+  void vbo::allocate(GLsizeiptr al, const GLvoid* data)
   {
     if(0 != id) ERR("VBO::Allocate trying to re-init exist object.");
     allocated = al;
@@ -60,7 +60,7 @@ namespace tr
   }
 
   //## Настройка атрибутов для float
-  void VBO::Attrib(GLuint index, GLint d_size, GLenum type, GLboolean normalized,
+  void vbo::attrib(GLuint index, GLint d_size, GLenum type, GLboolean normalized,
     GLsizei stride, const GLvoid* pointer)
   {
     glEnableVertexAttribArray(index);
@@ -71,7 +71,7 @@ namespace tr
   }
 
   //## Настройка атрибутов для int
-  void VBO::AttribI(GLuint index, GLint d_size, GLenum type,
+  void vbo::attrib_i(GLuint index, GLint d_size, GLenum type,
     GLsizei stride, const GLvoid* pointer)
   {
     glEnableVertexAttribArray(index);
@@ -83,11 +83,10 @@ namespace tr
 
   //## Сжатие буфера атрибутов за счет перемещения данных из хвоста
   // в неиспользуемый промежуток и уменьшение текущего индекса
-  void VBO::Reduce(GLintptr src, GLintptr dst, GLsizeiptr d_size)
+  void vbo::jam_data(GLintptr src, GLintptr dst, GLsizeiptr d_size)
   {
-    //std::cout << "src: " << src << ", dst: " << dst << ", d_size: " << d_size << "\n";
     #ifndef NDEBUG // контроль точки переноса
-      if(dst > (src - d_size)) ERR("VBO::Reduce got err dst");
+      if(dst > (src - d_size)) ERR("VBO::CopySubData got err dst");
     #endif
 
     if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, id);
@@ -98,7 +97,7 @@ namespace tr
   }
 
   //## Внесение данных с контролем границы максимально выделенного размера буфера
-  GLsizeiptr VBO::SubDataAppend(GLsizeiptr d_size, const GLvoid* data)
+  GLsizeiptr vbo::data_append(GLsizeiptr d_size, const GLvoid* data)
   {
   /* вносит данные в буфер по указателю границы данных блока (hem), возвращает
    * положение указателя по которому разместились данные и сдвигает границу
@@ -118,7 +117,7 @@ namespace tr
   }
 
   //## Замена блока данных в указанном месте с контролем границы размера буфера
-  void VBO::SubDataUpdate(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr offset)
+  void vbo::data_update(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr offset)
   {
     #ifndef NDEBUG //--проверка свободного места в буфере----------------------
     if (offset > (hem - d_size)) ERR("VBO::SubDataUpdate got bad index for update attrib group");

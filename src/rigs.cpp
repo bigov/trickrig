@@ -72,27 +72,37 @@ namespace tr
   }
 
   //## добавление данных в буферы VBO
-  void snip::vbo_append(tr::VBO &VBOdata, tr::VBO &VBOidx)
+  void snip::vbo_append(tr::vbo &VBOdata, tr::vbo &VBOidx)
   {
   /* Добавляет данные в конец VBO буфера данных и VBO буфера индексов
    * и запоминает смещение адресов в VBO где данные были записаны
    */
-    data_offset = VBOdata.SubDataAppend( tr::snip_data_bytes, data );
-    idx_offset = VBOidx.SubDataAppend( tr::snip_index_bytes,
-       reindex( data_offset / tr::snip_bytes_per_vertex ));
+    data_offset = VBOdata.data_append( tr::snip_data_bytes, data );
+    VBOidx.data_append( tr::snip_index_bytes, reindex( data_offset/tr::snip_bytes_per_vertex ));
     return;
   }
 
   //## обновление данных в VBO буфере данных и VBO буфере индексов
-  void snip::vbo_update(tr::VBO &VBOdata, tr::VBO &VBOidx, std::pair<GLsizeiptr, GLsizeiptr> &p)
+  void snip::vbo_update(tr::vbo &VBOdata, tr::vbo &VBOidx, GLsizeiptr offset)
   {
-    data_offset = p.first;
-    idx_offset = p.second;
+    data_offset = offset;
+    GLsizeiptr idx_offset = (offset / tr::digits_per_snip) * tr::indices_per_snip;
 
-    VBOdata.SubDataUpdate( tr::snip_data_bytes, data, p.first );
-    VBOidx.SubDataUpdate( tr::snip_index_bytes,
-      reindex( data_offset / tr::snip_bytes_per_vertex ), p.second );
+    VBOdata.data_update( tr::snip_data_bytes, data, data_offset );
+    VBOidx.data_update( tr::snip_index_bytes,
+      reindex( data_offset / tr::snip_bytes_per_vertex ), idx_offset );
 
+    return;
+  }
+
+  //## перемещение блока данных внутри VBO буфера
+  void snip::jam_data(tr::vbo &VBOdata, tr::vbo &VBOidx, GLintptr dst)
+  {
+    VBOdata.jam_data(data_offset, dst, tr::snip_data_bytes);
+    GLintptr idx_src = (data_offset / tr::digits_per_snip) * tr::indices_per_snip;
+    GLintptr idx_dst = (dst / tr::digits_per_snip) * tr::indices_per_snip;
+    VBOidx.jam_data(idx_src, idx_dst, tr::snip_index_bytes);
+    data_offset = dst;
     return;
   }
 
