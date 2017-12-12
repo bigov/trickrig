@@ -11,7 +11,7 @@
 namespace tr
 {
   //## Формирование 3D пространства
-  Space::Space(void)
+  space::space(void)
   {
     RigsDb0.gage = 1.0f; // размер стороны для LOD-0
     db_connect();
@@ -53,13 +53,13 @@ namespace tr
   }
 
   //## Как-бэ, дык типа ента... Да про запас!
-  Space::~Space(void)
+  space::~space(void)
   {
     return;
   }
 
   //## Загрузка в VBO (графическую память) данных отображаемых объектов 3D сцены
-  void Space::upload_vbo(void)
+  void space::upload_vbo(void)
   {
   // TODO: тут должны загружаться в графическую память все lod_?,
   //       но пока загружается только lod_0
@@ -89,11 +89,11 @@ namespace tr
   }
 
   //## Соединение с БД, в которой хранится виртуальное 3D пространство
-  void Space::db_connect(void)
+  void space::db_connect(void)
   {
   // TODO: должно быть заменено на подключение к базе данных пространства,
-  // а пока имитируем небольшую (100х100) базу данных структурой "rigs_db"
-    int s = 50;
+  // а пока имитируем небольшую базу данных Rigs
+    int s = 10;
     int y = 0.f;
 
     for (int x = 0 - s; x < s; x += 1)
@@ -107,7 +107,7 @@ namespace tr
   }
 
   //## запись данных в графический буфер
-  void Space::vbo_data_send(float x, float y, float z)
+  void space::vbo_data_send(float x, float y, float z)
   {
   /* Индексы размещенных в VBO данных, которые при перемещении камеры вышли
    * за границу отображения, запоминаются в кэше (idx_ref), чтобы на их место
@@ -121,25 +121,25 @@ namespace tr
    *    vec2 fragment - 2D коодината в текстурной карте
    */
 
-    tr::rig* r = RigsDb0.get(x, y, z);
+    tr::rig* Rig = RigsDb0.get(x, y, z);
     #ifndef NDEBUG
-    if(nullptr == r) ERR("ERR: call post_key for empty space.");
+    if(nullptr == Rig) ERR("ERR: call post_key for empty space.");
     #endif
 
     glBindVertexArray(space_vao);
 
-    for(auto & fragment: r->area)
-      if(cashe_vbo_ptr.empty()) // Если кэше пустой, то добавляем данные в конец VBO
+    for(auto & Snip: Rig->area)
+      if(CasheVBOptr.empty()) // Если кэше пустой, то добавляем данные в конец VBO
       {
-        fragment.vbo_append(VBOsurf, VBOsurfIdx);
+        Snip.vbo_append(VBOsurf, VBOsurfIdx);
         render_points += tr::indices_per_snip;  // увеличить число точек рендера
-        visible_rigs[fragment.data_offset] = &fragment;
+        VisibleSnips[Snip.data_offset] = &Snip;
       }
-      else // если же в кэше есть свободная пара индексов, то заменяем данные
+      else // если в кэше есть данные, то пишем на их место
       {
-        fragment.vbo_update(VBOsurf, VBOsurfIdx, cashe_vbo_ptr.front());
-        cashe_vbo_ptr.pop_front();
-        visible_rigs[fragment.data_offset] = &fragment;
+        Snip.vbo_update(VBOsurf, VBOsurfIdx, CasheVBOptr.front());
+        CasheVBOptr.pop_front();
+        VisibleSnips[Snip.data_offset] = &Snip;
        }
 
     glBindVertexArray(0);
@@ -148,7 +148,7 @@ namespace tr
   }
 
   //## Инициализировать, настроить VBO и заполнить данными
-  void Space::vbo_allocate_mem(void)
+  void space::vbo_allocate_mem(void)
   {
     Prog3d.attach_shaders(
       tr::Config::filepath(VERT_SHADER),
@@ -164,16 +164,16 @@ namespace tr
     unsigned n = pow((tr::lod_0 + tr::lod_0 + 1), 3);
 
     // число байт для заполнения такого объема прямоугольниками:
-    VBOsurf.Allocate(n * tr::snip_data_size);
+    VBOsurf.Allocate(n * tr::snip_data_bytes);
     // настройка положения атрибутов
     VBOsurf.Attrib(Prog3d.attrib_location_get("position"),
-      4, GL_FLOAT, GL_FALSE, tr::snip_vertex_size, (void*)(0 * sizeof(GLfloat)));
+      4, GL_FLOAT, GL_FALSE, tr::snip_bytes_per_vertex, (void*)(0 * sizeof(GLfloat)));
     VBOsurf.Attrib(Prog3d.attrib_location_get("color"),
-      4, GL_FLOAT, GL_TRUE, tr::snip_vertex_size, (void*)(4 * sizeof(GLfloat)));
+      4, GL_FLOAT, GL_TRUE, tr::snip_bytes_per_vertex, (void*)(4 * sizeof(GLfloat)));
     VBOsurf.Attrib(Prog3d.attrib_location_get("normal"),
-      4, GL_FLOAT, GL_TRUE, tr::snip_vertex_size, (void*)(8 * sizeof(GLfloat)));
+      4, GL_FLOAT, GL_TRUE, tr::snip_bytes_per_vertex, (void*)(8 * sizeof(GLfloat)));
     VBOsurf.Attrib(Prog3d.attrib_location_get("fragment"),
-      2, GL_FLOAT, GL_TRUE, tr::snip_vertex_size, (void*)(12 * sizeof(GLfloat)));
+      2, GL_FLOAT, GL_TRUE, tr::snip_bytes_per_vertex, (void*)(12 * sizeof(GLfloat)));
 
     // индексный массив
     VBOsurfIdx.Allocate(static_cast<size_t>(6 * n * sizeof(GLuint)));
@@ -186,7 +186,7 @@ namespace tr
 
   //## Построение границы области по оси X по ходу движения
   // TODO: ВНИМАНИЕ! проверяется только 10 слоев по Y
-  void Space::redraw_borders_x()
+  void space::redraw_borders_x()
   {
     float
       yMin = -5.f, yMax =  5.f, // Y границы области сбора
@@ -210,7 +210,7 @@ namespace tr
     {
       r = RigsDb0.get(x_old, y, z);
       if(nullptr != r)
-        for(auto & fr: r->area) cashe_vbo_ptr.push_front(
+        for(auto & fr: r->area) CasheVBOptr.push_front(
           std::make_pair(fr.data_offset, fr.idx_offset));
     }
     // Z границы области добавления
@@ -226,7 +226,7 @@ namespace tr
 
   //## Построение границы области по оси Z по ходу движения
   // TODO: ВНИМАНИЕ! проверяется только 10 слоев по Y
-  void Space::redraw_borders_z()
+  void space::redraw_borders_z()
   {
     float
       yMin = -5.f, yMax =  5.f, // Y границы области сбора
@@ -250,7 +250,7 @@ namespace tr
     {
       r = RigsDb0.get(x, y, z_old);
       if(nullptr != r)
-        for(auto & fr: r->area) cashe_vbo_ptr.push_front(
+        for(auto & fr: r->area) CasheVBOptr.push_front(
           std::make_pair(fr.data_offset, fr.idx_offset));
     }
     // X границы области добавления
@@ -265,7 +265,7 @@ namespace tr
   }
 
   //## Перестроение границ активной области при перемещении камеры
-  void Space::recalc_borders(void)
+  void space::recalc_borders(void)
   {
   /*   Вызвается покадрово.
    *
@@ -286,62 +286,63 @@ namespace tr
     //if(floor(ViewFrom.y) != MoveFrom.y) redraw_borders_y();
     if(floor(ViewFrom.z) != MoveFrom.z) redraw_borders_z();
 
-
-    // Очистка неиспользованных элементов
-    if(!cashe_vbo_ptr.empty()) reduce_keys();
+    while(!CasheVBOptr.empty()) reduce_vbo(); // Очистка неиспользованного кэша
     return;
   }
 
-  //## Покадровое "сжатие" буферов при наличии данных в cashe_vbo_ptr
-  void Space::reduce_keys(void)
+  //## "Утряска" буферов VBO - удаление элементов по списку cashe_vbo_ptr
+  void space::reduce_vbo(void)
   {
-  /* Когда после перемещения камеры в буферах остаются неспользуемые
-   * блоки, адреса которых хранятся в списке cashe_vbo_ptr, на их
-   * место перемещаем активные из хвоста буфера */
+  /* Если в cashe_vbo_ptr остаются адреса вышедших из зоны рендера блоков, то
+   * на их место перемещаем блоки данных из хвоста буфера */
 
-    auto cashe = cashe_vbo_ptr.front(); // берем пару свободных адресов
+    auto CashePair = CasheVBOptr.front(); // Извлекаем пару адресов
+    CasheVBOptr.pop_front();              // и удаляем эту запись
 
-    // Выбираем адрес крайнего блока индексов
-    GLsizeiptr data_src = VBOsurf.get_hem() - tr::snip_data_size;
-    GLsizeiptr idx_src = VBOsurfIdx.get_hem() - tr::snip_index_size;
+    // адрес крайнего в хвоста VBO блока данных
+    GLsizeiptr data_src = VBOsurf.get_hem() - tr::snip_data_bytes;
 
-    // Если он совпал с адресом в кэше, то сжимаем границы буферов
-    // на один блок, уменьшаем кэш и удаляем запись из массива "visible_rigs"
-    if ( idx_src == cashe.second )
+    if ( data_src < CashePair.first )
     {
-       VBOsurf.shrink(tr::snip_data_size);
-       VBOsurfIdx.shrink(tr::snip_index_size);
-       cashe_vbo_ptr.pop_front(); // удаляем запись из кэша
+   /* Есть проблема, когда ссылка на элемент из хвоста VBO присутствовала в
+    * середине кэша переноса (CasheVBOptr), но элемент был перенесен по адресу
+    * из крайней пары CasheVBOptr. Ссылка становится невалидной и когда доходим
+    * до ее обработки получаем data_src < CashePair.first и прерывание по ошибке.
+    */
+    }
 
-       auto it = visible_rigs.find(cashe.first);
-       if (it != visible_rigs.end()) visible_rigs.erase(it);
+    // Если адрес блока совпал с адресом в кэше, то сдвигаем границу
+    // буферов на один блок
+    if ( data_src == CashePair.first )
+    {
+       VBOsurf.shrink(tr::snip_data_bytes); // обрезать хвосты VBO
+       VBOsurfIdx.shrink(tr::snip_index_bytes);
 
+       // Удалить адрес фрагмента из контрольного массива
+       auto it = VisibleSnips.find(CashePair.first);
+       if (it != VisibleSnips.end()) VisibleSnips.erase(it);
+
+       render_points -= tr::indices_per_snip;
        return;
      }
 
-    // если нет, то переносим данные из хвостов буферов на адреса из кэша
-    VBOsurf.Reduce(data_src, cashe.first, tr::snip_data_size);
-    VBOsurfIdx.Reduce(idx_src, cashe.second, tr::snip_index_size);
+    auto Snip = VisibleSnips[data_src];   // получить адрес объекта фрагмента поверхности
+    Snip->vbo_update(VBOsurf, VBOsurfIdx, CashePair);
+    VisibleSnips[Snip->data_offset] = Snip; // обновить ссылку в массиве "visible_rigs"
 
-    VBOsurf.shrink(tr::snip_data_size); // подрезаем хвосты на длину блоков данных
-    VBOsurfIdx.shrink(tr::snip_index_size);
-    cashe_vbo_ptr.pop_front();          // удаляем запись из кэша
+    VBOsurf.shrink(tr::snip_data_bytes); // обрезать хвосты VBO
+    VBOsurfIdx.shrink(tr::snip_index_bytes);
 
-    // найти адрес фрагмента поверхности, данные которого были перемещены
-    auto it = visible_rigs.find(data_src);
-    if (it == visible_rigs.end())  ERR("Failure select visible_rigs[id_ref_Source]");
+    // Удалить адрес фрагмента из контрольного массива
+    auto it = VisibleSnips.find(data_src);
+    if (it != VisibleSnips.end()) VisibleSnips.erase(it);
 
-    auto fr = visible_rigs[data_src];  // получить адрес объекта фрагмента поверхности
-    fr->data_offset = cashe.first;     // заменить в нем адрес буфера данных
-    fr->idx_offset = cashe.second;     // заменить в нем адрес буфера индексов
-    visible_rigs[cashe.first] = fr;    // обновить ссылку в массиве "visible_rigs"
-    visible_rigs.erase(it);            // удалить ссылку со старого адреса
-
+    render_points -= tr::indices_per_snip;
     return;
   }
 
   //## Расчет положения и направления движения камеры
-  void Space::calc_position(const evInput & ev)
+  void space::calc_position(const evInput & ev)
   {
     look_a += ev.dx * k_mouse;
     if(look_a > two_pi) look_a -= two_pi;
@@ -369,14 +370,14 @@ namespace tr
     ViewTo = ViewFrom + LookDir;
 
     // Расчет матрицы вида
-    MatView = glm::lookAt(ViewFrom, ViewTo, upward);
+    MatView = glm::lookAt(ViewFrom, ViewTo, UpWard);
 
     calc_selected_area(LookDir);
     return;
   }
 
   //## Расчет координат ближнего блока, на который направлен взгляд
-  void Space::calc_selected_area(glm::vec3 & s_dir)
+  void space::calc_selected_area(glm::vec3 & s_dir)
   {
      Selected = ViewFrom - s_dir;
      return;
@@ -401,7 +402,7 @@ namespace tr
   }
 
   //## Функция, вызываемая из цикла окна для рендера сцены
-  void Space::draw(const evInput & ev)
+  void space::draw(const evInput & ev)
   {
    #ifndef NDEBUG
    static bool first_call = true;

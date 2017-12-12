@@ -29,7 +29,7 @@ namespace tr
 
       tr::Config* cfg = nullptr;        // управление настройками
       tr::TTF ttf {};                   // создание надписей
-      tr::Space space {};               // виртуальное пространство
+      tr::space space {};               // виртуальное пространство
       tr::pngImg show_fps {};           // табличка с fps
       tr::Glsl screenShaderProgram {};  // шейдерная программа
 

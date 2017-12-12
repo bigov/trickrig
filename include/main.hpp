@@ -56,7 +56,7 @@ namespace tr {
    * - при значении 0.0f < lod_0 <= 1.0f рисуется площадка из 9 блоков
    * - координаты блока (нулевая точка) вычилсяется через floor(), граница - через ceil()
    */
-  static const float lod_0 = 5.0f;
+  static const float lod_0 = 1.0f;
 
   // число вершин в одном снипе
   static const size_t vertices_per_snip = 4;
@@ -67,11 +67,11 @@ namespace tr {
   // количество чисел (GLfloat) в блоке данных снипа
   static const size_t digits_per_snip = digits_per_vertex * vertices_per_snip;
   // размер (число байт) блока данных снипа
-  static const GLsizeiptr snip_data_size = digits_per_snip * sizeof(GLfloat);
+  static const GLsizeiptr snip_data_bytes = digits_per_snip * sizeof(GLfloat);
   // размер (число байт) блока индексов снипа
-  static const GLsizeiptr snip_index_size = indices_per_snip * sizeof(GLsizei);
+  static const GLsizeiptr snip_index_bytes = indices_per_snip * sizeof(GLsizei);
   // число байт для записи данных одной вершины
-  static const GLsizeiptr snip_vertex_size = digits_per_vertex * sizeof(GLfloat);
+  static const GLsizeiptr snip_bytes_per_vertex = digits_per_vertex * sizeof(GLfloat);
 
   struct evInput
   {

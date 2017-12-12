@@ -12,7 +12,7 @@ namespace tr
   float yMin = -100.f;
   float yMax = 100.f;
 
-  Vertex::Vertex(GLfloat *data)
+  vertex::vertex(GLfloat *data)
   {
     position.x = data++;
     position.y = data++;
@@ -67,7 +67,7 @@ namespace tr
   GLsizei *snip::reindex(GLsizei stride)
   {
     stride -= idx[0]; // для возврата индексов в исходное положение
-    for(size_t i = 0; i < indices_per_snip; i++) idx[i] += stride;
+    for(size_t i = 0; i < tr::indices_per_snip; i++) idx[i] += stride;
     return idx;
   }
 
@@ -77,9 +77,9 @@ namespace tr
   /* Добавляет данные в конец VBO буфера данных и VBO буфера индексов
    * и запоминает смещение адресов в VBO где данные были записаны
    */
-    data_offset = VBOdata.SubDataAppend( tr::snip_data_size, data );
-    idx_offset = VBOidx.SubDataAppend( tr::snip_index_size,
-       reindex( data_offset / tr::snip_vertex_size ));
+    data_offset = VBOdata.SubDataAppend( tr::snip_data_bytes, data );
+    idx_offset = VBOidx.SubDataAppend( tr::snip_index_bytes,
+       reindex( data_offset / tr::snip_bytes_per_vertex ));
     return;
   }
 
@@ -89,9 +89,9 @@ namespace tr
     data_offset = p.first;
     idx_offset = p.second;
 
-    VBOdata.SubDataUpdate( tr::snip_data_size, data, p.first );
-    VBOidx.SubDataUpdate( tr::snip_index_size,
-      reindex( data_offset / tr::snip_vertex_size ), p.second );
+    VBOdata.SubDataUpdate( tr::snip_data_bytes, data, p.first );
+    VBOidx.SubDataUpdate( tr::snip_index_bytes,
+      reindex( data_offset / tr::snip_bytes_per_vertex ), p.second );
 
     return;
   }

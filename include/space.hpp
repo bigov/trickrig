@@ -33,27 +33,28 @@
 namespace tr
 {
 
-  class Space
+  class space
   {
     public:
-      Space(void);
-      ~Space(void);
+      space(void);
+      ~space(void);
       void draw(const evInput&);
 
     private:
-      Space(const tr::Space&);
-      Space operator=(const tr::Space&);
+      space(const tr::space&);
+      space operator=(const tr::space&);
 
       tr::rigs RigsDb0 {};  // структура 3D пространства LOD-0
       tr::Glsl Prog3d {};   // GLSL программа шейдеров
       tr::VBO VBOsurf = {GL_ARRAY_BUFFER};   // атрибуты вершин поверхности
       tr::VBO VBOsurfIdx = {GL_ELEMENT_ARRAY_BUFFER}; // индексы вершин
 
-      // Буфер обмена индексами VBO (данные и индексы к ним)
-      std::list<std::pair<GLsizeiptr, GLsizeiptr>> cashe_vbo_ptr {};
+      // Буфер обмена индексами VBO (данные и индексы к ним). Используется для
+      // перераспределения данных в VBO при изменении видимости объектов
+      std::list<std::pair<GLsizeiptr, GLsizeiptr>> CasheVBOptr {};
 
       // Массив ссылок на активные фрагменты.
-      std::map<GLsizeiptr, tr::snip*> visible_rigs {};
+      std::map<GLsizeiptr, tr::snip*> VisibleSnips {};
 
       //int   space_i0_length = WIDTH_0;
       //int   space_i0_radius = WIDTH_0/2;
@@ -67,18 +68,18 @@ namespace tr
       float
         rl=0.f, ud=0.f, fb=0.f, // скорость движения по направлениям
         look_a = 3.928f,        // азимут (0 - X)
-        look_t = -0.276f,       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
-        //look_t = -1.7f,       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
+        //look_t = -0.276f,       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
+        look_t = -1.7f,       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
         k_sense = 4.0f,         // TODO: чувствительность через Config
         k_mouse = 0.002f;
 
       glm::mat4 MatView {};
       glm::vec3
-        ViewFrom {0.5f, 3.0f, 0.5f},
+        ViewFrom {0.5f, 5.0f, 0.5f},
         Selected {},
         MoveFrom {},
         ViewTo {},
-        upward {0.0, 1.0, 0.0}; // направление наверх
+        UpWard {0.0, 1.0, 0.0}; // направление наверх
 
       void db_connect(void);
       void calc_position(const tr::evInput &);
@@ -87,7 +88,7 @@ namespace tr
       void vbo_allocate_mem(void);
       void vbo_data_send(float, float, float);
       void recalc_borders(void);
-      void reduce_keys(void);
+      void reduce_vbo(void);
       void recalc_border_x(float, float, float);
       void redraw_borders_x(void);
       //void redraw_borders_y(void);
