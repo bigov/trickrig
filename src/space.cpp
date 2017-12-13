@@ -92,7 +92,6 @@ namespace tr
   void space::db_connect(void)
   {
   // TODO: должно быть заменено на подключение к базе данных пространства,
-  // а пока имитируем небольшую базу данных Rigs
     int s = 50;
     int y = 0.f;
 
@@ -102,7 +101,8 @@ namespace tr
         RigsDb0.emplace(x, y, z);
       }
 
-    //RigsDb0.emplace(0, 2, 0);
+    // http://www.opengl-tutorial.org/ru/beginners-tutorials/tutorial-7-model-loading/
+
     return;
   }
 
