@@ -46,14 +46,14 @@ namespace tr
 
       tr::rigs RigsDb0 {};  // структура 3D пространства LOD-0
       tr::Glsl Prog3d {};   // GLSL программа шейдеров
-      tr::vbo VBOsurf = {GL_ARRAY_BUFFER};   // атрибуты вершин поверхности
-      tr::vbo VBOidx = {GL_ELEMENT_ARRAY_BUFFER}; // индексы вершин
+      tr::vbo VBOdata = {GL_ARRAY_BUFFER};   // атрибуты вершин поверхности
+      tr::vbo VBOindex = {GL_ELEMENT_ARRAY_BUFFER}; // индексы вершин
 
       // Карта ссылок на Снипы в рендере.
       std::unordered_map<GLsizeiptr, tr::snip*> VisibleSnips {};
 
       // Кэш блоков данных в VBO, вышедших за границу рендера
-      std::forward_list<GLsizeiptr> CasheVBOptr {};
+      std::forward_list<GLsizeiptr> CashedSnips {};
 
       GLuint space_vao = 0; // ID VAO
       GLuint m_textureObj = 0;
@@ -82,7 +82,7 @@ namespace tr
       void vbo_allocate_mem(void);
       void vbo_data_send(float, float, float);
       void recalc_borders(void);
-      void reduce_vbo(void);
+      void clear_cashed_snips(void);
       void recalc_border_x(float, float, float);
       void redraw_borders_x(void);
       //void redraw_borders_y(void); // TODO

@@ -93,7 +93,7 @@ namespace tr
   {
   // TODO: должно быть заменено на подключение к базе данных пространства,
   // а пока имитируем небольшую базу данных Rigs
-    int s = 10;
+    int s = 50;
     int y = 0.f;
 
     for (int x = 0 - s; x < s; x += 1)
@@ -122,17 +122,17 @@ namespace tr
     glBindVertexArray(space_vao);
 
     for(auto & Snip: Rig->area)
-      if(CasheVBOptr.empty()) // Если кэш пустой, то добавляем данные в конец VBO
+      if(CashedSnips.empty()) // Если кэш пустой, то добавляем данные в конец VBO
       {
-        Snip.vbo_append(VBOsurf, VBOidx);
+        Snip.vbo_append(VBOdata, VBOindex);
         render_points += tr::indices_per_snip;  // увеличить число точек рендера
         VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
       }
       else // если в кэше есть данные, то пишем на их место
       {
-        Snip.vbo_update(VBOsurf, VBOidx, CasheVBOptr.front());
-        CasheVBOptr.pop_front();                // укоротить кэш
-        VisibleSnips[Snip.data_offset] = &Snip; // обновить ссылку
+        Snip.vbo_update(VBOdata, VBOindex, CashedSnips.front());
+        CashedSnips.pop_front();                // укоротить кэш
+        VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
        }
 
     glBindVertexArray(0);
@@ -157,19 +157,19 @@ namespace tr
     unsigned n = pow((tr::lod_0 + tr::lod_0 + 1), 3);
 
     // число байт для заполнения такого объема прямоугольниками:
-    VBOsurf.allocate(n * tr::snip_data_bytes);
+    VBOdata.allocate(n * tr::snip_data_bytes);
     // настройка положения атрибутов
-    VBOsurf.attrib(Prog3d.attrib_location_get("position"),
+    VBOdata.attrib(Prog3d.attrib_location_get("position"),
       4, GL_FLOAT, GL_FALSE, tr::snip_bytes_per_vertex, (void*)(0 * sizeof(GLfloat)));
-    VBOsurf.attrib(Prog3d.attrib_location_get("color"),
+    VBOdata.attrib(Prog3d.attrib_location_get("color"),
       4, GL_FLOAT, GL_TRUE, tr::snip_bytes_per_vertex, (void*)(4 * sizeof(GLfloat)));
-    VBOsurf.attrib(Prog3d.attrib_location_get("normal"),
+    VBOdata.attrib(Prog3d.attrib_location_get("normal"),
       4, GL_FLOAT, GL_TRUE, tr::snip_bytes_per_vertex, (void*)(8 * sizeof(GLfloat)));
-    VBOsurf.attrib(Prog3d.attrib_location_get("fragment"),
+    VBOdata.attrib(Prog3d.attrib_location_get("fragment"),
       2, GL_FLOAT, GL_TRUE, tr::snip_bytes_per_vertex, (void*)(12 * sizeof(GLfloat)));
 
     // индексный массив
-    VBOidx.allocate(static_cast<size_t>(6 * n * sizeof(GLuint)));
+    VBOindex.allocate(static_cast<size_t>(6 * n * sizeof(GLuint)));
 
     glBindVertexArray(0);
     Prog3d.unuse();
@@ -181,6 +181,7 @@ namespace tr
   // TODO: ВНИМАНИЕ! проверяется только 10 слоев по Y
   void space::redraw_borders_x()
   {
+    rig* Rig;
     float
       yMin = -5.f, yMax =  5.f, // Y границы области сбора
       x_old, x_new,  // координаты линий удаления/вставки новых фрагментов
@@ -194,20 +195,22 @@ namespace tr
       x_old = MoveFrom.x - clod_0;
       x_new = vf_x + clod_0;
     }
-    // Z границы области сбора
+
+    // Сбор индексов VBO с задней границы области
     float zMin = MoveFrom.z - clod_0, zMax = MoveFrom.z + clod_0;
-    rig* Rig;
-    // Сбор индексов VBO по оси X с удаляемой линии границы области
     for(float y = yMin; y <= yMax; y += RigsDb0.gage)
     for(float z = zMin; z <= zMax; z += RigsDb0.gage)
     {
       Rig = RigsDb0.get(x_old, y, z);
-      if(nullptr != Rig)
-        for(auto & Snip: Rig->area) CasheVBOptr.push_front(Snip.data_offset);
+      if(nullptr != Rig) for(auto & Snip: Rig->area)
+      {
+        VisibleSnips.erase(Snip.data_offset);
+        CashedSnips.push_front(Snip.data_offset);
+      }
     }
-    // Z границы области добавления
+
+    // Построение линии по направлению движения
     zMin = vf_z - clod_0; zMax = vf_z + clod_0;
-    // Построение линии по оси X по направлению движения
     for(float y = yMin; y <= yMax; y += RigsDb0.gage)
       for(float z = zMin; z <= zMax; z += RigsDb0.gage)
         if(RigsDb0.exist(x_new, y, z)) vbo_data_send(x_new, y, z);
@@ -220,6 +223,7 @@ namespace tr
   // TODO: ВНИМАНИЕ! проверяется только 10 слоев по Y
   void space::redraw_borders_z()
   {
+    tr::rig* Rig;
     float
       yMin = -5.f, yMax =  5.f, // Y границы области сбора
       z_old, z_new,  // координаты линий удаления/вставки новых фрагментов
@@ -233,20 +237,22 @@ namespace tr
       z_old = MoveFrom.z - clod_0;
       z_new = vf_z + clod_0;
     }
-    // X границы области сбора
+
+    // Сбор индексов VBO с задней границы области
     float xMin = MoveFrom.x - clod_0, xMax = MoveFrom.x + clod_0;
-    tr::rig* Rig;
-    // Сбор индексов VBO по оси Z с удаляемой линии границы области
     for(float y = yMin; y <= yMax; y += RigsDb0.gage)
     for(float x = xMin; x <= xMax; x += RigsDb0.gage)
     {
       Rig = RigsDb0.get(x, y, z_old);
-      if(nullptr != Rig)
-        for(auto & Snip: Rig->area) CasheVBOptr.push_front(Snip.data_offset);
+      if(nullptr != Rig) for(auto & Snip: Rig->area)
+      {
+        VisibleSnips.erase(Snip.data_offset);
+        CashedSnips.push_front(Snip.data_offset);
+      }
     }
-    // X границы области добавления
+
+    // Построение линии по направлению движения
     xMin = vf_x - clod_0; xMax = vf_x + clod_0;
-    // Построение линии по оси Z по направлению движения
     for(float y = yMin; y <= yMax; y += RigsDb0.gage)
       for(float x = xMin; x <= xMax; x += RigsDb0.gage)
         if(RigsDb0.exist(x, y, z_new)) vbo_data_send(x, y, z_new);
@@ -258,72 +264,59 @@ namespace tr
   //## Перестроение границ активной области при перемещении камеры
   void space::recalc_borders(void)
   {
-  /* - cобираем в кэш список адресов VBO в которых расположены
-   *   атрибуты элементов, вышедших за границу отображения.
-   *
-   * - атрибуты новых элементов, которые следует добавить в сцену, заносим
-   *   в VBO по адресам из кэша, перезаписывая их данные.
-   *
-   * - если новых элементов оказалось больше, то дописываем их в конец буфера.
-   *
-   * - если меньше, то пока весь кэш не очистится, на освободившееся место
-   *   переносим данные из конца буфера и сдвигаем границу отображения, отсекая
-   *   отрисовку лишних элементов
+  /* - собираем в кэш адреса удаляемых снипов.
+   * - добавляемые в сцену снипы пишем в VBO по адресам из кэша.
+   * - если кэш пустой, то добавляем в конец буфера.
    */
-
     if(floor(ViewFrom.x) != MoveFrom.x) redraw_borders_x();
     //if(floor(ViewFrom.y) != MoveFrom.y) redraw_borders_y();
     if(floor(ViewFrom.z) != MoveFrom.z) redraw_borders_z();
-
     return;
   }
 
-  //## "Утряска" буферов VBO - удаление элементов по списку cashe_vbo_ptr
-  void space::reduce_vbo(void)
+  //## Удаление элементов по адресам с кэше и сжатие данных в VBO
+  void space::clear_cashed_snips(void)
   {
-  /* Агоритм работы:
-   *
-   * из VBO адрес крайнего с хвоста блока параметров проверяем, есть ли
-   * такой адрес в кэше адресов снятых с рендера элементов (CasheVBOptr). Если
-   * есть, то обезаем хвост на один блок, удаляем найденый адрес из кэша и
-   * уменьшаем число точек рендера.
-   *
-   * Если такого адреса а кэше нет, то перемещаем блок на один из свободных
-   * адресов из CasheVBOptr, и далее по плану - обезаем хвост, удаляем
-   * использованый адрес и уменьшаем число точек.
-   *
-   * Процедура повторяется каждый кадр, пока в CasheVBOptr есть элементы.
+  /* Если в кэше есть адреса из середины VBO, то на них переносим данные
+   * из конца и сжимаем буфер на один блок. Если адрес в кэше из конца VBO,
+   * то сразу сжимаем буфер.
    */
 
-    //DEBUG
-    GLsizeiptr dbg_cashe[3] = {0,0,0}; size_t i = 0;
-    for(GLsizeiptr _ca: CasheVBOptr) dbg_cashe[i++] = _ca;
-    std::cout << dbg_cashe;
-
-    // адрес крайнего в хвоста VBO блока данных
-    GLsizeiptr data_src = VBOsurf.get_hem() - tr::snip_data_bytes;
-
-    for(GLsizeiptr cashe_ptr: CasheVBOptr) if(data_src == cashe_ptr)
+    GLsizeiptr data_src = VBOdata.get_hem(); // граница блока данных VBO
+    if(data_src == 0 )
     {
-      VBOsurf.shrink(tr::snip_data_bytes);    // обрезать хвост VBO данных
-      VBOidx.shrink(tr::snip_index_bytes);    // обрезать хвост VBO индекса
-      VisibleSnips.erase(cashe_ptr);          // удалить из списка рендера
-      render_points -= tr::indices_per_snip;  // уменьшить число точек рендера
-      CasheVBOptr.remove(cashe_ptr);          // удалить их кэша
+      CashedSnips.clear();
+      VisibleSnips.clear();
+      render_points = 0;
+      return;
+    }
+    data_src -= tr::snip_data_bytes; // адрес последнего блока
+
+    #ifndef NDEBUG
+      if(data_src < 0) ERR ("space::jam_vbo got error address in VBO");
+    #endif
+
+    // если этот элемент не в рендере, то сжать буфер
+    if(VisibleSnips.find(data_src) == VisibleSnips.end())
+    {
+      VBOdata.shrink(tr::snip_data_bytes);   // укоротить VBO данных
+      VBOindex.shrink(tr::snip_index_bytes); // укоротить VBO индекса
+      render_points -= tr::indices_per_snip; // уменьшить число точек рендера
       return;
     }
 
-    GLsizeiptr data_dst = CasheVBOptr.front();
-    CasheVBOptr.pop_front();                  // извлечь адрес с удалением записи
+    // извлечь из кэша адрес
+    GLsizeiptr data_dst = CashedSnips.front(); CashedSnips.pop_front();
+    if(data_dst >= data_src) return;
 
-    #ifndef NDEBUG
-      if(VisibleSnips.find(data_src) ==
-         VisibleSnips.end()) ERR("space::reduce_vbo - not found map element");
-    #endif
-
-    tr::snip *Snip = VisibleSnips[data_src];  // переместить снип
-    Snip->jam_data(VBOsurf, VBOidx, data_dst);
-    VisibleSnips[Snip->data_offset] = Snip;   // обновить ссылку
+    try {
+      tr::snip *Snip = VisibleSnips.at(data_src);  // переместить снип
+      Snip->jam_data(VBOdata, VBOindex, data_dst);
+      VisibleSnips[Snip->data_offset] = Snip;   // обновить ссылку
+      render_points -= tr::indices_per_snip; // уменьшить число точек рендера
+    } catch (...) {
+      ERR("space::jam_vbo got error VisibleSnips[data_src]");
+    }
 
     return;
   }
@@ -402,7 +395,7 @@ namespace tr
 
     calc_position(ev);
     recalc_borders();
-    if (!CasheVBOptr.empty()) reduce_vbo(); // Очистка неиспользованного кэша
+    if (!CashedSnips.empty()) clear_cashed_snips();
 
     Prog3d.use();   // включить шейдерную программу
     Prog3d.set_uniform("mvp", MatProjection * MatView);
