@@ -223,18 +223,19 @@ namespace tr {
   ////////
   // Считывание из файла и подключение шейдера
   //
-  void Glsl::attach_shader(GLenum type, const std::string & fname)
+  void Glsl::attach_shader(GLenum type, const std::string &fname)
   {
     GLuint _sh = glCreateShader(type);
     if(glGetError()) ERR("Can't glCreateShader");
-    std::vector<char> content = get_txt_chars(fname);
+    std::vector<char> content {};
+    read_chars_file(fname, content);
+    if(content.empty()) ERR("Can't read file with shader content" + fname);
     char * ch = content.data();
     glShaderSource(_sh, 1, &ch, nullptr);
     glCompileShader(_sh);
   
     // проверка результата
     GLint _compiled;
-  
     glGetShaderiv(_sh, GL_COMPILE_STATUS, &_compiled);
     if (!_compiled)
     {

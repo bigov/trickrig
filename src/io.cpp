@@ -101,27 +101,26 @@ namespace tr
     return *int_T;
   }
 
-  //## Чтение содержимого текстового файла
-  //
-  std::vector<char> get_txt_chars(const std::string & fname)
+  //## Чтение содержимого текстового файла в буфер std::vector<char>
+  void read_chars_file(const std::string &FNname, std::vector<char> &Buffer)
   {
     // проверка наличия файла
-    struct stat buffer;
-    if (stat (fname.c_str(), &buffer) != 0) ERR("Missing file: " + fname);
-      // чтение файла
-    std::ifstream file(fname, std::ios::in|std::ios::ate);
+    struct stat Buf;
+    if (stat (FNname.c_str(), &Buf) != 0) ERR("Missing file: " + FNname);
+    // чтение файла
+    std::ifstream file(FNname, std::ios::in|std::ios::ate);
     file.exceptions(std::ios_base::badbit|std::ios_base::failbit);
-    if (!file.is_open()) ERR("Can't open " + fname);
+    if (!file.is_open()) ERR("Can't open " + FNname);
     auto size = static_cast<long long>(file.tellg());
-    std::vector<char> content (static_cast<size_t>(size + 1), '\0');
+    Buffer.clear();
+    Buffer.resize(static_cast<size_t>(size + 1), '\0');
     file.seekg(0, std::ios::beg);
-    file.read(content.data(), size);
+    file.read(Buffer.data(), size);
     file.close();
-    return content;
+    return;
   }
 
   //## Вывод текстовой информацияя информации
-  //
   void info(const std::string & info)
   {
     std::cout << info << std::endl;

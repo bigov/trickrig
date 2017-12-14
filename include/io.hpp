@@ -19,8 +19,8 @@ namespace tr
     std::vector<unsigned char> img {};
   };
 
-  extern pngImg get_png_img(const std::string & filename);
-  extern std::vector<char> get_txt_chars(const std::string &);
+  extern pngImg get_png_img(const std::string &filename);
+  extern void read_chars_file(const std::string &FNname, std::vector<char> &Buffer);
   extern int sh2int(short, short);
   extern void info(const std::string &);
   extern int get_msec(void);   // число миллисекунд от начала суток.
