@@ -9,9 +9,6 @@
 
 namespace tr
 {
-  float yMin = -100.f;
-  float yMax = 100.f;
-
   //## конструктор по-умолчанию
   rig::rig(const tr::f3d &p)
   {
@@ -19,22 +16,6 @@ namespace tr
     area.emplace_front(p);
     return;
   }
-
-  //## Загрузчик в риг новых данных
-  /*
-  void rig::reload(const std::vector<std::pair<
-    std::array<float, 3>,std::array<float, 3>>> & Vertices)
-  {
-    area.clear();
-    for(auto &v: Vertices)
-    {
-      tr::snip Snip {};
-      Snip.vertices[0].position.x = v.first[0];
-      Snip.vertices[0].position.y = v.first[1];
-      Snip.vertices[0].position.z = v.first[2];
-    }
-    return;
-  }*/
 
   //## Проверка наличия блока в заданных координатах
   bool rigs::exist(float x, float y, float z)
@@ -79,14 +60,16 @@ namespace tr
   //## Поиск элемента с указанными координатами
   rig* rigs::get(float x, float y, float z)
   {
-  //
-  // Возвращает адрес памяти, в которой расположен элемент
-  // с указанными в аргументе функции координатами.
-  //
-    if(y < yMin) ERR("rigs::get -Y is overflow");
-    if(y > yMax) ERR("rigs::get +Y is overflow");
+    return get(tr::f3d{x, y, z});
+  }
+
+  //## Поиск элемента с указанными координатами
+  rig* rigs::get(const tr::f3d &P)
+  {
+    if(P.y < yMin) ERR("rigs::get -Y is overflow");
+    if(P.y > yMax) ERR("rigs::get +Y is overflow");
     // Вначале поищем как указано.
-    try { return &db.at({x, y, z}); }
+    try { return &db.at(P); }
     catch (...) { return nullptr; }
   }
 
@@ -95,6 +78,20 @@ namespace tr
   {
     f3d point = {x, y, z};
     db.emplace(std::make_pair(point, point));
+    return;
+  }
+
+  //## Установка снипа по указаным координатам
+  void rigs::set(const tr::f3d &P, std::forward_list<tr::snip> &A)
+  {
+    tr::rig *R = get(P);
+    if(nullptr == R)
+    {
+      db.emplace(std::make_pair(P, P));
+      R = get(P);
+      R->area.clear();
+    }
+    R->area.splice_after(R->area.before_begin(), A);
     return;
   }
 

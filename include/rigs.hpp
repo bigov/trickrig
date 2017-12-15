@@ -28,9 +28,6 @@ namespace tr
       int time;                  // время создания
       std::forward_list<tr::snip> area {};
 
-    //  void reload(const std::vector<std::pair<
-    //    std::array<float, 3>,std::array<float, 3>>> &);
-
     private:
       rig(void) = delete;
       rig operator= (const tr::rig&) = delete;
@@ -42,6 +39,8 @@ namespace tr
   {
     private:
       std::map<tr::f3d, tr::rig> db {};
+      float yMin = -100.f;
+      float yMax = 100.f;
 
     public:
       GLuint vert_count = 0; // сумма вершин, переданных в VBO
@@ -49,10 +48,12 @@ namespace tr
 
       rigs(void){}
       rig* get(float x, float y, float z);
+      rig* get(const tr::f3d&);
       f3d search_down(float x, float y, float z);
       f3d search_down(const glm::vec3 &);
       size_t size(void) { return db.size(); }
       void emplace(int x, int y, int z);
+      void set(const tr::f3d &, std::forward_list<tr::snip>  &);
       bool is_empty(float x, float y, float z);
       bool exist(float x, float y, float z);
   };

@@ -100,10 +100,10 @@ namespace tr
         RigsDb0.emplace(x, y, z);
       }
 
-    // Загрузить из внешнего файла поверхность рига
-    //tr::rigs *Rig = RigsDb0.get(0.f, 0.f, 0.f);
-    //tr::loader_obj Obj("../assets/test_flat.obj");
-    //Rig->reload(Obj.Vertices);
+    tr::f3d P = {0.f, 1.f, 1.f};
+    // Загрузить объект из внешнего файла
+    tr::loader_obj Obj("../assets/test_flat.obj", P);
+    RigsDb0.set(P, Obj.Area);
 
     return;
   }

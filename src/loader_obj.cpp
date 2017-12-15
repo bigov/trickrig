@@ -15,7 +15,7 @@
 namespace tr {
 
 //## конструктор класса построчно считывает файл
-loader_obj::loader_obj(const std::string & FName)
+loader_obj::loader_obj(const std::string &FName, const tr::f3d &P): Point(P)
 {
   std::string LineBuffer {}; // используем в качестве динамического буфера
   std::ifstream FStream{ FName, std::ios::binary | std::ios::ate };
@@ -25,16 +25,16 @@ loader_obj::loader_obj(const std::string & FName)
     auto size = FStream.tellg(); size += 1;
     LineBuffer.resize(size, '\0'); // размер буфера в размер файла
     FStream.seekg(0); size -= 1;
-    while (FStream.getline(&LineBuffer[0], size)) obj_parsing_line(&LineBuffer[0]);
+    while (FStream.getline(&LineBuffer[0], size)) parsing_line(&LineBuffer[0]);
   } else { std::cout << "Can't open file"; }
 
-  places.clear();
-  normals.clear();
+  Places.clear();
+  Normals.clear();
   return;
 }
 
-//## формирование блока данных для вершины
-void loader_obj::obj_make_vertex(const std::string & f)
+//## переводит строку вида "0/0/0" в числовой массив
+void loader_obj::decode_string(const std::string & f, int *a)
 {
  /***
   * 1. Так как индексы текстурных координат отсутуствуют,
@@ -42,31 +42,72 @@ void loader_obj::obj_make_vertex(const std::string & f)
   * Если нужна поддержка текстур, то блок данных будет состоять
   * из трех целых, разделеных одним слэшем.
   *
-  * 2. В стандарте .obj индексы фэйсов (f...) начинаются с единицы, а не с
-  * нуля как в C++ массивах. Поэтому при формировании пары, чтобы
+  * 2. В стандарте .obj индексы вершин фeйсов (f...) начинаются с единицы,
+  * а не с нуля как в C++ массивах. Поэтому при формировании пары, чтобы
   * получить целевой индекс, уменьшаем полученное число на 1.
   */
 
   std::string::size_type sz;
-  auto idx0 = std::stoi(f, &sz);
-  //auto idx1 = ... индекс текстурной карты - не используется (пока?)
-  auto idx2 = std::stoi(f.substr(sz + 2));
+  a[0] = std::stoi(f, &sz) - 1;
+  a[1] = 0; //auto idx1 = ... индекс текстурной карты - не используется
+  a[2] = std::stoi(f.substr(sz + 2)) - 1;
 
-  Vertices.push_back(std::make_pair(places[idx0-1], normals[idx2-1]));
   return;
 }
 
-//## прием трех групп индексов, образующих треугольник
-void loader_obj::obj_get_f(char *line)
+//## прием 4-х групп индексов, образующих прямоугольник
+void loader_obj::get_f(char *line)
 {
-  obj_make_vertex(std::string(std::strtok(line, " ")));
-  obj_make_vertex(std::string(std::strtok(NULL, " ")));
-  obj_make_vertex(std::string(std::strtok(NULL, " ")));
+  int iA[3], //вершина 1: индексы массива координат, (текстур) и нормалей
+      iB[3], //вершина 2: индексы массива координат, (текстур) и нормалей
+      iC[3], //вершина 3: индексы массива координат, (текстур) и нормалей
+      iD[3]; //вершина 4: индексы массива координат, (текстур) и нормалей
+
+  decode_string(std::string(std::strtok(line, " ")), iA);
+  decode_string(std::string(std::strtok(NULL, " ")), iB);
+  decode_string(std::string(std::strtok(NULL, " ")), iC);
+  decode_string(std::string(std::strtok(NULL, " ")), iD);
+
+  tr::snip Snip {};
+
+  *Snip.D[0].position.x = Places[iA[0]][0];
+  *Snip.D[0].position.y = Places[iA[0]][1];
+  *Snip.D[0].position.z = Places[iA[0]][2];
+
+  *Snip.D[1].position.x = Places[iB[0]][0];
+  *Snip.D[1].position.y = Places[iB[0]][1];
+  *Snip.D[1].position.z = Places[iB[0]][2];
+
+  *Snip.D[2].position.x = Places[iC[0]][0];
+  *Snip.D[2].position.y = Places[iC[0]][1];
+  *Snip.D[2].position.z = Places[iC[0]][2];
+
+  *Snip.D[3].position.x = Places[iD[0]][0];
+  *Snip.D[3].position.y = Places[iD[0]][1];
+  *Snip.D[3].position.z = Places[iD[0]][2];
+
+  *Snip.D[0].normal.x = Normals[iA[2]][0];
+  *Snip.D[0].normal.y = Normals[iA[2]][1];
+  *Snip.D[0].normal.z = Normals[iA[2]][2];
+
+  *Snip.D[1].normal.x = Normals[iB[2]][0];
+  *Snip.D[1].normal.y = Normals[iB[2]][1];
+  *Snip.D[1].normal.z = Normals[iB[2]][2];
+
+  *Snip.D[2].normal.x = Normals[iC[2]][0];
+  *Snip.D[2].normal.y = Normals[iC[2]][1];
+  *Snip.D[2].normal.z = Normals[iC[2]][2];
+
+  *Snip.D[3].normal.x = Normals[iD[2]][0];
+  *Snip.D[3].normal.y = Normals[iD[2]][1];
+  *Snip.D[3].normal.z = Normals[iD[2]][2];
+
+  Area.push_front(Snip);
   return;
 }
 
 //## прием трех чисел в формате float в список нормалей
-void loader_obj::obj_get_vn(char *line)
+void loader_obj::get_vn(char *line)
 {
   char *token = std::strtok(line, " ");
   std::array<float, 3> normal {};
@@ -75,31 +116,42 @@ void loader_obj::obj_get_vn(char *line)
     normal[i] = std::stof(token);
     token = std::strtok(NULL, " ");
   }
-  normals.push_back(normal);
+  Normals.push_back(normal);
+  return;
+}
+
+//## прием двух чисел в формате float в список UV текстуры
+void loader_obj::get_vt(char *line)
+{
+  std::array<float, 2> UV {};
+  UV[0] = std::stof(std::strtok(line, " "));
+  UV[1] = std::stof(std::strtok(NULL, " "));
+  UVs.push_back(UV);
   return;
 }
 
 //## прием трех чисел в формате float в список вершин
-void loader_obj::obj_get_v(char *line)
+void loader_obj::get_v(char *line)
 {
   char *token = std::strtok(line, " ");
-  std::array<float, 3> plase {};
+  std::array<float, 3> Place = {Point.x, Point.y, Point.z};
   for(size_t i = 0; i < 3; i++)
   {
-    plase[i] = std::stof(token);
+    Place[i] += std::stof(token);
     token = std::strtok(NULL, " ");
   }
-  places.push_back(plase);
+  Places.push_back(Place);
   return;
 }
 
 //## Разбор типа переданой строки символов по ключу
-void loader_obj::obj_parsing_line(char *line)
+void loader_obj::parsing_line(char *line)
 {
   std::string LineId = std::strtok(line, " ");
-  if(LineId == "v") obj_get_v(&line[2]);
-  else if(LineId == "vn") obj_get_vn(&line[3]);
-  else if(LineId == "f") obj_get_f(&line[2]);
+  if(LineId == "v") get_v(&line[2]);
+  else if(LineId == "vn") get_vn(&line[3]);
+  else if(LineId == "vt") get_vt(&line[3]);
+  else if(LineId == "f") get_f(&line[2]);
   return;
 }
 

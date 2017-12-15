@@ -9,7 +9,6 @@
 #define __SNIP_HPP__
 
 #include "vbo.hpp"
-#include "glsl.hpp"
 #include "main.hpp"
 
 namespace tr
@@ -43,7 +42,7 @@ namespace tr
     GLsizei idx[tr::indices_per_snip] = {0, 1, 2, 2, 3, 0}; // порядок обхода вершин
 
     // вспомогательная структура для удобства обращения к частям data[] по названиям
-    tr::vertex vertices[tr::vertices_per_snip] = {&data[0], &data[14], &data[28], &data[42]};
+    tr::vertex D[tr::vertices_per_snip] = {&data[0], &data[14], &data[28], &data[42]};
 
     snip(void) {}
     snip(const tr::f3d &);          // конструктор по-умолчанию

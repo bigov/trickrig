@@ -35,27 +35,27 @@ namespace tr
     if( .0f == p.x && .0f == p.z )
     {
       for(size_t i = 0; i < 4; i++)
-        *vertices[i].fragment.v += .375f;
+        *D[i].fragment.v += .375f;
     }
   }
 
-  //## сдвиг прямоугольника
-  void snip::relocate(const tr::f3d & point)
+  //## установка четырехугольника по координатам
+  void snip::relocate(const tr::f3d &P)
   {
-    *vertices[0].position.x += point.x;
-    *vertices[1].position.x += point.x;
-    *vertices[2].position.x += point.x;
-    *vertices[3].position.x += point.x;
+    *D[0].position.x += P.x;
+    *D[1].position.x += P.x;
+    *D[2].position.x += P.x;
+    *D[3].position.x += P.x;
 
-    *vertices[0].position.y += point.y;
-    *vertices[1].position.y += point.y;
-    *vertices[2].position.y += point.y;
-    *vertices[3].position.y += point.y;
+    *D[0].position.y += P.y;
+    *D[1].position.y += P.y;
+    *D[2].position.y += P.y;
+    *D[3].position.y += P.y;
 
-    *vertices[0].position.z += point.z;
-    *vertices[1].position.z += point.z;
-    *vertices[2].position.z += point.z;
-    *vertices[3].position.z += point.z;
+    *D[0].position.z += P.z;
+    *D[1].position.z += P.z;
+    *D[2].position.z += P.z;
+    *D[3].position.z += P.z;
 
     return;
   }
