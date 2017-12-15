@@ -21,18 +21,18 @@
 //  5(--+)~~~~~~~~0(+-+)
 //
 //============================================================================
-#ifndef __GEN3D_HPP__
-#define __GEN3D_HPP__
+#ifndef __SPACE_HPP__
+#define __SPACE_HPP__
 
 #include "main.hpp"
 #include "config.hpp"
 #include "glsl.hpp"
 #include "vbo.hpp"
 #include "rigs.hpp"
+#include "loader_obj.hpp"
 
 namespace tr
 {
-
   class space
   {
     public:

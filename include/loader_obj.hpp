@@ -8,22 +8,27 @@
   *
   * Первый элемент каждой пары - это три координаты вершины, второй - три
   * координаты нормали к этой вершине. Все числа - в формате float.
+  *
+  * Пример использования:
+  * ---------------------
+
+  loader_obj Obj("test_flat.obj");
+  for(auto &v: Obj.Vertices)
+  {
+    std::cout << std::fixed << std::setprecision(3)
+      << v.first[0] << ", " << v.first[1] << ", "<< v.first[2] << ", "
+      << v.second[0] << ", " << v.second[1] << ", "<< v.second[2] << "\n";
+  }
+
+  *
   */
 
 #ifndef __LOADER_OBJ_HPP__
 #define __LOADER_OBJ_HPP__
 
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <cstring>
-#include <cstdint>
-#include <array>
-#include <utility>
-#include "../.extlibs/glm/glm/glm.hpp"
-#include <vector>
+#include "main.hpp"
+
+namespace tr {
 
 class loader_obj
 {
@@ -43,4 +48,6 @@ class loader_obj
     void obj_get_v(char *);
     void obj_parsing_line(char *);
 };
+
+} // namespace tr
 #endif

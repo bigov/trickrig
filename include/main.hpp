@@ -8,8 +8,8 @@
 #ifndef __MAIN_HPP__
 #define __MAIN_HPP__
 
-//#define NDEBUG // в релизе все проверки можно отключить
 #include <sys/stat.h>
+#include <array>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
@@ -17,12 +17,14 @@
 #include <forward_list>
 #include <fstream>
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <list>
 #include <locale>
 #include <memory>
 #include <map>
 #include <random>
+#include <sstream>
 #include <string>
 #include <valarray>
 #include <vector>

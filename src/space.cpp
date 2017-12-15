@@ -6,7 +6,6 @@
 //
 //============================================================================
 #include "space.hpp"
-#include <iomanip>
 
 namespace tr
 {
@@ -101,7 +100,10 @@ namespace tr
         RigsDb0.emplace(x, y, z);
       }
 
-    // http://www.opengl-tutorial.org/ru/beginners-tutorials/tutorial-7-model-loading/
+    // Загрузить из внешнего файла поверхность рига
+    //tr::rigs *Rig = RigsDb0.get(0.f, 0.f, 0.f);
+    //tr::loader_obj Obj("../assets/test_flat.obj");
+    //Rig->reload(Obj.Vertices);
 
     return;
   }
