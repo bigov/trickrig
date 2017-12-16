@@ -34,7 +34,7 @@ namespace tr
   {
     public:
       space(void);
-      ~space(void);
+      ~space(void) {}
       void draw(const evInput&);
 
     private:
@@ -46,7 +46,7 @@ namespace tr
       tr::vbo VBOdata = {GL_ARRAY_BUFFER};   // атрибуты вершин поверхности
       tr::vbo VBOindex = {GL_ELEMENT_ARRAY_BUFFER}; // индексы вершин
 
-      // Карта ссылок на Снипы в рендере.
+      // Карта cнипов, залитых в VBO
       std::unordered_map<GLsizeiptr, tr::snip*> VisibleSnips {};
 
       // Кэш блоков данных в VBO, вышедших за границу рендера

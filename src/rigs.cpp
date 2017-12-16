@@ -84,13 +84,16 @@ namespace tr
   //## Установка снипа по указаным координатам
   void rigs::set(const tr::f3d &P, std::forward_list<tr::snip> &A)
   {
+    for(auto &S: A) S.point_set(P);
+
     tr::rig *R = get(P);
     if(nullptr == R)
     {
       db.emplace(std::make_pair(P, P));
       R = get(P);
-      R->area.clear();
     }
+
+    R->area.clear();
     R->area.splice_after(R->area.before_begin(), A);
     return;
   }

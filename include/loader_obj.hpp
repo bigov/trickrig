@@ -13,18 +13,17 @@
 #define __LOADER_OBJ_HPP__
 
 #include "snip.hpp"
-#include "io.hpp"
 
 namespace tr {
 
 class loader_obj
 {
   public:
-    loader_obj(const std::string &FilePathName, const f3d &P);
+    loader_obj(const std::string &FilePathName);
     std::forward_list<tr::snip> Area {};
 
   private:
-    tr::f3d Point; // Позиция начала коодинат фигуры
+    bool textured = false;
     std::vector<std::array<float, 3>> Places {};  // координаты
     std::vector<std::array<float, 3>> Normals {}; // нормали
     std::vector<std::array<float, 2>> UVs {};     // текстуры

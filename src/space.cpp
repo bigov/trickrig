@@ -51,12 +51,6 @@ namespace tr
     return;
   }
 
-  //## Как-бэ, дык типа ента... Да про запас!
-  space::~space(void)
-  {
-    return;
-  }
-
   //## Загрузка в VBO (графическую память) данных отображаемых объектов 3D сцены
   void space::upload_vbo(void)
   {
@@ -91,7 +85,8 @@ namespace tr
   void space::db_connect(void)
   {
   // TODO: должно быть заменено на подключение к базе данных пространства,
-    int s = 50;
+
+    int s = 10;
     int y = 0.f;
 
     for (int x = 0 - s; x < s; x += 1)
@@ -100,9 +95,16 @@ namespace tr
         RigsDb0.emplace(x, y, z);
       }
 
-    tr::f3d P = {0.f, 1.f, 1.f};
+    // обозначить центр и оси координат
+    RigsDb0.get(0,0,0 )->area.front().texture_set(0.125, 0.125*7);
+    RigsDb0.get(1,0,0 )->area.front().texture_set(0.125, 0.0);
+    RigsDb0.get(-1,0,0)->area.front().texture_set(0.125, 0.125);
+    RigsDb0.get(0,0,1 )->area.front().texture_set(0.125, 0.125*4);
+    RigsDb0.get(0,0,-1)->area.front().texture_set(0.125, 0.125*5);
+
+    tr::f3d P = {1.f, 0.f, 1.f};
     // Загрузить объект из внешнего файла
-    tr::loader_obj Obj("../assets/test_flat.obj", P);
+    tr::loader_obj Obj("../assets/test_flat.obj");
     RigsDb0.set(P, Obj.Area);
 
     return;
@@ -379,7 +381,6 @@ namespace tr
       }
       Selected += check_step;
     }
-
     return;
   }
 

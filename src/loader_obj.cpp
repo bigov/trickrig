@@ -15,7 +15,7 @@
 namespace tr {
 
 //## конструктор класса построчно считывает файл
-loader_obj::loader_obj(const std::string &FName, const tr::f3d &P): Point(P)
+loader_obj::loader_obj(const std::string &FName)
 {
   std::string LineBuffer {}; // используем в качестве динамического буфера
   std::ifstream FStream{ FName, std::ios::binary | std::ios::ate };
@@ -42,15 +42,25 @@ void loader_obj::decode_string(const std::string & f, int *a)
   * Если нужна поддержка текстур, то блок данных будет состоять
   * из трех целых, разделеных одним слэшем.
   *
-  * 2. В стандарте .obj индексы вершин фeйсов (f...) начинаются с единицы,
-  * а не с нуля как в C++ массивах. Поэтому при формировании пары, чтобы
+  * 2. В стандарте .obj все индексы начинаются с единицы, а не с нуля,
+  * как в C++ массивах. Поэтому при формировании пары, чтобы
   * получить целевой индекс, уменьшаем полученное число на 1.
   */
 
-  std::string::size_type sz;
-  a[0] = std::stoi(f, &sz) - 1;
-  a[1] = 0; //auto idx1 = ... индекс текстурной карты - не используется
-  a[2] = std::stoi(f.substr(sz + 2)) - 1;
+  std::string::size_type sz = 0, cur = 0;
+
+  if (f.find("//") != std::string::npos)
+  {
+    a[0] = std::stoi(f, &sz) - 1;
+    a[1] = 0; //auto idx1 = ... индексы текстурной карты отсутствуют
+    a[2] = std::stoi(f.substr(sz + 2)) - 1;
+  } else
+  {
+    textured = true;
+    a[0] = std::stoi(f.substr(cur), &sz) - 1; cur += sz + 1;
+    a[1] = std::stoi(f.substr(cur), &sz) - 1; cur += sz + 1;
+    a[2] = std::stoi(f.substr(cur)     ) - 1;
+  }
 
   return;
 }
@@ -70,37 +80,50 @@ void loader_obj::get_f(char *line)
 
   tr::snip Snip {};
 
-  *Snip.D[0].position.x = Places[iA[0]][0];
-  *Snip.D[0].position.y = Places[iA[0]][1];
-  *Snip.D[0].position.z = Places[iA[0]][2];
+  *Snip.V[0].point.x = Places[iA[0]][0];
+  *Snip.V[0].point.y = Places[iA[0]][1];
+  *Snip.V[0].point.z = Places[iA[0]][2];
 
-  *Snip.D[1].position.x = Places[iB[0]][0];
-  *Snip.D[1].position.y = Places[iB[0]][1];
-  *Snip.D[1].position.z = Places[iB[0]][2];
+  *Snip.V[1].point.x = Places[iB[0]][0];
+  *Snip.V[1].point.y = Places[iB[0]][1];
+  *Snip.V[1].point.z = Places[iB[0]][2];
 
-  *Snip.D[2].position.x = Places[iC[0]][0];
-  *Snip.D[2].position.y = Places[iC[0]][1];
-  *Snip.D[2].position.z = Places[iC[0]][2];
+  *Snip.V[2].point.x = Places[iC[0]][0];
+  *Snip.V[2].point.y = Places[iC[0]][1];
+  *Snip.V[2].point.z = Places[iC[0]][2];
 
-  *Snip.D[3].position.x = Places[iD[0]][0];
-  *Snip.D[3].position.y = Places[iD[0]][1];
-  *Snip.D[3].position.z = Places[iD[0]][2];
+  *Snip.V[3].point.x = Places[iD[0]][0];
+  *Snip.V[3].point.y = Places[iD[0]][1];
+  *Snip.V[3].point.z = Places[iD[0]][2];
 
-  *Snip.D[0].normal.x = Normals[iA[2]][0];
-  *Snip.D[0].normal.y = Normals[iA[2]][1];
-  *Snip.D[0].normal.z = Normals[iA[2]][2];
+  if(textured) {
+    *Snip.V[0].fragm.u = UVs[iA[1]][0];
+    *Snip.V[0].fragm.v = UVs[iA[1]][1];
 
-  *Snip.D[1].normal.x = Normals[iB[2]][0];
-  *Snip.D[1].normal.y = Normals[iB[2]][1];
-  *Snip.D[1].normal.z = Normals[iB[2]][2];
+    *Snip.V[1].fragm.u = UVs[iB[1]][0];
+    *Snip.V[1].fragm.v = UVs[iB[1]][1];
 
-  *Snip.D[2].normal.x = Normals[iC[2]][0];
-  *Snip.D[2].normal.y = Normals[iC[2]][1];
-  *Snip.D[2].normal.z = Normals[iC[2]][2];
+    *Snip.V[2].fragm.u = UVs[iC[1]][0];
+    *Snip.V[2].fragm.v = UVs[iC[1]][1];
 
-  *Snip.D[3].normal.x = Normals[iD[2]][0];
-  *Snip.D[3].normal.y = Normals[iD[2]][1];
-  *Snip.D[3].normal.z = Normals[iD[2]][2];
+    *Snip.V[3].fragm.u = UVs[iD[1]][0];
+    *Snip.V[3].fragm.v = UVs[iD[1]][1];
+  }
+  *Snip.V[0].normal.x = Normals[iA[2]][0];
+  *Snip.V[0].normal.y = Normals[iA[2]][1];
+  *Snip.V[0].normal.z = Normals[iA[2]][2];
+
+  *Snip.V[1].normal.x = Normals[iB[2]][0];
+  *Snip.V[1].normal.y = Normals[iB[2]][1];
+  *Snip.V[1].normal.z = Normals[iB[2]][2];
+
+  *Snip.V[2].normal.x = Normals[iC[2]][0];
+  *Snip.V[2].normal.y = Normals[iC[2]][1];
+  *Snip.V[2].normal.z = Normals[iC[2]][2];
+
+  *Snip.V[3].normal.x = Normals[iD[2]][0];
+  *Snip.V[3].normal.y = Normals[iD[2]][1];
+  *Snip.V[3].normal.z = Normals[iD[2]][2];
 
   Area.push_front(Snip);
   return;
@@ -134,10 +157,10 @@ void loader_obj::get_vt(char *line)
 void loader_obj::get_v(char *line)
 {
   char *token = std::strtok(line, " ");
-  std::array<float, 3> Place = {Point.x, Point.y, Point.z};
+  std::array<float, 3> Place;
   for(size_t i = 0; i < 3; i++)
   {
-    Place[i] += std::stof(token);
+    Place[i] = std::stof(token);
     token = std::strtok(NULL, " ");
   }
   Places.push_back(Place);

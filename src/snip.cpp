@@ -9,53 +9,78 @@
 
 namespace tr
 {
-  vertex::vertex(GLfloat *data)
+
+  snip::snip(void)
   {
-    position.x = data++;
-    position.y = data++;
-    position.z = data++;
-    position.w = data++;
-    color.r    = data++;
-    color.g    = data++;
-    color.b    = data++;
-    color.a    = data++;
-    normal.x   = data++;
-    normal.y   = data++;
-    normal.z   = data++;
-    normal.w   = data++;
-    fragment.u = data++;
-    fragment.v = data++;
-    return;
+    v_reset();
   }
 
   //## конструктор по-умолчанию
   snip::snip(const tr::f3d & p)
   {
-    relocate(p);
-    if( .0f == p.x && .0f == p.z )
+    v_reset();
+    point_set(p);
+  }
+
+  //## дублирующий конструктор
+  snip::snip(const snip & Other)
+  {
+    data_offset = Other.data_offset;
+
+    for(size_t n = 0; n < tr::digits_per_snip; n++)
+      data[n] = Other.data[n];
+
+    for(size_t n = 0; n < tr::indices_per_snip; n++)
+      idx[n] = Other.idx[n];
+
+    v_reset(); // переписать адреса ссылок на данные
+
+    return;
+  }
+
+  //## Настройка адресов указателей
+  void snip::v_reset()
+  {
+    size_t i = 0;
+    for(size_t n = 0; n < tr::vertices_per_snip; n++)
     {
-      for(size_t i = 0; i < 4; i++)
-        *D[i].fragment.v += .375f;
+      V[n].point.x  = &data[i++];
+      V[n].point.y  = &data[i++];
+      V[n].point.z  = &data[i++];
+      V[n].point.w  = &data[i++];
+      V[n].color.r  = &data[i++];
+      V[n].color.g  = &data[i++];
+      V[n].color.b  = &data[i++];
+      V[n].color.a  = &data[i++];
+      V[n].normal.x = &data[i++];
+      V[n].normal.y = &data[i++];
+      V[n].normal.z = &data[i++];
+      V[n].normal.w = &data[i++];
+      V[n].fragm.u  = &data[i++];
+      V[n].fragm.v  = &data[i++];
     }
+    return;
+  }
+
+  //## настройка текстуры
+  void snip::texture_set(GLfloat u, GLfloat v)
+  {
+    for(size_t n = 0; n < tr::vertices_per_snip; n++)
+    {
+      *V[n].fragm.u += u; *V[n].fragm.v += v;
+    }
+    return;
   }
 
   //## установка четырехугольника по координатам
-  void snip::relocate(const tr::f3d &P)
+  void snip::point_set(const tr::f3d &P)
   {
-    *D[0].position.x += P.x;
-    *D[1].position.x += P.x;
-    *D[2].position.x += P.x;
-    *D[3].position.x += P.x;
-
-    *D[0].position.y += P.y;
-    *D[1].position.y += P.y;
-    *D[2].position.y += P.y;
-    *D[3].position.y += P.y;
-
-    *D[0].position.z += P.z;
-    *D[1].position.z += P.z;
-    *D[2].position.z += P.z;
-    *D[3].position.z += P.z;
+    for(size_t n = 0; n < tr::vertices_per_snip; n++)
+    {
+      *V[n].point.x += P.x;
+      *V[n].point.y += P.y;
+      *V[n].point.z += P.z;
+    }
 
     return;
   }

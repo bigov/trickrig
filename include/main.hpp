@@ -58,7 +58,7 @@ namespace tr {
    * - при значении 0.0f < lod_0 <= 1.0f рисуется площадка из 9 блоков
    * - координаты блока (нулевая точка) вычилсяется через floor(), граница - через ceil()
    */
-  static const float lod_0 = 15.0f;
+  static const float lod_0 = 4.0f;
 
   // число вершин в одном снипе
   static const size_t vertices_per_snip = 4;

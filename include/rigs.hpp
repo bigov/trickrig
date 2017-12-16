@@ -29,9 +29,9 @@ namespace tr
       std::forward_list<tr::snip> area {};
 
     private:
-      rig(void) = delete;
-      rig operator= (const tr::rig&) = delete;
-      rig(const tr::rig&) = delete;
+      rig           (void)        = delete; // пустой
+      rig operator= (const rig &) = delete; // копирующий
+      rig           (const rig &) = delete; // дублирующий
   };
 
   //## Клас для управления базой данных элементов пространства одного LOD.
