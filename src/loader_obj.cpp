@@ -37,10 +37,9 @@ loader_obj::loader_obj(const std::string &FName)
 void loader_obj::decode_string(const std::string & f, int *a)
 {
  /***
-  * 1. Так как индексы текстурных координат отсутуствуют,
-  * то используются два значения с разделителем из двух слэшей.
-  * Если нужна поддержка текстур, то блок данных будет состоять
-  * из трех целых, разделеных одним слэшем.
+  * 1. Если индексы текстурных координат отсутуствуют, то используются
+  * два значения с разделителем из двух слэшей, иначе блок данных
+  * состоит из трех целых, разделеных одним слэшем.
   *
   * 2. В стандарте .obj все индексы начинаются с единицы, а не с нуля,
   * как в C++ массивах. Поэтому при формировании пары, чтобы
@@ -68,62 +67,29 @@ void loader_obj::decode_string(const std::string & f, int *a)
 //## прием 4-х групп индексов, образующих прямоугольник
 void loader_obj::get_f(char *line)
 {
-  int iA[3], //вершина 1: индексы массива координат, (текстур) и нормалей
-      iB[3], //вершина 2: индексы массива координат, (текстур) и нормалей
-      iC[3], //вершина 3: индексы массива координат, (текстур) и нормалей
-      iD[3]; //вершина 4: индексы массива координат, (текстур) и нормалей
+  int i[4][3]; //4 вершины: индексы массивов координат, текстур и нормалей
 
-  decode_string(std::string(std::strtok(line, " ")), iA);
-  decode_string(std::string(std::strtok(NULL, " ")), iB);
-  decode_string(std::string(std::strtok(NULL, " ")), iC);
-  decode_string(std::string(std::strtok(NULL, " ")), iD);
+  decode_string(std::string(std::strtok(line, " ")), i[0]);
+  decode_string(std::string(std::strtok(NULL, " ")), i[1]);
+  decode_string(std::string(std::strtok(NULL, " ")), i[2]);
+  decode_string(std::string(std::strtok(NULL, " ")), i[3]);
 
   tr::snip Snip {};
 
-  *Snip.V[0].point.x = Places[iA[0]][0];
-  *Snip.V[0].point.y = Places[iA[0]][1];
-  *Snip.V[0].point.z = Places[iA[0]][2];
+  for(size_t n = 0; n < tr::vertices_per_snip; n++)
+  {
+    *Snip.V[n].point.x = Places[i[n][0]][0];
+    *Snip.V[n].point.y = Places[i[n][0]][1];
+    *Snip.V[n].point.z = Places[i[n][0]][2];
 
-  *Snip.V[1].point.x = Places[iB[0]][0];
-  *Snip.V[1].point.y = Places[iB[0]][1];
-  *Snip.V[1].point.z = Places[iB[0]][2];
+    if(textured) {
+      *Snip.V[n].fragm.u = UVs[i[n][1]][0];
+      *Snip.V[n].fragm.v = UVs[i[n][1]][1]; }
 
-  *Snip.V[2].point.x = Places[iC[0]][0];
-  *Snip.V[2].point.y = Places[iC[0]][1];
-  *Snip.V[2].point.z = Places[iC[0]][2];
-
-  *Snip.V[3].point.x = Places[iD[0]][0];
-  *Snip.V[3].point.y = Places[iD[0]][1];
-  *Snip.V[3].point.z = Places[iD[0]][2];
-
-  if(textured) {
-    *Snip.V[0].fragm.u = UVs[iA[1]][0];
-    *Snip.V[0].fragm.v = UVs[iA[1]][1];
-
-    *Snip.V[1].fragm.u = UVs[iB[1]][0];
-    *Snip.V[1].fragm.v = UVs[iB[1]][1];
-
-    *Snip.V[2].fragm.u = UVs[iC[1]][0];
-    *Snip.V[2].fragm.v = UVs[iC[1]][1];
-
-    *Snip.V[3].fragm.u = UVs[iD[1]][0];
-    *Snip.V[3].fragm.v = UVs[iD[1]][1];
+    *Snip.V[n].normal.x = Normals[i[n][2]][0];
+    *Snip.V[n].normal.y = Normals[i[n][2]][1];
+    *Snip.V[n].normal.z = Normals[i[n][2]][2];
   }
-  *Snip.V[0].normal.x = Normals[iA[2]][0];
-  *Snip.V[0].normal.y = Normals[iA[2]][1];
-  *Snip.V[0].normal.z = Normals[iA[2]][2];
-
-  *Snip.V[1].normal.x = Normals[iB[2]][0];
-  *Snip.V[1].normal.y = Normals[iB[2]][1];
-  *Snip.V[1].normal.z = Normals[iB[2]][2];
-
-  *Snip.V[2].normal.x = Normals[iC[2]][0];
-  *Snip.V[2].normal.y = Normals[iC[2]][1];
-  *Snip.V[2].normal.z = Normals[iC[2]][2];
-
-  *Snip.V[3].normal.x = Normals[iD[2]][0];
-  *Snip.V[3].normal.y = Normals[iD[2]][1];
-  *Snip.V[3].normal.z = Normals[iD[2]][2];
 
   Area.push_front(Snip);
   return;

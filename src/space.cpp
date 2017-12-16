@@ -95,7 +95,7 @@ namespace tr
         RigsDb0.emplace(x, y, z);
       }
 
-    // обозначить центр и оси координат
+    // Выделить текстурами центр и оси координат
     RigsDb0.get(0,0,0 )->area.front().texture_set(0.125, 0.125*7);
     RigsDb0.get(1,0,0 )->area.front().texture_set(0.125, 0.0);
     RigsDb0.get(-1,0,0)->area.front().texture_set(0.125, 0.125);

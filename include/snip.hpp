@@ -5,6 +5,7 @@
 // Элементы формирования пространства
 //
 //=============================================================================
+
 #ifndef __SNIP_HPP__
 #define __SNIP_HPP__
 
@@ -25,7 +26,7 @@ namespace tr
   //## Набор данных для формирования в GPU многоугольника с индексацией вершин
   struct snip
   {
-    GLsizeiptr data_offset = 0; // смещение начала блока данных в буфере GPU
+    GLsizeiptr data_offset = 0; // положение блока данных в буфере GPU
     GLsizei idx[tr::indices_per_snip] = {0, 1, 2, 2, 3, 0}; // порядок обхода вершин
     Vertex V[tr::vertices_per_snip];
 
@@ -43,10 +44,12 @@ namespace tr
     snip(const snip &);                     // дублирующий конструктор
     snip operator= (const snip &) = delete; // копирующий конструктор - отключен
 
-    void v_reset(void);
-    void texture_set(GLfloat, GLfloat);
-    void point_set(const tr::f3d &); // установка 3D координат фигуры
-    GLsizei *reindex(GLsizei);      // настройка индексов для VBO
+    void v_reset(void);                 // настройка адресов указателей
+    void texture_set(GLfloat, GLfloat); // выбор фрагмента текстуры
+    void point_set(const tr::f3d &);    // установка 3D координат поверхности
+    GLsizei *reindex(GLsizei);          // пересчет индексов в VBO
+
+    // Функции управления данными в VBO
     void vbo_append(tr::vbo & VBOdata, tr::vbo & VBOidx);
     void vbo_update(tr::vbo &, tr::vbo &, GLsizeiptr offset);
     void jam_data(vbo &VBOdata, vbo &VBOidx, GLintptr dst);

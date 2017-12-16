@@ -5,7 +5,7 @@
   *
   * Результат в
   *
-  *     std::forward_list<tr::snip> area {};
+  *     std::forward_list<tr::snip> Area
   *
   */
 
