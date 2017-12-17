@@ -54,6 +54,9 @@ add_subdirectory( ".extlibs/freetype2" "${SUFFIX}/freetype" EXCLUDE_FROM_ALL)
 # библиотека glcore33
 add_subdirectory( ".extlibs/glcore33" "${SUFFIX}/glcore33" EXCLUDE_FROM_ALL)
 
+# библиотека sqlite3
+add_subdirectory( ".extlibs/sqlite3" "${SUFFIX}/sqlite3" EXCLUDE_FROM_ALL)
+
 # библиотека GLFW3
 SET(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs" FORCE)
 SET(GLFW_BUILD_TESTS OFF CACHE BOOL "Build the GLFW test programs" FORCE)
@@ -68,11 +71,15 @@ include_directories( "include" "lib"
  ".extlibs/glfw/include"
  ".extlibs/glm"
  ".extlibs/libpng"
+ ".extlibs/sqlite3"
  ".extlibs/glcore33")
 
 SET( MY_FLAGS "-m64 -std=c++14 -fexceptions -Werror -Wpedantic -Wextra\
  -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor -Wall\
  -Winit-self -Wunreachable-code" )
+
+## Список общих библиотек
+SET( UNILIBS pthread glcore33 glfw freetype sqlite3 )
 
 ###
 # Установка параметров для сборки в MinGW-W64 под MS Windows
@@ -83,7 +90,7 @@ if( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
     SET( CMAKE_CXX_FLAGS "--static ${CMAKE_CXX_FLAGS} ${WIN_GUI}" )
     MESSAGE( WARNING "\n*** Static build is enabled. ***")
   endif()
-  SET( LIBS mingw32 pthread glcore33 glfw freetype png_static gdi32 )
+  SET( LIBS mingw32 png_static gdi32 )
 endif( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
 
 ###
@@ -91,11 +98,11 @@ endif( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
 #
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
 SET( CMAKE_CXX_FLAGS "${MY_FLAGS} -no-pie" )
-SET( LIBS pthread glcore33 glfw freetype png )
+SET( LIBS png )
 endif( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
 
 # список исходников
 file( GLOB SRC "src/*.cpp" )
 
 add_executable( ${EXEC_NAME} ${SRC} )
-target_link_libraries( ${EXEC_NAME} ${LIBS} )
+target_link_libraries( ${EXEC_NAME} ${UNILIBS} ${LIBS} )

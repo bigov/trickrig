@@ -33,6 +33,7 @@
 
 #include "gl_core33.h"
 #include "GLFW/glfw3.h"
+#include "sqlite3.h"
 #include "png.h"
 #include "ft2build.h"
 #include FT_FREETYPE_H
@@ -52,13 +53,15 @@
 
 namespace tr {
 
+  extern glm::mat4 MatProjection;
+
   /** Начальная дистанция рендера окружения
    *
    * - блок, над которым расположена камера отображается всегда, даже при lod_0 = 0.0f
    * - при значении 0.0f < lod_0 <= 1.0f рисуется площадка из 9 блоков
    * - координаты блока (нулевая точка) вычилсяется через floor(), граница - через ceil()
    */
-  static const float lod_0 = 4.0f;
+  static const float lod_0 = 14.0f;
 
   // число вершин в одном снипе
   static const size_t vertices_per_snip = 4;
@@ -83,13 +86,13 @@ namespace tr {
     fps; // частота кадров (для коррекции скорости движения)
   };
 
-  const   float pi = glm::pi<glm::float_t>();
-  const   float two_pi = glm::two_pi<glm::float_t>();
-  const   float half_pi = glm::half_pi<glm::float_t>();
-  const   float _half_pi = 0 - half_pi;
-  const   float look_up = half_pi - 0.01f;
-  const   float look_down = 0 - half_pi + 0.01f;
-  const   float three_over_two_pi  = glm::three_over_two_pi<glm::float_t>();
+  const float pi = glm::pi<glm::float_t>();
+  const float two_pi = glm::two_pi<glm::float_t>();
+  const float half_pi = glm::half_pi<glm::float_t>();
+  const float _half_pi = 0 - half_pi;
+  const float look_up = half_pi - 0.01f;
+  const float look_down = 0 - half_pi + 0.01f;
+  const float three_over_two_pi  = glm::three_over_two_pi<glm::float_t>();
 }
 
 #endif

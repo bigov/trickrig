@@ -11,13 +11,14 @@ namespace tr
 {
   //## Конструктор
   //
-  Scene::Scene(tr::Config *c): cfg(c)
+  scene::scene()
   {
+
     program2d_init();
     framebuffer_init();
 
     // Загрузка символов для отображения fps
-    ttf.init(tr::Config::filepath(FONT), 9);
+    ttf.init(tr::config::filepath(FONT), 9);
     ttf.load_chars( L"fps: 0123456789" );
     ttf.set_cursor( 2, 1 );
     ttf.set_color( 0x18, 0x18, 0x18 );
@@ -28,7 +29,7 @@ namespace tr
       show_fps.size, 0x00);
 
     // Загрузка обрамления окна (HUD) из файла
-    pngImg image = get_png_img(tr::Config::filepath(HUD));
+    pngImg image = get_png_img(tr::config::filepath(HUD));
 
     glGenTextures(1, &text);
     glActiveTexture(GL_TEXTURE1);
@@ -53,7 +54,7 @@ namespace tr
 
   //## Деструктор
   //
-  Scene::~Scene(void)
+  scene::~scene(void)
   {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDeleteFramebuffers(1, &frameBuffer);
@@ -62,7 +63,7 @@ namespace tr
 
   //## Инициализация фрейм-буфера
   //
-  void Scene::framebuffer_init(void)
+  void scene::framebuffer_init(void)
   {
     glGenFramebuffers(1, &frameBuffer);
     glActiveTexture(GL_TEXTURE0);
@@ -71,7 +72,7 @@ namespace tr
     glGenTextures(1, &texColorBuffer);
     glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, cfg->gui.w, cfg->gui.h, 0,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tr::Cfg.gui.w, tr::Cfg.gui.h, 0,
       GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -85,7 +86,7 @@ namespace tr
     glGenRenderbuffers(1, &rb);
     glBindRenderbuffer(GL_RENDERBUFFER, rb);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-      cfg->gui.w, cfg->gui.h);
+      tr::Cfg.gui.w, tr::Cfg.gui.h);
 
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
       GL_RENDERBUFFER, rb);
@@ -102,14 +103,14 @@ namespace tr
   //## Инициализация GLSL программы обработки текстуры из фреймбуфера.
   //
   //
-  void Scene::program2d_init(void)
+  void scene::program2d_init(void)
   {
     glGenVertexArrays(1, &vaoQuad);
     glBindVertexArray(vaoQuad);
 
     screenShaderProgram.attach_shaders(
-      tr::Config::filepath(SCREEN_VERT_SHADER),
-      tr::Config::filepath(SCREEN_FRAG_SHADER)
+      tr::config::filepath(SCREEN_VERT_SHADER),
+      tr::config::filepath(SCREEN_FRAG_SHADER)
     );
     screenShaderProgram.use();
 
@@ -140,7 +141,7 @@ namespace tr
   // после чего это изображение в виде текстуры накладывается на прямоугольник
   // окна. Курсор и дополнительные (HUD) элементы сцены изображаются
   // аналогично - как наложеные сверху рисунки с (полу-)прозрачным фоном
-  void Scene::draw(const evInput& ev)
+  void scene::draw(const evInput& ev)
   {
     glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
     space.draw(ev);

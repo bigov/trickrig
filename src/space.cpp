@@ -27,7 +27,7 @@ namespace tr
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Загрузка из файла данных текстуры
-    pngImg image = get_png_img(tr::Config::filepath(TEXTURE));
+    pngImg image = get_png_img(tr::config::filepath(TEXTURE));
 
     glGenTextures(1, &m_textureObj);
     glActiveTexture(GL_TEXTURE0); // можно загрузить не меньше 48
@@ -148,8 +148,8 @@ namespace tr
   void space::vbo_allocate_mem(void)
   {
     Prog3d.attach_shaders(
-      tr::Config::filepath(VERT_SHADER),
-      tr::Config::filepath(FRAG_SHADER)
+      tr::config::filepath(VERT_SHADER),
+      tr::config::filepath(FRAG_SHADER)
     );
     Prog3d.use();
 
@@ -401,7 +401,7 @@ namespace tr
     if (!CashedSnips.empty()) clear_cashed_snips();
 
     Prog3d.use();   // включить шейдерную программу
-    Prog3d.set_uniform("mvp", MatProjection * MatView);
+    Prog3d.set_uniform("mvp", tr::MatProjection * MatView);
     //prog3d.set_uniform("Selected", Selected);
 
     Prog3d.set_uniform("light_direction", glm::vec4(0.2f, 0.9f, 0.5f, 0.0));

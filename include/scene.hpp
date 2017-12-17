@@ -15,11 +15,11 @@
 
 namespace tr
 {
-  class Scene
+  class scene
   {
     private:
-      Scene(const tr::Scene&);
-      Scene operator=(const tr::Scene&);
+      scene(const tr::scene&);
+      scene operator=(const tr::scene&);
 
       GLuint 
         vaoQuad = 0,
@@ -27,7 +27,6 @@ namespace tr
         text = 0,
         frameBuffer = 0;
 
-      tr::Config* cfg = nullptr;        // управление настройками
       tr::TTF ttf {};                   // создание надписей
       tr::space space {};               // виртуальное пространство
       tr::pngImg show_fps {};           // табличка с fps
@@ -37,8 +36,8 @@ namespace tr
       void program2d_init(void);
 
     public:
-      Scene(tr::Config*);
-      ~Scene(void);
+      scene(void);
+      ~scene(void);
       void draw(const evInput &);
   };
 

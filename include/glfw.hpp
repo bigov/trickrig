@@ -1,14 +1,15 @@
 #ifndef __WIN_GLFW_HPP__
 #define __WIN_GLFW_HPP__
 
-#include "main.hpp"
 #include "config.hpp"
+#include "main.hpp"
 #include "scene.hpp"
+#include "io.hpp"
 
 namespace tr
 {
 
-  class WindowGLFW
+  class window_glfw
   {
     static evInput keys;
     static std::string title;
@@ -16,15 +17,13 @@ namespace tr
     static double x0, y0; // центр окна
 
     public:
-      WindowGLFW(tr::Config *);
-      ~WindowGLFW(void);
-      void show(tr::Scene&);
+      window_glfw(void);
+      ~window_glfw(void);
+      void show(tr::scene&);
       void check_mouse_pos(void);
       void check_keys_state(void);
 
     private:
-      tr::Config* cfg = nullptr;
-
       // переменная для запроса положения курсора в окне
       double xpos = 0.0,
              ypos = 0.0;
@@ -37,8 +36,8 @@ namespace tr
       int k_RIGHT = GLFW_KEY_D;
       int k_LEFT  = GLFW_KEY_A;
 
-      WindowGLFW(const tr::WindowGLFW &);
-      WindowGLFW operator=(const tr::WindowGLFW &);
+      window_glfw(const tr::window_glfw &);
+      window_glfw operator=(const tr::window_glfw &);
       static void cursor_grab(GLFWwindow*);
       static void cursor_free(GLFWwindow*);
 

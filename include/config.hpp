@@ -13,7 +13,7 @@
 
 namespace tr
 {
-  extern glm::mat4 MatProjection;
+  //extern glm::mat4 MatProjection;
 
   struct GuiParams
   {
@@ -33,15 +33,15 @@ namespace tr
     SCREEN_FRAG_SHADER,
   };
 
-  class Config
+  class config
   {
     private:
-      Config(const tr::Config&);
-      Config operator= (const tr::Config&);
+      config(const tr::config &) = delete;
+      config operator= (const tr::config & ) = delete;
       int value = 0;
 
     public:
-      Config(void){}
+      config(void){}
 
       static GuiParams gui;
       static std::unordered_map<tr::FileDestination, std::string> fp_name;
@@ -54,6 +54,9 @@ namespace tr
       static int get_h(void);
       static std::string filepath(tr::FileDestination);
   };
+
+  extern config Cfg;
+
 } //namespace
 
 #endif

@@ -5,27 +5,26 @@
 // Процедура входа по-умолчанию для запуска приложения
 //
 //============================================================================
+#include "config.hpp"
 #include "main.hpp"
 #include "io.hpp"
 #include "scene.hpp"
 #include "glfw.hpp"
+
+namespace tr {
+  tr::config Cfg {};
+}
 
 //##
 int main()
 {
   try
   {
-    tr::Config cfg = {};
-    cfg.load();
-
-    // настройка общих опций и создание контекста OpenGL
-    tr::WindowGLFW win(&cfg);
-
-    // сборка всех частей сцены для моделирования виртуального пространства
-    tr::Scene scene(&cfg);
-
-    win.show(scene);
-    cfg.save();
+    tr::Cfg.load();         // загрузка опций
+    tr::window_glfw Win {}; // настройка OpenGL окна
+    tr::scene Scene {};     // сборка сцены
+    Win.show(Scene);        // цикл рендера
+    tr::Cfg.save();         // сохранение конфигурации
   }
   catch(std::exception & e)
   {
