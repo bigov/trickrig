@@ -32,10 +32,8 @@ namespace tr
       int born;                         // метка времени рождения
       std::forward_list<tr::snip> Area {};
       rig& operator= (const tr::rig &); // копирующее присваивание
-
-    private:
-      void copy_snips(const tr::rig &);
-      void init_snip(const tr::f3d &);
+      void copy_snips(const tr::rig &); // копирование снипов с другого рига
+      void add_snip(const tr::f3d &);   // добавление в риг дефолтного снипа
   };
 
   //## Клас для организации доступа к элементам уровня LOD

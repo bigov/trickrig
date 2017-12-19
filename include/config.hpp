@@ -36,12 +36,18 @@ namespace tr
   class config
   {
     private:
-      config(const tr::config &) = delete;
-      config operator= (const tr::config & ) = delete;
+      sqlite3 *db = nullptr;
+
+      config(const tr::config &)            = delete;
+      config& operator=(const tr::config &) = delete;
       int value = 0;
+      void open_sqlite(void);
 
     public:
-      config(void){}
+      config(void);
+      ~config(void);
+
+      glm::vec3 ViewFrom = {0.5f, 5.0f, 0.5f};
 
       static GuiParams gui;
       static std::unordered_map<tr::FileDestination, std::string> fp_name;

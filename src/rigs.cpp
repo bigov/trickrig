@@ -12,14 +12,14 @@ namespace tr
   //## конструктор
   rig::rig(const tr::f3d &p): born(get_msec())
   {
-    init_snip(p);
+    add_snip(p);
     return;
   }
 
   //## конструктор
   rig::rig(int x, int y, int z): born(get_msec())
   {
-    init_snip(tr::f3d{x,y,z});
+    add_snip(tr::f3d{x,y,z});
     return;
   }
 
@@ -55,8 +55,8 @@ namespace tr
     return;
   }
 
-  // утановка в указаной точке дефолтного снипа
-  void rig::init_snip(const tr::f3d &p)
+  //## Установка в указаной точке дефолтного снипа
+  void rig::add_snip(const tr::f3d &p)
   {
     Area.emplace_front(p);
     return;
@@ -68,10 +68,13 @@ namespace tr
     db_gage *= g; // TODO проверка масштаба на допустимость
 
     int s = 10;
-    int y = 0.f;
 
-    for(int x = 0 - s; x < s; x += 1)
-      for(int z = 0 - s; z < s; z += 1)
+    int x0 = static_cast<int>(floor(tr::Cfg.ViewFrom.x));
+    int y = 0;
+    int z0 = static_cast<int>(floor(tr::Cfg.ViewFrom.z)) - s;
+
+    for(int x = x0 - s; x < s; x += 1)
+      for(int z = z0 - s; z < s; z += 1)
         Db.emplace(std::make_pair(f3d{x, y, z}, f3d{x, y, z}));
 
     // Выделить текстурами центр и оси координат

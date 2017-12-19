@@ -65,13 +65,14 @@ namespace tr
         k_sense = 4.0f,         // TODO: чувствительность через Config
         k_mouse = 0.002f;
 
-      glm::mat4 MatView {};
+      glm::mat4 MatView = {};
+      //glm::vec3 ViewFrom = {0.5f, 5.0f, 0.5f};
+      glm::vec3 & ViewFrom = tr::Cfg.ViewFrom;
       glm::vec3
-        ViewFrom {0.5f, 5.0f, 0.5f},
-        Selected {},
-        MoveFrom {},
-        ViewTo {},
-        UpWard {0.0, 1.0, 0.0}; // направление наверх
+        Selected = {},
+        MoveFrom = {},
+        ViewTo = {},
+        UpWard = {0.0, 1.0, 0.0}; // направление наверх
 
       void calc_position(const tr::evInput &);
       void calc_selected_area(glm::vec3 & sight_direction);

@@ -10,19 +10,39 @@
 namespace tr
 {
   // Инициализация статических членов
-  GuiParams config::gui {};
+  GuiParams tr::config::gui = {};
   glm::mat4 MatProjection {}; // матрица проекции 3D сцены
   std::unordered_map<tr::FileDestination, std::string> config::fp_name {};
 
-  ////////
-  // Загрузка конфигурации приложения
-  //
+  //## Конструктор
+  config::config()
+  {
+ /* В сборке с отладкой вызов процедуры загрузки конфига
+  * производится из главного модуля с перехватом и выводом
+  * сообщений об ошибках в случае возникновения прерываний.
+  *
+  * В релизе загрузка конфигурации вызывается сразу без
+  * поддержки возможности вывода сообщений.
+  */
+#ifdef NDEBUG
+  load();
+#else
+  assert(sizeof(GLfloat) == 4);
+  tr::info("\n -- Debug mode is enabled. --\n");
+#endif
+  return;
+}
+  //## Деструктор класса
+  config::~config(void)
+  {
+    sqlite3_close(db);
+    return;
+  }
+
+  //## Загрузка конфигурации приложения
   void config::load(void)
   {
-    #ifndef NDEBUG
-    assert(sizeof(GLfloat) == 4);
-    tr::info("\n -- DEBUG --\n");
-    #endif
+    open_sqlite();
 
     value = 0;
     set_size(800, 600);
@@ -42,17 +62,36 @@ namespace tr
     return;
   }
 
-  ////////
-  // Сохрание настроек
-  //
+  //## Открыть/создать файл базы данных с конфигурацией
+  void config::open_sqlite()
+  {
+    std::string PathNameCfg = getenv("HOME");
+    if(PathNameCfg.empty()) ERR("config::open_sqlite: can' get \"HOME\" directory\n");
+    PathNameCfg += "/.config/TrickRig/config.db";
+    int rc = sqlite3_open(PathNameCfg.c_str(), &db);
+    if( rc ) ERR("Can't open database: " + std::string(sqlite3_errmsg(db)));
+
+    //const char *query = "select DISTINCT tbl_name from sqlite_master where tbl_name='config';";
+
+    //char *zErrMsg = 0;
+    /*
+    rc = sqlite3_exec(db, argv[2], callback, 0, &zErrMsg);
+    if( rc!=SQLITE_OK ){
+      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+    }
+    */
+
+    return;
+  }
+
+  //## Сохрание настроек
   void config::save(void)
   {
     return;
   }
 
-  ////////
-  // Установка соотношения сторон окна
-  //
+  //## Установка соотношения сторон окна
   void config::set_size(int w, int h)
   {
     gui.w = w;
@@ -72,16 +111,12 @@ namespace tr
     return;
   }
 
-  ////////
   // Статические методы
-  //
   int config::get_w(void) { return gui.w; }
   int config::get_h(void) { return gui.h; }
   std::string config::filepath(tr::FileDestination D) { return fp_name[D]; }
 
-  ////////
-  // Тестовая функция получения значения
-  //
+  //## Тестовая функция получения значения
   int config::get_value(void)
   {
     return value;
