@@ -62,25 +62,69 @@ namespace tr
     return;
   }
 
+  //## Вывод результата запроса к базе данных
+  static int callback(void *NotUsed, int argc, char **argv, char **azColName){
+
+    if(argc == 0) info("no table present\n");
+    else info("table present\n");
+
+    for(int i=0; i<argc; i++){
+      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+    }
+    printf("\n");
+    if(NotUsed != nullptr) return 0;
+    return 0;
+  }
+
   //## Открыть/создать файл базы данных с конфигурацией
   void config::open_sqlite()
   {
-    std::string PathNameCfg = getenv("HOME");
-    if(PathNameCfg.empty()) ERR("config::open_sqlite: can' get \"HOME\" directory\n");
-    PathNameCfg += "/.config/TrickRig/config.db";
+    std::string PathNameCfg;
+    std::string DS = "/";   // разделитель папок
+    const char* env_p;
+
+    env_p = getenv("HOME"); // для Linux платформы
+
+    if(nullptr == env_p)
+    {                       // для платформы MS-Windows
+      env_p = getenv("USERPROFILE");
+      DS = "\\";
+      PathNameCfg = std::string(env_p) + "\\AppData\\Roaming";
+    }
+    else PathNameCfg = std::string(env_p);
+
+    if(nullptr == env_p)
+      ERR("config::open_sqlite: can' get \"HOME\" directory\n");
+
+    // Основной конфигурационных файл приложения
+    PathNameCfg += DS +".config" + DS + "TrickRig" + DS + "config.db";
+
     int rc = sqlite3_open(PathNameCfg.c_str(), &db);
-    if( rc ) ERR("Can't open database: " + std::string(sqlite3_errmsg(db)));
+    if(rc) ERR("Can't open database:\n" + std::string(sqlite3_errmsg(db))
+           + ": " + PathNameCfg);
 
-    //const char *query = "select DISTINCT tbl_name from sqlite_master where tbl_name='config';";
+    const char *query = "select DISTINCT tbl_name from sqlite_master where tbl_name='config';";
+    char *zErrMsg = 0;
 
-    //char *zErrMsg = 0;
-    /*
-    rc = sqlite3_exec(db, argv[2], callback, 0, &zErrMsg);
-    if( rc!=SQLITE_OK ){
-      fprintf(stderr, "SQL error: %s\n", zErrMsg);
+    //rc = sqlite3_exec(db, query, callback, 0, &zErrMsg);
+    rc = sqlite3_exec(db, query, callback, 0, &zErrMsg);
+
+    if(0 == rc)
+      std::cout << "get gows=" << rc << "\n";
+      sqlite3_exec(db,
+        "CREATE TABLE config (id INTEGER PRIARY KEY, pname TEXT, pval TEXT, pdef TEXT);" ,
+        0, 0, &zErrMsg);
+
+    else
+      std::cout << "get gows=" << rc << "\n";
+
+
+    if( rc != SQLITE_OK ){
+      tr::info("SQL error: " + std::string(zErrMsg));
       sqlite3_free(zErrMsg);
     }
-    */
+
+    //for(auto R: rc) tr::info(R);
 
     return;
   }
