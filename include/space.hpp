@@ -26,7 +26,6 @@
 
 #include "glsl.hpp"
 #include "rigs.hpp"
-#include "loader_obj.hpp"
 
 namespace tr
 {
@@ -41,8 +40,10 @@ namespace tr
       space(const tr::space&);
       space operator=(const tr::space&);
 
-      tr::rigs RigsDb0 {};  // структура 3D пространства LOD-0
-      tr::Glsl Prog3d {};   // GLSL программа шейдеров
+      tr::rigs RigsDb0 {};   // структура 3D пространства LOD-0
+      const float g0 = 1.0f; // масштаб элементов в RigsDb0
+
+      tr::glsl Prog3d {};   // GLSL программа шейдеров
       tr::vbo VBOdata = {GL_ARRAY_BUFFER};   // атрибуты вершин поверхности
       tr::vbo VBOindex = {GL_ELEMENT_ARRAY_BUFFER}; // индексы вершин
 
@@ -72,7 +73,6 @@ namespace tr
         ViewTo {},
         UpWard {0.0, 1.0, 0.0}; // направление наверх
 
-      void db_connect(void);
       void calc_position(const tr::evInput &);
       void calc_selected_area(glm::vec3 & sight_direction);
       void upload_vbo(void);

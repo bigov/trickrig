@@ -41,9 +41,10 @@ namespace tr
 
     snip(void);
     snip(const tr::f3d &);
-    snip(const snip &);                     // дублирующий конструктор
-    snip operator= (const snip &) = delete; // копирующий конструктор - отключен
+    snip(const snip &);                    // дублирующий конструктор
+    snip operator=(const snip &) = delete; // копирующий конструктор - отключен
 
+    void copy_data(const snip &);       // копирование данных из другого снипа
     void v_reset(void);                 // настройка адресов указателей
     void texture_set(GLfloat, GLfloat); // выбор фрагмента текстуры
     void point_set(const tr::f3d &);    // установка 3D координат поверхности
@@ -51,7 +52,7 @@ namespace tr
 
     // Функции управления данными в VBO
     void vbo_append(tr::vbo & VBOdata, tr::vbo & VBOidx);
-    void vbo_update(tr::vbo &, tr::vbo &, GLsizeiptr offset);
+    bool vbo_update(tr::vbo &, tr::vbo &, GLsizeiptr offset);
     void jam_data(vbo &VBOdata, vbo &VBOidx, GLintptr dst);
   };
 

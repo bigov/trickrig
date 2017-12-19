@@ -13,11 +13,11 @@
 
 namespace tr
 {
-  class Glsl
+  class glsl
   {
     public:
-      Glsl(void);
-      ~Glsl(void);
+      glsl(void);
+      ~glsl(void);
       void attach_shader(GLenum shader_type, 
         const std::string & file_name);
       void attach_shaders(
@@ -44,8 +44,8 @@ namespace tr
     private:
       GLuint id = 0;
       GLint isLinked = 0;
-      Glsl(const Glsl &);
-      Glsl operator= (const Glsl &);
+      glsl(const glsl &);
+      glsl operator= (const glsl &);
 
     protected:
   };

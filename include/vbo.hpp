@@ -29,7 +29,7 @@ class vbo {
     void attrib_i(GLuint, GLint, GLenum, GLsizei, const GLvoid*);
     void jam_data(GLintptr, GLintptr, GLsizeiptr);
     GLsizeiptr data_append(GLsizeiptr data_size, const GLvoid* data);
-    void data_update(GLsizeiptr, const GLvoid*, GLsizeiptr offset);
+    bool data_update(GLsizeiptr, const GLvoid*, GLsizeiptr offset);
     void shrink(GLsizeiptr);
     GLsizeiptr get_hem(void) { return hem; }
 };

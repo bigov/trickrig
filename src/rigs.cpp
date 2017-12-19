@@ -9,11 +9,54 @@
 
 namespace tr
 {
-  //## конструктор по-умолчанию
+  //## конструктор
   rig::rig(const tr::f3d &p)
   {
+    init_atributes(p);
+    return;
+  }
+
+  //## конструктор
+  rig::rig(int x, int y, int z)
+  {
+    init_atributes(tr::f3d{x,y,z});
+    return;
+  }
+
+  // утановка атрибутов
+  void rig::init_atributes(const tr::f3d &p)
+  {
     time = get_msec();
-    area.emplace_front(p);
+    Area.emplace_front(p);
+    return;
+  }
+
+  //## Установка масштаба и загрузка пространства из БД
+  void rigs::init(float g)
+  {
+    db_gage *= g; // TODO проверка масштаба на допустимость
+
+    int s = 10;
+    int y = 0.f;
+
+    for(int x = 0 - s; x < s; x += 1)
+      for(int z = 0 - s; z < s; z += 1)
+        Db.emplace(std::make_pair(f3d{x, y, z}, f3d{x, y, z}));
+
+    // Выделить текстурами центр и оси координат
+    get(0,0,0 )->Area.front().texture_set(0.125, 0.125*7);
+    get(1,0,0 )->Area.front().texture_set(0.125, 0.0);
+    get(-1,0,0)->Area.front().texture_set(0.125, 0.125);
+    get(0,0,1 )->Area.front().texture_set(0.125, 0.125*4);
+    get(0,0,-1)->Area.front().texture_set(0.125, 0.125*5);
+
+    // Загрузить объект из внешнего файла
+    tr::loader_obj Obj = {"../assets/test_flat.obj"};
+
+    tr::f3d P = {1.f, 0.f, 1.f};
+    for(auto &S: Obj.Area) S.point_set(P); // Сместить объект на точку P
+    get(P)->Area.swap(Obj.Area);           // Загрузить в rig(P)
+
     return;
   }
 
@@ -49,10 +92,10 @@ namespace tr
     {
       try
       { 
-        db.at(f3d {x, y, z});
+        Db.at(f3d {x, y, z});
         return f3d {x, y, z};
       } catch (...)
-      { y -= gage; }
+      { y -= db_gage; }
     }
     ERR("Rigs::search_down() failure. You need try/catch in this case.");
   }
@@ -69,33 +112,8 @@ namespace tr
     if(P.y < yMin) ERR("rigs::get -Y is overflow");
     if(P.y > yMax) ERR("rigs::get +Y is overflow");
     // Вначале поищем как указано.
-    try { return &db.at(P); }
+    try { return &Db.at(P); }
     catch (...) { return nullptr; }
-  }
-
-  //## Вставка элемента в базу данных
-  void rigs::emplace(int x, int y, int z)
-  {
-    f3d point = {x, y, z};
-    db.emplace(std::make_pair(point, point));
-    return;
-  }
-
-  //## Установка снипа по указаным координатам
-  void rigs::set(const tr::f3d &P, std::forward_list<tr::snip> &A)
-  {
-    for(auto &S: A) S.point_set(P);
-
-    tr::rig *R = get(P);
-    if(nullptr == R)
-    {
-      db.emplace(std::make_pair(P, P));
-      R = get(P);
-    }
-
-    R->area.clear();
-    R->area.splice_after(R->area.before_begin(), A);
-    return;
   }
 
 } //namespace

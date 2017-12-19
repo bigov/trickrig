@@ -12,18 +12,18 @@ namespace tr
   //## Формирование 3D пространства
   space::space(void)
   {
-    RigsDb0.gage = 1.0f; // размер стороны для LOD-0
-    db_connect();
+    RigsDb0.init(g0); // загрузка уровня LOD-0
     vbo_allocate_mem();
 
     glClearColor(0.5f, 0.69f, 1.0f, 1.0f);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glFrontFace(GL_CCW);
     glCullFace(GL_BACK);
-    glEnable(GL_CULL_FACE); // после загрузки сцены опция выключается
+    //glEnable(GL_CULL_FACE);  // после загрузки сцены опция выключается
+    glDisable(GL_CULL_FACE); // включить отображение обратных поверхностей
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LINE_SMOOTH);
-    glEnable(GL_BLEND); // поддержка прозрачности
+    glEnable(GL_BLEND);      // поддержка прозрачности
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Загрузка из файла данных текстуры
@@ -54,8 +54,8 @@ namespace tr
   //## Загрузка в VBO (графическую память) данных отображаемых объектов 3D сцены
   void space::upload_vbo(void)
   {
-  // TODO: тут должны загружаться в графическую память все lod_?,
-  //       но пока загружается только lod_0
+  // TODO: тут должны загружаться в графическую память все LOD_*,
+  //       но пока загружается только LOD_0
 
     f3d pt = RigsDb0.search_down(ViewFrom); // ближайший к камере снизу блок
 
@@ -71,41 +71,10 @@ namespace tr
       zMax = MoveFrom.z + ceil(tr::lod_0);
 
     // Загрузить в графический буфер атрибуты элементов
-    for(float x = xMin; x<= xMax; x += RigsDb0.gage)
-    for(float y = yMin; y<= yMax; y += RigsDb0.gage)
-    for(float z = zMin; z<= zMax; z += RigsDb0.gage)
+    for(float x = xMin; x<= xMax; x += g0)
+    for(float y = yMin; y<= yMax; y += g0)
+    for(float z = zMin; z<= zMax; z += g0)
       if(RigsDb0.exist(x, y, z)) vbo_data_send(x, y, z);
-
-    glDisable(GL_CULL_FACE); // включить отображение обратных поверхностей
-
-    return;
-  }
-
-  //## Соединение с БД, в которой хранится виртуальное 3D пространство
-  void space::db_connect(void)
-  {
-  // TODO: должно быть заменено на подключение к базе данных пространства,
-
-    int s = 10;
-    int y = 0.f;
-
-    for (int x = 0 - s; x < s; x += 1)
-      for (int z = 0 - s; z < s; z += 1)
-      {
-        RigsDb0.emplace(x, y, z);
-      }
-
-    // Выделить текстурами центр и оси координат
-    RigsDb0.get(0,0,0 )->area.front().texture_set(0.125, 0.125*7);
-    RigsDb0.get(1,0,0 )->area.front().texture_set(0.125, 0.0);
-    RigsDb0.get(-1,0,0)->area.front().texture_set(0.125, 0.125);
-    RigsDb0.get(0,0,1 )->area.front().texture_set(0.125, 0.125*4);
-    RigsDb0.get(0,0,-1)->area.front().texture_set(0.125, 0.125*5);
-
-    tr::f3d P = {1.f, 0.f, 1.f};
-    // Загрузить объект из внешнего файла
-    tr::loader_obj Obj("../assets/test_flat.obj");
-    RigsDb0.set(P, Obj.Area);
 
     return;
   }
@@ -125,22 +94,28 @@ namespace tr
 
     glBindVertexArray(space_vao);
 
-    for(auto & Snip: Rig->area)
-      if(CashedSnips.empty()) // Если кэш пустой, то добавляем данные в конец VBO
+    for(tr::snip & Snip: Rig->Area)
+    {
+      bool data_is_recieved = false;
+      while (!data_is_recieved)
       {
-        Snip.vbo_append(VBOdata, VBOindex);
-        render_points += tr::indices_per_snip;  // увеличить число точек рендера
-        VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
+        if(CashedSnips.empty()) // Если кэш пустой, то добавляем данные в конец VBO
+        {
+          Snip.vbo_append(VBOdata, VBOindex);
+          render_points += tr::indices_per_snip;  // увеличить число точек рендера
+          VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
+          data_is_recieved = true;
+        }
+        else // если в кэше есть адреса свободных мест, то используем
+        {    // их с контролем, успешно ли был перемещен блок данных
+          data_is_recieved = Snip.vbo_update(VBOdata, VBOindex, CashedSnips.front());
+          CashedSnips.pop_front();                // укоротить кэш
+          VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
+        }
       }
-      else // если в кэше есть данные, то пишем на их место
-      {
-        Snip.vbo_update(VBOdata, VBOindex, CashedSnips.front());
-        CashedSnips.pop_front();                // укоротить кэш
-        VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
-       }
+    }
 
     glBindVertexArray(0);
-
     return;
   }
 
@@ -202,11 +177,11 @@ namespace tr
 
     // Сбор индексов VBO с задней границы области
     float zMin = MoveFrom.z - clod_0, zMax = MoveFrom.z + clod_0;
-    for(float y = yMin; y <= yMax; y += RigsDb0.gage)
-    for(float z = zMin; z <= zMax; z += RigsDb0.gage)
+    for(float y = yMin; y <= yMax; y += g0)
+    for(float z = zMin; z <= zMax; z += g0)
     {
       Rig = RigsDb0.get(x_old, y, z);
-      if(nullptr != Rig) for(auto & Snip: Rig->area)
+      if(nullptr != Rig) for(auto & Snip: Rig->Area)
       {
         VisibleSnips.erase(Snip.data_offset);
         CashedSnips.push_front(Snip.data_offset);
@@ -215,8 +190,8 @@ namespace tr
 
     // Построение линии по направлению движения
     zMin = vf_z - clod_0; zMax = vf_z + clod_0;
-    for(float y = yMin; y <= yMax; y += RigsDb0.gage)
-      for(float z = zMin; z <= zMax; z += RigsDb0.gage)
+    for(float y = yMin; y <= yMax; y += g0)
+      for(float z = zMin; z <= zMax; z += g0)
         if(RigsDb0.exist(x_new, y, z)) vbo_data_send(x_new, y, z);
 
     MoveFrom.x = vf_x;
@@ -244,11 +219,11 @@ namespace tr
 
     // Сбор индексов VBO с задней границы области
     float xMin = MoveFrom.x - clod_0, xMax = MoveFrom.x + clod_0;
-    for(float y = yMin; y <= yMax; y += RigsDb0.gage)
-    for(float x = xMin; x <= xMax; x += RigsDb0.gage)
+    for(float y = yMin; y <= yMax; y += g0)
+    for(float x = xMin; x <= xMax; x += g0)
     {
       Rig = RigsDb0.get(x, y, z_old);
-      if(nullptr != Rig) for(auto & Snip: Rig->area)
+      if(nullptr != Rig) for(auto & Snip: Rig->Area)
       {
         VisibleSnips.erase(Snip.data_offset);
         CashedSnips.push_front(Snip.data_offset);
@@ -257,8 +232,8 @@ namespace tr
 
     // Построение линии по направлению движения
     xMin = vf_x - clod_0; xMax = vf_x + clod_0;
-    for(float y = yMin; y <= yMax; y += RigsDb0.gage)
-      for(float x = xMin; x <= xMax; x += RigsDb0.gage)
+    for(float y = yMin; y <= yMax; y += g0)
+      for(float x = xMin; x <= xMax; x += g0)
         if(RigsDb0.exist(x, y, z_new)) vbo_data_send(x, y, z_new);
 
     MoveFrom.z = vf_z;
@@ -271,7 +246,23 @@ namespace tr
   /* - собираем в кэш адреса удаляемых снипов.
    * - добавляемые в сцену снипы пишем в VBO по адресам из кэша.
    * - если кэш пустой, то добавляем в конец буфера.
+   *
+   * TODO? (на случай притормаживания если прыгать камерой туда-сюда
+   * через границу запуска перерисовки границ)
+   *   Можно процедуры "redraw_borders_?" разбить по две части - отдельно
+   *   сбор данных в кэш и отдельно построение новой границы по ходу движения.
+   *
+   * - запускать их с небольшим зазором (вначале сбор, потом перестроение)
+   *
+   * - в процедуре построения вначале проверять наличие снипов рига в кэше
+   *   и просто активировать их без запроса к базе данных, если они там.
+   *
+   * Еще можно кэшировать данные в обработчике соединений с базой данных,
+   * сохраняя в нем данные, например, о двух линиях одновременно по внешнему
+   * периметру. Это должно снизить число обращений к (диску) базе данных при
+   * резких маятниковых перемещениях камеры.
    */
+
     if(floor(ViewFrom.x) != MoveFrom.x) redraw_borders_x();
     //if(floor(ViewFrom.y) != MoveFrom.y) redraw_borders_y();
     if(floor(ViewFrom.z) != MoveFrom.z) redraw_borders_z();
@@ -283,41 +274,54 @@ namespace tr
   {
   /* Если в кэше есть адреса из середины VBO, то на них переносим данные
    * из конца и сжимаем буфер на один блок. Если адрес в кэше из конца VBO,
-   * то сразу сжимаем буфер.
+   * то сразу сжимаем буфер, просто отбрасывая уже ненужный блок.
    */
 
-    GLsizeiptr data_src = VBOdata.get_hem(); // граница блока данных VBO
-    if(data_src == 0 )
-    {
-      CashedSnips.clear();
-      VisibleSnips.clear();
+    // Выбрать самый крайний элемент VBO на границе блока данных
+    GLsizeiptr data_src = VBOdata.get_hem();
+
+    #ifndef NDEBUG
+    if(data_src == 0 ) {      // если данных нет (а вдруг?)
+      CashedSnips.clear();    // то очистить все, сообщить о проблеме
+      VisibleSnips.clear();   // и закончить обработку кэша
       render_points = 0;
-      return;
-    }
+      info("WARNING: space::clear_cashed_snips got empty data_src\n");
+      return; }
+    #endif
+
     data_src -= tr::snip_data_bytes; // адрес последнего блока
 
     #ifndef NDEBUG
       if(data_src < 0) ERR ("space::jam_vbo got error address in VBO");
     #endif
 
-    // если этот элемент не в рендере, то сжать буфер
+    // Если крайний блок не в списке VisibleSnips, то он и не в рендере.
+    // Поэтому просто отбросим его, сдвинув границу буфера VBO. Кэш не
+    // изменяем, так как в контейнере "forward_list" удаление элементов
+    // из середины списка - затратная операция.
+    //
+    // Внимание! Так как после этого где-то в кэше остается невалидный
+    // (за рабочей границей VBO) адрес блока, то при использовании
+    // адресов из кэша надо делать проверку - не "протухли" ли они.
+    //
     if(VisibleSnips.find(data_src) == VisibleSnips.end())
     {
       VBOdata.shrink(tr::snip_data_bytes);   // укоротить VBO данных
       VBOindex.shrink(tr::snip_index_bytes); // укоротить VBO индекса
       render_points -= tr::indices_per_snip; // уменьшить число точек рендера
-      return;
+      return;                                // и прервать обработку кэша
     }
 
-    // извлечь из кэша адрес
+    // Извлечь из кэша один освободившийся адрес
     GLsizeiptr data_dst = CashedSnips.front(); CashedSnips.pop_front();
+    // если извлеченный адрес за границей VBO, то прервать обработку
     if(data_dst >= data_src) return;
 
-    try {
-      tr::snip *Snip = VisibleSnips.at(data_src);  // переместить снип
-      Snip->jam_data(VBOdata, VBOindex, data_dst);
-      VisibleSnips[Snip->data_offset] = Snip;   // обновить ссылку
-      render_points -= tr::indices_per_snip; // уменьшить число точек рендера
+    try { // Если есть отображаемый data_src и меньший data_dst из кэша, то
+      tr::snip *Snip = VisibleSnips.at(data_src);  // сжать буфер VBO,
+      Snip->jam_data(VBOdata, VBOindex, data_dst); // переместив снип,
+      VisibleSnips[Snip->data_offset] = Snip;      // обновить ссылку и
+      render_points -= tr::indices_per_snip;       // уменьшить число точек рендера
     } catch (...) {
       ERR("space::jam_vbo got error VisibleSnips[data_src]");
     }

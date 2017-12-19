@@ -30,7 +30,7 @@ namespace tr
       tr::TTF ttf {};                   // создание надписей
       tr::space space {};               // виртуальное пространство
       tr::pngImg show_fps {};           // табличка с fps
-      tr::Glsl screenShaderProgram {};  // шейдерная программа
+      tr::glsl screenShaderProgram {};  // шейдерная программа
 
       void framebuffer_init(void);
       void program2d_init(void);

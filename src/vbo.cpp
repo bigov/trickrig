@@ -104,8 +104,8 @@ namespace tr
    * указателя на размер внесенных данных для следующей порции атрибутов
    */
 
-    #ifndef NDEBUG
-      if((allocated - hem) < d_size) ERR("VBO::SubDataAppend got overflow buffer");
+    #ifndef NDEBUG // проверка свободного места в буфере----------------------
+    if((allocated - hem) < d_size) ERR("VBO::SubDataAppend got overflow buffer");
     #endif //------------------------------------------------------------------
 
     if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, id);
@@ -117,17 +117,14 @@ namespace tr
   }
 
   //## Замена блока данных в указанном месте с контролем границы размера буфера
-  void vbo::data_update(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr offset)
+  bool vbo::data_update(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr offset)
   {
-    #ifndef NDEBUG //--проверка свободного места в буфере----------------------
-    if (offset > (hem - d_size)) ERR("VBO::SubDataUpdate got bad index for update attrib group");
-    if ((allocated - hem) < d_size) ERR("VBO::SubDataUpdate overflow buffer");
-    #endif //------------------------------------------------------------------
+    if (offset > (hem - d_size)) return false; // Фу, "протухший" адрес!
 
     if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, id);
     glBufferSubData(gl_buffer_type, offset, d_size, data);
     if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, 0);
-    return;
+    return true;
   }
 
 } //tr

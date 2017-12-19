@@ -13,7 +13,7 @@ namespace tr {
   ////////
   // Конструктор шейдерной программы
   //
-  Glsl::Glsl()
+  glsl::glsl()
   {
     id = glCreateProgram();
     if (glGetError()) ERR("Can't create GLSL program");
@@ -23,7 +23,7 @@ namespace tr {
   ////////
   // Деструктор шейдерной программы
   //
-  Glsl::~Glsl()
+  glsl::~glsl()
   {
     // TODO
     #if 0
@@ -50,12 +50,12 @@ namespace tr {
   ////////
   // Идентификатор ш/программы
   //
-  GLuint Glsl::get_id() { return id;}
+  GLuint glsl::get_id() { return id;}
   
   ////////
   // Проверка корректности GLSL программы
   //
-  void Glsl::validate(void)
+  void glsl::validate(void)
   {
     glValidateProgram(id);
     GLint i;
@@ -75,7 +75,7 @@ namespace tr {
   ////////
   // Линковка программы
   //
-  void Glsl::link()
+  void glsl::link()
   {
     if(true == isLinked) return;
   
@@ -101,7 +101,7 @@ namespace tr {
   ////////
   // Отключение программы GLSL
   //
-  void Glsl::unuse(void)
+  void glsl::unuse(void)
   {
     glUseProgram(0);
     return;
@@ -110,7 +110,7 @@ namespace tr {
   ////////
   // Подключение программы GLSL
   //
-  void Glsl::use(void)
+  void glsl::use(void)
   {
     if(false == isLinked) link();
     glUseProgram(id);
@@ -120,7 +120,7 @@ namespace tr {
   ////////
   // Получение индекса атрибута шейдера по имени
   //
-  GLuint Glsl::attrib_location_get(const char * name )
+  GLuint glsl::attrib_location_get(const char * name )
   {
     if(!isLinked)
     {
@@ -144,7 +144,7 @@ namespace tr {
   ////////
   // Получение индекса переменной uniform по имени
   //
-  GLint Glsl::uniform_location_get(const char * name )
+  GLint glsl::uniform_location_get(const char * name )
   {
     if(!isLinked)
     {
@@ -168,7 +168,7 @@ namespace tr {
   ////////
   // Передача в шейдер матрицы
   //
-  void Glsl::set_uniform(const char * name, const glm::mat4 & m)
+  void glsl::set_uniform(const char * name, const glm::mat4 & m)
   {
     GLint loc;
     loc = uniform_location_get(name);
@@ -179,7 +179,7 @@ namespace tr {
   ////////
   // Передача в шейдер вектора
   //
-  void Glsl::set_uniform(const char * name, const glm::vec3 & m)
+  void glsl::set_uniform(const char * name, const glm::vec3 & m)
   {
     GLint loc;
     loc = uniform_location_get(name);
@@ -190,7 +190,7 @@ namespace tr {
   ////////
   // Передача в шейдер вектора
   //
-  void Glsl::set_uniform(const char * name, const glm::vec4 & m)
+  void glsl::set_uniform(const char * name, const glm::vec4 & m)
   {
     GLint loc;
     loc = uniform_location_get(name);
@@ -200,7 +200,7 @@ namespace tr {
   ////////
   // Передача в шейдер целого числа
   //
-  void Glsl::set_uniform(const char * name, GLint u)
+  void glsl::set_uniform(const char * name, GLint u)
   {
     GLint loc;
     loc = uniform_location_get(name);
@@ -212,7 +212,7 @@ namespace tr {
   ////////
   // Передача в шейдер значения float
   //
-  void Glsl::set_uniform(const char * name, GLfloat u)
+  void glsl::set_uniform(const char * name, GLfloat u)
   {
     GLint loc;
     loc = uniform_location_get(name);
@@ -223,7 +223,7 @@ namespace tr {
   ////////
   // Считывание из файла и подключение шейдера
   //
-  void Glsl::attach_shader(GLenum type, const std::string &fname)
+  void glsl::attach_shader(GLenum type, const std::string &fname)
   {
     GLuint _sh = glCreateShader(type);
     if(glGetError()) ERR("Can't glCreateShader");
@@ -252,7 +252,7 @@ namespace tr {
   
   //## Считывание из файлов и подключение шейдеров
   //
-  void Glsl::attach_shaders(
+  void glsl::attach_shaders(
       const std::string & vert_fn,
       const std::string & frag_fn
     )
@@ -264,7 +264,7 @@ namespace tr {
   
   //## Считывание из файлов и подключение шейдеров
   //
-  void Glsl::attach_shaders(
+  void glsl::attach_shaders(
       const std::string & vert_fn,
       const std::string & geom_fn,
       const std::string & frag_fn
