@@ -22,19 +22,20 @@ namespace tr
    * - если данные записаны в VBO, то смещение адреса данных в GPU */
 
     public:
-      rig(const tr::f3d &);
-      rig(int, int, int);
+      // ----------------------------- конструкторы
+      rig(void): born(get_msec()) { }   // пустой
+      rig(const tr::rig &);             // дублирующий конструктор
+      rig(const tr::f3d &);             // создающий снип в точке
+      rig(int, int, int);               // создающий снип в точке
 
-      short int type = 0;        // тип: текстура, поведение, физика и т.п
-      int time;                  // метка времени создания
+      //short int type = 0;             // тип: текстура, поведение, физика и т.п
+      int born;                         // метка времени рождения
       std::forward_list<tr::snip> Area {};
+      rig& operator= (const tr::rig &); // копирующее присваивание
 
     private:
-      rig           (void)            = delete; // пустой
-      rig           (const rig &)     = delete; // дублирующий
-      rig operator= (const tr::rig &) = delete; // копирующий
-
-      void init_atributes(const tr::f3d &);
+      void copy_snips(const tr::rig &);
+      void init_snip(const tr::f3d &);
   };
 
   //## Клас для организации доступа к элементам уровня LOD
@@ -44,12 +45,12 @@ namespace tr
       std::map<tr::f3d, tr::rig> Db {};
       float yMin = -100.f;
       float yMax = 100.f;
-      float db_gage = 1.0f;      // размер стороны элементов в текущем LOD
+      float db_gage = 1.0f; // размер стороны элементов в текущем LOD
 
     public:
 
-      rigs(void){}      // пустой конструктор
-      void init(float); // загрузка уровня
+      rigs(void){}          // пустой конструктор
+      void init(float);     // загрузка уровня
 
       rig* blank(float x, float y, float z);
       rig* get(float x, float y, float z);

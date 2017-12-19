@@ -41,9 +41,9 @@ namespace tr
 
     snip(void);
     snip(const tr::f3d &);
-    snip(const snip &);                    // дублирующий конструктор
-    snip operator=(const snip &) = delete; // копирующий конструктор - отключен
+    snip(const snip &);                 // дублирующий конструктор
 
+    snip& operator=(const snip &);      // оператор присваивания
     void copy_data(const snip &);       // копирование данных из другого снипа
     void v_reset(void);                 // настройка адресов указателей
     void texture_set(GLfloat, GLfloat); // выбор фрагмента текстуры

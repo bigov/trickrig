@@ -10,23 +10,54 @@
 namespace tr
 {
   //## конструктор
-  rig::rig(const tr::f3d &p)
+  rig::rig(const tr::f3d &p): born(get_msec())
   {
-    init_atributes(p);
+    init_snip(p);
     return;
   }
 
   //## конструктор
-  rig::rig(int x, int y, int z)
+  rig::rig(int x, int y, int z): born(get_msec())
   {
-    init_atributes(tr::f3d{x,y,z});
+    init_snip(tr::f3d{x,y,z});
     return;
   }
 
-  // утановка атрибутов
-  void rig::init_atributes(const tr::f3d &p)
+  //## конструктор копирующий
+  rig::rig(const tr::rig & Other): born(get_msec())
   {
-    time = get_msec();
+  /* При создании нового элемента метку времени
+   * ставим по моменту создания объекта
+   */
+    copy_snips(Other);
+    return;
+  }
+
+  //## Оператор присваивания это не конструктор
+  tr::rig& rig::operator= (const tr::rig & Other)
+  {
+  /* При копировании существующего элемента в
+   * созданый ранее объект метку времени копируем
+   */
+    if(this != &Other)
+    {
+      born = Other.born;
+      Area.clear();
+      copy_snips(Other);
+    }
+    return *this;
+  }
+
+  //## Копирование списка снипов из другого объекта
+  void rig::copy_snips(const tr::rig & Other)
+  {
+    for(tr::snip Snip: Other.Area) Area.push_front(Snip);
+    return;
+  }
+
+  // утановка в указаной точке дефолтного снипа
+  void rig::init_snip(const tr::f3d &p)
+  {
     Area.emplace_front(p);
     return;
   }
@@ -54,7 +85,7 @@ namespace tr
     tr::loader_obj Obj = {"../assets/test_flat.obj"};
 
     tr::f3d P = {1.f, 0.f, 1.f};
-    for(auto &S: Obj.Area) S.point_set(P); // Сместить объект на точку P
+    for(auto &S: Obj.Area) S.point_set(P); // Установить объект в точке P
     get(P)->Area.swap(Obj.Area);           // Загрузить в rig(P)
 
     return;

@@ -13,6 +13,7 @@ namespace tr
   snip::snip(void)
   {
     v_reset();
+    return;
   }
 
   //## конструктор по-умолчанию
@@ -20,23 +21,19 @@ namespace tr
   {
     v_reset();
     point_set(p);
+    return;
+  }
+
+  tr::snip& snip::operator= (const snip & Other)
+  {
+    if(this != &Other) copy_data(Other);
+    return *this;
   }
 
   //## дублирующий конструктор
   snip::snip(const snip & Other)
   {
-    //copy_data(Other);
-
-    data_offset = Other.data_offset;
-
-    for(size_t n = 0; n < tr::digits_per_snip; n++)
-      data[n] = Other.data[n];
-
-    for(size_t n = 0; n < tr::indices_per_snip; n++)
-      idx[n] = Other.idx[n];
-
-    v_reset(); // настроить вспомогательные указатели
-
+    copy_data(Other);
     return;
   }
 
