@@ -18,7 +18,7 @@ namespace tr
     framebuffer_init();
 
     // Загрузка символов для отображения fps
-    ttf.init(tr::config::filepath(FONT), 9);
+    ttf.init(tr::config::filepath(FONT_FNAME), 9);
     ttf.load_chars( L"fps: 0123456789" );
     ttf.set_cursor( 2, 1 );
     ttf.set_color( 0x18, 0x18, 0x18 );
@@ -29,7 +29,7 @@ namespace tr
       show_fps.size, 0x00);
 
     // Загрузка обрамления окна (HUD) из файла
-    pngImg image = get_png_img(tr::config::filepath(HUD));
+    pngImg image = get_png_img(tr::config::filepath(HUD_FNAME));
 
     glGenTextures(1, &text);
     glActiveTexture(GL_TEXTURE1);
@@ -109,8 +109,8 @@ namespace tr
     glBindVertexArray(vaoQuad);
 
     screenShaderProgram.attach_shaders(
-      tr::config::filepath(SCREEN_VERT_SHADER),
-      tr::config::filepath(SCREEN_FRAG_SHADER)
+      tr::config::filepath(SHADER_VERT_SCREEN),
+      tr::config::filepath(SHADER_FRAG_SCREEN)
     );
     screenShaderProgram.use();
 

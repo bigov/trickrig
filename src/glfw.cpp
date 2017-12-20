@@ -15,18 +15,14 @@ namespace tr
   double window_glfw::x0 = 0;
   double window_glfw::y0 = 0;
 
-  ////////
-  // Errors callback
-  //
+  //## Errors callback
   void window_glfw::error_callback(int error, const char* description)
   {
     info("GLFW error " + std::to_string(error) + ": " + description);
     return;
   }
 
-  ////////
-  //
-  //
+  //##
   void window_glfw::cursor_grab(GLFWwindow * window)
   {
     cursor_is_captured = true;
@@ -35,9 +31,7 @@ namespace tr
     return;
   }
 
-  ////////
-  //
-  //
+  //##
   void window_glfw::cursor_free(GLFWwindow * window)
   {
     cursor_is_captured = false;
@@ -45,9 +39,7 @@ namespace tr
     return;
   }
 
-  ////////
-  // Mouse keys callback
-  //
+  //##
   void window_glfw::mouse_button_callback(
     GLFWwindow* window, int button, int action, int mods)
   {
@@ -58,9 +50,7 @@ namespace tr
     return;
   }
 
-  ////////
-  // Keys events callback
-  //
+  //## Keys events callback
   void window_glfw::key_callback(GLFWwindow* window, int key, int scancode,
     int action, int mods)
   {
@@ -83,9 +73,7 @@ namespace tr
     return;
   }
 
-  ////////
-  // Опрос состояния клавиш управления
-  //
+  //## Опрос состояния клавиш управления
   void window_glfw::check_keys_state(void)
   {
     keys.fb = glfwGetKey(pWin, k_FRONT) - glfwGetKey(pWin, k_BACK);
@@ -94,9 +82,7 @@ namespace tr
     return;
   }
 
-  ////////
-  // GLFW framebuffer callback resize
-  //
+  //## GLFW framebuffer callback resize
   void window_glfw::framebuffer_size_callback(GLFWwindow * window,
     int width, int height)
   {
@@ -109,9 +95,7 @@ namespace tr
     return;
   }
 
-  ////////
-  // Создание нового окна с обработчиками ввода и настройка контекста отображения OpenGL
-  //
+  //## Создание нового окна с обработчиками ввода и настройка контекста отображения OpenGL
   window_glfw::window_glfw(void)
   {
     glfwSetErrorCallback(error_callback);
@@ -139,9 +123,7 @@ namespace tr
     return;
   }
 
-  ////////
-  // Destructor
-  //
+  //## Destructor
   window_glfw::~window_glfw()
   {
     glfwSetInputMode(pWin, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
@@ -149,10 +131,8 @@ namespace tr
     return;
   }
 
-  ////////
-  // Опрос положения указателя мыши и возврат его в центр окна
+  //## Опрос положения указателя мыши и возврат его в центр окна
   // производится в конце отрисовки каждого кадра
-  //
   void window_glfw::check_mouse_pos(void)
   {
     glfwGetCursorPos(pWin, &xpos, &ypos);
@@ -162,10 +142,7 @@ namespace tr
     return;
   }
 
-
-  ////////
-  // Show content
-  //
+  //## Show content
   void window_glfw::show(tr::scene & space)
   {
     glfwSetInputMode(pWin, GLFW_STICKY_KEYS, 0);

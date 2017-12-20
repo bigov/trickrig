@@ -27,7 +27,7 @@ namespace tr
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Загрузка из файла данных текстуры
-    pngImg image = get_png_img(tr::config::filepath(TEXTURE));
+    pngImg image = get_png_img(tr::config::filepath(TEXTURE_FNAME));
 
     glGenTextures(1, &m_textureObj);
     glActiveTexture(GL_TEXTURE0); // можно загрузить не меньше 48
@@ -123,8 +123,8 @@ namespace tr
   void space::vbo_allocate_mem(void)
   {
     Prog3d.attach_shaders(
-      tr::config::filepath(VERT_SHADER),
-      tr::config::filepath(FRAG_SHADER)
+      tr::config::filepath(SHADER_VERT_SCENE),
+      tr::config::filepath(SHADER_FRAG_SCENE)
     );
     Prog3d.use();
 

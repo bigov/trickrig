@@ -10,11 +10,10 @@
 
 #include "main.hpp"
 #include "io.hpp"
+#include "sqlitew.hpp"
 
 namespace tr
 {
-  //extern glm::mat4 MatProjection;
-
   struct GuiParams
   {
     int w = 0;
@@ -23,25 +22,28 @@ namespace tr
   };
 
   enum FileDestination {
-    FONT,
-    TEXTURE,
-    HUD,
-    VERT_SHADER,
-    GEOM_SHADER,
-    FRAG_SHADER,
-    SCREEN_VERT_SHADER,
-    SCREEN_FRAG_SHADER,
+    FONT_FNAME,
+    TEXTURE_FNAME,
+    HUD_FNAME,
+    SHADER_VERT_SCENE,
+    SHADER_GEOM_SCENE,
+    SHADER_FRAG_SCENE,
+    SHADER_VERT_SCREEN,
+    SHADER_FRAG_SCREEN,
   };
 
   class config
   {
     private:
       sqlite3 *db = nullptr;
+      std::string UserTrConfDir = "";  // папка конфигов пользователя
+      std::string DS = "";             // символ разделителя папок
 
       config(const tr::config &)            = delete;
       config& operator=(const tr::config &) = delete;
       int value = 0;
       void open_sqlite(void);
+      void set_user_conf_dir(void); // выбор пользовательской папки
 
     public:
       config(void);

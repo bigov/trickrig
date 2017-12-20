@@ -30,6 +30,8 @@ namespace tr
   assert(sizeof(GLfloat) == 4);
   tr::info("\n -- Debug mode is enabled. --\n");
 #endif
+  set_user_conf_dir();
+
   return;
 }
   //## Деструктор класса
@@ -48,22 +50,31 @@ namespace tr
     set_size(800, 600);
     std::string dir = "../assets/";
 
-    fp_name[FONT] = dir + "DejaVuSansMono.ttf";
-    fp_name[HUD] = dir + "hud.png";
-    fp_name[TEXTURE] = dir + "tex0_512.png";
+    fp_name[FONT_FNAME] = dir + "DejaVuSansMono.ttf";
+    fp_name[HUD_FNAME] = dir + "hud.png";
+    fp_name[TEXTURE_FNAME] = dir + "tex0_512.png";
 
-    fp_name[VERT_SHADER] = dir + "vert.glsl";
-    fp_name[GEOM_SHADER] = dir + "geom.glsl";
-    fp_name[FRAG_SHADER] = dir + "frag.glsl";
+    fp_name[SHADER_VERT_SCENE] = dir + "vert.glsl";
+    fp_name[SHADER_GEOM_SCENE] = dir + "geom.glsl";
+    fp_name[SHADER_FRAG_SCENE] = dir + "frag.glsl";
 
-    fp_name[SCREEN_VERT_SHADER] = dir + "scr_vert.glsl";
-    fp_name[SCREEN_FRAG_SHADER] = dir + "scr_frag.glsl";
+    fp_name[SHADER_VERT_SCREEN] = dir + "scr_vert.glsl";
+    fp_name[SHADER_FRAG_SCREEN] = dir + "scr_frag.glsl";
 
     return;
   }
 
   //## Вывод результата запроса к базе данных
-  static int callback(void *NotUsed, int argc, char **argv, char **azColName){
+  //                             сумма строк |  значения  |    заголовки    |
+  static int callback(void *NotUsed, int argc, char **argv, char **azColName)
+  {
+ /* Arguments:
+  *
+  *   NotUsed - Ignored in this case, see the documentation for sqlite3_exec
+  *      argc - количество значений (колонок) в каждой строке результата
+  *      argv - значения
+  * azColName - имена колонок
+  */
 
     if(argc == 0) info("no table present\n");
     else info("table present\n");
@@ -76,55 +87,28 @@ namespace tr
     return 0;
   }
 
+  //## Поиск и настройка пользовательского каталога
+  void config::set_user_conf_dir(void)
+  {
+#ifdef _WIN32_WINNT
+    DS = "\\";
+    const char *env_p = getenv("USERPROFILE");
+    if(nullptr == env_p) ERR("config::set_user_dir: can'd setup users directory");
+    UserTrConfDir = std::string(env_p) + std::string("\\AppData\\Roaming");
+#else
+    DS = "/";
+    const char *env_p = getenv("HOME");
+    if(nullptr == env_p) ERR("config::set_user_dir: can'd setup users directory");
+    UserTrConfDir = std::string(env_p);
+#endif
+    UserTrConfDir += DS +".config" + DS + "TrickRig" + DS;
+    return;
+  }
+
   //## Открыть/создать файл базы данных с конфигурацией
   void config::open_sqlite()
   {
-    std::string PathNameCfg;
-    std::string DS = "/";   // разделитель папок
-    const char* env_p;
-
-    env_p = getenv("HOME"); // для Linux платформы
-
-    if(nullptr == env_p)
-    {                       // для платформы MS-Windows
-      env_p = getenv("USERPROFILE");
-      DS = "\\";
-      PathNameCfg = std::string(env_p) + "\\AppData\\Roaming";
-    }
-    else PathNameCfg = std::string(env_p);
-
-    if(nullptr == env_p)
-      ERR("config::open_sqlite: can' get \"HOME\" directory\n");
-
-    // Основной конфигурационных файл приложения
-    PathNameCfg += DS +".config" + DS + "TrickRig" + DS + "config.db";
-
-    int rc = sqlite3_open(PathNameCfg.c_str(), &db);
-    if(rc) ERR("Can't open database:\n" + std::string(sqlite3_errmsg(db))
-           + ": " + PathNameCfg);
-
-    const char *query = "select DISTINCT tbl_name from sqlite_master where tbl_name='config';";
-    char *zErrMsg = 0;
-
-    //rc = sqlite3_exec(db, query, callback, 0, &zErrMsg);
-    rc = sqlite3_exec(db, query, callback, 0, &zErrMsg);
-
-    if(0 == rc)
-      std::cout << "get gows=" << rc << "\n";
-      sqlite3_exec(db,
-        "CREATE TABLE config (id INTEGER PRIARY KEY, pname TEXT, pval TEXT, pdef TEXT);" ,
-        0, 0, &zErrMsg);
-
-    else
-      std::cout << "get gows=" << rc << "\n";
-
-
-    if( rc != SQLITE_OK ){
-      tr::info("SQL error: " + std::string(zErrMsg));
-      sqlite3_free(zErrMsg);
-    }
-
-    //for(auto R: rc) tr::info(R);
+    std::string PathNameCfg = UserTrConfDir + "config.db";
 
     return;
   }

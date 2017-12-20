@@ -1,21 +1,23 @@
-#include <iostream>
-#include <cstdlib>
-#include <string>
+#include "sqlw.hpp"
 
 int main()
 {
-const char* env_p;
-env_p = std::getenv("HOME");
-if(nullptr == env_p) env_p = std::getenv("USERPROFILE");
+  const char *dbname = "test.db";
+  tr::sqlw SqlDb = {dbname};
+  SqlDb.open();
+  const char *query = "select * from list;";
+  SqlDb.exec(query);
 
-std::string path = env_p;
+  for(auto &row: SqlDb.rows)
+  {
+    for(auto &v: row)
+    {
+      std::cout << v.first << ": " << v.second << "\n";
+    }
+  }
+  std::cout << "\n";
 
-   if(nullptr != env_p)
-        std::cout << "Your PATH is: " << path << '\n';
-   else 
-     std::cout << "ooops! ";
-
+  SqlDb.rows.clear();
+  SqlDb.close();
   return 0;
 }
-
-//PathNameCfg += getenv("%%");
