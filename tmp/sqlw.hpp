@@ -11,6 +11,7 @@
 #include <iostream>
 #include <forward_list>
 #include <string>
+#include <vector>
 #include <stdio.h>
 #include "../.extlibs/sqlite3/sqlite3.h"
 
@@ -22,9 +23,9 @@ class sqlw
     sqlw(const char *);
     ~sqlw(void);
 
+    static std::forward_list<std::pair<std::string, std::string>> row;
     static std::forward_list<
-      std::forward_list<
-        std::pair<std::string, std::string>>> rows;
+           std::forward_list<std::pair<std::string, std::string>>> rows;
 
     void open(void);
     void close(void);
@@ -32,6 +33,8 @@ class sqlw
     void exec(const std::string &query);
 
   private:
+    static char empty;
+
     sqlw(const sqlw &) = delete;
     sqlw& operator=(const sqlw &) = delete;
 

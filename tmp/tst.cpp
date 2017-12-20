@@ -12,12 +12,12 @@ int main()
   {
     for(auto &v: row)
     {
+      if(v.second.empty()) std::cout << "--- --- value is empty:\n";
       std::cout << v.first << ": " << v.second << "\n";
     }
   }
   std::cout << "\n";
 
-  SqlDb.rows.clear();
   SqlDb.close();
   return 0;
 }

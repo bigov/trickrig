@@ -22,8 +22,10 @@ namespace tr
   }
 
   // Статические члены инициализируются персонально
+  std::forward_list<std::pair<std::string, std::string>> sqlw::row = {};
   std::forward_list<std::forward_list<
     std::pair<std::string, std::string>>> sqlw::rows = {};
+  char sqlw::empty ='\0';
 
   //## конструктор только устанавливает имя файла
   sqlw::sqlw(const char *fname)
@@ -38,18 +40,11 @@ namespace tr
   }
 
   //## Обработчик результатов запроса
-  int sqlw::callback(void *NotUsed, int argc, char **argv, char **azColName)
+  int sqlw::callback(void *NotUsed, int count, char **value, char **name)
   {
-    std::string c_name, c_date;
-    std::forward_list<std::pair<std::string, std::string>> row;
-
-    int i;
-    for(i=0; i<argc; i++){
-      c_name = std::string(azColName[i]);
-      if(nullptr != argv[i]) c_date = std::string(argv[i]);
-      else c_date = "";
-      row.push_front(std::make_pair(c_name, c_date));
-    }
+    row.clear();
+    for(int i = 0; i < count; i++)
+      row.emplace_front(std::make_pair(name[i], value[i] ? value[i] : &empty ));
     rows.push_front(row);
     return 0;
   }
@@ -80,6 +75,7 @@ namespace tr
   void sqlw::exec(const char *query)
   {
     char *err_msg = nullptr;
+    rows.clear();
     if(SQLITE_OK != sqlite3_exec(db, query, callback, 0, &err_msg))
     {
       tr::info("sqlw::exec :" + std::string(err_msg));
