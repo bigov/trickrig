@@ -17,34 +17,26 @@ namespace tr
   //## Конструктор
   config::config()
   {
- /* В сборке с отладкой вызов процедуры загрузки конфига
-  * производится из главного модуля с перехватом и выводом
-  * сообщений об ошибках в случае возникновения прерываний.
-  *
-  * В релизе загрузка конфигурации вызывается сразу без
-  * поддержки возможности вывода сообщений.
-  */
-#ifdef NDEBUG
-  load();
-#else
-  assert(sizeof(GLfloat) == 4);
-  tr::info("\n -- Debug mode is enabled. --\n");
-#endif
-  set_user_conf_dir();
+    set_user_conf_dir();
+    return;
+  }
 
-  return;
-}
   //## Деструктор класса
   config::~config(void)
   {
-    sqlite3_close(db);
     return;
   }
 
   //## Загрузка конфигурации приложения
   void config::load(void)
   {
-    open_sqlite();
+  /* Загрузка конфига производится отдельным вызовом из главного
+   * модуля с перехватом и выводом сообщений об ошибках.
+   */
+
+    SqlDb.set_db_name(UserTrConfDir + "config.db");
+    SqlDb.open();
+    SqlDb.close();
 
     value = 0;
     set_size(800, 600);
@@ -62,29 +54,6 @@ namespace tr
     fp_name[SHADER_FRAG_SCREEN] = dir + "scr_frag.glsl";
 
     return;
-  }
-
-  //## Вывод результата запроса к базе данных
-  //                             сумма строк |  значения  |    заголовки    |
-  static int callback(void *NotUsed, int argc, char **argv, char **azColName)
-  {
- /* Arguments:
-  *
-  *   NotUsed - Ignored in this case, see the documentation for sqlite3_exec
-  *      argc - количество значений (колонок) в каждой строке результата
-  *      argv - значения
-  * azColName - имена колонок
-  */
-
-    if(argc == 0) info("no table present\n");
-    else info("table present\n");
-
-    for(int i=0; i<argc; i++){
-      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-    }
-    printf("\n");
-    if(NotUsed != nullptr) return 0;
-    return 0;
   }
 
   //## Поиск и настройка пользовательского каталога
@@ -109,7 +78,6 @@ namespace tr
   void config::open_sqlite()
   {
     std::string PathNameCfg = UserTrConfDir + "config.db";
-
     return;
   }
 

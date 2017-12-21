@@ -10,7 +10,7 @@
 
 #include "main.hpp"
 #include "io.hpp"
-#include "sqlitew.hpp"
+#include "sqlw.hpp"
 
 namespace tr
 {
@@ -35,7 +35,7 @@ namespace tr
   class config
   {
     private:
-      sqlite3 *db = nullptr;
+      tr::sqlw SqlDb = {};
       std::string UserTrConfDir = "";  // папка конфигов пользователя
       std::string DS = "";             // символ разделителя папок
 

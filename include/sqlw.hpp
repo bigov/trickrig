@@ -8,29 +8,31 @@
 #ifndef __SQLW_HPP__
 #define __SQLW_HPP__
 
-#include <iostream>
-#include <forward_list>
-#include <string>
-#include <vector>
-#include <stdio.h>
-#include "../.extlibs/sqlite3/sqlite3.h"
+#include "main.hpp"
 
 namespace tr{
 
 class sqlw
 {
   public:
+    sqlw(void) {}
     sqlw(const char *);
+    sqlw(const std::string &);
     ~sqlw(void);
 
     static std::forward_list<std::pair<std::string, std::string>> row;
     static std::forward_list<
            std::forward_list<std::pair<std::string, std::string>>> rows;
+    static int num_rows; // число строк в результате запроса
 
+    std::forward_list<std::string> ErrorsList = {};
+
+    void set_db_name(const char *);
+    void set_db_name(const std::string &);
     void open(void);
     void close(void);
-    void exec(const char *query);
-    void exec(const std::string &query);
+    void exec(const char *);
+    void exec(const std::string &);
 
   private:
     static char empty;

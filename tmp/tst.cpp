@@ -4,9 +4,18 @@ int main()
 {
   const char *dbname = "test.db";
   tr::sqlw SqlDb = {dbname};
+
+  if(!SqlDb.ErrorsList.empty())
+    for(auto &err: SqlDb.ErrorsList) std::cout << err << "\n";
+
   SqlDb.open();
-  const char *query = "select * from list;";
+  const char *query = "select * from list WHERE year < 1822;";
   SqlDb.exec(query);
+
+  if(!SqlDb.ErrorsList.empty())
+    for(auto &err: SqlDb.ErrorsList) std::cout << err << "\n";
+  else
+    std::cout << SqlDb.num_rows << " rows pass\n";
 
   for(auto &row: SqlDb.rows)
   {
