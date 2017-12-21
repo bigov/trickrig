@@ -12,7 +12,7 @@ namespace tr
   // Инициализация статических членов
   GuiParams tr::cfg::gui = {};
   glm::mat4 MatProjection {}; // матрица проекции 3D сцены
-  std::unordered_map<int, std::string> cfg::Files {};
+  std::unordered_map<int, std::string> cfg::InitApp {};
   std::string cfg::AssetsDir = "../assets/";
 
   //## Конструктор
@@ -49,8 +49,6 @@ namespace tr
       }
     }
 
-    set_size(800, 600);
-
     int key; std::string val, usr;
     for(auto &row: SqlDb.rows)
     {
@@ -62,8 +60,11 @@ namespace tr
       }
       // если нет текущего значения, то используем значение по-умолчанию
       if(usr.empty()) usr = val;
-      Files[key] = usr;
+      InitApp[key] = usr;
     }
+
+    set_size(std::stoi(InitApp[WINDOW_WIDTH]),
+             std::stoi(InitApp[WINDOW_HEIGHT]));
 
     return;
   }
@@ -75,7 +76,7 @@ namespace tr
     DS = "\\";
     const char *env_p = getenv("USERPROFILE");
     if(nullptr == env_p) ERR("config::set_user_dir: can'd setup users directory");
-    UserTrConfDir = std::string(env_p) + std::string("\\AppData\\Roaming");
+    UserDir = std::string(env_p) + std::string("\\AppData\\Roaming");
 #else
     DS = "/";
     const char *env_p = getenv("HOME");
@@ -120,7 +121,8 @@ namespace tr
   //## Передача клиенту значения параметра
   std::string cfg::store(tr::ENUM_INIT D)
   {
-    return AssetsDir + Files[D];
+    if(D < ASSETS_LIST_END) return AssetsDir + InitApp[D];
+    else return InitApp[D];
   }
 
 } //namespace tr

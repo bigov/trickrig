@@ -41,7 +41,7 @@ namespace tr
       glm::vec3 ViewFrom = {0.5f, 5.0f, 0.5f};
 
       static GuiParams gui;
-      static std::unordered_map<int, std::string> Files;
+      static std::unordered_map<int, std::string> InitApp;
 
       void load(void);
       void save(void);

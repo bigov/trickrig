@@ -61,6 +61,16 @@ namespace tr {
     SHADER_FRAG_SCENE,
     SHADER_VERT_SCREEN,
     SHADER_FRAG_SCREEN,
+    ASSETS_LIST_END,
+    WINDOW_SCREEN_FULL,
+    WINDOW_WIDTH,
+    WINDOW_HEIGHT,
+    WINDOW_TOP,
+    WINDOW_LEFT,
+    INT_LIST_END,
+    VIEW_FROM_X,
+    VIEW_FROM_Y,
+    VIEW_FROM_Z,
   };
 
   extern glm::mat4 MatProjection;

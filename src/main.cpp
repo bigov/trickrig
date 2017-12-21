@@ -60,7 +60,7 @@ void tr::init_config_db(const std::string & fname)
      );");
   for(auto &msg: Db.ErrorsList) tr::info(msg);
 
-  char query [256];
+  char query [255];
   sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
     TTF_FONT,           "DejaVuSansMono.ttf"); Db.exec(query);
   sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
@@ -77,6 +77,23 @@ void tr::init_config_db(const std::string & fname)
     SHADER_VERT_SCREEN, "scr_vert.glsl");      Db.exec(query);
   sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
     SHADER_FRAG_SCREEN, "scr_frag.glsl");      Db.exec(query);
+
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    WINDOW_SCREEN_FULL, "0");                  Db.exec(query);
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    WINDOW_WIDTH, "800");                      Db.exec(query);
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    WINDOW_HEIGHT, "600");                     Db.exec(query);
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    WINDOW_TOP, "50");                         Db.exec(query);
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    WINDOW_LEFT, "100");                       Db.exec(query);
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    VIEW_FROM_X, "0.5");                       Db.exec(query);
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    VIEW_FROM_Y, "5.0");                       Db.exec(query);
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    VIEW_FROM_Z, "0.5");                       Db.exec(query);
 
   for(auto &msg: Db.ErrorsList) tr::info(msg);
   Db.close();
