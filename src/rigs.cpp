@@ -85,7 +85,7 @@ namespace tr
     get(0,0,-1)->Area.front().texture_set(0.125, 0.125*5);
 
     // Загрузить объект из внешнего файла
-    tr::loader_obj Obj = {"../assets/test_flat.obj"};
+    tr::obj_load Obj = {"../assets/test_flat.obj"};
 
     tr::f3d P = {1.f, 0.f, 1.f};
     for(auto &S: Obj.Area) S.point_set(P); // Установить объект в точке P

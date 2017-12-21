@@ -10,7 +10,7 @@
 
 #include "main.hpp"
 #include "snip.hpp"
-#include "loader_obj.hpp"
+#include "objl.hpp"
 
 namespace tr
 {

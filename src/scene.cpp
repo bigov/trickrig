@@ -24,12 +24,11 @@ namespace tr
     ttf.set_color( 0x18, 0x18, 0x18 );
     show_fps.w = 46;
     show_fps.h = 15;
-    show_fps.size = static_cast<size_t>(show_fps.w * show_fps.h) * 4;
-    show_fps.img.assign(
-      show_fps.size, 0x00);
+    show_fps.size = static_cast<size_t>( show_fps.w * show_fps.h ) * 4;
+    show_fps.img.assign( show_fps.size, 0x00 );
 
     // Загрузка обрамления окна (HUD) из файла
-    pngImg image = get_png_img(tr::cfg::store(PNG_HUD));
+    pngImg ImgHud = get_png_img(tr::cfg::store(PNG_HUD));
 
     glGenTextures(1, &text);
     glActiveTexture(GL_TEXTURE1);
@@ -38,7 +37,7 @@ namespace tr
     GLint level_of_details = 0, frame = 0;
     
     glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-      image.w, image.h, frame, GL_RGBA, GL_UNSIGNED_BYTE, image.img.data());
+      ImgHud.w, ImgHud.h, frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgHud.img.data());
 
     //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     // Clamping to edges is important to prevent artifacts when scaling
@@ -155,7 +154,7 @@ namespace tr
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, text);
 
-    // Табличка с ткстом на экране отображается в виде наложенной картинки
+    // Табличка с текстом на экране отображается в виде наложенной картинки
     show_fps.img.clear();
     show_fps.img.assign(show_fps.size, 0xCD);
     ttf.set_cursor(2,1);
