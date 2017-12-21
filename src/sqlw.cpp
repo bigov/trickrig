@@ -46,8 +46,8 @@ namespace tr
       return;
     }
 
-    db_fname = std::string(fname);
-    if(0 == db_fname.length())
+    DbFileName = std::string(fname);
+    if(0 == DbFileName.length())
       ErrorsList.emplace_front("Sqlw: no specified DB to open.");
 
     return;
@@ -72,14 +72,31 @@ namespace tr
   }
 
   //## подключиться к DB
+  void sqlw::open(const std::string & fname)
+  {
+  /* Закрывает текущий файл БД (если был открыт) и открывает новый
+   */
+    if(is_open) close();
+    DbFileName = fname;
+    open();
+    return;
+  }
+
+  //## подключиться к DB
   void sqlw::open(void)
   {
+    if(DbFileName.empty())
+    {
+      ErrorsList.emplace_front("Sqlw: no specified DB to open.");
+      return;
+    }
+
     ErrorsList.clear();
-    if(0 != sqlite3_open(db_fname.c_str(), &db))
+    if(0 != sqlite3_open(DbFileName.c_str(), &db))
     {
       ErrorsList.emplace_front("Can't open database: "
         + std::string(sqlite3_errmsg(db))
-        + "\nDatabase file name: " + db_fname);
+        + "\nDatabase file name: " + DbFileName);
       close();
     } else
     {
@@ -98,6 +115,7 @@ namespace tr
   //## Выполнение запроса
   void sqlw::exec(const char *query)
   {
+    if(!is_open) open();
     char *err_msg = nullptr;
     ErrorsList.clear();
     rows.clear();

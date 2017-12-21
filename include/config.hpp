@@ -21,49 +21,37 @@ namespace tr
     float aspect = 1.0f;
   };
 
-  enum FileDestination {
-    FONT_FNAME,
-    TEXTURE_FNAME,
-    HUD_FNAME,
-    SHADER_VERT_SCENE,
-    SHADER_GEOM_SCENE,
-    SHADER_FRAG_SCENE,
-    SHADER_VERT_SCREEN,
-    SHADER_FRAG_SCREEN,
-  };
-
-  class config
+  class cfg
   {
     private:
       tr::sqlw SqlDb = {};
-      std::string UserTrConfDir = "";  // папка конфигов пользователя
-      std::string DS = "";             // символ разделителя папок
+      std::string UserDir    = "";           // папка конфигов пользователя
+      std::string UserConfig = "config.db";  // конфиг пользователя
+      std::string DS = "";                   // символ разделителя папок
+      static std::string AssetsDir;          // папка конфигов пользователя
 
-      config(const tr::config &)            = delete;
-      config& operator=(const tr::config &) = delete;
-      int value = 0;
-      void open_sqlite(void);
+      cfg(const tr::cfg &)            = delete;
+      cfg& operator=(const tr::cfg &) = delete;
       void set_user_conf_dir(void); // выбор пользовательской папки
 
     public:
-      config(void);
-      ~config(void);
+      cfg(void);
+      ~cfg(void);
 
       glm::vec3 ViewFrom = {0.5f, 5.0f, 0.5f};
 
       static GuiParams gui;
-      static std::unordered_map<tr::FileDestination, std::string> fp_name;
+      static std::unordered_map<int, std::string> Files;
 
       void load(void);
       void save(void);
-      int get_value(void);
       static void set_size(int w, int h);
       static int get_w(void);
       static int get_h(void);
-      static std::string filepath(tr::FileDestination);
+      static std::string store(tr::ENUM_INIT);
   };
 
-  extern config Cfg;
+  extern cfg Cfg;
 
 } //namespace
 

@@ -52,6 +52,17 @@
 
 namespace tr {
 
+  enum ENUM_INIT {
+    TTF_FONT,
+    PNG_TEXTURE0,
+    PNG_HUD,
+    SHADER_VERT_SCENE,
+    SHADER_GEOM_SCENE,
+    SHADER_FRAG_SCENE,
+    SHADER_VERT_SCREEN,
+    SHADER_FRAG_SCREEN,
+  };
+
   extern glm::mat4 MatProjection;
 
   /** Начальная дистанция рендера окружения
@@ -92,6 +103,8 @@ namespace tr {
   const float look_up = half_pi - 0.01f;
   const float look_down = 0 - half_pi + 0.01f;
   const float three_over_two_pi  = glm::three_over_two_pi<glm::float_t>();
+
+  extern void init_config_db(const std::string &);
 }
 
 #endif

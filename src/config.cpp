@@ -10,54 +10,66 @@
 namespace tr
 {
   // Инициализация статических членов
-  GuiParams tr::config::gui = {};
+  GuiParams tr::cfg::gui = {};
   glm::mat4 MatProjection {}; // матрица проекции 3D сцены
-  std::unordered_map<tr::FileDestination, std::string> config::fp_name {};
+  std::unordered_map<int, std::string> cfg::Files {};
+  std::string cfg::AssetsDir = "../assets/";
 
   //## Конструктор
-  config::config()
+  cfg::cfg()
   {
     set_user_conf_dir();
     return;
   }
 
   //## Деструктор класса
-  config::~config(void)
+  cfg::~cfg(void)
   {
     return;
   }
 
   //## Загрузка конфигурации приложения
-  void config::load(void)
+  void cfg::load(void)
   {
   /* Загрузка конфига производится отдельным вызовом из главного
    * модуля с перехватом и выводом сообщений об ошибках.
    */
+    SqlDb.open(UserConfig);
+    SqlDb.exec("SELECT * FROM init;");
+    if(SqlDb.num_rows < 1)
+    {
+      SqlDb.close();
+      init_config_db(UserConfig);
+      SqlDb.exec("SELECT * FROM init;");
+      if(SqlDb.num_rows < 1)
+      {
+        std::string IsFail = "TrickRig init failure!\n";
+        for(auto &err: SqlDb.ErrorsList) IsFail += err + "\n";
+        ERR(IsFail);
+      }
+    }
 
-    SqlDb.set_db_name(UserTrConfDir + "config.db");
-    SqlDb.open();
-    SqlDb.close();
-
-    value = 0;
     set_size(800, 600);
-    std::string dir = "../assets/";
 
-    fp_name[FONT_FNAME] = dir + "DejaVuSansMono.ttf";
-    fp_name[HUD_FNAME] = dir + "hud.png";
-    fp_name[TEXTURE_FNAME] = dir + "tex0_512.png";
-
-    fp_name[SHADER_VERT_SCENE] = dir + "vert.glsl";
-    fp_name[SHADER_GEOM_SCENE] = dir + "geom.glsl";
-    fp_name[SHADER_FRAG_SCENE] = dir + "frag.glsl";
-
-    fp_name[SHADER_VERT_SCREEN] = dir + "scr_vert.glsl";
-    fp_name[SHADER_FRAG_SCREEN] = dir + "scr_frag.glsl";
+    int key; std::string val, usr;
+    for(auto &row: SqlDb.rows)
+    {
+      for(auto &p: row)
+      {
+        if(0 == p.first.find("key")) key = std::stoi(p.second);
+        if(0 == p.first.find("val")) val = p.second;
+        if(0 == p.first.find("usr")) usr = p.second;
+      }
+      // если нет текущего значения, то используем значение по-умолчанию
+      if(usr.empty()) usr = val;
+      Files[key] = usr;
+    }
 
     return;
   }
 
   //## Поиск и настройка пользовательского каталога
-  void config::set_user_conf_dir(void)
+  void cfg::set_user_conf_dir(void)
   {
 #ifdef _WIN32_WINNT
     DS = "\\";
@@ -68,27 +80,21 @@ namespace tr
     DS = "/";
     const char *env_p = getenv("HOME");
     if(nullptr == env_p) ERR("config::set_user_dir: can'd setup users directory");
-    UserTrConfDir = std::string(env_p);
+    UserDir = std::string(env_p);
 #endif
-    UserTrConfDir += DS +".config" + DS + "TrickRig" + DS;
-    return;
-  }
-
-  //## Открыть/создать файл базы данных с конфигурацией
-  void config::open_sqlite()
-  {
-    std::string PathNameCfg = UserTrConfDir + "config.db";
+    UserDir += DS +".config" + DS + "TrickRig" + DS;
+    UserConfig = UserDir + UserConfig;
     return;
   }
 
   //## Сохрание настроек
-  void config::save(void)
+  void cfg::save(void)
   {
     return;
   }
 
   //## Установка соотношения сторон окна
-  void config::set_size(int w, int h)
+  void cfg::set_size(int w, int h)
   {
     gui.w = w;
     gui.h = h;
@@ -108,14 +114,13 @@ namespace tr
   }
 
   // Статические методы
-  int config::get_w(void) { return gui.w; }
-  int config::get_h(void) { return gui.h; }
-  std::string config::filepath(tr::FileDestination D) { return fp_name[D]; }
+  int cfg::get_w(void) { return gui.w; }
+  int cfg::get_h(void) { return gui.h; }
 
-  //## Тестовая функция получения значения
-  int config::get_value(void)
+  //## Передача клиенту значения параметра
+  std::string cfg::store(tr::ENUM_INIT D)
   {
-    return value;
+    return AssetsDir + Files[D];
   }
 
 } //namespace tr

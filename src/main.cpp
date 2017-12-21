@@ -5,14 +5,15 @@
 // Запуск TrickRig
 //
 //===========================================================================
-#include "config.hpp"
 #include "main.hpp"
+#include "config.hpp"
 #include "io.hpp"
 #include "scene.hpp"
 #include "glfw.hpp"
+#include "sqlw.hpp"
 
 namespace tr {
-  tr::config Cfg = {};
+  tr::cfg Cfg = {};
 }
 
 //##
@@ -43,3 +44,42 @@ int main()
   }
   return EXIT_SUCCESS;
 }
+
+//## Создание и начальное заполнение базы данных конфигурации
+void tr::init_config_db(const std::string & fname)
+{
+  tr::sqlw Db;
+  Db.open(fname);
+  for(auto &msg: Db.ErrorsList) tr::info(msg);
+  Db.exec(
+    "CREATE TABLE IF NOT EXISTS init ( \
+     rowid INTEGER PRIMARY KEY,        \
+     key INTEGER,                      \
+     usr TEXT DEFAULT '',              \
+     val TEXT                          \
+     );");
+  for(auto &msg: Db.ErrorsList) tr::info(msg);
+
+  char query [256];
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    TTF_FONT,           "DejaVuSansMono.ttf"); Db.exec(query);
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    PNG_HUD,            "hud.png");            Db.exec(query);
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    PNG_TEXTURE0,       "tex0_512.png");       Db.exec(query);
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    SHADER_VERT_SCENE,  "vert.glsl");          Db.exec(query);
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    SHADER_GEOM_SCENE,  "geom.glsl");          Db.exec(query);
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    SHADER_FRAG_SCENE,  "frag.glsl");          Db.exec(query);
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    SHADER_VERT_SCREEN, "scr_vert.glsl");      Db.exec(query);
+  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
+    SHADER_FRAG_SCREEN, "scr_frag.glsl");      Db.exec(query);
+
+  for(auto &msg: Db.ErrorsList) tr::info(msg);
+  Db.close();
+  return;
+}
+

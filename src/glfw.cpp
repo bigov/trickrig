@@ -91,7 +91,7 @@ namespace tr
 
     if (!window) ERR("Error on call GLFW framebuffer_size_callback.");
     glViewport(0, 0, width, height);
-    tr::config::set_size(width, height);
+    tr::cfg::set_size(width, height);
     return;
   }
 

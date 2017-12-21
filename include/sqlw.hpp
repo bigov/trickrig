@@ -15,7 +15,7 @@ namespace tr{
 class sqlw
 {
   public:
-    sqlw(void) {}
+    sqlw(void) { DbFileName.clear(); }
     sqlw(const char *);
     sqlw(const std::string &);
     ~sqlw(void);
@@ -30,6 +30,7 @@ class sqlw
     void set_db_name(const char *);
     void set_db_name(const std::string &);
     void open(void);
+    void open(const std::string &);
     void close(void);
     void exec(const char *);
     void exec(const std::string &);
@@ -42,7 +43,7 @@ class sqlw
 
     sqlite3 *db = nullptr;
     bool is_open = false;
-    std::string db_fname = "";
+    std::string DbFileName = "";
 
     static int callback(void*, int, char**, char**);
 
