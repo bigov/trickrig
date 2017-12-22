@@ -14,6 +14,9 @@ namespace tr
   bool window_glfw::cursor_is_captured = false;
   double window_glfw::x0 = 0;
   double window_glfw::y0 = 0;
+  glm::vec3 ViewFrom = {};      // 3D координаты точка обзора
+
+  opengl_window_params GlWin = {};
 
   //## Errors callback
   void window_glfw::error_callback(int error, const char* description)
@@ -76,9 +79,12 @@ namespace tr
   //## Опрос состояния клавиш управления
   void window_glfw::check_keys_state(void)
   {
-    keys.fb = glfwGetKey(pWin, k_FRONT) - glfwGetKey(pWin, k_BACK);
-    keys.ud = glfwGetKey(pWin, k_DOWN)  - glfwGetKey(pWin, k_UP);
-    keys.rl = glfwGetKey(pWin, k_RIGHT) - glfwGetKey(pWin, k_LEFT);
+    keys.fb = glfwGetKey(win_ptr, k_FRONT)
+            - glfwGetKey(win_ptr, k_BACK);
+    keys.ud = glfwGetKey(win_ptr, k_DOWN)
+            - glfwGetKey(win_ptr, k_UP);
+    keys.rl = glfwGetKey(win_ptr, k_RIGHT)
+            - glfwGetKey(win_ptr, k_LEFT);
     return;
   }
 
@@ -91,7 +97,20 @@ namespace tr
 
     if (!window) ERR("Error on call GLFW framebuffer_size_callback.");
     glViewport(0, 0, width, height);
-    tr::cfg::set_size(width, height);
+
+    if(width < 64)  width  = 64;
+    if(height < 48) height = 48;
+    tr::GlWin.width  = width;
+    tr::GlWin.height = height;
+    tr::GlWin.aspect = static_cast<float>(tr::GlWin.width)
+                     / static_cast<float>(tr::GlWin.height);
+
+    // Град   Радиан
+    // 45  |  0,7853981633974483
+    // 60  |  1,047197551196598
+    // 64  |  1,117010721276371
+    // 70  |  1,221730476396031
+    tr::MatProjection = glm::perspective(1.118f, tr::GlWin.aspect, 0.01f, 1000.0f);
 
     return;
   }
@@ -108,18 +127,29 @@ namespace tr
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 0);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
 
-    pWin = glfwCreateWindow(tr::Cfg.gui.w, tr::Cfg.gui.h, title.c_str(), NULL, nullptr);
-    if (nullptr == pWin) ERR("Creating Window fail.");
-    glfwMakeContextCurrent(pWin);
+    tr::ViewFrom.x = std::stof(tr::Cfg.get(VIEW_FROM_X));
+    tr::ViewFrom.y = std::stof(tr::Cfg.get(VIEW_FROM_Y));
+    tr::ViewFrom.z = std::stof(tr::Cfg.get(VIEW_FROM_Z));
+    tr::GlWin.width = std::stoi(tr::Cfg.get(WINDOW_WIDTH));
+    tr::GlWin.height = std::stoi(tr::Cfg.get(WINDOW_HEIGHT));
+    tr::GlWin.aspect = static_cast<float>(tr::GlWin.width)
+                     / static_cast<float>(tr::GlWin.height);
+    tr::MatProjection = glm::perspective(1.118f, tr::GlWin.aspect, 0.01f, 1000.0f);
+
+    win_ptr = glfwCreateWindow(tr::GlWin.width, tr::GlWin.height,
+                         title.c_str(), NULL, nullptr);
+
+    if (nullptr == win_ptr) ERR("Creating Window fail.");
+    glfwMakeContextCurrent(win_ptr);
     glfwSwapInterval(0);
-    glfwSetKeyCallback(pWin, key_callback);
-    glfwSetMouseButtonCallback(pWin, mouse_button_callback);
-    glfwSetFramebufferSizeCallback(pWin, framebuffer_size_callback);
+    glfwSetKeyCallback(win_ptr, key_callback);
+    glfwSetMouseButtonCallback(win_ptr, mouse_button_callback);
+    glfwSetFramebufferSizeCallback(win_ptr, framebuffer_size_callback);
 
     if(!ogl_LoadFunctions())  ERR("Can't load OpenGl finctions");
 
-    x0 = static_cast<double>(tr::Cfg.gui.w)/2.0;
-    y0 = static_cast<double>(tr::Cfg.gui.h)/2.0;
+    x0 = static_cast<double>(tr::GlWin.width)/2.0;
+    y0 = static_cast<double>(tr::GlWin.height)/2.0;
 
     return;
   }
@@ -127,7 +157,7 @@ namespace tr
   //## Destructor
   window_glfw::~window_glfw()
   {
-    glfwSetInputMode(pWin, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     glfwTerminate();
     return;
   }
@@ -136,8 +166,8 @@ namespace tr
   // производится в конце отрисовки каждого кадра
   void window_glfw::check_mouse_pos(void)
   {
-    glfwGetCursorPos(pWin, &xpos, &ypos);
-    glfwSetCursorPos(pWin, x0, y0);
+    glfwGetCursorPos(win_ptr, &xpos, &ypos);
+    glfwSetCursorPos(win_ptr, x0, y0);
     keys.dx = static_cast<float>(xpos - x0);
     keys.dy = static_cast<float>(ypos - y0);
     return;
@@ -146,7 +176,7 @@ namespace tr
   //## Show content
   void window_glfw::show(tr::scene & space)
   {
-    glfwSetInputMode(pWin, GLFW_STICKY_KEYS, 0);
+    glfwSetInputMode(win_ptr, GLFW_STICKY_KEYS, 0);
 
     int fps = 0;
     std::chrono::seconds one_second(1);
@@ -154,7 +184,7 @@ namespace tr
     std::string win_title = title + std::to_string(fps);
 
     t_start = std::chrono::system_clock::now();
-    while (!glfwWindowShouldClose(pWin))
+    while (!glfwWindowShouldClose(win_ptr))
     {
       fps++;
       t_frame = std::chrono::system_clock::now();
@@ -173,10 +203,10 @@ namespace tr
 
       space.draw(keys);
 
-      glfwSwapBuffers(pWin);
+      glfwSwapBuffers(win_ptr);
       glfwPollEvents();
     }
-    glfwDestroyWindow(pWin);
+    glfwDestroyWindow(win_ptr);
     return;
   }
 

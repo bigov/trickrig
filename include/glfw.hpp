@@ -5,6 +5,7 @@
 #include "main.hpp"
 #include "scene.hpp"
 #include "io.hpp"
+#include "GLFW/glfw3.h"
 
 namespace tr
 {
@@ -24,6 +25,8 @@ namespace tr
       void check_keys_state(void);
 
     private:
+      GLFWwindow * win_ptr = nullptr;
+
       // переменная для запроса положения курсора в окне
       double xpos = 0.0,
              ypos = 0.0;
@@ -52,7 +55,7 @@ namespace tr
       static void framebuffer_size_callback(
         GLFWwindow* window, int width, int height);
 
-      GLFWwindow * pWin = nullptr;
+      //GLFWwindow * pWin = nullptr;
   };
 } //namespace tr
 

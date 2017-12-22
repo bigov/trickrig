@@ -60,14 +60,11 @@ namespace tr
       float
         rl=0.f, ud=0.f, fb=0.f, // скорость движения по направлениям
         look_a = 3.928f,        // азимут (0 - X)
-        //look_t = -0.276f,     // тангаж (0 - горизОнталь, пи/2 - вертикаль)
-        look_t = -1.7f,         // тангаж (0 - горизОнталь, пи/2 - вертикаль)
+        look_t = -1.0f,         // тангаж (0 - горизОнталь, пи/2 - вертикаль)
         k_sense = 4.0f,         // TODO: чувствительность через Config
         k_mouse = 0.002f;
 
       glm::mat4 MatView = {};
-      //glm::vec3 ViewFrom = {0.5f, 5.0f, 0.5f};
-      glm::vec3 & ViewFrom = tr::Cfg.ViewFrom;
       glm::vec3
         Selected = {},
         MoveFrom = {},

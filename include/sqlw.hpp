@@ -9,6 +9,7 @@
 #define __SQLW_HPP__
 
 #include "main.hpp"
+#include "sqlite3.h"
 
 namespace tr{
 

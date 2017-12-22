@@ -14,13 +14,6 @@
 
 namespace tr
 {
-  struct GuiParams
-  {
-    int w = 0;
-    int h = 0;
-    float aspect = 1.0f;
-  };
-
   class cfg
   {
     private:
@@ -33,22 +26,15 @@ namespace tr
       cfg(const tr::cfg &)            = delete;
       cfg& operator=(const tr::cfg &) = delete;
       void set_user_conf_dir(void); // выбор пользовательской папки
+      static std::unordered_map<int, std::string> InitParams;
 
     public:
       cfg(void);
       ~cfg(void);
 
-      glm::vec3 ViewFrom = {0.5f, 5.0f, 0.5f};
-
-      static GuiParams gui;
-      static std::unordered_map<int, std::string> InitApp;
-
       void load(void);
       void save(void);
-      static void set_size(int w, int h);
-      static int get_w(void);
-      static int get_h(void);
-      static std::string store(tr::ENUM_INIT);
+      static std::string get(tr::ENUM_INIT);
   };
 
   extern cfg Cfg;

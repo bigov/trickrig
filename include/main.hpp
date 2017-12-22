@@ -32,12 +32,6 @@
 #include <utility>
 
 #include "gl_core33.h"
-#include "GLFW/glfw3.h"
-#include "sqlite3.h"
-#include "png.h"
-#include "ft2build.h"
-#include FT_FREETYPE_H
-#include FT_GLYPH_H
 #define GLM_FORCE_RADIANS
 #include "glm/glm.hpp"
 #include "glm/gtc/constants.hpp"
@@ -71,9 +65,20 @@ namespace tr {
     VIEW_FROM_X,
     VIEW_FROM_Y,
     VIEW_FROM_Z,
+    LOOK_AZIM,
+    LOOK_TANG,
   };
 
-  extern glm::mat4 MatProjection;
+  extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
+  extern glm::vec3 ViewFrom;      // 3D координаты точка обзора
+
+  struct opengl_window_params {
+    int width = 64;
+    int height = 48;
+    float aspect = 1.0f;
+  };
+
+  extern opengl_window_params GlWin;
 
   /** Начальная дистанция рендера окружения
    *

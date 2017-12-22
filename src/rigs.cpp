@@ -69,9 +69,9 @@ namespace tr
 
     int s = 10;
 
-    int x0 = static_cast<int>(floor(tr::Cfg.ViewFrom.x));
+    int x0 = static_cast<int>(floor(tr::ViewFrom.x));
     int y = 0;
-    int z0 = static_cast<int>(floor(tr::Cfg.ViewFrom.z)) - s;
+    int z0 = static_cast<int>(floor(tr::ViewFrom.z)) - s;
 
     for(int x = x0 - s; x < s; x += 1)
       for(int z = z0 - s; z < s; z += 1)

@@ -9,10 +9,9 @@
 
 namespace tr
 {
-  // Инициализация статических членов
-  GuiParams tr::cfg::gui = {};
+  // Инициализация глобальных и статических членов
   glm::mat4 MatProjection {}; // матрица проекции 3D сцены
-  std::unordered_map<int, std::string> cfg::InitApp {};
+  std::unordered_map<int, std::string> cfg::InitParams {};
   std::string cfg::AssetsDir = "../assets/";
 
   //## Конструктор
@@ -60,11 +59,8 @@ namespace tr
       }
       // если нет текущего значения, то используем значение по-умолчанию
       if(usr.empty()) usr = val;
-      InitApp[key] = usr;
+      InitParams[key] = usr;
     }
-
-    set_size(std::stoi(InitApp[WINDOW_WIDTH]),
-             std::stoi(InitApp[WINDOW_HEIGHT]));
 
     return;
   }
@@ -91,38 +87,30 @@ namespace tr
   //## Сохрание настроек
   void cfg::save(void)
   {
+    char query [255]; // буфер для форматирования и передачи строки в запрос
+    std::string p = std::to_string(tr::ViewFrom.y);
+
+    sprintf(query, "UPDATE init SET val='%s' WHERE key=%d;",
+            p.c_str(), VIEW_FROM_Y);
+    SqlDb.exec(query);
+    for(auto &msg: SqlDb.ErrorsList) tr::info(msg);
+
     return;
   }
-
-  //## Установка соотношения сторон окна
-  void cfg::set_size(int w, int h)
-  {
-    gui.w = w;
-    gui.h = h;
-    if(gui.h > 0)
-      gui.aspect = static_cast<float>(gui.w) / static_cast<float>(gui.h);
-    else
-      gui.aspect = 1.0f;
-
-    // Град   Радиан
-    // 45  |  0,7853981633974483
-    // 60  |  1,047197551196598
-    // 64  |  1,117010721276371
-    // 70  |  1,221730476396031
-    tr::MatProjection = glm::perspective(1.118f, gui.aspect, 0.01f, 1000.0f);
-  
-    return;
-  }
-
-  // Статические методы
-  int cfg::get_w(void) { return gui.w; }
-  int cfg::get_h(void) { return gui.h; }
 
   //## Передача клиенту значения параметра
-  std::string cfg::store(tr::ENUM_INIT D)
+  std::string cfg::get(tr::ENUM_INIT D)
   {
-    if(D < ASSETS_LIST_END) return AssetsDir + InitApp[D];
-    else return InitApp[D];
+    #ifndef NDEBUG
+    if(InitParams[D].empty())
+    {
+      InitParams[D] = std::string("0");
+      tr::info("empty call with DB key=" + std::to_string(D) + "\n");
+    }
+    #endif
+
+    if(D < ASSETS_LIST_END) return AssetsDir + InitParams[D];
+    else return InitParams[D];
   }
 
 } //namespace tr

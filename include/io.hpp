@@ -7,7 +7,12 @@
 //============================================================================
 #ifndef __IO_HPP__
 #define __IO_HPP__
+
 #include "main.hpp"
+#include "png.h"
+#include "ft2build.h"
+#include FT_FREETYPE_H
+#include FT_GLYPH_H
 
 namespace tr
 {

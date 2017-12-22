@@ -18,7 +18,7 @@ namespace tr
     framebuffer_init();
 
     // Загрузка символов для отображения fps
-    ttf.init(tr::cfg::store(TTF_FONT), 9);
+    ttf.init(tr::cfg::get(TTF_FONT), 9);
     ttf.load_chars( L"fps: 0123456789" );
     ttf.set_cursor( 2, 1 );
     ttf.set_color( 0x18, 0x18, 0x18 );
@@ -28,7 +28,7 @@ namespace tr
     show_fps.img.assign( show_fps.size, 0x00 );
 
     // Загрузка обрамления окна (HUD) из файла
-    pngImg ImgHud = get_png_img(tr::cfg::store(PNG_HUD));
+    pngImg ImgHud = get_png_img(tr::cfg::get(PNG_HUD));
 
     glGenTextures(1, &text);
     glActiveTexture(GL_TEXTURE1);
@@ -71,7 +71,8 @@ namespace tr
     glGenTextures(1, &texColorBuffer);
     glBindTexture(GL_TEXTURE_2D, texColorBuffer);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tr::Cfg.gui.w, tr::Cfg.gui.h, 0,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+      tr::GlWin.width, tr::GlWin.height, 0,
       GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -85,7 +86,7 @@ namespace tr
     glGenRenderbuffers(1, &rb);
     glBindRenderbuffer(GL_RENDERBUFFER, rb);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-      tr::Cfg.gui.w, tr::Cfg.gui.h);
+      tr::GlWin.width, tr::GlWin.height);
 
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
       GL_RENDERBUFFER, rb);
@@ -108,8 +109,8 @@ namespace tr
     glBindVertexArray(vaoQuad);
 
     screenShaderProgram.attach_shaders(
-      tr::cfg::store(SHADER_VERT_SCREEN),
-      tr::cfg::store(SHADER_FRAG_SCREEN)
+      tr::cfg::get(SHADER_VERT_SCREEN),
+      tr::cfg::get(SHADER_FRAG_SCREEN)
     );
     screenShaderProgram.use();
 

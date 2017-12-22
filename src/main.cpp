@@ -45,56 +45,41 @@ int main()
   return EXIT_SUCCESS;
 }
 
-//## Создание и начальное заполнение базы данных конфигурации
+//::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::://
+
+//## Установка значений по-умолчанию для параметров конфигурации
 void tr::init_config_db(const std::string & fname)
 {
+  tr::info("Установка начальных значений...\n");
   tr::sqlw Db;
   Db.open(fname);
   for(auto &msg: Db.ErrorsList) tr::info(msg);
-  Db.exec(
-    "CREATE TABLE IF NOT EXISTS init ( \
-     rowid INTEGER PRIMARY KEY,        \
-     key INTEGER,                      \
-     usr TEXT DEFAULT '',              \
-     val TEXT                          \
-     );");
-  for(auto &msg: Db.ErrorsList) tr::info(msg);
-
-  char query [255];
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    TTF_FONT,           "DejaVuSansMono.ttf"); Db.exec(query);
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    PNG_HUD,            "hud.png");            Db.exec(query);
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    PNG_TEXTURE0,       "tex0_512.png");       Db.exec(query);
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    SHADER_VERT_SCENE,  "vert.glsl");          Db.exec(query);
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    SHADER_GEOM_SCENE,  "geom.glsl");          Db.exec(query);
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    SHADER_FRAG_SCENE,  "frag.glsl");          Db.exec(query);
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    SHADER_VERT_SCREEN, "scr_vert.glsl");      Db.exec(query);
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    SHADER_FRAG_SCREEN, "scr_frag.glsl");      Db.exec(query);
-
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    WINDOW_SCREEN_FULL, "0");                  Db.exec(query);
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    WINDOW_WIDTH, "800");                      Db.exec(query);
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    WINDOW_HEIGHT, "600");                     Db.exec(query);
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    WINDOW_TOP, "50");                         Db.exec(query);
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    WINDOW_LEFT, "100");                       Db.exec(query);
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    VIEW_FROM_X, "0.5");                       Db.exec(query);
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    VIEW_FROM_Y, "5.0");                       Db.exec(query);
-  sprintf(query,"REPLACE INTO init(key, val) VALUES(%d, '%s');",
-    VIEW_FROM_Z, "0.5");                       Db.exec(query);
-
+  std::string Q = "CREATE TABLE IF NOT EXISTS init ( \
+                   rowid INTEGER PRIMARY KEY,        \
+                   key INTEGER,                      \
+                   usr TEXT DEFAULT '',              \
+                   val TEXT);";
+  char q[255];
+  const char *tpl = "INSERT INTO init (key, val) VALUES (%d, '%s');";
+  sprintf(q, tpl, TTF_FONT,           "DejaVuSansMono.ttf"); Q += q;
+  sprintf(q, tpl, PNG_HUD,            "hud.png");            Q += q;
+  sprintf(q, tpl, PNG_TEXTURE0,       "tex0_512.png");       Q += q;
+  sprintf(q, tpl, SHADER_VERT_SCENE,  "vert.glsl");          Q += q;
+  sprintf(q, tpl, SHADER_GEOM_SCENE,  "geom.glsl");          Q += q;
+  sprintf(q, tpl, SHADER_FRAG_SCENE,  "frag.glsl");          Q += q;
+  sprintf(q, tpl, SHADER_VERT_SCREEN, "scr_vert.glsl");      Q += q;
+  sprintf(q, tpl, SHADER_FRAG_SCREEN, "scr_frag.glsl");      Q += q;
+  sprintf(q, tpl, WINDOW_SCREEN_FULL, "0");                  Q += q;
+  sprintf(q, tpl, WINDOW_WIDTH,       "800");                Q += q;
+  sprintf(q, tpl, WINDOW_HEIGHT,      "600");                Q += q;
+  sprintf(q, tpl, WINDOW_TOP,         "50");                 Q += q;
+  sprintf(q, tpl, WINDOW_LEFT,        "100");                Q += q;
+  sprintf(q, tpl, VIEW_FROM_X,        "0.5");                Q += q;
+  sprintf(q, tpl, VIEW_FROM_Y,        "5.0");                Q += q;
+  sprintf(q, tpl, VIEW_FROM_Z,        "0.5");                Q += q;
+  sprintf(q, tpl, LOOK_AZIM,          "3.9");                Q += q;
+  sprintf(q, tpl, LOOK_TANG,          "-1.5");               Q += q;
+  Db.exec(Q.c_str());
   for(auto &msg: Db.ErrorsList) tr::info(msg);
   Db.close();
   return;
