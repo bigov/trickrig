@@ -101,8 +101,6 @@ namespace tr
   }
 
   //## Инициализация GLSL программы обработки текстуры из фреймбуфера.
-  //
-  //
   void scene::program2d_init(void)
   {
     glGenVertexArrays(1, &vaoQuad);
@@ -126,7 +124,9 @@ namespace tr
     vboTexcoord.attrib( screenShaderProgram.attrib_location_get("texcoord"),
         2, GL_FLOAT, GL_FALSE, 0, nullptr );
 
+    // GL_TEXTURE1
     glUniform1i(screenShaderProgram.uniform_location_get("texFramebuffer"), 1);
+    // GL_TEXTURE2
     glUniform1i(screenShaderProgram.uniform_location_get("texHUD"), 2);
     screenShaderProgram.unuse();
 
@@ -136,21 +136,20 @@ namespace tr
   }
 
   //## Рендеринг
-  //
-  // Кадр сцены рисуется в виде изображения на (2D) "холсте" фреймбуфера,
-  // после чего это изображение в виде текстуры накладывается на прямоугольник
-  // окна. Курсор и дополнительные (HUD) элементы сцены изображаются
-  // аналогично - как наложеные сверху рисунки с (полу-)прозрачным фоном
   void scene::draw(const evInput& ev)
   {
+  // Кадр сцены рендерится в изображение на (2D) "холсте" фреймбуфера,
+  // после чего это изображение в виде текстуры накладывается на прямоугольник
+  // окна. Курсор и дополнительные (HUD) элементы сцены изображаются
+  // как наложеные сверху дополнительные изображения
+  //
+
+    // Первый проход рендера - во фреймбуфер
     glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);
     space.draw(ev);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    glBindVertexArray(vaoQuad);
-    glDisable(GL_DEPTH_TEST);
-
-    // Табличка с текстом на экране отображается в виде наложенной картинки
+    // Табличка с текстом на экране отображается в виде наложенного на GL_TEXTURE1 изображения
     glActiveTexture(GL_TEXTURE1);
     show_fps.Data.clear();
     show_fps.Data.assign(show_fps.size, 0xCD);
@@ -160,6 +159,9 @@ namespace tr
     glTexSubImage2D(GL_TEXTURE_2D, 0, 8, tr::GlWin.height - 22,
       show_fps.w, show_fps.h, GL_RGBA, GL_UNSIGNED_BYTE, show_fps.Data.data());
 
+    // Второй проход рендера - по текстуре из фреймбуфера
+    glBindVertexArray(vaoQuad);
+    glDisable(GL_DEPTH_TEST);
     screenShaderProgram.use();
     screenShaderProgram.set_uniform("Cursor", tr::GlWin.Cursor);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
