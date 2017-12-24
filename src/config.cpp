@@ -87,13 +87,52 @@ namespace tr
   //## Сохрание настроек
   void cfg::save(void)
   {
-    char query [255]; // буфер для форматирования и передачи строки в запрос
-    std::string p = std::to_string(tr::ViewFrom.y);
+    char q [255]; // буфер для форматирования и передачи строки в запрос
+    const char *tpl = "UPDATE init SET val='%s' WHERE key=%d;";
+    std::string p = "";
+    std::string Query = "";
 
-    sprintf(query, "UPDATE init SET val='%s' WHERE key=%d;",
-            p.c_str(), VIEW_FROM_Y);
-    SqlDb.exec(query);
+    p = std::to_string(tr::Eye.ViewFrom.x);
+    sprintf(q, tpl, p.c_str(), VIEW_FROM_X);
+    Query += q;
+
+    p = std::to_string(tr::Eye.ViewFrom.y);
+    sprintf(q, tpl, p.c_str(), VIEW_FROM_Y);
+    Query += q;
+
+    p = std::to_string(tr::Eye.ViewFrom.z);
+    sprintf(q, tpl, p.c_str(), VIEW_FROM_Z);
+    Query += q;
+
+    p = std::to_string(tr::Eye.look_a);
+    sprintf(q, tpl, p.c_str(), LOOK_AZIM);
+    Query += q;
+
+    p = std::to_string(tr::Eye.look_t);
+    sprintf(q, tpl, p.c_str(), LOOK_TANG);
+    Query += q;
+
+    p = std::to_string(tr::GlWin.left);
+    sprintf(q, tpl, p.c_str(), WINDOW_LEFT);
+    Query += q;
+
+    p = std::to_string(tr::GlWin.top);
+    sprintf(q, tpl, p.c_str(), WINDOW_TOP);
+    Query += q;
+
+    p = std::to_string(tr::GlWin.width);
+    sprintf(q, tpl, p.c_str(), WINDOW_WIDTH);
+    Query += q;
+
+    p = std::to_string(tr::GlWin.height);
+    sprintf(q, tpl, p.c_str(), WINDOW_HEIGHT);
+    Query += q;
+
+    SqlDb.exec(Query.c_str());
+
+    #ifndef NDEBUG
     for(auto &msg: SqlDb.ErrorsList) tr::info(msg);
+    #endif
 
     return;
   }

@@ -27,10 +27,10 @@ namespace tr
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Загрузка из файла данных текстуры
-    pngImg image = get_png_img(tr::Cfg.get(PNG_TEXTURE0));
+    image image = get_png_img(tr::Cfg.get(PNG_TEXTURE0));
 
-    look_a = std::stof(tr::Cfg.get(LOOK_AZIM));
-    look_t = std::stof(tr::Cfg.get(LOOK_TANG));
+    Eye.look_a = std::stof(tr::Cfg.get(LOOK_AZIM));
+    Eye.look_t = std::stof(tr::Cfg.get(LOOK_TANG));
 
     glGenTextures(1, &m_textureObj);
     glActiveTexture(GL_TEXTURE0); // можно загрузить не меньше 48
@@ -39,7 +39,7 @@ namespace tr
     GLint level_of_details = 0;
     GLint frame = 0;
     glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-      image.w, image.h, frame, GL_RGBA, GL_UNSIGNED_BYTE, image.img.data());
+      image.w, image.h, frame, GL_RGBA, GL_UNSIGNED_BYTE, image.Data.data());
 
     // Установка опций отрисовки текстур
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
@@ -60,7 +60,7 @@ namespace tr
   // TODO: тут должны загружаться в графическую память все LOD_*,
   //       но пока загружается только LOD_0
 
-    f3d pt = RigsDb0.search_down(ViewFrom); // ближайший к камере снизу блок
+    f3d pt = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
 
     // используется в функциях пересчета границ отрисовки областей
     MoveFrom = {floor(pt.x), floor(pt.y), floor(pt.z)};
@@ -167,7 +167,7 @@ namespace tr
     float
       yMin = -5.f, yMax =  5.f, // Y границы области сбора
       x_old, x_new,  // координаты линий удаления/вставки новых фрагментов
-      vf_x = floor(ViewFrom.x), vf_z = floor(ViewFrom.z),
+      vf_x = floor(tr::Eye.ViewFrom.x), vf_z = floor(tr::Eye.ViewFrom.z),
       clod_0 = ceil(tr::lod_0);
 
     if(MoveFrom.x > vf_x) {
@@ -209,7 +209,7 @@ namespace tr
     float
       yMin = -5.f, yMax =  5.f, // Y границы области сбора
       z_old, z_new,  // координаты линий удаления/вставки новых фрагментов
-      vf_z = floor(ViewFrom.z), vf_x = floor(ViewFrom.x),
+      vf_z = floor(tr::Eye.ViewFrom.z), vf_x = floor(tr::Eye.ViewFrom.x),
       clod_0 = ceil(tr::lod_0);
 
     if(MoveFrom.z > vf_z) {
@@ -266,9 +266,9 @@ namespace tr
    * резких маятниковых перемещениях камеры.
    */
 
-    if(floor(ViewFrom.x) != MoveFrom.x) redraw_borders_x();
-    //if(floor(ViewFrom.y) != MoveFrom.y) redraw_borders_y();
-    if(floor(ViewFrom.z) != MoveFrom.z) redraw_borders_z();
+    if(floor(tr::Eye.ViewFrom.x) != MoveFrom.x) redraw_borders_x();
+    //if(floor(tr::Eye.ViewFrom.y) != MoveFrom.y) redraw_borders_y();
+    if(floor(tr::Eye.ViewFrom.z) != MoveFrom.z) redraw_borders_z();
     return;
   }
 
@@ -335,16 +335,17 @@ namespace tr
   //## Расчет положения и направления движения камеры
   void space::calc_position(const evInput & ev)
   {
-    look_a += ev.dx * k_mouse;
-    if(look_a > two_pi) look_a -= two_pi;
-    if(look_a < 0) look_a += two_pi;
+    Eye.look_a += ev.dx * Eye.look_speed;
+    if(Eye.look_a > two_pi) Eye.look_a -= two_pi;
+    if(Eye.look_a < 0) Eye.look_a += two_pi;
 
-    look_t -= ev.dy * k_mouse;
-    if(look_t > look_up) look_t = look_up;
-    if(look_t < look_down) look_t = look_down;
+    Eye.look_t -= ev.dy * Eye.look_speed;
+    if(Eye.look_t > look_up) Eye.look_t = look_up;
+    if(Eye.look_t < look_down) Eye.look_t = look_down;
 
-    float _k = k_sense / static_cast<float>(ev.fps); // корректировка по FPS
-    //if (!space_is_empty(ViewFrom)) _k *= 0.1f;  // в воде TODO: добавить туман
+    float _k = Eye.speed / static_cast<float>(ev.fps); // корректировка по FPS
+
+    //if (!space_is_empty(tr::Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
 
     rl = _k * static_cast<float>(ev.rl);   // скорости движения
     fb = _k * static_cast<float>(ev.fb);   // по трем осям
@@ -352,16 +353,16 @@ namespace tr
 
     // промежуточные скаляры для ускорения расчета координат точек вида
     float
-      _ca = static_cast<float>(cos(look_a)),
-      _sa = static_cast<float>(sin(look_a)),
-      _ct = static_cast<float>(cos(look_t));
+      _ca = static_cast<float>(cos(Eye.look_a)),
+      _sa = static_cast<float>(sin(Eye.look_a)),
+      _ct = static_cast<float>(cos(Eye.look_t));
 
-    glm::vec3 LookDir {_ca*_ct, sin(look_t), _sa*_ct}; //Направление взгляда
-    ViewFrom += glm::vec3(fb *_ca + rl*sin(look_a - pi), ud,  fb*_sa + rl*_ca);
-    ViewTo = ViewFrom + LookDir;
+    glm::vec3 LookDir {_ca*_ct, sin(Eye.look_t), _sa*_ct}; //Направление взгляда
+    tr::Eye.ViewFrom += glm::vec3(fb *_ca + rl*sin(Eye.look_a - pi), ud,  fb*_sa + rl*_ca);
+    ViewTo = tr::Eye.ViewFrom + LookDir;
 
     // Расчет матрицы вида
-    MatView = glm::lookAt(ViewFrom, ViewTo, UpWard);
+    MatView = glm::lookAt(tr::Eye.ViewFrom, ViewTo, UpWard);
 
     calc_selected_area(LookDir);
     return;
@@ -370,7 +371,7 @@ namespace tr
   //## Расчет координат ближнего блока, на который направлен взгляд
   void space::calc_selected_area(glm::vec3 & s_dir)
   {
-     Selected = ViewFrom - s_dir;
+     Selected = tr::Eye.ViewFrom - s_dir;
      return;
 
    /*               ******** ! отключено ! ********             */

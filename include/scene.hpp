@@ -21,15 +21,11 @@ namespace tr
       scene(const tr::scene&);
       scene operator=(const tr::scene&);
 
-      GLuint 
-        vaoQuad = 0,
-        texColorBuffer = 0,
-        text = 0,
-        frameBuffer = 0;
-
-      tr::TTF ttf {};                   // создание надписей
+      GLuint vaoQuad = 0;
+      GLuint tex_hud = 0;
+      tr::ttf ttf {};                   // создание надписей
       tr::space space {};               // виртуальное пространство
-      tr::pngImg show_fps {};           // табличка с fps
+      tr::image show_fps {};           // табличка с fps
       tr::glsl screenShaderProgram {};  // шейдерная программа
 
       void framebuffer_init(void);

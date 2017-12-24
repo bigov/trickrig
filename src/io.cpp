@@ -10,6 +10,18 @@
 
 namespace tr
 {
+  //## переворачивает рисунок по вертикали
+  void image::flip_vert(void)
+  {
+    auto tmp = Data;
+    size_t i = 0, x = 0, w = Data.size()/h;
+    for (size_t y = h; y > 0;)
+    {
+      y -= 1;
+      for(x = 0; x < w; x++) Data[i++] = tmp[x + w * y];
+    }
+    return;
+  }
 
   //## Для обеспечения работы контейнера map c ключем f2d
   bool operator< (f2d const& left, f2d const& right)
@@ -59,7 +71,7 @@ namespace tr
   }
 
   //## Чтение файла в формате PNG
-  pngImg get_png_img(const std::string & f_n)
+  image get_png_img(const std::string & f_n)
   {
     const char * filename = f_n.c_str();
     #if not defined PNG_SIMPLIFIED_READ_SUPPORTED
@@ -74,13 +86,13 @@ namespace tr
       ERR("Can't read PNG image file");
 
     info.format = PNG_FORMAT_RGBA;
-    pngImg res {};
+    image res {};
     res.w = static_cast<GLsizei>(info.width);
     res.h = static_cast<GLsizei>(info.height);
     res.size = PNG_IMAGE_SIZE(info);
-    res.img.assign(res.size, '\0');
+    res.Data.assign(res.size, '\0');
 
-    if (!png_image_finish_read(&info, NULL, res.img.data(), 0, NULL ))
+    if (!png_image_finish_read(&info, NULL, res.Data.data(), 0, NULL ))
     {
       png_image_free(&info);
       ERR(info.message);

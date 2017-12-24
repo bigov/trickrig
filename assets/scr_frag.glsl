@@ -3,13 +3,23 @@
 in vec2 Texcoord;
 uniform sampler2D texFramebuffer;
 uniform sampler2D texHUD;
+uniform vec3 Cursor;
+
 out vec4 FragColor;
 
 void main(void)
 {
-  vec2 flipped_coord = vec2(Texcoord.x, 1.0f - Texcoord.y);
-  vec4 texhud = texture(texHUD, flipped_coord);
+  float c_x = Cursor.x; // 400.5f; // координаты курсора
+  float c_y = Cursor.y; // 300.5f;
+  float c_l = Cursor.z; // 4.0f;   // длина луча курсора
+
+  //vec2 flipped_coord = vec2(Texcoord.x, 1.0f - Texcoord.y);
+  //vec4 texhud = texture(texHUD, flipped_coord);
+  //vec4 screen = texture(texFramebuffer, Texcoord);
+
+  vec4 texhud = texture(texHUD, Texcoord);
   vec4 screen = texture(texFramebuffer, Texcoord);
+
 
   if(texhud.a == 0)
   {
@@ -18,6 +28,7 @@ void main(void)
   {
     FragColor = mix(screen, texhud, texhud.a);
   }
+
   //FragColor = screen - texhud;
 
   //FragColor = texture(texFramebuffer, Texcoord);
@@ -25,17 +36,9 @@ void main(void)
   // Формирование курсора
   float m, n;
   if((
-
-    //(gl_FragCoord.x > 400.5) && (gl_FragCoord.x < 400.6) &&
-    (gl_FragCoord.x == 400.5) &&
-
-    (gl_FragCoord.y > 298.0) && (gl_FragCoord.y < 303.0)
+    (gl_FragCoord.x == c_x) && (gl_FragCoord.y > (c_y - c_l)) && (gl_FragCoord.y < (c_y + c_l))
     )||(
-    (gl_FragCoord.x > 398.0) && (gl_FragCoord.x < 403.0) &&
-
-    //(gl_FragCoord.y > 300.0) && (gl_FragCoord.y < 301.0)
-    (gl_FragCoord.y == 300.5)
-
+    (gl_FragCoord.y == c_y) && (gl_FragCoord.x > (c_x - c_l)) && (gl_FragCoord.x < (c_x + c_l))
     ))
   {
     m = (FragColor.r + FragColor.g + FragColor.b)/3;

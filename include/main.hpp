@@ -70,15 +70,34 @@ namespace tr {
   };
 
   extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
-  extern glm::vec3 ViewFrom;      // 3D координаты точка обзора
 
+  // Настройка параметров 3D окна
   struct opengl_window_params {
-    int width = 64;
-    int height = 48;
+    int width = 400;
+    int height = 400;
+    int left = 0;
+    int top = 0;
     float aspect = 1.0f;
+    glm::vec3 Cursor = {200.5f, 200.5f, 4.0f}; // x=u, y=v, z - длина стороны курсора
   };
-
   extern opengl_window_params GlWin;
+
+  // Настройка параметров главной камеры 3D вида
+  struct camera_3d {
+    float look_a = 0.0f;       // азимут (0 - X)
+    float look_t = 0.0f;       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
+    float look_speed = 0.002f; // зависимость угла поворота от сдвига мыши /Config
+    float speed = 4.0f;        // корректировка скорости от FPS /Config
+    glm::vec3 ViewFrom = {};   // 3D координаты точки положения
+
+    // ID фреймбуфера и его текстуры требуется для call-back функции GLFW, вызываемой
+    // при изменениях геометрии окна, отображающего 3D сцену, так как размер текстуры
+    // фреймбуфера напрямую связан с размерами окна.
+    GLuint frame_buf = 0; // id фреймбуфер рендера сцены
+    GLuint texco_buf = 0; // id тектуры фреймбуфера
+    GLuint rendr_buf = 0; // id рендербуфера
+  };
+  extern camera_3d Eye;
 
   /** Начальная дистанция рендера окружения
    *

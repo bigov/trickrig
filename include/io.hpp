@@ -16,15 +16,16 @@
 
 namespace tr
 {
-  struct pngImg
+  struct image
   {
     GLsizei w = 0;
     GLsizei h = 0;
     size_t size = 0;
-    std::vector<unsigned char> img {};
+    std::vector<unsigned char> Data {};
+    void flip_vert(void);
   };
 
-  extern pngImg get_png_img(const std::string &filename);
+  extern image get_png_img(const std::string &filename);
   extern void read_chars_file(const std::string &FNname, std::vector<char> &Buffer);
   extern int sh2int(short, short);
   extern void info(const std::string &);

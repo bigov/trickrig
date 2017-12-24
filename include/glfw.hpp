@@ -15,7 +15,7 @@ namespace tr
     static evInput keys;
     static std::string title;
     static bool cursor_is_captured;
-    static double x0, y0; // центр окна
+    static double win_center_x, win_center_y; // центр окна
 
     public:
       window_glfw(void);
@@ -28,8 +28,8 @@ namespace tr
       GLFWwindow * win_ptr = nullptr;
 
       // переменная для запроса положения курсора в окне
-      double xpos = 0.0,
-             ypos = 0.0;
+      double mouse_x = 0.0,
+             mouse_y = 0.0;
 
       // TODO: setup by Config
       int k_FRONT = GLFW_KEY_W;
@@ -52,10 +52,9 @@ namespace tr
       static void key_callback(
         GLFWwindow* window, int key, int scancode, int action, int mods);
 
-      static void framebuffer_size_callback(
-        GLFWwindow* window, int width, int height);
+      static void window_pos_callback(GLFWwindow*, int, int);
+      static void framebuffer_size_callback(GLFWwindow*, int, int);
 
-      //GLFWwindow * pWin = nullptr;
   };
 } //namespace tr
 

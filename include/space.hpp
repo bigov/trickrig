@@ -57,12 +57,14 @@ namespace tr
       GLuint m_textureObj = 0;
       GLsizei render_points = 0; // число точек передаваемых в рендер
 
-      float
-        rl=0.f, ud=0.f, fb=0.f, // скорость движения по направлениям
-        look_a = 3.928f,        // азимут (0 - X)
-        look_t = -1.0f,         // тангаж (0 - горизОнталь, пи/2 - вертикаль)
-        k_sense = 4.0f,         // TODO: чувствительность через Config
-        k_mouse = 0.002f;
+      float rl=0.f, ud=0.f, fb=0.f; // скорость движения по направлениям
+
+      /*
+      float look_a = 3.928f;       // азимут (0 - X)
+      float look_t = -1.0f;        // тангаж (0 - горизОнталь, пи/2 - вертикаль)
+      float look_speed = 0.002f;   // зависимость угла поворота от сдвига мыши /Config
+      float speed = 4.0f;        // корректировка скорости от FPS /Config
+      */
 
       glm::mat4 MatView = {};
       glm::vec3

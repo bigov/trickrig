@@ -13,7 +13,8 @@
 #include "sqlw.hpp"
 
 namespace tr {
-  tr::cfg Cfg = {};
+  tr::camera_3d Eye = {};   // главная камера 3D вида
+  tr::cfg Cfg = {};         // настройка параметров
 }
 
 //##
@@ -61,6 +62,7 @@ void tr::init_config_db(const std::string & fname)
                    val TEXT);";
   char q[255];
   const char *tpl = "INSERT INTO init (key, val) VALUES (%d, '%s');";
+
   sprintf(q, tpl, TTF_FONT,           "DejaVuSansMono.ttf"); Q += q;
   sprintf(q, tpl, PNG_HUD,            "hud.png");            Q += q;
   sprintf(q, tpl, PNG_TEXTURE0,       "tex0_512.png");       Q += q;
@@ -75,10 +77,11 @@ void tr::init_config_db(const std::string & fname)
   sprintf(q, tpl, WINDOW_TOP,         "50");                 Q += q;
   sprintf(q, tpl, WINDOW_LEFT,        "100");                Q += q;
   sprintf(q, tpl, VIEW_FROM_X,        "0.5");                Q += q;
-  sprintf(q, tpl, VIEW_FROM_Y,        "5.0");                Q += q;
+  sprintf(q, tpl, VIEW_FROM_Y,        "2.0");                Q += q;
   sprintf(q, tpl, VIEW_FROM_Z,        "0.5");                Q += q;
-  sprintf(q, tpl, LOOK_AZIM,          "3.9");                Q += q;
-  sprintf(q, tpl, LOOK_TANG,          "-1.5");               Q += q;
+  sprintf(q, tpl, LOOK_AZIM,          "0.0");                Q += q;
+  sprintf(q, tpl, LOOK_TANG,          "0.0");                Q += q;
+
   Db.exec(Q.c_str());
   for(auto &msg: Db.ErrorsList) tr::info(msg);
   Db.close();

@@ -12,9 +12,9 @@ namespace tr
   evInput window_glfw::keys = {0.0, 0.0, 0, 0, 0, 0, 0, 0, 120};
   std::string window_glfw::title = "TrickRig: v.development";
   bool window_glfw::cursor_is_captured = false;
-  double window_glfw::x0 = 0;
-  double window_glfw::y0 = 0;
-  glm::vec3 ViewFrom = {};      // 3D координаты точка обзора
+  double window_glfw::win_center_x = 0;
+  double window_glfw::win_center_y = 0;
+  //glm::vec3 ViewFrom = {};      // 3D координаты точка обзора
 
   opengl_window_params GlWin = {};
 
@@ -30,7 +30,7 @@ namespace tr
   {
     cursor_is_captured = true;
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-    glfwSetCursorPos(window, x0, y0);
+    glfwSetCursorPos(window, win_center_x, win_center_y);
     return;
   }
 
@@ -88,12 +88,22 @@ namespace tr
     return;
   }
 
+  //## GLFW window moving callback
+  void window_glfw::window_pos_callback(GLFWwindow * window,
+    int left, int top)
+  {
+    if (!window) ERR("Error on call GLFW window_pos_callback.");
+    tr::GlWin.left = left;
+    tr::GlWin.top = top;
+    return;
+  }
+
   //## GLFW framebuffer callback resize
   void window_glfw::framebuffer_size_callback(GLFWwindow * window,
     int width, int height)
   {
-    x0 = static_cast<double>(width/2);
-    y0 = static_cast<double>(height/2);
+    win_center_x = static_cast<double>(width / 2);
+    win_center_y = static_cast<double>(height / 2);
 
     if (!window) ERR("Error on call GLFW framebuffer_size_callback.");
     glViewport(0, 0, width, height);
@@ -102,15 +112,30 @@ namespace tr
     if(height < 48) height = 48;
     tr::GlWin.width  = width;
     tr::GlWin.height = height;
+
+    // пересчет координат курсора
+    tr::GlWin.Cursor.x = static_cast<float>(tr::GlWin.width/2) + 0.5;
+    tr::GlWin.Cursor.y = static_cast<float>(tr::GlWin.height/2) + 0.5;
+
+    // пересчет матрицы проекции
     tr::GlWin.aspect = static_cast<float>(tr::GlWin.width)
                      / static_cast<float>(tr::GlWin.height);
-
-    // Град   Радиан
-    // 45  |  0,7853981633974483
-    // 60  |  1,047197551196598
-    // 64  |  1,117010721276371
-    // 70  |  1,221730476396031
     tr::MatProjection = glm::perspective(1.118f, tr::GlWin.aspect, 0.01f, 1000.0f);
+
+    // Перестрока фреймбуфера
+    glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);
+
+    // настройка размера текстуры
+    glBindTexture(GL_TEXTURE_2D, Eye.texco_buf);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tr::GlWin.width, tr::GlWin.height, 0,
+      GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+    // настройка размера рендербуфера
+    glBindRenderbuffer(GL_RENDERBUFFER, Eye.rendr_buf);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
+      tr::GlWin.width, tr::GlWin.height);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return;
   }
@@ -127,17 +152,27 @@ namespace tr
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 0);
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
 
-    tr::ViewFrom.x = std::stof(tr::Cfg.get(VIEW_FROM_X));
-    tr::ViewFrom.y = std::stof(tr::Cfg.get(VIEW_FROM_Y));
-    tr::ViewFrom.z = std::stof(tr::Cfg.get(VIEW_FROM_Z));
+    // Начальные настройки камеры вида и размера окна
+    tr::Eye.ViewFrom.x = std::stof(tr::Cfg.get(VIEW_FROM_X));
+    tr::Eye.ViewFrom.y = std::stof(tr::Cfg.get(VIEW_FROM_Y));
+    tr::Eye.ViewFrom.z = std::stof(tr::Cfg.get(VIEW_FROM_Z));
     tr::GlWin.width = std::stoi(tr::Cfg.get(WINDOW_WIDTH));
     tr::GlWin.height = std::stoi(tr::Cfg.get(WINDOW_HEIGHT));
+
+    tr::GlWin.top = std::stoi(tr::Cfg.get(WINDOW_TOP));
+    tr::GlWin.left = std::stoi(tr::Cfg.get(WINDOW_LEFT));
+
+    tr::GlWin.Cursor.x = static_cast<float>(tr::GlWin.width/2) + 0.5;
+    tr::GlWin.Cursor.y = static_cast<float>(tr::GlWin.height/2) + 0.5;
     tr::GlWin.aspect = static_cast<float>(tr::GlWin.width)
                      / static_cast<float>(tr::GlWin.height);
     tr::MatProjection = glm::perspective(1.118f, tr::GlWin.aspect, 0.01f, 1000.0f);
 
+    //  Создание 3D окна
     win_ptr = glfwCreateWindow(tr::GlWin.width, tr::GlWin.height,
                          title.c_str(), NULL, nullptr);
+    // Размещение
+    glfwSetWindowPos(win_ptr, tr::GlWin.left, tr::GlWin.top);
 
     if (nullptr == win_ptr) ERR("Creating Window fail.");
     glfwMakeContextCurrent(win_ptr);
@@ -145,11 +180,12 @@ namespace tr
     glfwSetKeyCallback(win_ptr, key_callback);
     glfwSetMouseButtonCallback(win_ptr, mouse_button_callback);
     glfwSetFramebufferSizeCallback(win_ptr, framebuffer_size_callback);
+    glfwSetWindowPosCallback(win_ptr, window_pos_callback);
 
     if(!ogl_LoadFunctions())  ERR("Can't load OpenGl finctions");
 
-    x0 = static_cast<double>(tr::GlWin.width)/2.0;
-    y0 = static_cast<double>(tr::GlWin.height)/2.0;
+    win_center_x = static_cast<double>(tr::GlWin.width / 2);
+    win_center_y = static_cast<double>(tr::GlWin.height / 2);
 
     return;
   }
@@ -166,10 +202,11 @@ namespace tr
   // производится в конце отрисовки каждого кадра
   void window_glfw::check_mouse_pos(void)
   {
-    glfwGetCursorPos(win_ptr, &xpos, &ypos);
-    glfwSetCursorPos(win_ptr, x0, y0);
-    keys.dx = static_cast<float>(xpos - x0);
-    keys.dy = static_cast<float>(ypos - y0);
+    glfwGetCursorPos(win_ptr, &mouse_x, &mouse_y);
+    glfwSetCursorPos(win_ptr, win_center_x, win_center_y);
+
+    keys.dx = static_cast<float>(mouse_x - win_center_x);
+    keys.dy = static_cast<float>(mouse_y - win_center_y);
     return;
   }
 
