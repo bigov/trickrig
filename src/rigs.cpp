@@ -65,31 +65,59 @@ namespace tr
   //## Установка масштаба и загрузка пространства из БД
   void rigs::init(float g)
   {
+  // Метод ::init() ( вызывается из класса построения виртуального 3D
+  // пространства ) обеспечивает формирование в оперативной памяти приложения
+  // карту ( контейнер map() ) размещения ригов в трехмерных координатах для
+  // необходимой области пространства.
+  //
+  // Данные для построения в графическом буфер VAO берутся из этой карты.
+  // Таким образом, она играет роль своеобразного кэша к базе данных.
+
     db_gage *= g; // TODO проверка масштаба на допустимость
 
-    int s = 10;
+    /*
+    int s = 25;
 
     int x0 = static_cast<int>(floor(tr::Eye.ViewFrom.x));
-    int y = 0;
+    int y = -1;
     int z0 = static_cast<int>(floor(tr::Eye.ViewFrom.z));
 
     for(int x = x0 - s; x < s; x += 1)
       for(int z = z0 - s; z < s; z += 1)
         Db.emplace(std::make_pair(f3d{x, y, z}, f3d{x, y, z}));
-
+    */
     // Выделить текстурами центр и оси координат
-    get(0,0,0 )->Area.front().texture_set(0.125, 0.125*7);
-    get(1,0,0 )->Area.front().texture_set(0.125, 0.0);
-    get(-1,0,0)->Area.front().texture_set(0.125, 0.125);
-    get(0,0,1 )->Area.front().texture_set(0.125, 0.125*4);
-    get(0,0,-1)->Area.front().texture_set(0.125, 0.125*5);
+    //get(0,0,0 )->Area.front().texture_set(0.125, 0.125*7);
+    //get(1,0,0 )->Area.front().texture_set(0.125, 0.0);
+    //get(-1,0,0)->Area.front().texture_set(0.125, 0.125);
+    //get(0,0,1 )->Area.front().texture_set(0.125, 0.125*4);
+    //get(0,0,-1)->Area.front().texture_set(0.125, 0.125*5);
 
-    // Загрузить объект из внешнего файла
-    tr::obj_load Obj = {"../assets/test_flat.obj"};
+    /// Загрузка из Obj файла объекта в один риг:
+    //tr::obj_load Obj = {"../assets/test_flat.obj"};
+    //tr::f3d P = {1.f, 0.f, 1.f};
+    //for(auto &S: Obj.Area) S.point_set(P); // Установить объект в точке P
+    //get(P)->Area.swap(Obj.Area);           // Загрузить в rig(P)
 
-    tr::f3d P = {1.f, 0.f, 1.f};
-    for(auto &S: Obj.Area) S.point_set(P); // Установить объект в точке P
-    get(P)->Area.swap(Obj.Area);           // Загрузить в rig(P)
+    // загрузка из Obj файла по одной плоскости в каждый риг
+    tr::obj_load Obj = {"../assets/surf16x16.obj"};
+    for(tr::snip &S: Obj.Area)
+    {
+      // выбираем координаты опорной точки (по минимальному значению)
+      size_t n = 0;
+      for(size_t i = 1; i < 4; i++)
+        if(
+          ( *S.V[n].point.x + *S.V[n].point.z) >
+          ( *S.V[i].point.x + *S.V[i].point.z)
+          ) n = i;
+      tr::f3d p = {
+        floor(*S.V[n].point.x),
+        floor(*S.V[n].point.y),
+        floor(*S.V[n].point.z) };
+
+      Db[p] = tr::rig {}; // создать пустой в указаной точке
+      get(p)->Area.push_front(S); // загрузить поверхность
+    }
 
     return;
   }

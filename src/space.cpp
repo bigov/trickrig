@@ -395,14 +395,8 @@ namespace tr
   //## Функция, вызываемая из цикла окна для рендера сцены
   void space::draw(const evInput & ev)
   {
-   #ifndef NDEBUG
-   static bool first_call = true;
-   if(first_call) std::cout << "count of render points = " << render_points << "\n";
-   first_call = false;
-   #endif
-
-    // Матрицу модели в расчетах не используем, так как
-    // она единичная и на положение элементов влияние не оказывает
+  // Матрицу модели в расчетах не используем, так как
+  // она единичная и на положение элементов влияние не оказывает
 
     calc_position(ev);
     recalc_borders();
@@ -411,19 +405,13 @@ namespace tr
     Prog3d.use();   // включить шейдерную программу
     Prog3d.set_uniform("mvp", tr::MatProjection * MatView);
     //prog3d.set_uniform("Selected", Selected);
-
     Prog3d.set_uniform("light_direction", glm::vec4(0.2f, 0.9f, 0.5f, 0.0));
     Prog3d.set_uniform("light_bright", glm::vec4(0.5f, 0.5f, 0.5f, 0.0));
   
     glBindVertexArray(space_vao);
-
-    glActiveTexture(GL_TEXTURE0); // можно загрузить не меньше 48
-    glBindTexture(GL_TEXTURE_2D, m_textureObj);
-
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glDrawElements(GL_TRIANGLES, render_points, GL_UNSIGNED_INT, NULL);
-
     glBindVertexArray(0);
   
     Prog3d.unuse(); // отключить шейдерную программу
