@@ -78,17 +78,18 @@ void obj_load::get_f(char *line)
 
   for(size_t n = 0; n < tr::vertices_per_snip; n++)
   {
-    *Snip.V[n].point.x = Places[i[n][0]][0];
-    *Snip.V[n].point.y = Places[i[n][0]][1];
-    *Snip.V[n].point.z = Places[i[n][0]][2];
+    Snip.data[n*ROW_STRIDE + COORD_X] = Places[i[n][0]][0];
+    Snip.data[n*ROW_STRIDE + COORD_Y] = Places[i[n][0]][1];
+    Snip.data[n*ROW_STRIDE + COORD_Z] = Places[i[n][0]][2];
 
     if(textured) {
-      *Snip.V[n].fragm.u = UVs[i[n][1]][0];
-      *Snip.V[n].fragm.v = UVs[i[n][1]][1]; }
+      Snip.data[n*ROW_STRIDE + FRAGM_U] = UVs[i[n][1]][0];
+      Snip.data[n*ROW_STRIDE + FRAGM_V] = UVs[i[n][1]][1];
+    }
 
-    *Snip.V[n].normal.x = Normals[i[n][2]][0];
-    *Snip.V[n].normal.y = Normals[i[n][2]][1];
-    *Snip.V[n].normal.z = Normals[i[n][2]][2];
+    Snip.data[n*ROW_STRIDE + NORM_X] = Normals[i[n][2]][0];
+    Snip.data[n*ROW_STRIDE + NORM_Y] = Normals[i[n][2]][1];
+    Snip.data[n*ROW_STRIDE + NORM_Z] = Normals[i[n][2]][2];
   }
 
   Area.push_front(Snip);

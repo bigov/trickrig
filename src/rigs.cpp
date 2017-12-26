@@ -101,23 +101,28 @@ namespace tr
 
     // загрузка из Obj файла по одной плоскости в каждый риг
     tr::obj_load Obj = {"../assets/surf16x16.obj"};
+
     for(tr::snip &S: Obj.Area)
     {
       // выбираем координаты опорной точки (по минимальному значению)
       size_t n = 0;
       for(size_t i = 1; i < 4; i++)
         if(
-          ( *S.V[n].point.x + *S.V[n].point.z) >
-          ( *S.V[i].point.x + *S.V[i].point.z)
+          ( S.data[n * ROW_STRIDE + COORD_X] + S.data[n * ROW_STRIDE + COORD_Z] ) >
+          ( S.data[i * ROW_STRIDE + COORD_X] + S.data[i * ROW_STRIDE + COORD_Z] )
           ) n = i;
       tr::f3d p = {
-        floor(*S.V[n].point.x),
-        floor(*S.V[n].point.y),
-        floor(*S.V[n].point.z) };
+        floor(S.data[n * ROW_STRIDE + COORD_X]),
+        floor(S.data[n * ROW_STRIDE + COORD_Y]),
+        floor(S.data[n * ROW_STRIDE + COORD_Z])
+      };
 
       Db[p] = tr::rig {}; // создать пустой в указаной точке
       get(p)->Area.push_front(S); // загрузить поверхность
     }
+
+    // Выделить текстурой центр координат
+    get(0,0,0 )->Area.front().texture_set(0.125, 0.125 * 4.0);
 
     return;
   }

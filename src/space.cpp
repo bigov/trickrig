@@ -322,7 +322,7 @@ namespace tr
 
     try { // Если есть отображаемый data_src и меньший data_dst из кэша, то
       tr::snip *Snip = VisibleSnips.at(data_src);  // сжать буфер VBO,
-      Snip->jam_data(VBOdata, VBOindex, data_dst); // переместив снип,
+      Snip->vbo_jam(VBOdata, VBOindex, data_dst); // переместив снип,
       VisibleSnips[Snip->data_offset] = Snip;      // обновить ссылку и
       render_points -= tr::indices_per_snip;       // уменьшить число точек рендера
     } catch (...) {

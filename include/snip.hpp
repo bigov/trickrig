@@ -14,13 +14,12 @@
 
 namespace tr
 {
-  // вспомогательные структуры для удобства обращения к частям data[] по названиям
-  struct Vertex
-  {
-    struct { GLfloat *x=nullptr, *y=nullptr, *z=nullptr, *w=nullptr; } point;
-    struct { GLfloat *r=nullptr, *g=nullptr, *b=nullptr, *a=nullptr; } color;
-    struct { GLfloat *x=nullptr, *y=nullptr, *z=nullptr, *w=nullptr; } normal;
-    struct { GLfloat *u=nullptr, *v=nullptr;                         } fragm;
+  // структура для обращения в тексте программы к индексам данных вершин по названиям
+  enum SNIP_DATA_ID {
+    COORD_X, COORD_Y, COORD_Z, COORD_W,
+    COLOR_R, COLOR_G, COLOR_B, COLOR_A,
+    NORM_X, NORM_Y, NORM_Z, NORM_W,
+    FRAGM_U, FRAGM_V, ROW_STRIDE
   };
 
   //## Набор данных для формирования в GPU многоугольника с индексацией вершин
@@ -28,9 +27,14 @@ namespace tr
   {
     GLsizeiptr data_offset = 0; // положение блока данных в буфере GPU
     GLsizei idx[tr::indices_per_snip] = {0, 1, 2, 2, 3, 0}; // порядок обхода вершин
-    Vertex V[tr::vertices_per_snip];
 
     // Блок данных для передачи в буфер GPU
+    //
+    // TODO: конечно, более универсальным тут будет использование контейнера std::vector<GLfloat>,
+    // и я обязательно переведу на него управление массивом данных снипа. Но, пока идет процесс
+    // разработки и оценки возможностей движка по быстродействию, для хранения данныых будет
+    // использоваться более компактный "обычный" массив.
+    //
     GLfloat data[tr::digits_per_snip] = {
    /*|----3D коодината-------|-------RGBA цвет-------|-----вектор нормали------|--текстура----|*/
       0.0f, 0.0f, 0.0f, 1.0f, 0.3f, 0.3f, 0.3f, 1.0f, -.46f, .76f, -.46f, 0.0f, 0.0f,   0.375f,
@@ -45,15 +49,14 @@ namespace tr
 
     snip& operator=(const snip &);      // оператор присваивания
     void copy_data(const snip &);       // копирование данных из другого снипа
-    void v_reset(void);                 // настройка адресов указателей
-    void texture_set(GLfloat, GLfloat); // выбор фрагмента текстуры
+    void texture_set(GLfloat, GLfloat); // установка фрагмента текстуры
     void point_set(const tr::f3d &);    // установка 3D координат поверхности
     GLsizei *reindex(GLsizei);          // пересчет индексов в VBO
 
-    // Функции управления данными в VBO
-    void vbo_append(tr::vbo & VBOdata, tr::vbo & VBOidx);
+    // Функции управления данными снипа в буферах VBO данных и VBO индекса
+    void vbo_append(tr::vbo &, tr::vbo &);
     bool vbo_update(tr::vbo &, tr::vbo &, GLsizeiptr offset);
-    void jam_data(vbo &VBOdata, vbo &VBOidx, GLintptr dst);
+    void vbo_jam   (tr::vbo &, tr::vbo &, GLintptr dst);
   };
 
 } //namespace tr
