@@ -26,7 +26,6 @@ namespace tr
   struct snip
   {
     GLsizeiptr data_offset = 0; // положение блока данных в буфере GPU
-    GLsizei idx[tr::indices_per_snip] = {0, 1, 2, 2, 3, 0}; // порядок обхода вершин
 
     // Блок данных для передачи в буфер GPU
     //
@@ -51,12 +50,11 @@ namespace tr
     void copy_data(const snip &);       // копирование данных из другого снипа
     void texture_set(GLfloat, GLfloat); // установка фрагмента текстуры
     void point_set(const tr::f3d &);    // установка 3D координат поверхности
-    GLsizei *reindex(GLsizei);          // пересчет индексов в VBO
 
     // Функции управления данными снипа в буферах VBO данных и VBO индекса
-    void vbo_append(tr::vbo &, tr::vbo &);
-    bool vbo_update(tr::vbo &, tr::vbo &, GLsizeiptr offset);
-    void vbo_jam   (tr::vbo &, tr::vbo &, GLintptr dst);
+    void vbo_append(tr::vbo &);
+    bool vbo_update(tr::vbo &, GLsizeiptr offset);
+    void vbo_jam   (tr::vbo &, GLintptr dst);
   };
 
 } //namespace tr

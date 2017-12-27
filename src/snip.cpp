@@ -43,9 +43,6 @@ namespace tr
     for(size_t n = 0; n < tr::digits_per_snip; n++)
       data[n] = Other.data[n];
 
-    for(size_t n = 0; n < tr::indices_per_snip; n++)
-      idx[n] = Other.idx[n];
-
     return;
   }
 
@@ -90,27 +87,18 @@ namespace tr
     return;
   }
 
-  //## сдвиг индексов на опорную точку
-  GLsizei *snip::reindex(GLsizei stride)
-  {
-    stride -= idx[0]; // для возврата индексов в исходное положение
-    for(size_t i = 0; i < tr::indices_per_snip; i++) idx[i] += stride;
-    return idx;
-  }
-
   //## добавление данных в буферы VBO
-  void snip::vbo_append(tr::vbo &VBOdata, tr::vbo &VBOidx)
+  void snip::vbo_append(tr::vbo &VBOdata)
   {
-  /* Добавляет данные в конец VBO буфера данных и VBO буфера индексов
-   * и запоминает смещение адресов в VBO где данные были записаны
+  /* Добавляет данные в конец VBO буфера данных и запоминает
+   * смещение адреса где в VBO были записаны данные
    */
     data_offset = VBOdata.data_append( tr::snip_data_bytes, data );
-    VBOidx.data_append( tr::snip_index_bytes, reindex( data_offset/tr::snip_bytes_per_vertex ));
     return;
   }
 
-  //## обновление данных в VBO буфере данных и VBO буфере индексов
-  bool snip::vbo_update(tr::vbo &VBOdata, tr::vbo &VBOidx, GLsizeiptr offset)
+  //## обновление данных в VBO буфере
+  bool snip::vbo_update(tr::vbo &VBOdata, GLsizeiptr offset)
   {
     /**
      * Целевой адрес для перемещения блока данных в VBO (параметр "offset") берется
@@ -118,28 +106,19 @@ namespace tr
      * адреса блоков за текущей границей VBO. Такой адрес считается "протухшим",
      * блок данных не перемещается, функция возвращает false.
      */
-    data_offset = offset;
-    GLsizeiptr idx_offset = (offset / tr::digits_per_snip) * tr::indices_per_snip;
 
-    if(!VBOdata.data_update( tr::snip_data_bytes, data, data_offset ))
-      return false;
-
-    // Если блок данных был успешно перенесен, а при попытке перемещения
-    // индекса возникла ошибка, то значит что-то пошло не так.
-    if(!VBOidx.data_update( tr::snip_index_bytes,
-      reindex( data_offset / tr::snip_bytes_per_vertex ), idx_offset ))
-      ERR("snip::vbo_update can't update index VBO.");
-
-    return true;
+    if(VBOdata.data_update( tr::snip_data_bytes, data, offset ))
+    {
+      data_offset = offset;
+      return true;
+    }
+    return false;
   }
 
   //## перемещение блока данных внутри VBO буфера
-  void snip::vbo_jam(tr::vbo &VBOdata, tr::vbo &VBOidx, GLintptr dst)
+  void snip::vbo_jam(tr::vbo &VBOdata, GLintptr dst)
   {
     VBOdata.jam_data(data_offset, dst, tr::snip_data_bytes);
-    GLintptr idx_src = (data_offset / tr::digits_per_snip) * tr::indices_per_snip;
-    GLintptr idx_dst = (dst / tr::digits_per_snip) * tr::indices_per_snip;
-    VBOidx.jam_data(idx_src, idx_dst, tr::snip_index_bytes);
     data_offset = dst;
     return;
   }

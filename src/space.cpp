@@ -105,14 +105,14 @@ namespace tr
       {
         if(FreeStrides.empty()) // Если кэш пустой, то добавляем данные в конец VBO
         {
-          Snip.vbo_append(VBOdata, VBOindex);
+          Snip.vbo_append(VBOdata);
           render_points += tr::indices_per_snip;  // увеличить число точек рендера
           VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
           data_is_recieved = true;
         }
         else // если в кэше есть адреса свободных мест, то используем
         {    // их с контролем, успешно ли был перемещен блок данных
-          data_is_recieved = Snip.vbo_update(VBOdata, VBOindex, FreeStrides.front());
+          data_is_recieved = Snip.vbo_update(VBOdata, FreeStrides.front());
           FreeStrides.pop_front();                // укоротить кэш
           if(data_is_recieved) VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
         }
@@ -151,8 +151,22 @@ namespace tr
     VBOdata.attrib(Prog3d.attrib_location_get("fragment"),
       2, GL_FLOAT, GL_TRUE, tr::snip_bytes_per_vertex, (void*)(12 * sizeof(GLfloat)));
 
-    // индексный массив
-    VBOindex.allocate(static_cast<size_t>(6 * n * sizeof(GLuint)));
+    //
+    // Так как все четырехугольники в снипах индексируются одинаково, то индексный массив
+    // заполняем один раз "под завязку" и забываем про него. Число используемых индексов
+    // будет всегда соответствовать числу элементов, передаваемых в процедру "glDraw..."
+    //
+    size_t idx_size = static_cast<size_t>(6 * n * sizeof(GLuint)); // Размер индексного массива
+    GLuint *idx_data = new GLuint[idx_size];                       // данные для заполнения
+    GLuint idx[6] = {0, 1, 2, 2, 3, 0};                            // шаблон четырехугольника
+    GLuint stride = 0;                                             // число описаных вершин
+    for(size_t i=0; i < idx_size; i += 6) {                        // заполнить массив для VBO
+      for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
+      stride += 4;                                                 // по 4 вершины на снип
+    }
+    tr::vbo VBOindex = {GL_ELEMENT_ARRAY_BUFFER};                  // Создать индексный буфер
+    VBOindex.allocate(idx_size, idx_data);                         // и заполнить данными.
+    delete[] idx_data;                                             // Удалить исходный массив.
 
     glBindVertexArray(0);
     Prog3d.unuse();
@@ -311,7 +325,7 @@ namespace tr
     if(VisibleSnips.find(data_src) == VisibleSnips.end())
     {
       VBOdata.shrink(tr::snip_data_bytes);   // укоротить VBO данных
-      VBOindex.shrink(tr::snip_index_bytes); // укоротить VBO индекса
+      //VBOindex.shrink(tr::snip_index_bytes); // укоротить VBO индекса
       render_points -= tr::indices_per_snip; // уменьшить число точек рендера
       return;                                // и прервать обработку кэша
     }
@@ -323,7 +337,7 @@ namespace tr
 
     try { // Если есть отображаемый data_src и меньший data_dst из кэша, то
       tr::snip *Snip = VisibleSnips.at(data_src);  // сжать буфер VBO,
-      Snip->vbo_jam(VBOdata, VBOindex, data_dst); // переместив снип,
+      Snip->vbo_jam(VBOdata, data_dst); // переместив снип,
       VisibleSnips[Snip->data_offset] = Snip;      // обновить ссылку и
       render_points -= tr::indices_per_snip;       // уменьшить число точек рендера
     } catch (...) {

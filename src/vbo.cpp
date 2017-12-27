@@ -39,7 +39,7 @@ namespace tr
     return;
   }
 
-  //## Cоздание и заполнение буфера с указанным в параметрах данными
+  //## Cоздание и заполнение буфера данными
   void vbo::allocate(GLsizeiptr al, const GLvoid* data)
   {
     if(0 != id) ERR("VBO::Allocate trying to re-init exist object.");

@@ -45,7 +45,7 @@ namespace tr
 
       tr::glsl Prog3d {};   // GLSL программа шейдеров
       tr::vbo VBOdata = {GL_ARRAY_BUFFER};   // атрибуты вершин поверхности
-      tr::vbo VBOindex = {GL_ELEMENT_ARRAY_BUFFER}; // индексы вершин
+      //tr::vbo VBOindex = {GL_ELEMENT_ARRAY_BUFFER}; // индексы вершин
 
       // Карта cнипов, залитых в VBO
       std::unordered_map<GLsizeiptr, tr::snip*> VisibleSnips {};
@@ -59,12 +59,6 @@ namespace tr
 
       float rl=0.f, ud=0.f, fb=0.f; // скорость движения по направлениям
 
-      /*
-      float look_a = 3.928f;       // азимут (0 - X)
-      float look_t = -1.0f;        // тангаж (0 - горизОнталь, пи/2 - вертикаль)
-      float look_speed = 0.002f;   // зависимость угла поворота от сдвига мыши /Config
-      float speed = 4.0f;        // корректировка скорости от FPS /Config
-      */
 
       glm::mat4 MatView = {};
       glm::vec3
