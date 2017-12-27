@@ -103,7 +103,7 @@ namespace tr
       bool data_is_recieved = false;
       while (!data_is_recieved)
       {
-        if(CashedSnips.empty()) // Если кэш пустой, то добавляем данные в конец VBO
+        if(RemovingStrides.empty()) // Если кэш пустой, то добавляем данные в конец VBO
         {
           Snip.vbo_append(VBOdata, VBOindex);
           render_points += tr::indices_per_snip;  // увеличить число точек рендера
@@ -112,8 +112,8 @@ namespace tr
         }
         else // если в кэше есть адреса свободных мест, то используем
         {    // их с контролем, успешно ли был перемещен блок данных
-          data_is_recieved = Snip.vbo_update(VBOdata, VBOindex, CashedSnips.front());
-          CashedSnips.pop_front();                // укоротить кэш
+          data_is_recieved = Snip.vbo_update(VBOdata, VBOindex, RemovingStrides.front());
+          RemovingStrides.pop_front();                // укоротить кэш
           VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
         }
       }
@@ -188,7 +188,7 @@ namespace tr
       if(nullptr != Rig) for(auto & Snip: Rig->Area)
       {
         VisibleSnips.erase(Snip.data_offset);
-        CashedSnips.push_front(Snip.data_offset);
+        RemovingStrides.push_front(Snip.data_offset);
       }
     }
 
@@ -230,7 +230,7 @@ namespace tr
       if(nullptr != Rig) for(auto & Snip: Rig->Area)
       {
         VisibleSnips.erase(Snip.data_offset);
-        CashedSnips.push_front(Snip.data_offset);
+        RemovingStrides.push_front(Snip.data_offset);
       }
     }
 
@@ -286,7 +286,7 @@ namespace tr
 
     #ifndef NDEBUG
     if(data_src == 0 ) {      // если данных нет (а вдруг?)
-      CashedSnips.clear();    // то очистить все, сообщить о проблеме
+      RemovingStrides.clear();    // то очистить все, сообщить о проблеме
       VisibleSnips.clear();   // и закончить обработку кэша
       render_points = 0;
       info("WARNING: space::clear_cashed_snips got empty data_src\n");
@@ -317,7 +317,7 @@ namespace tr
     }
 
     // Извлечь из кэша один освободившийся адрес
-    GLsizeiptr data_dst = CashedSnips.front(); CashedSnips.pop_front();
+    GLsizeiptr data_dst = RemovingStrides.front(); RemovingStrides.pop_front();
     // если извлеченный адрес за границей VBO, то прервать обработку
     if(data_dst >= data_src) return;
 
@@ -401,7 +401,7 @@ namespace tr
 
     calc_position(ev);
     recalc_borders();
-    if (!CashedSnips.empty()) clear_cashed_snips();
+    if (!RemovingStrides.empty()) clear_cashed_snips();
 
     Prog3d.use();   // включить шейдерную программу
     Prog3d.set_uniform("mvp", tr::MatProjection * MatView);

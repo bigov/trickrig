@@ -23,15 +23,17 @@ namespace tr
 
     public:
       // ----------------------------- конструкторы
-      rig(void): born(get_msec()) { }   // пустой
+      rig(void): born(get_msec()) {}    // пустой
       rig(const tr::rig &);             // дублирующий конструктор
       rig(const tr::f3d &);             // создающий снип в точке
       rig(int, int, int);               // создающий снип в точке
       rig(const tr::snip &);            // копирующий данные снипа
 
       //short int type = 0;             // тип: текстура, поведение, физика и т.п
-      int born;                         // метка времени рождения
+      int born;                         // метка времени создания
       std::forward_list<tr::snip> Area {};
+      // ?std::forward_list<GLsizeiptr> Ids = {}; // список индексов
+
       rig& operator= (const tr::rig &); // копирующее присваивание
       void copy_snips(const tr::rig &); // копирование снипов с другого рига
       void add_snip(const tr::f3d &);   // добавление в риг дефолтного снипа

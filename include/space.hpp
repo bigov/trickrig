@@ -50,8 +50,8 @@ namespace tr
       // Карта cнипов, залитых в VBO
       std::unordered_map<GLsizeiptr, tr::snip*> VisibleSnips {};
 
-      // Кэш блоков данных в VBO, вышедших за границу рендера
-      std::forward_list<GLsizeiptr> CashedSnips {};
+      // Кэш адресов блоков данных в VBO, вышедших за границу рендера
+      std::forward_list<GLsizeiptr> RemovingStrides {};
 
       GLuint space_vao = 0; // ID VAO
       GLuint m_textureObj = 0;
