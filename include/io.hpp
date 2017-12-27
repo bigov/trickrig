@@ -53,9 +53,6 @@ namespace tr
 
   extern bool operator< (f3d const& left, f3d const& right);
 
-  struct c3d { char x = 0, y = 0, z = 0;  };
-  extern bool operator< (c3d const& left, c3d const& right);
-
   struct f2d { float x = 0.f, z = 0.f; };
   extern bool operator< (f2d const& left, f2d const& right);
 }

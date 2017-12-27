@@ -30,20 +30,12 @@ namespace tr
     else return left.z < right.z;
   }
 
-
   //## Для обеспечения работы контейнера map c ключем 3d
   bool operator< (f3d const& left, f3d const& right)
   {
-    if (left.x != right.x)      {return left.x < right.x;}
-    else if (left.y != right.y) {return left.y < right.y;}
-    else                        {return left.z < right.z;}
-  }
-
-  bool operator< (c3d const& left, c3d const& right)
-  {
-    if (left.x != right.x)      {return left.x < right.x;}
-    else if (left.y != right.y) {return left.y < right.y;}
-    else                        {return left.z < right.z;}
+    if (left.y != right.y)      {return left.y < right.y;}
+    else if (left.z != right.z) {return left.z < right.z;}
+    else                        {return left.x < right.x;}
   }
 
   //## Генератор случайных положительных int

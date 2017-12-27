@@ -60,10 +60,10 @@ namespace tr
   // TODO: тут должны загружаться в графическую память все LOD_*,
   //       но пока загружается только LOD_0
 
-    //f3d pt = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
-    f3d pt = {0.f, 0.f, 0.f};
+    f3d pt = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
+    //f3d pt = {0.f, 0.f, 0.f};
 
-        // используется в функциях пересчета границ отрисовки областей
+    // используется в функциях пересчета границ отрисовки областей
     MoveFrom = {floor(pt.x), floor(pt.y), floor(pt.z)};
 
     float // границы уровня lod_0
@@ -349,7 +349,7 @@ namespace tr
     //if (!space_is_empty(tr::Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
 
     rl = _k * static_cast<float>(ev.rl);   // скорости движения
-    fb = _k * static_cast<float>(ev.fb);   // по трем осям
+    fb = _k * static_cast<float>(ev.fb);   // по трем нормалям от камеры
     ud = _k * static_cast<float>(ev.ud);
 
     // промежуточные скаляры для ускорения расчета координат точек вида
