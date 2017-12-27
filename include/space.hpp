@@ -51,7 +51,7 @@ namespace tr
       std::unordered_map<GLsizeiptr, tr::snip*> VisibleSnips {};
 
       // Кэш адресов блоков данных в VBO, вышедших за границу рендера
-      std::forward_list<GLsizeiptr> RemovingStrides {};
+      std::forward_list<GLsizeiptr> FreeStrides {};
 
       GLuint space_vao = 0; // ID VAO
       GLuint m_textureObj = 0;
