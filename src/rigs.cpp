@@ -10,6 +10,13 @@
 namespace tr
 {
   //## конструктор
+  rig::rig(const tr::snip & Snip): born(get_msec())
+  {
+    Area.push_front(Snip);
+    return;
+  }
+
+  //## конструктор
   rig::rig(const tr::f3d &p): born(get_msec())
   {
     add_snip(p);
@@ -75,23 +82,7 @@ namespace tr
 
     db_gage *= g; // TODO проверка масштаба на допустимость
 
-    /*
-    int s = 25;
-
-    int x0 = static_cast<int>(floor(tr::Eye.ViewFrom.x));
-    int y = -1;
-    int z0 = static_cast<int>(floor(tr::Eye.ViewFrom.z));
-
-    for(int x = x0 - s; x < s; x += 1)
-      for(int z = z0 - s; z < s; z += 1)
-        Db.emplace(std::make_pair(f3d{x, y, z}, f3d{x, y, z}));
-    */
-    // Выделить текстурами центр и оси координат
-    //get(0,0,0 )->Area.front().texture_set(0.125, 0.125*7);
-    //get(1,0,0 )->Area.front().texture_set(0.125, 0.0);
-    //get(-1,0,0)->Area.front().texture_set(0.125, 0.125);
-    //get(0,0,1 )->Area.front().texture_set(0.125, 0.125*4);
-    //get(0,0,-1)->Area.front().texture_set(0.125, 0.125*5);
+    //     Db.emplace(std::make_pair(f3d{x, y, z}, f3d{x, y, z}));
 
     /// Загрузка из Obj файла объекта в один риг:
     //tr::obj_load Obj = {"../assets/test_flat.obj"};
@@ -102,24 +93,42 @@ namespace tr
     // загрузка из Obj файла по одной плоскости в каждый риг
     tr::obj_load Obj = {"../assets/surf16x16.obj"};
 
-    for(tr::snip &S: Obj.Area)
-    {
-      // выбираем координаты опорной точки (по минимальному значению)
-      size_t n = 0;
-      for(size_t i = 1; i < 4; i++)
-        if(
-          ( S.data[n * ROW_STRIDE + COORD_X] + S.data[n * ROW_STRIDE + COORD_Z] ) >
-          ( S.data[i * ROW_STRIDE + COORD_X] + S.data[i * ROW_STRIDE + COORD_Z] )
-          ) n = i;
-      tr::f3d p = {
-        floor(S.data[n * ROW_STRIDE + COORD_X]),
-        floor(S.data[n * ROW_STRIDE + COORD_Y]),
-        floor(S.data[n * ROW_STRIDE + COORD_Z])
-      };
+    tr::f3d Base = {0.0f, 0.0f, 0.0f};
+    tr::f3d Pt   = {0.0f, 0.0f, 0.0f};
 
-      Db[p] = tr::rig {}; // создать пустой в указаной точке
-      get(p)->Area.push_front(S); // загрузить поверхность
-    }
+    for(int z = -4; z < 4; z ++)
+    {
+      Base.z = static_cast<float>(z * 16 + 8);
+
+    for(int x = -4; x < 4; x ++)
+    {
+      Base.x = static_cast<float>(x * 16 + 8);
+
+      for(tr::snip S: Obj.Area)
+      {
+        size_t n = 0;
+        // В снипе 4 вершины. Найдем индекс опорной (по минимальному значению)
+        for(size_t i = 1; i < 4; i++)
+          if((
+               S.data[n * ROW_STRIDE + COORD_X]
+             + S.data[n * ROW_STRIDE + COORD_Y]
+             + S.data[n * ROW_STRIDE + COORD_Z]
+                ) > (
+               S.data[i * ROW_STRIDE + COORD_X]
+             + S.data[i * ROW_STRIDE + COORD_Y]
+             + S.data[i * ROW_STRIDE + COORD_Z]
+             )) n = i;
+
+        // Координаты найденой вершины используем для создания рига
+        Pt.x = floor(S.data[n * ROW_STRIDE + COORD_X]) + Base.x;
+        Pt.y = floor(S.data[n * ROW_STRIDE + COORD_Y]) + Base.y;
+        Pt.z = floor(S.data[n * ROW_STRIDE + COORD_Z]) + Base.z;
+
+        S.point_set(Pt);
+        Db[Pt] = tr::rig { S };
+      }
+    } //for x
+    } //for z
 
     // Выделить текстурой центр координат
     get(0,0,0 )->Area.front().texture_set(0.125, 0.125 * 4.0);

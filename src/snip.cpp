@@ -63,17 +63,29 @@ namespace tr
   //## Перенос снипа на указанную точку в пространстве
   void snip::point_set(const tr::f3d &P)
   {
+    size_t n = 0;
+    // В снипе 4 вершины. Найти индекс опорной (по минимальному значению)
+    for(size_t i = 1; i < 4; i++)
+      if((
+           data[n * ROW_STRIDE + COORD_X]
+         + data[n * ROW_STRIDE + COORD_Y]
+         + data[n * ROW_STRIDE + COORD_Z]
+            ) > (
+           data[i * ROW_STRIDE + COORD_X]
+         + data[i * ROW_STRIDE + COORD_Y]
+         + data[i * ROW_STRIDE + COORD_Z]
+         )) n = i;
+
+    // вычислить дистанцию смещения опорной точки
+    tr::f3d d = { P.x - floor(data[n * ROW_STRIDE + COORD_X]),
+                  P.y - floor(data[n * ROW_STRIDE + COORD_Y]),
+                  P.z - floor(data[n * ROW_STRIDE + COORD_Z])};
+
     for(size_t n = 0; n < tr::vertices_per_snip; n++)
     {
-      //*V[n].point.x += P.x;
-      data[ROW_STRIDE * n + COORD_X] += P.x;
-
-      //*V[n].point.y += P.y;
-      data[ROW_STRIDE * n + COORD_Y] += P.y;
-
-      //*V[n].point.z += P.z;
-      data[ROW_STRIDE * n + COORD_Z] += P.z;
-
+      data[ROW_STRIDE * n + COORD_X] += d.x;
+      data[ROW_STRIDE * n + COORD_Y] += d.y;
+      data[ROW_STRIDE * n + COORD_Z] += d.z;
     }
     return;
   }
