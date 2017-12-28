@@ -93,7 +93,7 @@ namespace tr
   /* Добавляет данные в конец VBO буфера данных и запоминает
    * смещение адреса где в VBO были записаны данные
    */
-    data_offset = VBOdata.data_append( tr::snip_data_bytes, data );
+    data_offset = VBOdata.data_append( tr::bytes_per_snip, data );
     return;
   }
 
@@ -107,7 +107,7 @@ namespace tr
      * блок данных не перемещается, функция возвращает false.
      */
 
-    if(VBOdata.data_update( tr::snip_data_bytes, data, offset ))
+    if(VBOdata.data_update( tr::bytes_per_snip, data, offset ))
     {
       data_offset = offset;
       return true;
@@ -118,7 +118,7 @@ namespace tr
   //## перемещение блока данных внутри VBO буфера
   void snip::vbo_jam(tr::vbo &VBOdata, GLintptr dst)
   {
-    VBOdata.jam_data(data_offset, dst, tr::snip_data_bytes);
+    VBOdata.jam_data(data_offset, dst, tr::bytes_per_snip);
     data_offset = dst;
     return;
   }

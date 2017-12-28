@@ -13,9 +13,8 @@ namespace tr
   void vbo::shrink(GLsizeiptr delta)
   {
     if(0 == delta) return;
-    auto new_hem = hem - delta;
-    if(new_hem < 0) ERR("VBO::shrink got negative value of new size");
-    hem = new_hem;
+    if(delta > hem) ERR("VBO::shrink got negative value of new size");
+    hem -= delta;
     return;
   }
 
@@ -34,7 +33,7 @@ namespace tr
     assert(allocated == d_size);
     #endif //------------------------------------------------------------------
     
-    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, 0);
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
     hem = 0;
     return;
   }
@@ -54,7 +53,7 @@ namespace tr
     assert(allocated == d_size);
     #endif //------------------------------------------------------------------
     
-    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, 0);
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
     hem = al;
     return;
   }
@@ -89,14 +88,14 @@ namespace tr
       if(dst > (src - d_size)) ERR("VBO::CopySubData got err dst");
     #endif
 
-    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, id);
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, id);
     glCopyBufferSubData(gl_buffer_type, gl_buffer_type, src, dst, d_size);
-    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, 0);
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
     hem -= d_size;
     return;
   }
 
-  //## Внесение данных с контролем границы максимально выделенного размера буфера
+  //## Добавление данных в конец (с контролем границы размера буфера)
   GLsizeiptr vbo::data_append(GLsizeiptr d_size, const GLvoid* data)
   {
   /* вносит данные в буфер по указателю границы данных блока (hem), возвращает
@@ -108,22 +107,22 @@ namespace tr
     if((allocated - hem) < d_size) ERR("VBO::SubDataAppend got overflow buffer");
     #endif //------------------------------------------------------------------
 
-    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, id);
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, id);
     glBufferSubData(gl_buffer_type, hem, d_size, data);
-    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, 0);
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
     GLsizeiptr res = hem;
     hem += d_size;
     return res;
   }
 
-  //## Замена блока данных в указанном месте с контролем границы размера буфера
+  //## Замена блока данных в указанном месте (с контролем положения)
   bool vbo::data_update(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr offset)
   {
     if (offset > (hem - d_size)) return false; // Фу, "протухший" адрес!
 
-    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, id);
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, id);
     glBufferSubData(gl_buffer_type, offset, d_size, data);
-    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(gl_buffer_type, 0);
+    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
     return true;
   }
 

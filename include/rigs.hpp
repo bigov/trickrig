@@ -9,6 +9,7 @@
 #define __RIGS_HPP__
 
 #include "main.hpp"
+#include "glsl.hpp"
 #include "snip.hpp"
 #include "objl.hpp"
 
@@ -22,17 +23,16 @@ namespace tr
    * - если данные записаны в VBO, то смещение адреса данных в GPU */
 
     public:
-      // ----------------------------- конструкторы
+      // --------------------------------- конструкторы
       rig(void): born(get_msec()) {}    // пустой
       rig(const tr::rig &);             // дублирующий конструктор
       rig(const tr::f3d &);             // создающий снип в точке
       rig(int, int, int);               // создающий снип в точке
       rig(const tr::snip &);            // копирующий данные снипа
 
-      //short int type = 0;             // тип: текстура, поведение, физика и т.п
       int born;                         // метка времени создания
+      bool in_vbo = false;              // данные расположены в VBO
       std::forward_list<tr::snip> Area {};
-      // ?std::forward_list<GLsizeiptr> Ids = {}; // список индексов
 
       rig& operator= (const tr::rig &); // копирующее присваивание
       void copy_snips(const tr::rig &); // копирование снипов с другого рига
@@ -48,18 +48,32 @@ namespace tr
       float yMax = 100.f;
       float db_gage = 1.0f; // размер стороны элементов в текущем LOD
 
+      // Кэш адресов блоков данных в VBO, вышедших за границу рендера
+      std::forward_list<GLsizeiptr> CachedOffset {};
+
+      // Карта размещения cнипов по адресам в VBO
+      std::unordered_map<GLsizeiptr, tr::snip*> VisibleSnips {};
+
+      tr::vbo VBOdata = {GL_ARRAY_BUFFER};   // VBO вершин поверхности
+      tr::glsl Prog3d {};   // GLSL программа шейдеров
+
+      GLuint space_vao = 0; // ID VAO
+      GLsizei render_points = 0; // число точек передаваемых в рендер
+
     public:
+      rigs(void);                  // конструктор
 
-      rigs(void){}          // пустой конструктор
+      void show(const tr::f3d &);  // разместить риг в графическом буфере
+      void hide(const tr::f3d &);  // убрать риг из рендера
+      void draw(const glm::mat4 &); // Рендер кадра
+      void clear_cashed_snips(void);
+
+
       void init(float);     // загрузка уровня
-
-      rig* blank(float x, float y, float z);
       rig* get(float x, float y, float z);
       rig* get(const tr::f3d&);
       f3d search_down(float x, float y, float z);
       f3d search_down(const glm::vec3 &);
-      size_t size(void) { return Db.size(); }
-      bool is_empty(float x, float y, float z);
       bool exist(float x, float y, float z);
   };
 
