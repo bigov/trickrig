@@ -12,8 +12,6 @@ namespace tr
   //## Формирование 3D пространства
   space::space(void)
   {
-    RigsDb0.init(g0); // загрузка уровня LOD-0
-
     glClearColor(0.5f, 0.69f, 1.0f, 1.0f);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glFrontFace(GL_CCW);
@@ -49,19 +47,8 @@ namespace tr
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    upload_vbo();
-    return;
-  }
-
-  //## Загрузка в VBO (графическую память) данных отображаемых объектов 3D сцены
-  void space::upload_vbo(void)
-  {
-  // TODO: тут должны загружаться в графическую память все LOD_*,
-  //       но пока загружается только LOD_0
-
+    RigsDb0.init(g0); // загрузка уровня LOD-0
     f3d pt = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
-    //f3d pt = {0.f, 0.f, 0.f};
-
     // используется в функциях пересчета границ отрисовки областей
     MoveFrom = {floor(pt.x), floor(pt.y), floor(pt.z)};
 
@@ -75,9 +62,9 @@ namespace tr
 
     // Загрузить в графический буфер атрибуты элементов
     for(float x = xMin; x<= xMax; x += g0)
-    for(float y = yMin; y<= yMax; y += g0)
-    for(float z = zMin; z<= zMax; z += g0)
-      RigsDb0.show(f3d(x, y, z));
+      for(float y = yMin; y<= yMax; y += g0)
+        for(float z = zMin; z<= zMax; z += g0)
+          RigsDb0.show(f3d(x, y, z));
 
     return;
   }
@@ -100,17 +87,21 @@ namespace tr
       x_new = vf_x + clod_0;
     }
 
-    // Сбор индексов VBO с задней границы области
-    float zMin = MoveFrom.z - clod_0, zMax = MoveFrom.z + clod_0;
-    for(float y = yMin; y <= yMax; y += g0)
-    for(float z = zMin; z <= zMax; z += g0)
-      RigsDb0.hide(tr::f3d(x_old, y, z));
+    float zMin, zMax;
 
-    // Построение линии по направлению движения
-    zMin = vf_z - clod_0; zMax = vf_z + clod_0;
+    // Скрыть элементы с задней границы области
+    zMin = MoveFrom.z - clod_0;
+    zMax = MoveFrom.z + clod_0;
     for(float y = yMin; y <= yMax; y += g0)
       for(float z = zMin; z <= zMax; z += g0)
-        RigsDb0.show(f3d(x_new, y, z));
+        RigsDb0.hide(tr::f3d(x_old, y, z));
+
+    // Добавить линию элементов по направлению движения
+    zMin = vf_z - clod_0;
+    zMax = vf_z + clod_0;
+    for(float y = yMin; y <= yMax; y += g0)
+      for(float z = zMin; z <= zMax; z += g0)
+        RigsDb0.show(tr::f3d(x_new, y, z));
 
     MoveFrom.x = vf_x;
     return;
@@ -134,17 +125,20 @@ namespace tr
       z_new = vf_z + clod_0;
     }
 
-    // Сбор индексов VBO с задней границы области
-    float xMin = MoveFrom.x - clod_0, xMax = MoveFrom.x + clod_0;
-    for(float y = yMin; y <= yMax; y += g0)
-    for(float x = xMin; x <= xMax; x += g0)
-      RigsDb0.hide(tr::f3d(x, y, z_old));
+    float xMin, xMax;
 
-    // Построение линии по направлению движения
+    // Скрыть элементы с задней границы области
+    xMin = MoveFrom.x - clod_0;
+    xMax = MoveFrom.x + clod_0;
+    for(float y = yMin; y <= yMax; y += g0)
+      for(float x = xMin; x <= xMax; x += g0)
+        RigsDb0.hide(tr::f3d(x, y, z_old));
+
+    // Добавить линию элементов по направлению движения
     xMin = vf_x - clod_0; xMax = vf_x + clod_0;
     for(float y = yMin; y <= yMax; y += g0)
       for(float x = xMin; x <= xMax; x += g0)
-        RigsDb0.show(f3d(x, y, z_new));
+        RigsDb0.show(tr::f3d(x, y, z_new));
 
     MoveFrom.z = vf_z;
     return;

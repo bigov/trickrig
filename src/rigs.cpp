@@ -158,7 +158,6 @@ namespace tr
         while (!data_is_recieved)
         {
           if(CachedOffset.empty()) // Если кэш пустой, то добавляем данные в конец VBO
-          //if(1) // Если кэш пустой, то добавляем данные в конец VBO
           {
             Snip.vbo_append(VBOdata);
             render_points += tr::indices_per_snip;  // увеличить число точек рендера
@@ -173,8 +172,8 @@ namespace tr
           }
         }
       }
+      Rig->in_vbo = true;
       return;
-
   }
 
   //## убрать риг из рендера
@@ -183,11 +182,20 @@ namespace tr
     tr::rig * Rig = get(P);
     if(nullptr == Rig) return;
 
+    #ifndef NDEBUG
+    if(!Rig->in_vbo)
+    {
+      tr::info("rigs::hide try to hide hidden Rig.");
+      return;
+    }
+    #endif
+
     for(auto & Snip: Rig->Area)
     {
       VisibleSnips.erase(Snip.data_offset);
       CachedOffset.push_front(Snip.data_offset);
     }
+    Rig->in_vbo = false;
     return;
   }
 
@@ -255,17 +263,13 @@ namespace tr
   //## Установка масштаба и загрузка пространства из БД
   void rigs::init(float g)
   {
-  // Метод ::init() ( вызывается из класса построения виртуального 3D
-  // пространства ) обеспечивает формирование в оперативной памяти приложения
+  // Метод обеспечивает формирование в оперативной памяти приложения
   // карту ( контейнер map() ) размещения ригов в трехмерных координатах для
-  // необходимой области пространства.
-  //
-  // Данные для построения в графическом буфер VAO берутся из этой карты.
-  // Таким образом, она играет роль своеобразного кэша к базе данных.
+  // назначеной области пространства. Данные размещаемые в VBO берутся
+  // из этого контейнера.
 
-    db_gage *= g; // TODO проверка масштаба на допустимость
+    db_gage = g; // TODO проверка масштаба на допустимость
 
-    //     Db.emplace(std::make_pair(f3d{x, y, z}, f3d{x, y, z}));
 
     /// Загрузка из Obj файла объекта в один риг:
     //tr::obj_load Obj = {"../assets/test_flat.obj"};
@@ -327,15 +331,16 @@ namespace tr
   }
 
   //## поиск ближайшего нижнего блока по координатам точки
-  //
+  tr::f3d rigs::search_down(const glm::vec3& v)
+  {
   // При работе изменяет значение полученного аргумента.
   // Если объект найден, то аргумен содержит его координаты
   //
-  f3d rigs::search_down(const glm::vec3& v)
-  { return search_down(v.x, v.y, v.z); }
+    return search_down(v.x, v.y, v.z);
+  }
 
   //## поиск ближайшего нижнего блока по координатам точки
-  f3d rigs::search_down(float x, float y, float z)
+  tr::f3d rigs::search_down(float x, float y, float z)
   {
     if(y < yMin) ERR("Y downflow"); if(y > yMax) ERR("Y overflow");
 

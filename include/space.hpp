@@ -3,22 +3,6 @@
 // file: space.hpp
 //
 // Заголовок класса управления виртуальным пространством
-//    pY
-//    |
-//    |_____ pX
-//    /
-//   /pZ
-//
-//     4~~~~~~~~~~~~~5
-//    /|            /|
-//   / |           / |
-//  7~~~~~~~~~~~~~6  |
-//  |  |          |  |
-//  |  |          |  |
-//  |  0~~~~~~~~~~|~~3
-//  | /           | /
-//  |/            |/
-//  1~~~~~~~~~~~~~2
 //
 //============================================================================
 #ifndef __SPACE_HPP__
@@ -56,7 +40,6 @@ namespace tr
 
       void calc_position(const tr::evInput &);
       void calc_selected_area(glm::vec3 & sight_direction);
-      void upload_vbo(void);
       void vbo_allocate_mem(void);
       void vbo_data_send(float, float, float);
       void recalc_borders(void);
