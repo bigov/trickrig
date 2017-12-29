@@ -88,24 +88,22 @@ namespace tr
   }
 
   //## добавление данных в буферы VBO
-  void snip::vbo_append(tr::vbo &VBOdata)
+  void snip::vbo_append(tr::vbo & VBOdata)
   {
-  /* Добавляет данные в конец VBO буфера данных и запоминает
-   * смещение адреса где в VBO были записаны данные
-   */
+  /// Добавляет данные в конец VBO буфера данных и запоминает смещение
+  /// адреса где в VBO были записаны данные
+
     data_offset = VBOdata.data_append( tr::bytes_per_snip, data );
     return;
   }
 
   //## обновление данных в VBO буфере
-  bool snip::vbo_update(tr::vbo &VBOdata, GLsizeiptr offset)
+  bool snip::vbo_update(tr::vbo & VBOdata, GLsizeiptr offset)
   {
-    /**
-     * Целевой адрес для перемещения блока данных в VBO (параметр "offset") берется
-     * обычно из кэша. При этом может возникнуть ситуация, когда в кэше остаются
-     * адреса блоков за текущей границей VBO. Такой адрес считается "протухшим",
-     * блок данных не перемещается, функция возвращает false.
-     */
+  /// Целевой адрес для перемещения блока данных в VBO (параметр "offset")
+  /// берется обычно из кэша. При этом может возникнуть ситуация, когда в кэше
+  /// остаются адреса блоков за текущей границей VBO. Такой адрес считается
+  /// "протухшим", блок данных не перемещается, функция возвращает false.
 
     if(VBOdata.data_update( tr::bytes_per_snip, data, offset ))
     {
@@ -116,7 +114,7 @@ namespace tr
   }
 
   //## перемещение блока данных внутри VBO буфера
-  void snip::vbo_jam(tr::vbo &VBOdata, GLintptr dst)
+  void snip::vbo_jam(tr::vbo & VBOdata, GLintptr dst)
   {
     VBOdata.jam_data(data_offset, dst, tr::bytes_per_snip);
     data_offset = dst;

@@ -144,36 +144,36 @@ namespace tr
   //## Размещение элементов в графическом буфере
   void rigs::show(const tr::f3d & P)
   {
-    /* Индексы размещенных в VBO данных, которые при перемещении камеры вышли
-     * за границу отображения, запоминаются в кэше, чтобы на их место
-     * записать данные вершин, которые вошли в поле зрения с другой стороны.
-     */
+  /// Индексы размещенных в VBO данных, которые при перемещении камеры вышли
+  /// за границу отображения, запоминаются в кэше, чтобы на их место
+  /// записать данные вершин, которые вошли в поле зрения с другой стороны.
 
-      tr::rig * Rig = get(P);
-      if(nullptr == Rig) return;
+    tr::rig * Rig = get(P);
+    if(nullptr == Rig) return;
+    if(Rig->in_vbo) return;
 
-      for(tr::snip & Snip: Rig->Area)
+    for(tr::snip & Snip: Rig->Area)
+    {
+      bool data_is_recieved = false;
+      while (!data_is_recieved)
       {
-        bool data_is_recieved = false;
-        while (!data_is_recieved)
+        if(CachedOffset.empty()) // Если кэш пустой, то добавляем данные в конец VBO
         {
-          if(CachedOffset.empty()) // Если кэш пустой, то добавляем данные в конец VBO
-          {
-            Snip.vbo_append(VBOdata);
-            render_points += tr::indices_per_snip;  // увеличить число точек рендера
-            VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
-            data_is_recieved = true;
-          }
-          else // если в кэше есть адреса свободных мест, то используем
-          {    // их с контролем, успешно ли был перемещен блок данных
-            data_is_recieved = Snip.vbo_update(VBOdata, CachedOffset.front());
-            CachedOffset.pop_front();                // укоротить кэш
-            if(data_is_recieved) VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
-          }
+          Snip.vbo_append(VBOdata);
+          render_points += tr::indices_per_snip;  // увеличить число точек рендера
+          VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
+          data_is_recieved = true;
+        }
+        else // если в кэше есть адреса свободных мест, то используем
+        {    // их с контролем, успешно ли был перемещен блок данных
+          data_is_recieved = Snip.vbo_update(VBOdata, CachedOffset.front());
+          CachedOffset.pop_front();                           // укоротить кэш
+          if(data_is_recieved) VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
         }
       }
-      Rig->in_vbo = true;
-      return;
+    }
+    Rig->in_vbo = true;
+    return;
   }
 
   //## убрать риг из рендера
@@ -181,14 +181,7 @@ namespace tr
   {
     tr::rig * Rig = get(P);
     if(nullptr == Rig) return;
-
-    #ifndef NDEBUG
-    if(!Rig->in_vbo)
-    {
-      tr::info("rigs::hide try to hide hidden Rig.");
-      return;
-    }
-    #endif
+    if(!Rig->in_vbo) return;
 
     for(auto & Snip: Rig->Area)
     {
@@ -202,40 +195,49 @@ namespace tr
   //## Удаление элементов по адресам с кэше и сжатие данных в VBO
   void rigs::clear_cashed_snips(void)
   {
-  /* Если в кэше есть адрес в середине VBO, то на него переносим данные
-   * из конца и сжимаем буфер на один блок. Если адрес в кэше расположен
-   * в конце VBO, то сжимаем буфер сдвигая границу и уменьшая число
-   * элементов в рендере.
-   */
+  /// Если в кэше есть адрес блока из середины VBO, то в него переносим данные
+  /// из конца VBO и сжимаем буфер на длину одного блока. Если адрес из кэша
+  /// указывает на крайний блок в конце VBO, то сжимаем буфер сдвигая границу
+  /// на длину одного блока.
+  ///
+  /// Не забываем уменьшить число элементов в рендере.
 
     // Выбрать самый крайний элемент VBO на границе блока данных
     GLsizeiptr data_src = VBOdata.get_hem();
 
+    if(0 == render_points)
+    {
+      CachedOffset.clear();   // очистить все, сообщить о проблеме
+      VisibleSnips.clear();   // и закончить обработку кэша
+      return;
+    }
+
     #ifndef NDEBUG
-    if(data_src == 0 ) {      // Если (вдруг!) данных нет, то
-      CachedOffset.clear();    // очистить все, сообщить о проблеме
+    if (data_src == 0 ) {      // Если (вдруг!) данных нет, то
+      CachedOffset.clear();   // очистить все, сообщить о проблеме
       VisibleSnips.clear();   // и закончить обработку кэша
       render_points = 0;
       info("WARNING: space::clear_cashed_snips got empty data_src\n");
-      return; }
+      return;
+    }
 
     /// Граница буфера (VBOdata.get_hem()), если она не равна нулю,
     /// не может быть меньше размера блока данных (bytes_per_snip)
-    if(tr::bytes_per_snip > data_src)
-        ERR ("BUG!!! space::jam_vbo got error address in VBO");
+    if(data_src < tr::bytes_per_snip)
+      ERR ("BUG!!! space::jam_vbo got error address in VBO");
     #endif
 
     data_src -= tr::bytes_per_snip; // адрес последнего блока
 
-    // Если крайний блок не в списке VisibleSnips, то он и не в рендере.
-    // Поэтому просто отбросим его, сдвинув границу буфера VBO. Кэш не
-    // изменяем, так как в контейнере "forward_list" удаление элементов
-    // из середины списка - затратная операция.
-    //
-    // Внимание! Так как после этого где-то в кэше остается невалидный
-    // (за рабочей границей VBO) адрес блока, то при использовании
-    // адресов из кэша надо делать проверку - не "протухли" ли они.
-    //
+    /// Если крайний блок не в списке VisibleSnips, то он и не в рендере.
+    /// Поэтому просто отбросим его, сдвинув границу буфера VBO. Кэш не
+    /// изменяем, так как в контейнере "forward_list" удаление элементов
+    /// из середины списка - затратная операция.
+    ///
+    /// Внимание! Так как после этого где-то в кэше остается невалидный
+    /// (за рабочей границей VBO) адрес блока, то при использовании
+    /// адресов из кэша надо делать проверку - не "протухли" ли они.
+    ///
     if(VisibleSnips.find(data_src) == VisibleSnips.end())
     {
       VBOdata.shrink(tr::bytes_per_snip);   // укоротить VBO данных
@@ -243,20 +245,35 @@ namespace tr
       return;                                // и прервать обработку кэша
     }
 
-    // Извлечь из кэша один освободившийся адрес
-    GLsizeiptr data_dst = CachedOffset.front(); CachedOffset.pop_front();
-    // если извлеченный адрес за границей VBO, то прервать обработку
-    if(data_dst >= data_src) return;
+    GLsizeiptr data_dst = data_src;
+    // Извлечь из кэша адрес
+    while(data_dst >= data_src)
+    {
+      if(CachedOffset.empty()) return;
+      data_dst = CachedOffset.front();
+      CachedOffset.pop_front();
 
-    try { // Если есть отображаемый data_src и меньший data_dst из кэша, то
-      tr::snip *Snip = VisibleSnips.at(data_src);  // сжать буфер VBO,
-      Snip->vbo_jam(VBOdata, data_dst); // переместив снип,
-      VisibleSnips[Snip->data_offset] = Snip;      // обновить ссылку и
-      render_points -= tr::indices_per_snip;       // уменьшить число точек рендера
-    } catch (...) {
-      ERR("space::jam_vbo got error VisibleSnips[data_src]");
+      // Идеальный вариант, когда освободившийся блок оказался крайним в VBO
+      if(data_dst == data_src)
+      {
+        VBOdata.shrink(tr::bytes_per_snip);    // укоротить VBO данных
+        render_points -= tr::indices_per_snip; // уменьшить число точек рендера
+        return;                                // закончить шаг обработки
+      }
     }
 
+    // Самый частый и самый сложный вариант
+    try { // Если есть отображаемый data_src и меньший data_dst из кэша, то
+      tr::snip *Snip = VisibleSnips.at(data_src);  // найти перемещаемый снип,
+      VisibleSnips.erase(data_src);                // удалить его из карты
+      Snip->vbo_jam(VBOdata, data_dst);            // переместить данные в VBO
+      VisibleSnips[data_dst] = Snip;               // внести ссылку в карту
+      render_points -= tr::indices_per_snip;       // Так как данные из хвоста
+    } catch(std::exception & e) {
+      ERR(e.what());
+    } catch(...) {
+      ERR("rigs::clear_cashed_snips got error VisibleSnips[data_src]");
+    }
     return;
   }
 
@@ -283,11 +300,11 @@ namespace tr
     tr::f3d Base = {0.0f, 0.0f, 0.0f};
     tr::f3d Pt   = {0.0f, 0.0f, 0.0f};
 
-    for(int z = -4; z < 4; z ++)
+    for (int z = -4; z < 4; z ++)
     {
       Base.z = static_cast<float>(z * 16 + 8);
 
-    for(int x = -4; x < 4; x ++)
+    for (int x = -4; x < 4; x ++)
     {
       Base.x = static_cast<float>(x * 16 + 8);
 

@@ -80,28 +80,31 @@ namespace tr
     return;
   }
 
-  //## Сжатие буфера атрибутов за счет перемещения данных из хвоста
-  // в неиспользуемый промежуток и уменьшение текущего индекса
+  //## Сжатие буфера атрибутов за счет перемещения блока данных из хвоста
   void vbo::jam_data(GLintptr src, GLintptr dst, GLsizeiptr d_size)
   {
-    #ifndef NDEBUG // контроль точки переноса
-      if(dst > (src - d_size)) ERR("VBO::CopySubData got err dst");
+  /// Данные внутри VBO перемещаются только из хвоста ближе к началу на
+  /// освободившее место. Адрес начала свободного блока поступает из кэша.
+
+    #ifndef NDEBUG // контроль направления переноса - только к началу VBO
+      if((src + d_size) != hem) ERR("vbo::jam_data got err src address");
+      if(dst > (src - d_size))  ERR("vbo::jam_data: dst + size > src");
     #endif
 
     if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, id);
     glCopyBufferSubData(gl_buffer_type, gl_buffer_type, src, dst, d_size);
     if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
-    hem -= d_size;
+    hem = src;
     return;
   }
 
-  //## Добавление данных в конец (с контролем границы размера буфера)
+  //## Добавление данных в конец VBO (с контролем границы размера буфера)
   GLsizeiptr vbo::data_append(GLsizeiptr d_size, const GLvoid* data)
   {
-  /* вносит данные в буфер по указателю границы данных блока (hem), возвращает
-   * положение указателя по которому разместились данные и сдвигает границу
-   * указателя на размер внесенных данных для следующей порции атрибутов
-   */
+  /// вносит данные в буфер по указателю границы данных блока (hem),
+  /// возвращает положение указателя по которому разместились данные и
+  /// сдвигает границу указателя на размер внесенных данных для приема
+  /// следующеего блока данных
 
     #ifndef NDEBUG // проверка свободного места в буфере----------------------
     if((allocated - hem) < d_size) ERR("VBO::SubDataAppend got overflow buffer");
@@ -116,12 +119,12 @@ namespace tr
   }
 
   //## Замена блока данных в указанном месте (с контролем положения)
-  bool vbo::data_update(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr offset)
+  bool vbo::data_update(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr dst)
   {
-    if (offset > (hem - d_size)) return false; // Фу, "протухший" адрес!
+    if(dst > (hem - d_size)) return false; // протухший адрес из кэша
 
     if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, id);
-    glBufferSubData(gl_buffer_type, offset, d_size, data);
+    glBufferSubData(gl_buffer_type, dst, d_size, data);
     if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
     return true;
   }
