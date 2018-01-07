@@ -9,6 +9,7 @@
 #define __DBW_HPP__
 
 #include "main.hpp"
+#include "io.hpp"
 #include "sqlite3.h"
 
 namespace tr{
@@ -43,6 +44,8 @@ class sqlw
     void close(void);
     void exec(const char *);
     void exec(const std::string &);
+    void request_put(const std::string &);
+    void request_get(const std::string &);
 
   private:
     static char empty;
@@ -51,6 +54,8 @@ class sqlw
     sqlw& operator=(const sqlw &) = delete;
 
     sqlite3 *db = nullptr;
+    sqlite3_stmt *stmt = nullptr;
+
     bool is_open = false;
     std::string DbFileName = "";
 

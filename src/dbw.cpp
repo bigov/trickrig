@@ -73,13 +73,82 @@ namespace tr
         col_value.push_back(value[i][k]); // завершить массив символом '\0'
       }
       row.emplace_front(std::make_pair(col_name, col_value));
-      //row.emplace_front(std::make_pair(name[i], value[i] ? value[i] : &empty));
+      //row.push_front(std::make_pair(col_name, col_value));
     }
     rows.push_front(row);
     num_rows++; // у контейнера forward_list нет счетчика элементов
 
     if(0 != x) return 1; // В этой реализации значение x всегда равно 0
     else return 0;
+  }
+
+  //## Обработчик запросов на получение данных
+  void sqlw::request_get(const std::string & Query)
+  {
+    ErrorsList.clear();
+
+    if(Query.empty())
+    {
+      ErrorsList.emplace_front("Query can't be empty.");
+      return;
+    }
+
+    ///---///---///TODO
+
+    #ifndef NDEBUG
+    for(auto &msg: ErrorsList) tr::info(msg);
+    #endif
+
+    return;
+  }
+
+  //## Обработчик запросов на сохранение или изменение данных и настроек
+  void sqlw::request_put(const std::string & Query)
+  {
+  /// Может обрабатывать строки, составленые из нескольких запросов,
+  /// разделеных стандартным символом (;)
+
+    ErrorsList.clear();
+
+    if(Query.empty())
+    {
+      ErrorsList.emplace_front("Query can't be empty.");
+      return;
+    }
+
+    const char *pzTail = Query.c_str();
+    const char *request = nullptr;
+
+    /// Функция sqlite3_prepare_v2 обрабатывает текст (составного) запроса только до
+    /// разделителя (;) и возвращает в переменной 'pzTail' адрес начала не обработаной
+    /// части полученого текста запроса. Поэтому здесь выполняется цикл до тех пор,
+    /// пока все части составного запроса не будут выполнены, а в переменной 'pzTail'
+    /// не окажется символ конца строки (empty = '\0').
+
+    while (*pzTail != empty)
+    {
+      request = pzTail;
+      if(SQLITE_OK != sqlite3_prepare_v2(db, request, -1, &stmt, &pzTail))
+      {
+        ErrorsList.emplace_front("Prepare failed: " + std::string(sqlite3_errmsg(db)));
+        pzTail = &empty;   // аварийный выход
+      } else
+      {
+        if (SQLITE_DONE != sqlite3_step(stmt))
+        {
+          ErrorsList.emplace_front("Execution failed: " + std::string(sqlite3_errmsg(db)));
+          pzTail = &empty; // аварийный выход
+        }
+      }
+    }
+
+    sqlite3_finalize(stmt);
+
+    #ifndef NDEBUG
+    for(auto &msg: ErrorsList) tr::info(msg);
+    #endif
+
+    return;
   }
 
   //## Обработчик запросов вставки/удаления
@@ -157,7 +226,9 @@ namespace tr
     }
 
     ErrorsList.clear();
-    if(0 != sqlite3_open(DbFileName.c_str(), &db))
+
+    int rc = sqlite3_open_v2(DbFileName.c_str(), &db, SQLITE_OPEN_READWRITE, NULL);
+    if (rc != SQLITE_OK)
     {
       ErrorsList.emplace_front("Can't open database: "
         + std::string(sqlite3_errmsg(db))
@@ -166,10 +237,9 @@ namespace tr
     } else
     {
       is_open = true;
+      sqlite3_update_hook(db, update_callback, &empty);
     }
-    
-    sqlite3_update_hook(db, update_callback, &empty);
-    
+
     return;
   }
 
@@ -193,6 +263,11 @@ namespace tr
       ErrorsList.emplace_front("sqlw::exec: " + std::string(err_msg));
       sqlite3_free(err_msg);
     }
+
+    #ifndef NDEBUG
+    for(auto &msg: ErrorsList) tr::info(msg);
+    #endif
+
     return;
   }
 

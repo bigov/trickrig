@@ -48,7 +48,10 @@ namespace tr
       }
     }
 
-    int key; std::string val, usr;
+    int key;
+    std::string
+        val, usr;
+
     for(auto &row: SqlDb.rows)
     {
       for(auto &p: row)
@@ -128,11 +131,7 @@ namespace tr
     sprintf(q, tpl, p.c_str(), WINDOW_HEIGHT);
     Query += q;
 
-    SqlDb.exec(Query.c_str());
-
-    #ifndef NDEBUG
-    for(auto &msg: SqlDb.ErrorsList) tr::info(msg);
-    #endif
+    SqlDb.request_put(Query);
 
     return;
   }
