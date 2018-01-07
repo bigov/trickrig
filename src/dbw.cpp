@@ -10,9 +10,9 @@
 namespace tr
 {
   // Статические члены инициализируются персонально
-  std::forward_list<std::pair<std::string, std::string>> sqlw::row = {};
+  std::forward_list<std::pair<std::string, std::vector<char>>> sqlw::row = {};
   std::forward_list<std::forward_list<
-    std::pair<std::string, std::string>>> sqlw::rows = {};
+    std::pair<std::string, std::vector<char>>>> sqlw::rows = {};
   char sqlw::empty ='\0';
   int sqlw::num_rows = 0;
   tr::query_data sqlw::result = {0, "", "", 0};
@@ -57,13 +57,23 @@ namespace tr
   //## Обработчик результатов запроса
   int sqlw::callback(void *x, int count, char **value, char **name)
   {
+    std::vector<char> col_value = {};
     row.clear();
+
     for(int i = 0; i < count; i++)
     {
-      #ifndef NDEBUG
-      if (nullptr == name[i]) ERR("sqlw::callback: nullptr name[i]");
-      #endif
-      row.emplace_front(std::make_pair(name[i], value[i] ? value[i] : &empty));
+      std::string col_name(name[i]);
+      col_value.clear();
+      if(!value[i])
+      {  col_value.push_back(empty);  }
+      else
+      {
+        size_t k = 0;
+        while(value[i][k] != '\0') col_value.push_back(value[i][k++]);
+        col_value.push_back(value[i][k]); // завершить массив символом '\0'
+      }
+      row.emplace_front(std::make_pair(col_name, col_value));
+      //row.emplace_front(std::make_pair(name[i], value[i] ? value[i] : &empty));
     }
     rows.push_front(row);
     num_rows++; // у контейнера forward_list нет счетчика элементов

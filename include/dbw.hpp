@@ -28,9 +28,9 @@ class sqlw
     sqlw(const std::string &);
     ~sqlw(void);
 
-    static std::forward_list<std::pair<std::string, std::string>> row;
+    static std::forward_list<std::pair<std::string, std::vector<char>>> row;
     static std::forward_list<
-           std::forward_list<std::pair<std::string, std::string>>> rows;
+           std::forward_list<std::pair<std::string, std::vector<char>>>> rows;
     static int num_rows; // число строк в результате запроса
 
     std::forward_list<std::string> ErrorsList = {};

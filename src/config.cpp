@@ -53,9 +53,9 @@ namespace tr
     {
       for(auto &p: row)
       {
-        if(0 == p.first.find("key")) key = std::stoi(p.second);
-        if(0 == p.first.find("val")) val = p.second;
-        if(0 == p.first.find("usr")) usr = p.second;
+        if(0 == p.first.find("key")) key = std::stoi(p.second.data());
+        if(0 == p.first.find("val")) val = std::string(p.second.data());
+        if(0 == p.first.find("usr")) usr = std::string(p.second.data());
       }
       // если нет текущего значения, то используем значение по-умолчанию
       if(usr.empty()) usr = val;
