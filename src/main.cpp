@@ -10,7 +10,7 @@
 #include "io.hpp"
 #include "scene.hpp"
 #include "glfw.hpp"
-#include "sqlw.hpp"
+#include "dbw.hpp"
 
 namespace tr {
   tr::camera_3d Eye = {};   // главная камера 3D вида
@@ -51,6 +51,9 @@ int main()
 //## Установка значений по-умолчанию для параметров конфигурации
 void tr::init_config_db(const std::string & fname)
 {
+/// Процедура вызывается при инициализации класса конфигурации,
+/// в случае, если он не находит файл базы данных.
+
   tr::info("Установка начальных значений...\n");
   tr::sqlw Db;
   Db.open(fname);
@@ -60,6 +63,7 @@ void tr::init_config_db(const std::string & fname)
                    key INTEGER,                      \
                    usr TEXT DEFAULT '',              \
                    val TEXT);";
+
   char q[255];
   const char *tpl = "INSERT INTO init (key, val) VALUES (%d, '%s');";
 
@@ -71,6 +75,7 @@ void tr::init_config_db(const std::string & fname)
   sprintf(q, tpl, SHADER_FRAG_SCENE,  "frag.glsl");          Q += q;
   sprintf(q, tpl, SHADER_VERT_SCREEN, "scr_vert.glsl");      Q += q;
   sprintf(q, tpl, SHADER_FRAG_SCREEN, "scr_frag.glsl");      Q += q;
+  sprintf(q, tpl, DB_TPL_FNAME,       "surf_tpl.db");        Q += q;
   sprintf(q, tpl, WINDOW_SCREEN_FULL, "0");                  Q += q;
   sprintf(q, tpl, WINDOW_WIDTH,       "800");                Q += q;
   sprintf(q, tpl, WINDOW_HEIGHT,      "600");                Q += q;

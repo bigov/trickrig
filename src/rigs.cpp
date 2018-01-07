@@ -142,7 +142,7 @@ namespace tr
   }
 
   //## Размещение элементов в графическом буфере
-  void rigs::show(const tr::f3d & P)
+  void rigs::set_visible(const tr::f3d & P)
   {
   /// Индексы размещенных в VBO данных, которые при перемещении камеры вышли
   /// за границу отображения, запоминаются в кэше, чтобы на их место
@@ -177,7 +177,7 @@ namespace tr
   }
 
   //## убрать риг из рендера
-  void rigs::hide(const tr::f3d & P)
+  void rigs::set_hiding(const tr::f3d & P)
   {
     tr::rig * Rig = get(P);
     if(nullptr == Rig) return;
@@ -280,10 +280,10 @@ namespace tr
   //## Установка масштаба и загрузка пространства из БД
   void rigs::init(float g)
   {
-  // Метод обеспечивает формирование в оперативной памяти приложения
-  // карту ( контейнер map() ) размещения ригов в трехмерных координатах для
-  // назначеной области пространства. Данные размещаемые в VBO берутся
-  // из этого контейнера.
+  /// Метод обеспечивает формирование в оперативной памяти приложения карту
+  /// ( контейнер map() ) размещения ригов в трехмерных координатах для
+  /// назначеной области пространства. Данные размещаемые в VBO для рендера
+  /// берутся из этого контейнера.
 
     db_gage = g; // TODO проверка масштаба на допустимость
 
@@ -296,6 +296,14 @@ namespace tr
 
     // загрузка из Obj файла по одной плоскости в каждый риг
     tr::obj_load Obj = {"../assets/surf16x16.obj"};
+
+    /// Загруженые данные представляют из себя поверхность 16х16 прямоугольников,
+    /// расположенную в центре оси кординат. Все прямоугольники проецируются в
+    /// горизонтальные квадраты со стороной 1.0f. Соответственно из каждого
+    /// формируется отдельный риг с одним снипом.
+    ///
+    /// Построим поверхность в виде поля 8х8 продублировав 64 раза по
+    /// горизонтальным координатам X и Z, загруженый из файла объект.
 
     tr::f3d Base = {0.0f, 0.0f, 0.0f};
     tr::f3d Pt   = {0.0f, 0.0f, 0.0f};
@@ -311,7 +319,7 @@ namespace tr
       for(tr::snip S: Obj.Area)
       {
         size_t n = 0;
-        // В снипе 4 вершины. Найдем индекс опорной (по минимальному значению)
+        // В снипе 4 вершины, индекс опорной выбираем по минимальному значению длины
         for(size_t i = 1; i < 4; i++)
           if((
                S.data[n * ROW_STRIDE + COORD_X]
@@ -323,7 +331,8 @@ namespace tr
              + S.data[i * ROW_STRIDE + COORD_Z]
              )) n = i;
 
-        // Координаты найденой вершины используем для создания рига
+        // Координаты найденой вершины используем для создания рига,
+        // к которому и привяжем текущий снип
         Pt.x = floor(S.data[n * ROW_STRIDE + COORD_X]) + Base.x;
         Pt.y = floor(S.data[n * ROW_STRIDE + COORD_Y]) + Base.y;
         Pt.z = floor(S.data[n * ROW_STRIDE + COORD_Z]) + Base.z;
@@ -340,6 +349,64 @@ namespace tr
     return;
   }
 
+
+  //## сохранение блока ригов в базу данных
+  bool rigs::save(const tr::f3d & From, const tr::f3d & To)
+  {
+  /// Вначале записываем в таблицу снипов данные области рига. При этом
+  /// индекс области, который будет внесен в таблицу ригов, назначаем
+  /// по номеру записи первого снипа группы области.
+  ///
+  /// После этого обновляем/вставляем запись в таблицу ригов с указанием
+  /// индекса созданой группы
+  ///
+    int x_min = static_cast<int>(From.x);
+    //int y_min = static_cast<int>(From.y);
+    int z_min = static_cast<int>(From.z);
+
+    int x_max = static_cast<int>(To.x);
+    //int y_max = static_cast<int>(To.y);// + 1;
+    int z_max = static_cast<int>(To.z);
+
+    tr::sqlw DB = {};
+    DB.open(tr::Cfg.get(DB_TPL_FNAME));
+
+    int id_area = 0;
+    int y = 0;
+    for(int x = x_min; x < x_max; x++)
+      //for(int y = y_min; y < y_max; y++)
+        for(int z = z_min; z < z_max; z++)
+        {
+          tr::rig *R = get(tr::f3d(x, y, z));
+          if(nullptr != R)
+          {
+            id_area = 0;
+            for(auto & Snip: R->Area)
+            {
+              std::string q =
+                      std::string("INSERT INTO `snips` (`snip`, `id_area`) VALUES (")
+                    + std::to_string(id_area)
+                    + std::string(", '")
+                    + std::string(reinterpret_cast<char*>(Snip.data))
+                    + std::string("');");
+              DB.exec(q);
+//DBG
+std::cout << q << "\n";
+
+              if(0 == id_area)
+              {
+                id_area = DB.result.rowid;
+                DB.exec("UPDATE `snips` SET `id_area`="
+                        + std::to_string(id_area) + " WHERE `id`="
+                        + std::to_string(id_area) + ";");
+              }
+            }
+          }
+        }
+    DB.close();
+    return true;
+  }
+
   //## Проверка наличия блока в заданных координатах
   bool rigs::exist(float x, float y, float z)
   {
@@ -350,9 +417,6 @@ namespace tr
   //## поиск ближайшего нижнего блока по координатам точки
   tr::f3d rigs::search_down(const glm::vec3& v)
   {
-  // При работе изменяет значение полученного аргумента.
-  // Если объект найден, то аргумен содержит его координаты
-  //
     return search_down(v.x, v.y, v.z);
   }
 
@@ -386,7 +450,7 @@ namespace tr
   {
     if(P.y < yMin) ERR("rigs::get -Y is overflow");
     if(P.y > yMax) ERR("rigs::get +Y is overflow");
-    // Вначале поищем как указано.
+
     try { return &Db.at(P); }
     catch (...) { return nullptr; }
   }

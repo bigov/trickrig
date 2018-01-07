@@ -10,7 +10,7 @@
 
 #include "main.hpp"
 #include "io.hpp"
-#include "sqlw.hpp"
+#include "dbw.hpp"
 
 namespace tr
 {
@@ -19,7 +19,6 @@ namespace tr
     private:
       tr::sqlw SqlDb = {};
       std::string UserDir    = "";           // папка конфигов пользователя
-      std::string UserConfig = "config.db";  // конфиг пользователя
       std::string DS = "";                   // символ разделителя папок
       static std::string AssetsDir;          // папка конфигов пользователя
 
@@ -29,6 +28,8 @@ namespace tr
       static std::unordered_map<int, std::string> InitParams;
 
     public:
+      std::string UserConfig = "config.db";  // конфиг пользователя
+
       cfg(void);
       ~cfg(void);
 

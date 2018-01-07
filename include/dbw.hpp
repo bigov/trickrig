@@ -1,17 +1,24 @@
 //----------------------------------------------------------------------------
 //
-// file: sqlw.hpp
+// file: dbw.hpp
 //
-// Обертка для удобства работы с Sqlite3
+// Обертка для работы с Sqlite3
 //
 //----------------------------------------------------------------------------
-#ifndef __SQLW_HPP__
-#define __SQLW_HPP__
+#ifndef __DBW_HPP__
+#define __DBW_HPP__
 
 #include "main.hpp"
 #include "sqlite3.h"
 
 namespace tr{
+  
+struct query_data {
+  int type;
+  std::string db_name;
+  std::string tbl_name;
+  sqlite3_int64 rowid;
+};
 
 class sqlw
 {
@@ -27,6 +34,7 @@ class sqlw
     static int num_rows; // число строк в результате запроса
 
     std::forward_list<std::string> ErrorsList = {};
+    static tr::query_data result;
 
     void set_db_name(const char *);
     void set_db_name(const std::string &);
@@ -47,7 +55,9 @@ class sqlw
     std::string DbFileName = "";
 
     static int callback(void*, int, char**, char**);
+    static void update_callback(void*, int, const char*, const char*,
+      sqlite3_int64);
 
-}; // class sqlw
-}  // ns tr::
-#endif
+};     // class sqlw
+}      // ns tr::
+#endif // __DBW_HPP__

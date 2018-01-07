@@ -218,7 +218,7 @@ namespace tr
     int fps = 0;
     std::chrono::seconds one_second(1);
     std::chrono::time_point<std::chrono::system_clock> t_start, t_frame;
-    std::string win_title = title + std::to_string(fps);
+    //std::string win_title = title + std::to_string(fps);
 
     t_start = std::chrono::system_clock::now();
     while (!glfwWindowShouldClose(win_ptr))

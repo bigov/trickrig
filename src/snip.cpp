@@ -98,24 +98,29 @@ namespace tr
   }
 
   //## обновление данных в VBO буфере
-  bool snip::vbo_update(tr::vbo & VBOdata, GLsizeiptr offset)
+  bool snip::vbo_update(tr::vbo & VBOdata, GLsizeiptr dst)
   {
   /// Целевой адрес для перемещения блока данных в VBO (параметр "offset")
   /// берется обычно из кэша. При этом может возникнуть ситуация, когда в кэше
   /// остаются адреса блоков за текущей границей VBO. Такой адрес считается
   /// "протухшим", блок данных не перемещается, функция возвращает false.
 
-    if(VBOdata.data_update( tr::bytes_per_snip, data, offset ))
+    if(VBOdata.data_update( tr::bytes_per_snip, data, dst ))
     {
-      data_offset = offset;
+      data_offset = dst;
       return true;
     }
     return false;
   }
 
-  //## перемещение блока данных внутри VBO буфера
+  //## Перемещение блока данных из конца ближе к началу VBO буфера
   void snip::vbo_jam(tr::vbo & VBOdata, GLintptr dst)
   {
+  /// Эта функция используется только для крайних блоков данных, расположеных
+  /// в конце VBO. Данные перемещаются на указанное место (dst) ближе к началу
+  /// буфера, после чего активная граница VBO сдвигается к началу на размер
+  /// перемещеного блока данных.
+
     VBOdata.jam_data(data_offset, dst, tr::bytes_per_snip);
     data_offset = dst;
     return;

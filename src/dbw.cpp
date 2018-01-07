@@ -1,11 +1,11 @@
 //----------------------------------------------------------------------------
 //
-// file: sqlw.cpp
+// file: dbw.cpp
 //
-// Обертка для удобства работы с Sqlite3
+// Обертка для работы с Sqlite3
 //
 //----------------------------------------------------------------------------
-#include "sqlw.hpp"
+#include "dbw.hpp"
 
 namespace tr
 {
@@ -15,6 +15,7 @@ namespace tr
     std::pair<std::string, std::string>>> sqlw::rows = {};
   char sqlw::empty ='\0';
   int sqlw::num_rows = 0;
+  tr::query_data sqlw::result = {0, "", "", 0};
 
   //## конструктор устанавливает имя файла
   sqlw::sqlw(const char *fname)
@@ -71,7 +72,61 @@ namespace tr
     else return 0;
   }
 
-  //## подключиться к DB
+  //## Обработчик запросов вставки/удаления
+  void sqlw::update_callback( void* udp, int type, const char* db_name,
+    const char* tbl_name, sqlite3_int64 rowid )
+  {
+  /* Функция вызывается при получении запросов на обновление/удаление данных
+   * Регистрируется вызовом
+   *
+   * void* sqlite3_update_hook( sqlite3* db, update_callback, void* udp );
+   *
+   * db
+   *   A database connection.
+   * 
+   * update_callback
+   *   An application-defined callback function that is called when a database
+   *   row is modified.
+   * 
+   * udp
+   *   An application-defined user-data pointer. This value is made available
+   *   to the update callback.
+   * 
+   * type
+   *   The type of database update. Possible values are SQLITE_INSERT,
+   *   SQLITE_UPDATE, and SQLITE_DELETE.
+   * 
+   * db_name
+   *   The logical name of the database that is being modified. Names include
+   *   main, temp, or any name passed to ATTACH DATABASE.
+   * 
+   * tbl_name
+   *   The name of the table that is being modified.
+   * 
+   * rowid
+   *   The ROWID of the row being modified. In the case of an UPDATE, this is
+   *   the ROWID value after the modification has taken place.
+   * 
+   * Returns (sqlite3_update_hook()) - the previous user-data pointer,
+   * if applicable.
+   * 
+   */
+    if(udp != &empty) ERR("Error in sqlw::updade_callback");
+    
+    result.type = type;
+    
+    result.db_name.clear();
+    result.db_name = db_name;
+    
+    result.tbl_name.clear();
+    result.tbl_name = tbl_name;
+    
+    result.rowid = rowid;
+    
+    return;
+  }
+  
+  //## Подключиться к DB
   void sqlw::open(const std::string & fname)
   {
   /* Закрывает текущий файл БД (если был открыт) и открывает новый
@@ -82,7 +137,7 @@ namespace tr
     return;
   }
 
-  //## подключиться к DB
+  //## Подключиться к DB
   void sqlw::open(void)
   {
     if(DbFileName.empty())
@@ -102,6 +157,9 @@ namespace tr
     {
       is_open = true;
     }
+    
+    sqlite3_update_hook(db, update_callback, &empty);
+    
     return;
   }
 

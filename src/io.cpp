@@ -10,15 +10,16 @@
 
 namespace tr
 {
-  //## переворачивает рисунок по вертикали
+  //## Переворачивает рисунок по вертикали копируя построчно
   void image::flip_vert(void)
   {
     auto tmp = Data;
-    size_t i = 0, x = 0, w = Data.size()/h;
-    for (size_t y = h; y > 0;)
+    size_t width = Data.size()/h; // длина строки в байтах
+    size_t i = 0;
+    for (size_t row = h - 1; row > 0; row--)
     {
-      y -= 1;
-      for(x = 0; x < w; x++) Data[i++] = tmp[x + w * y];
+      memcpy(&Data[i], &tmp[width * row], width);
+      i += width;
     }
     return;
   }

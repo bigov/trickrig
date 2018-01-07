@@ -1,8 +1,8 @@
 //============================================================================
 //
-// file: scene.cpp
+// file: space.cpp
 //
-// Управление пространством 3D сцены
+// Управление виртуальным 3D пространством
 //
 //============================================================================
 #include "space.hpp"
@@ -16,7 +16,6 @@ namespace tr
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glFrontFace(GL_CCW);
     glCullFace(GL_BACK);
-    //glEnable(GL_CULL_FACE);  // после загрузки сцены опция выключается
     glDisable(GL_CULL_FACE); // включить отображение обратных поверхностей
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_LINE_SMOOTH);
@@ -26,8 +25,8 @@ namespace tr
     // Загрузка из файла данных текстуры
     image image = get_png_img(tr::Cfg.get(PNG_TEXTURE0));
 
-    Eye.look_a = std::stof(tr::Cfg.get(LOOK_AZIM));
-    Eye.look_t = std::stof(tr::Cfg.get(LOOK_TANG));
+    tr::Eye.look_a = std::stof(tr::Cfg.get(LOOK_AZIM));
+    tr::Eye.look_t = std::stof(tr::Cfg.get(LOOK_TANG));
 
     glGenTextures(1, &m_textureObj);
     glActiveTexture(GL_TEXTURE0); // можно загрузить не меньше 48
@@ -47,7 +46,8 @@ namespace tr
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    RigsDb0.init(g0); // загрузка уровня LOD-0
+    RigsDb0.init(g0); // загрузка данных уровня LOD-0
+
     f3d pt = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
     // используется в функциях пересчета границ отрисовки областей
     MoveFrom = {floor(pt.x), floor(pt.y), floor(pt.z)};
@@ -64,7 +64,7 @@ namespace tr
     for(float x = xMin; x<= xMax; x += g0)
       for(float y = yMin; y<= yMax; y += g0)
         for(float z = zMin; z<= zMax; z += g0)
-          RigsDb0.show(f3d(x, y, z));
+          RigsDb0.set_visible(f3d(x, y, z));
 
     return;
   }
@@ -76,7 +76,8 @@ namespace tr
     float
       yMin = -5.f, yMax =  5.f, // Y границы области сбора
       x_old, x_new,  // координаты линий удаления/вставки новых фрагментов
-      vf_x = floor(tr::Eye.ViewFrom.x), vf_z = floor(tr::Eye.ViewFrom.z),
+      vf_x = floor(tr::Eye.ViewFrom.x),
+      vf_z = floor(tr::Eye.ViewFrom.z),
       clod_0 = ceil(tr::lod_0);
 
     if(MoveFrom.x > vf_x) {
@@ -94,14 +95,14 @@ namespace tr
     zMax = MoveFrom.z + clod_0;
     for(float y = yMin; y <= yMax; y += g0)
       for(float z = zMin; z <= zMax; z += g0)
-        RigsDb0.hide(tr::f3d(x_old, y, z));
+        RigsDb0.set_hiding(tr::f3d(x_old, y, z));
 
     // Добавить линию элементов по направлению движения
     zMin = vf_z - clod_0;
     zMax = vf_z + clod_0;
     for(float y = yMin; y <= yMax; y += g0)
       for(float z = zMin; z <= zMax; z += g0)
-        RigsDb0.show(tr::f3d(x_new, y, z));
+        RigsDb0.set_visible(tr::f3d(x_new, y, z));
 
     MoveFrom.x = vf_x;
     return;
@@ -114,7 +115,8 @@ namespace tr
     float
       yMin = -5.f, yMax =  5.f, // Y границы области сбора
       z_old, z_new,  // координаты линий удаления/вставки новых фрагментов
-      vf_z = floor(tr::Eye.ViewFrom.z), vf_x = floor(tr::Eye.ViewFrom.x),
+      vf_z = floor(tr::Eye.ViewFrom.z),
+      vf_x = floor(tr::Eye.ViewFrom.x),
       clod_0 = ceil(tr::lod_0);
 
     if(MoveFrom.z > vf_z) {
@@ -132,13 +134,14 @@ namespace tr
     xMax = MoveFrom.x + clod_0;
     for(float y = yMin; y <= yMax; y += g0)
       for(float x = xMin; x <= xMax; x += g0)
-        RigsDb0.hide(tr::f3d(x, y, z_old));
+        RigsDb0.set_hiding(tr::f3d(x, y, z_old));
 
     // Добавить линию элементов по направлению движения
-    xMin = vf_x - clod_0; xMax = vf_x + clod_0;
+    xMin = vf_x - clod_0;
+    xMax = vf_x + clod_0;
     for(float y = yMin; y <= yMax; y += g0)
       for(float x = xMin; x <= xMax; x += g0)
-        RigsDb0.show(tr::f3d(x, y, z_new));
+        RigsDb0.set_visible(tr::f3d(x, y, z_new));
 
     MoveFrom.z = vf_z;
     return;
@@ -148,8 +151,8 @@ namespace tr
   void space::recalc_borders(void)
   {
   /* - собираем в кэш адреса удаляемых снипов.
-   * - добавляемые в сцену снипы пишем в VBO по адресам из кэша.
-   * - если кэш пустой, то добавляем в конец буфера.
+   * - данные добавляемых в сцену снипов записываем в VBO по адресам из кэша.
+   * - если кэш пустой, то данные добавляем в конец VBO буфера.
    *
    * TODO? (на случай притормаживания если прыгать камерой туда-сюда
    * через границу запуска перерисовки границ)
@@ -164,7 +167,7 @@ namespace tr
    * Еще можно кэшировать данные в обработчике соединений с базой данных,
    * сохраняя в нем данные, например, о двух линиях одновременно по внешнему
    * периметру. Это должно снизить число обращений к (диску) базе данных при
-   * резких маятниковых перемещениях камеры.
+   * резких "маятниковых" перемещениях камеры туда-сюда.
    */
 
     if(floor(tr::Eye.ViewFrom.x) != MoveFrom.x) redraw_borders_x();
@@ -238,6 +241,19 @@ namespace tr
   {
     calc_position(ev);
     recalc_borders();
+
+    /// Запись в базу данных: Ctrl+S (285, 31).
+    /// Код отрабатывает последовательное нажатие клавиш Ctrl(285) и S(31)
+    static int mod = 0;
+    if((31 == ev.key_scancode) && (1 == mod))
+    {
+      std::cout << "Start SAVE\n";
+      RigsDb0.save(tr::f3d(0.0f,0.0f,0.0f), tr::f3d(16.0f,0.0f,16.0f));
+      std::cout << "SAVE complete\n";
+    }
+    mod = 0;
+    if (285 == ev.key_scancode) mod = 1;
+
 
     // Матрицу модели в расчетах не используем, так как
     // она единичная и на положение элементов влияние не оказывает

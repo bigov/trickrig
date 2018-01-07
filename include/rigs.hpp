@@ -12,6 +12,7 @@
 #include "glsl.hpp"
 #include "snip.hpp"
 #include "objl.hpp"
+#include "dbw.hpp"
 
 namespace tr
 {
@@ -30,9 +31,10 @@ namespace tr
       rig(int, int, int);               // создающий снип в точке
       rig(const tr::snip &);            // копирующий данные снипа
 
-      int born;                         // метка времени создания
-      bool in_vbo = false;              // данные расположены в VBO
-      std::forward_list<tr::snip> Area {};
+      int born;                            // метка времени создания
+      //tr::f3d shift = {};                // смещение
+      bool in_vbo = false;                 // данные расположены в VBO
+      std::forward_list<tr::snip> Area {}; // список поверхностей
 
       rig& operator= (const tr::rig &); // копирующее присваивание
       void copy_snips(const tr::rig &); // копирование снипов с другого рига
@@ -63,12 +65,12 @@ namespace tr
     public:
       rigs(void);                  // конструктор
 
-      void show(const tr::f3d &);  // разместить риг в графическом буфере
-      void hide(const tr::f3d &);  // убрать риг из рендера
+      void set_visible(const tr::f3d &);  // разместить риг в графическом буфере
+      void set_hiding(const tr::f3d &);  // убрать риг из рендера
       void draw(const glm::mat4 &); // Рендер кадра
       void clear_cashed_snips(void);
 
-
+      bool save(const tr::f3d &, const tr::f3d &);
       void init(float);     // загрузка уровня
       rig* get(float x, float y, float z);
       rig* get(const tr::f3d&);
