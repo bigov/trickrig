@@ -25,11 +25,11 @@ namespace tr
 
     public:
       // --------------------------------- конструкторы
-      rig(void): born(get_msec()) {}    // пустой
-      rig(const tr::rig &);             // дублирующий конструктор
-      rig(const tr::f3d &);             // создающий снип в точке
-      rig(int, int, int);               // создающий снип в точке
-      rig(const tr::snip &);            // копирующий данные снипа
+      rig(void): born(tr::get_msec()) {} // пустой
+      rig(const tr::rig &);              // дублирующий конструктор
+      rig(const tr::f3d &);              // создающий снип в точке
+      rig(int, int, int);                // создающий снип в точке
+      rig(const tr::snip &);             // копирующий данные снипа
 
       int born;                            // метка времени создания
       //tr::f3d shift = {};                // смещение
@@ -61,6 +61,8 @@ namespace tr
 
       GLuint space_vao = 0; // ID VAO
       GLsizei render_points = 0; // число точек передаваемых в рендер
+
+      void _load_16x16_obj(void);
 
     public:
       rigs(void);                  // конструктор

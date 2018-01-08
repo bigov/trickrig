@@ -5,6 +5,31 @@
 // Управление настройками приложения
 //
 //============================================================================
+/*
+
+Схема базы данных поверхности
+=============================
+
+CREATE TABLE "rigs" (
+  `id`      INTEGER NOT NULL UNIQUE,
+  `x`       INTEGER,
+  `y`       INTEGER,
+  `z`       INTEGER,
+  `born`    INTEGER,
+  `id_area` INTEGER NOT NULL, PRIMARY KEY(`id`) );
+
+CREATE TABLE "snips" (
+  `id`      INTEGER NOT NULL UNIQUE,
+  `snip`    BLOB NOT NULL,
+  `id_area` INTEGER NOT NULL, PRIMARY KEY(`id`) );
+
+CREATE INDEX `area_on_rigs` ON `rigs` ( `id_area` );
+
+CREATE INDEX `area_on_snips` ON `snips` ( `id_area` );
+
+CREATE UNIQUE INDEX `c3d` ON `rigs` ( `x`, `y`, `z` );
+
+ */
 #include "config.hpp"
 
 namespace tr

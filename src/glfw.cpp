@@ -169,12 +169,15 @@ namespace tr
     tr::MatProjection = glm::perspective(1.118f, tr::GlWin.aspect, 0.01f, 1000.0f);
 
     //  Создание 3D окна
+    glfwWindowHint(GLFW_VISIBLE, 0);
     win_ptr = glfwCreateWindow(tr::GlWin.width, tr::GlWin.height,
                          title.c_str(), NULL, nullptr);
+    if (nullptr == win_ptr) ERR("Creating Window fail.");
+
     // Размещение
     glfwSetWindowPos(win_ptr, tr::GlWin.left, tr::GlWin.top);
+    glfwShowWindow(win_ptr);
 
-    if (nullptr == win_ptr) ERR("Creating Window fail.");
     glfwMakeContextCurrent(win_ptr);
     glfwSwapInterval(0);
     glfwSetKeyCallback(win_ptr, key_callback);

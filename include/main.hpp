@@ -12,6 +12,7 @@
 #include <array>
 #include <cassert>
 #include <cstdint>
+//<cstdio>
 #include <cstring>
 #include <chrono>
 #include <forward_list>
@@ -94,9 +95,9 @@ namespace tr {
     // ID фреймбуфера и его текстуры требуется для call-back функции GLFW, вызываемой
     // при изменениях геометрии окна, отображающего 3D сцену, так как размер текстуры
     // фреймбуфера напрямую связан с размерами окна.
-    GLuint frame_buf = 0; // id фреймбуфер рендера сцены
-    GLuint texco_buf = 0; // id тектуры фреймбуфера
-    GLuint rendr_buf = 0; // id рендербуфера
+    GLuint frame_buf = 0; // id фрейм-буфера рендера сцены
+    GLuint texco_buf = 0; // id тектуры фрейм-буфера
+    GLuint rendr_buf = 0; // id рендер-буфера
   };
   extern camera_3d Eye;
 

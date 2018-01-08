@@ -247,13 +247,10 @@ namespace tr
     static int mod = 0;
     if((31 == ev.key_scancode) && (1 == mod))
     {
-      std::cout << "Start SAVE\n";
-      RigsDb0.save(tr::f3d(0.0f,0.0f,0.0f), tr::f3d(16.0f,0.0f,16.0f));
-      std::cout << "SAVE complete\n";
+      RigsDb0.save(tr::f3d(0.0f,0.0f,0.0f), tr::f3d(16.0f,1.0f,16.0f));
     }
     mod = 0;
     if (285 == ev.key_scancode) mod = 1;
-
 
     // Матрицу модели в расчетах не используем, так как
     // она единичная и на положение элементов влияние не оказывает

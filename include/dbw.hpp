@@ -44,7 +44,12 @@ class sqlw
     void close(void);
     void exec(const char *);
     void exec(const std::string &);
+    void request_put(const char *);
+    void request_put(const char *, const char *, size_t);
+    void request_put(const char *, const float *, size_t);
     void request_put(const std::string &);
+
+    void request_get(const char *);
     void request_get(const std::string &);
 
   private:
@@ -54,11 +59,12 @@ class sqlw
     sqlw& operator=(const sqlw &) = delete;
 
     sqlite3 *db = nullptr;
-    sqlite3_stmt *stmt = nullptr;
+    sqlite3_stmt *pStmt = nullptr;
 
     bool is_open = false;
     std::string DbFileName = "";
 
+    void get_row_data(void);
     static int callback(void*, int, char**, char**);
     static void update_callback(void*, int, const char*, const char*,
       sqlite3_int64);
