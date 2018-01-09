@@ -44,7 +44,12 @@ endif()
 SET( EXEC_NAME "app${SUFFIX}" )
 
 # библиотека LIBPNG
+SET(PNG_BUILD_ZLIB ON CACHE BOOL "Build libpng with zlib" FORCE)
+SET(PNG_DEBUG OFF CACHE BOOL "Build libpng with debug" FORCE)
+SET(PNG_FRAMEWORK OFF CACHE BOOL "Build libpng with " FORCE)
+SET(PNG_HARDWARE_OPTIMIZATIONS ON CACHE BOOL "Build libpng with HW-opt" FORCE)
 SET(PNG_SHARED OFF CACHE BOOL "Build shared lib" FORCE)
+SET(PNG_STATIC ON CACHE BOOL "Build libpng static" FORCE)
 SET(PNG_TESTS OFF CACHE BOOL "Build libpng tests" FORCE)
 add_subdirectory( ".extlibs/libpng" "${SUFFIX}/libpng" EXCLUDE_FROM_ALL)
 
@@ -58,9 +63,14 @@ add_subdirectory( ".extlibs/glcore33" "${SUFFIX}/glcore33" EXCLUDE_FROM_ALL)
 add_subdirectory( ".extlibs/sqlite3" "${SUFFIX}/sqlite3" EXCLUDE_FROM_ALL)
 
 # библиотека GLFW3
+SET(GLFW_BUILD_DOCS OFF CACHE BOOL "Build the GLFW documentation" FORCE)
 SET(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs" FORCE)
 SET(GLFW_BUILD_TESTS OFF CACHE BOOL "Build the GLFW test programs" FORCE)
-SET(GLFW_BUILD_DOCS OFF CACHE BOOL "Build the GLFW documentation" FORCE)
+SET(GLFW_DOCUMENT_INTERNALS OFF CACHE BOOL "Build the GLFW document" FORCE)
+SET(GLFW_INSTALL OFF CACHE BOOL "Build the GLFW install" FORCE)
+SET(GLFW_USE_MIR OFF CACHE BOOL "Build the GLFW with Mir" FORCE)
+SET(GLFW_USE_OSMESA OFF CACHE BOOL "Build the GLFW with os mesa" FORCE)
+SET(GLFW_USE_WAYLAND OFF CACHE BOOL "Build the GLFW with Wayland server" FORCE)
 SET(GLFW_VULKAN_STATIC OFF CACHE BOOL "Use the Vulkan" FORCE)
 add_subdirectory( ".extlibs/glfw" "${SUFFIX}/glfw" EXCLUDE_FROM_ALL)
 

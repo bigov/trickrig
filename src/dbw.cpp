@@ -184,6 +184,7 @@ namespace tr
     return;
   }
 
+
   //## Обработчик запросов на сохранение или изменение данных и настроек
   void sqlw::request_put(const char *pzTail)
   {
@@ -220,8 +221,6 @@ namespace tr
         }
       }
     }
-
-    //sqlite3_finalize(stmt);
 
     #ifndef NDEBUG
     for(auto &msg: ErrorsList) tr::info(msg);
@@ -292,13 +291,6 @@ namespace tr
    *
    * void* sqlite3_update_hook( sqlite3* db, update_callback, void* udp );
    *
-   * db
-   *   A database connection.
-   * 
-   * update_callback
-   *   An application-defined callback function that is called when a database
-   *   row is modified.
-   * 
    * udp
    *   An application-defined user-data pointer. This value is made available
    *   to the update callback.
@@ -307,33 +299,17 @@ namespace tr
    *   The type of database update. Possible values are SQLITE_INSERT,
    *   SQLITE_UPDATE, and SQLITE_DELETE.
    * 
-   * db_name
-   *   The logical name of the database that is being modified. Names include
-   *   main, temp, or any name passed to ATTACH DATABASE.
-   * 
-   * tbl_name
-   *   The name of the table that is being modified.
-   * 
    * rowid
    *   The ROWID of the row being modified. In the case of an UPDATE, this is
    *   the ROWID value after the modification has taken place.
-   * 
-   * Returns (sqlite3_update_hook()) - the previous user-data pointer,
-   * if applicable.
-   * 
    */
     if(udp != &empty) ERR("Error in sqlw::updade_callback");
-    
     result.type = type;
-    
     result.db_name.clear();
     result.db_name = db_name;
-    
     result.tbl_name.clear();
     result.tbl_name = tbl_name;
-    
     result.rowid = rowid;
-    
     return;
   }
   
@@ -359,19 +335,18 @@ namespace tr
 
     ErrorsList.clear();
 
-    int rc = sqlite3_open_v2(DbFileName.c_str(), &db, SQLITE_OPEN_READWRITE, NULL);
+    int rc = sqlite3_open_v2(DbFileName.c_str(), &db,
+      SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
     if (rc != SQLITE_OK)
     {
-      ErrorsList.emplace_front("Can't open database: "
-        + std::string(sqlite3_errmsg(db))
-        + "\nDatabase file name: " + DbFileName);
+      ErrorsList.emplace_front(std::string(sqlite3_errmsg(db))
+        + std::string("\nCan't open database ") + DbFileName);
       close();
     } else
     {
       is_open = true;
       sqlite3_update_hook(db, update_callback, &empty);
     }
-
     return;
   }
 
