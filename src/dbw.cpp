@@ -10,12 +10,12 @@
 namespace tr
 {
   // Статические члены инициализируются персонально
-  std::forward_list<std::pair<std::string, std::vector<char>>> sqlw::row = {};
+  //std::forward_list<std::pair<std::string, std::vector<char>>> sqlw::table_row = {};
   std::forward_list<std::forward_list<
-    std::pair<std::string, std::vector<char>>>> sqlw::rows = {};
+    std::pair<std::string, std::vector<char>>>> sqlw::Table_rows = {};
   char sqlw::empty ='\0';
   int sqlw::num_rows = 0;
-  tr::query_data sqlw::result = {0, "", "", 0};
+  tr::query_data sqlw::Result = {0, "", "", 0};
 
   //## конструктор устанавливает имя файла
   sqlw::sqlw(const char *fname)
@@ -54,11 +54,11 @@ namespace tr
     return;
   }
 
-  //## Обработчик результатов запроса
+  //## Обработчик результатов запроса sql3_exec()
   int sqlw::callback(void *x, int count, char **value, char **name)
   {
     std::vector<char> col_value = {};
-    row.clear();
+    std::forward_list<std::pair<std::string, std::vector<char>>> Row = {};
 
     for(int i = 0; i < count; i++)
     {
@@ -72,10 +72,9 @@ namespace tr
         while(value[i][k] != '\0') col_value.push_back(value[i][k++]);
         col_value.push_back(value[i][k]); // завершить массив символом '\0'
       }
-      row.emplace_front(std::make_pair(col_name, col_value));
-      //row.push_front(std::make_pair(col_name, col_value));
+      Row.emplace_front(std::make_pair(col_name, col_value));
     }
-    rows.push_front(row);
+    Table_rows.push_front(Row);
     num_rows++; // у контейнера forward_list нет счетчика элементов
 
     if(0 != x) return 1; // В этой реализации значение x всегда равно 0
@@ -101,33 +100,50 @@ namespace tr
   }
 
   //## Прием данных, полученых в результате запроса
-  void sqlw::get_row_data(void)
+  void sqlw::save_row_data(void)
   {
     //int col = sqlite3_column_count(pStmt); // Число колонок в результирующем наборе
     int col = sqlite3_data_count(pStmt);     // Число колонок в строке результата
-    //int data_bytes = 0;
+    int data_bytes = 0;
+
+    std::vector<std::any> Row;
+    std::vector<char> Ch_ceil;
+    std::vector<unsigned char> Uch_ceil;
 
     while (col > 0)
     {
       int data_type = sqlite3_column_type(pStmt, --col);
+      Ch_ceil.clear();
+      Uch_ceil.clear();
+
       switch (data_type)
       {
         case SQLITE_INTEGER:
+          Row.push_back(std::any(sqlite3_column_int(pStmt, col)));
           break;
         case SQLITE_FLOAT:
+          Row.push_back(std::any(sqlite3_column_double(pStmt, col)));
           break;
         case SQLITE_TEXT:
-          //data_bytes = sqlite3_column_bytes(pStmt, col);
+          data_bytes = sqlite3_column_bytes(pStmt, col);
+          Ch_ceil.resize(data_bytes + 1, '\0');
+          memcpy(Ch_ceil.data(), sqlite3_column_text(pStmt, col), data_bytes);
+          Row.push_back(std::any(Ch_ceil));
           break;
         case SQLITE_BLOB:
-          //data_bytes = sqlite3_column_bytes(pStmt, col);
+          data_bytes = sqlite3_column_bytes(pStmt, col);
+          Uch_ceil.resize(data_bytes + 1, '\0');
+          memcpy(Uch_ceil.data(), sqlite3_column_blob(pStmt, col), data_bytes);
+          Row.push_back(std::any(Uch_ceil));
           break;
         case SQLITE_NULL:
+          Row.push_back(std::any(NULL));
           break;
         default:
           break;
       }
     }
+    Rows.push_front(Row);
     return;
   }
 
@@ -144,7 +160,7 @@ namespace tr
       ErrorsList.emplace_front("Prepare failed: " + std::string(sqlite3_errmsg(db)));
       complete = true;
     }
-
+    num_rows = 0;
     int step = 0;
     while (!complete)
     {
@@ -152,7 +168,8 @@ namespace tr
       switch (step)
       {
         case SQLITE_ROW:
-          get_row_data();
+          num_rows++;
+          save_row_data();
           break;
         case SQLITE_DONE:
           //get_row_data();
@@ -304,12 +321,12 @@ namespace tr
    *   the ROWID value after the modification has taken place.
    */
     if(udp != &empty) ERR("Error in sqlw::updade_callback");
-    result.type = type;
-    result.db_name.clear();
-    result.db_name = db_name;
-    result.tbl_name.clear();
-    result.tbl_name = tbl_name;
-    result.rowid = rowid;
+    Result.type = type;
+    Result.db_name.clear();
+    Result.db_name = db_name;
+    Result.tbl_name.clear();
+    Result.tbl_name = tbl_name;
+    Result.rowid = rowid;
     return;
   }
   
@@ -363,7 +380,7 @@ namespace tr
     if(!is_open) open();
     char *err_msg = nullptr;
     ErrorsList.clear();
-    rows.clear();
+    Table_rows.clear();
     num_rows = 0;
     if(SQLITE_OK != sqlite3_exec(db, query, callback, 0, &err_msg))
     {

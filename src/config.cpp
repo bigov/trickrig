@@ -77,7 +77,7 @@ namespace tr
     std::string
         val, usr;
 
-    for(auto &row: SqlDb.rows)
+    for(auto &row: SqlDb.Table_rows)
     {
       for(auto &p: row)
       {

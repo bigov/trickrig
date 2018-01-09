@@ -29,13 +29,16 @@ class sqlw
     sqlw(const std::string &);
     ~sqlw(void);
 
-    static std::forward_list<std::pair<std::string, std::vector<char>>> row;
+    // Результат выполнения запроса "exec" записывается парами заголовок_поля:значение
     static std::forward_list<
-           std::forward_list<std::pair<std::string, std::vector<char>>>> rows;
+           std::forward_list<std::pair<std::string, std::vector<char>>>> Table_rows;
     static int num_rows; // число строк в результате запроса
 
+    // Результат выполнения запроса "request_get"
+    std::forward_list<std::vector<std::any>> Rows;
+
     std::forward_list<std::string> ErrorsList = {};
-    static tr::query_data result;
+    static tr::query_data Result;
 
     void set_db_name(const char *);
     void set_db_name(const std::string &);
@@ -64,7 +67,7 @@ class sqlw
     bool is_open = false;
     std::string DbFileName = "";
 
-    void get_row_data(void);
+    void save_row_data(void);
     static int callback(void*, int, char**, char**);
     static void update_callback(void*, int, const char*, const char*,
       sqlite3_int64);
