@@ -61,7 +61,7 @@ IF ERRORLEVEL 1 (
 	GOTO _eof
 )
 
-CALL app_%n2%_%n3%.exe
+CALL app%n2%_%n3%.exe
 IF ERRORLEVEL 1 pause
 
 :_eof
