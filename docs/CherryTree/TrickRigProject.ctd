@@ -246,33 +246,31 @@ fltk.org — официальный сайт FLTK
  - Простой API, лёгкая интеграция с приложениями, отсутствие сторонних зависимостей. Для работы требуется только два файла на языке Си.
 </rich_text>
 			</node>
-			<node custom_icon_id="0" foreground="" is_bold="False" name="OpenGL" prog_lang="custom-colors" readonly="False" tags="" ts_creation="0.0" ts_lastsave="0.0" unique_id="8">
-				<rich_text weight="heavy">Настройка текстур:</rich_text>
+			<node custom_icon_id="0" foreground="" is_bold="False" name="OpenGL" prog_lang="custom-colors" readonly="False" tags="" ts_creation="0.0" ts_lastsave="1515814228.14" unique_id="8">
 				<rich_text>
-Если используется опция GL_CLAMP_TO_BORDER, то можно настроить цвет границы:
 </rich_text>
-				<rich_text family="monospace">    float b_color[] = { 0.0f, 1.0f, 0.0f, 1.0f };
+				<rich_text scale="h3" weight="heavy">Настройка текстур:</rich_text>
+				<rich_text>
+
+Если используется опция GL_CLAMP_TO_BORDER, то можно настроить цвет границы:
+
+    float b_color[] = { 0.0f, 1.0f, 0.0f, 1.0f };
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, b_color);
     
-</rich_text>
-				<rich_text family="monospace" weight="heavy">Группа текстур:</rich_text>
-				<rich_text family="monospace">
+Группа текстур:
     1. вначале назначают:
     
-</rich_text>
-				<rich_text>    	    GLuint m_textureObj;
+    	  GLuint m_textureObj;
 		    glGenTextures(1, &amp;m_textureObj);
 		    glActiveTexture(GL_TEXTURE0); // индекс текстуры (можно загрузить не меньше 48)
 		    glBindTexture(GL_TEXTURE_2D, m_textureObj);
 
-        2. потом при рендере подключают в шейдере:
+    2. потом при рендере подключают в шейдере:
      
-       		GLint nTx = 0; // индекс текстуры
+       	GLint nTx = 0; // индекс текстуры
 		    glUniform1i(glGetUniformLocation(prog.get_id(), &quot;texture_0&quot;), nTx);
-</rich_text>
-				<rich_text family="monospace">
-</rich_text>
-				<rich_text>
+
+
 </rich_text>
 				<rich_text weight="heavy">Наименования параметров материалов</rich_text>
 				<rich_text>
@@ -370,7 +368,7 @@ def setup_fog():
 				</node>
 			</node>
 		</node>
-		<node custom_icon_id="0" foreground="" is_bold="False" name="Логика работы приложения" prog_lang="custom-colors" readonly="False" tags="" ts_creation="0.0" ts_lastsave="1514272509.53" unique_id="10">
+		<node custom_icon_id="0" foreground="" is_bold="False" name="ОБЩИЕ ИДЕИ" prog_lang="custom-colors" readonly="False" tags="" ts_creation="0.0" ts_lastsave="1515814104.1" unique_id="10">
 			<rich_text>
 Логика построения трехмерного виртуального пространства
 
@@ -408,100 +406,48 @@ def setup_fog():
 
 Кстати, неплохая идея - насчет переноса активной границы срабатывания. Надо будет пересмотреть логику работы при перестройке границ (realc_borders) рендера. В настоящее время она работает по центральной точке расположения камеры. Неплохо было бы ее сместить чуть назад отнсительно направления движения.</rich_text>
 			<encoded_png char_offset="879">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</encoded_png>
-			<node custom_icon_id="0" foreground="" is_bold="False" name="элемент" prog_lang="custom-colors" readonly="False" tags="" ts_creation="0.0" ts_lastsave="1515559811.38" unique_id="6">
+			<node custom_icon_id="0" foreground="" is_bold="False" name="база данных" prog_lang="custom-colors" readonly="False" tags="" ts_creation="0.0" ts_lastsave="1515815296.59" unique_id="4">
 				<rich_text>
-Начальное значение индекса = 256
-
 </rich_text>
-				<rich_text scale="h1">ЧЕРНОВИК:</rich_text>
+				<rich_text scale="h1">ПОСТРОЕНИЕ БАЗЫ ДАННЫХ</rich_text>
 				<rich_text>
 
+ 1. Данные снипов записывать в нормализованом виде - отнимать координаты рига,
+     в котором снип располагается. Кроме прочего, это позволит сжимать таблицу
+     снипов, удаляя одинаковые группы поверхностей и задавая в таблице ригов
+     адреса id_area на общие группы. При этом следует, при предоставлении доступа
+     на изменение формы поверхности рига, создавать перед началом изменения
+     копию его группы снипов, чтобы не редактировать одновременно все зависимые
+     риги (с аналогичными группами).
+
+     Если по такому-же принципу строить карту (std::map) ригов, данные из которой
+     передаются на рендер в VBO, то можно неплохо экономить оперативную память для
+     хранения данных карты.
+
+ 2. При загрузке данных снипа в лист рига, соответственно, прибавлять вектор рига
+     к координатам вершин снипа.
+
+ 3. В риге ввести 2 переменные:
+      1) Вектор смещения снипа относительно базовой точки координат рига. Но умолчанию
+          он будет нулевым, но позволит использовать снипы нестандартного размера и
+          двигать их произвольно внутри рига.
+      2) Вектор поворота: рыскание (yaw), тангаж (pitch), крен (roll). Это позволит
+          произвольно поворачивать отдельные предметы на поверхности.
+
+
 </rich_text>
-				<rich_text justification="left"></rich_text>
+				<rich_text scale="h1">ОБЩИЕ ИДЕИ</rich_text>
 				<rich_text>
 
-</rich_text>
-				<rich_text weight="heavy">Для динамических элементов</rich_text>
-				<rich_text>
-иметь массив мешей и фрагментов. Кроме этого добавляется еще две характеристики - 
-
-• текущая фаза (какой из мешей в данный момент времени активен) и
-• интервал времени по истечении которого наступит следующая фаза формы элемента.
-
-Например - растущие растения. В этом случае отпадает необходимость все изменения передавать с сервера.
-
-
-</rich_text>
-				<rich_text foreground="#1e1e9090ffff" scale="h2" weight="heavy">Логика построения и отображения объектов в 3D пространстве.</rich_text>
-				<rich_text>
-
-Координаты 3D-объекта: x, y, z, связаны с индексом.
-
-Индекс определяет:
-• 	выбор текстуры,
-• свойства 3D-объекта:
-   ◇ массив графических элементов (примитивы + шейдеры)
-   ◇ ссылка на более детальную структуру,
-   ◇ изменяющийся/стабильный (живое-неживое)
-   ◇ текущий масштаб (Caliber)
-  
- </rich_text>
-				<rich_text weight="heavy"> Организация 3D-пространства:</rich_text>
-				<rich_text>
- 
-  - Загрузить в память базовый набор единичных 3D-объектов (с возможностью автодополнения)
-  - Сформировать в памяти поле 3D координат для моделирования видимого пространства вокруг игрока (инициализовать)
- 
-</rich_text>
-				<rich_text foreground="#4d4d4d4d4d4d" style="italic">ссылка на структуру, которая строится в соответствии с текущим масштабом (надо где-то иметь глобальный указатель на текущий масштаб).
-</rich_text>
-				<rich_text> 
-При построении сцены расположенные рядом объекты отрисовывются не детальнее чем в 0.01. При отрисовке удаленных объектов глубина отрисовки постепенно изменяется переходя в кратные (10, 100, ...) масштабы для дальних объектов.
- 
-</rich_text>
-				<rich_text family="monospace">Масштабирование - шаг 1/10
----------------------------
-рост: 2м (200см)                                     scale=1.000
-блок инвентаря: 20х20см (1/10 от роста)        							 scale=0.100
-детализация геометрической формы: 2см (1/100  роста) scale=0.010
-детализация текстуры: 2мм (1/1000 роста)             scale=0.001
-</rich_text>
-				<rich_text>
-
-</rich_text>
-				<codebox char_offset="46" frame_height="295" frame_width="90" highlight_brackets="True" show_line_numbers="True" syntax_highlighting="cpp" width_in_pixels="False">////
-// Плоский элемент с шейдерами
-struct Face
-{
-	int;   // индекс структуры
-	Mesh;  // описание геометрии примитива (координаты вершин)
-	Frag;  // описание поверхности примитива
-};
-
-////
-// Из наборов плоских элементов строим объемные фигуры
-struct Element {
-	int;     // id элемента
-	Face a;  // сетка
-	Face b;
-	...
-};
-</codebox>
-			</node>
-			<node custom_icon_id="0" foreground="" is_bold="False" name="сервер" prog_lang="custom-colors" readonly="False" tags="" ts_creation="0.0" ts_lastsave="0.0" unique_id="4">
-				<rich_text>================================
-		Серверная часть
-=================================
-
-В базе данных хранится информация о
+В базе данных хранить информация о
 
 	- пространстве
-		- размещение объектов
-			- индекс объекта
-			- координаты:
-				x, y, z - точка в пространстве
-				yaw, pit, rol - рыскание (yaw), тангаж (pitch), крен (roll)
-				t	- временная фаза
+	- размещение объектов
+	- индекс объекта
+	- координаты:
+			x, y, z - точка в пространстве
+			yaw, pit, rol - рыскание (yaw), тангаж (pitch), крен (roll)
+			t	- временная фаза
 
 	- клиентах
 		- положение в пространстве
@@ -516,6 +462,7 @@ struct Element {
 			При наличии свойства объекта изменяться во времени тут храним
 			- индекс объекта, в который превращается нестабильный объект
 			- продолжительность стабильной фазы объекта
+
 			
 </rich_text>
 				<rich_text weight="heavy">Таблица ригов</rich_text>
@@ -527,30 +474,22 @@ struct Element {
 CREATE TABLE rigs ( id INTEGER PRIMARY KEY, x INTEGER, y INTEGER, z INTEGER, born INTEGER);
 CREATE TABLE snips ( id INTEGER PRIMARY KEY, rig INTEGER, snip BLOB);</rich_text>
 			</node>
-			<node custom_icon_id="0" foreground="" is_bold="False" name="сервер-цифры" prog_lang="custom-colors" readonly="False" tags="" ts_creation="0.0" ts_lastsave="0.0" unique_id="11">
+			<node custom_icon_id="0" foreground="" is_bold="False" name="сервер-цифры" prog_lang="custom-colors" readonly="False" tags="" ts_creation="0.0" ts_lastsave="1515813698.09" unique_id="11">
 				<rich_text>
-База данных содержит индексы блоков на территории размером
-	20.000.000 x 20.000.000 x 40.000
-Общее количество элементов составляет 16.000.401.600.040.040.000
+Для базы данных на территории размером 20.000.000 x 20.000.000 x 40.000
+Максимальное количество элементов составит 16.000.401.600.040.040.000
 
 Для хранения ключей используется тип “unsigned long long”
- Максимально возможное значение типа  18.446.744.073.709.551.615
-                                                                                             000 000 000 000 000 000
+максимально возможное значение типа  18.446.744.073.709.551.615
 
 Стоит проверить идею:
 	индексы блоков разбить на чанки для использования 32-битных индексов вместо 64-битных. В этом случае база будет состоять из 4.294.967.295 блоков по 4.294.967.295 элементов
 
-Один блок с 32-битным индексом при этом может представлять собой куб со стороной 1625 элементов
-
-Основную проблему при этом вижу в обеспечении непрерывного массива. Но если выборка элементов их базы будет  в произвольном порядке по ключам, то это не должно играть большой роли. 
-
-Клиент работает с трехмерными координатами в диапазоне:
--10.000.000 &lt; (x и y) &lt; 10.000.000
--20.000 &lt; z &lt; 20.000
+32-битный индекс может адресовать куб элементов со стороной 1625
 
 При обмене данными между сервером и клиентом использует трехмерные координаты.</rich_text>
 			</node>
-			<node custom_icon_id="0" foreground="" is_bold="False" name="клиент-сервер логика" prog_lang="custom-colors" readonly="False" tags="" ts_creation="0.0" ts_lastsave="0.0" unique_id="5">
+			<node custom_icon_id="0" foreground="" is_bold="False" name="клиент-сервер логика" prog_lang="custom-colors" readonly="False" tags="" ts_creation="0.0" ts_lastsave="1515814128.22" unique_id="5">
 				<rich_text>
 </rich_text>
 				<rich_text foreground="#a5a52a2a2a2a" scale="h2" weight="heavy">Взаимодействие элементов приложения</rich_text>

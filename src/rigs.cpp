@@ -40,7 +40,7 @@ namespace tr
     return;
   }
 
-  //## Оператор присваивания это не конструктор
+  //## Оператор присваивания (это не конструктор)
   tr::rig& rig::operator= (const tr::rig & Other)
   {
   /* При копировании существующего элемента в
@@ -277,7 +277,6 @@ namespace tr
     return;
   }
 
-
   //## Установка масштаба и загрузка пространства из БД
   void rigs::init(float g)
   {
@@ -287,49 +286,60 @@ namespace tr
   /// в VBO для рендера сцены.
 
     db_gage = g; // TODO проверка масштаба на допустимость
-    _load_16x16_obj();
+    //_load_16x16_obj();
+
+    char query_buf[255];
+    std::vector<unsigned char> CharVector = {};
+    const char *tpl_select_rig =
+      "SELECT `born`, `id_area`, `shift` FROM `rigs` WHERE(`x`=%d AND `y`=%d AND `z`=%d);%c";
+    const char *tpl_select_snip =
+      "SELECT `snip` FROM `snips` WHERE `id_area`=%d;%c";
 
     tr::sqlw DB = {};
     DB.open(tr::Cfg.get(DB_TPL_FNAME));
-    DB.request_get("SELECT `snip` FROM `snips` WHERE `id_area`=128;");
 
-    float D[tr::digits_per_snip] = {0.0f};
+    int y = 0;
+    for(int x = 0; x < 16; x++)
+    for(int z = 0; z < 16; z++) {
 
-    for(auto Row: DB.Rows)
-    {
-      auto SnipData = std::any_cast<std::vector<unsigned char>>(Row[0]);
-      memcpy(D, SnipData.data(), tr::bytes_per_snip);
+      // Запросить данные рига
+      sprintf(query_buf, tpl_select_rig, x, y, z, '\0');
+      DB.request_get(query_buf);
+
+      auto  Row = DB.Rows.front();
+      tr::rig Rig;
+      Rig.born = std::any_cast<int>(Row[0]);
+
+      CharVector.clear();
+      CharVector = std::any_cast<std::vector<unsigned char>>(Row[2]);
+      // Данные смещения/поворота/масштаба элементов рига
+      memcpy(Rig.shift, CharVector.data(), SHIFT_DIGITS * sizeof(float));
+
+      // Запросить данные группы снипов по id_area
+      sprintf(query_buf, tpl_select_snip, std::any_cast<int>(Row[1]), '\0');
+      DB.request_get(query_buf);
+
+      for(auto Row: DB.Rows)
+      {
+        tr::snip Snip = {};
+        CharVector.clear();
+        CharVector = std::any_cast<std::vector<unsigned char>>(Row[0]);
+        memcpy(Snip.data, CharVector.data(), tr::bytes_per_snip);
+        tr::f3d Pt = {
+          static_cast<float>(x) + Rig.shift[SHIFT_X], // TODO: еще есть поворот и zoom
+          static_cast<float>(y) + Rig.shift[SHIFT_Y],
+          static_cast<float>(z) + Rig.shift[SHIFT_Z]
+        };
+        Snip.point_set(Pt);
+        Rig.Area.push_front(Snip);
+      }
+      Db[tr::f3d{x, y, z}] = Rig;
     }
-    DB.close();
 
-    for(size_t i = 0; i < tr::digits_per_snip; i++)
-      std::cout << D[i] << ", ";
+    DB.close();
 
     return;
   }
-
-/**** ПОСТРОЕНИЕ БАЗЫ ДАННЫХ
- *
- * 1. Данные снипов записывать в нормализованом виде - отнимать координаты рига,
- *    в котором снип располагается. Кроме прочего, это позволит сжимать таблицу
- *    снипов, удаляя одинаковые группы поверхностей и задавая в таблице ригов
- *    адреса id_area на общие группы. При этом следует, при предоставлении доступа
- *    на изменение формы поверхности рига, создавать перед началом изменения
- *    копию его группы снипов, чтобы не редактировать одновременно все зависимые
- *    риги (с аналогичными группами).
- *
- *    Если по такому-же принципу строить карту (std::map) ригов, данные из которой
- *    передаются на рендер в VBO, то можно неплохо экономить оперативную память для
- *    хранения данных карты.
- *
- * 2. При загрузке данных снипа в лист рига, соответственно, прибавлять вектор рига
- *    к координатам вершин снипа.
- *
- * 3. В риге ввести переменную - вектор смещения снипа относительно базовой точки
- *    координат рига. Но умолчанию он будет нулевым, но позволит использовать снипы
- *    нестандартного размера и двигать их произвольно внутри рига.
- *
- */
 
   /*
     // Загрузка из Obj файла объекта "несколько-снипов/один-риг":
@@ -421,13 +431,9 @@ namespace tr
     int id_area = 0;
     char query_buf[255];
     const char *tpl_insert_rig = "INSERT OR REPLACE INTO `rigs`"
-      "(`x`,`y`,`z`,`born`,`id_area`) VALUES(%d, %d, %d, %d, %d);%c";
-    const char *tpl_insert_snip = "INSERT INTO `snips`(`snip`,`id_area`) VALUES(?, %d);%c";
+      "(`x`,`y`,`z`,`born`,`id_area`, `shift`) VALUES(%d, %d, %d, %d, %d, ?);%c";
+    const char *tpl_insert_snip = "INSERT INTO `snips`(`id_area`, `snip`) VALUES(%d, ?);%c";
     const char *tpl_update_snip = "UPDATE `snips` SET `id_area`=%d WHERE `id`=%d;%c";
-
-//DBG
-auto start = tr::get_msec();
-auto step = start;
 
     for(int x = x_min; x < x_max; x++)
       for(int y = y_min; y < y_max; y++)
@@ -437,8 +443,16 @@ auto step = start;
           if(nullptr != R)
           {
             id_area = 0;
-            for(auto & Snip: R->Area)
+            for(auto Snip: R->Area)
             {
+              // Нормализовать координаты вершин снипа
+              // TODO: еще есть вектор поворота и коэффициент масштабирования
+              for(size_t n = 0; n < tr::vertices_per_snip; n++)
+              {
+                Snip.data[ROW_STRIDE * n + COORD_X] -= x + R->shift[SHIFT_X];
+                Snip.data[ROW_STRIDE * n + COORD_Y] -= y + R->shift[SHIFT_Y];
+                Snip.data[ROW_STRIDE * n + COORD_Z] -= z + R->shift[SHIFT_Z];
+              }
               sprintf(query_buf, tpl_insert_snip, id_area, '\0');
               DB.request_put(query_buf, Snip.data, tr::digits_per_snip); // Запись снипа
 
@@ -450,16 +464,9 @@ auto step = start;
               }
             }
             sprintf(query_buf, tpl_insert_rig, x, y, z, R->born, id_area, '\0');
-            DB.request_put(query_buf);                                   // Запись рига
+            DB.request_put(query_buf, R->shift, SHIFT_DIGITS); // Запись рига
           }
-//DBG
-std::cout << (tr::get_msec() - step) << ": " << id_area << "\n";
-step = tr::get_msec();
         }
-
-//DBG
-std::cout << "final: " << (tr::get_msec() - start) << "\n";
-
     DB.close();
     return true;
   }

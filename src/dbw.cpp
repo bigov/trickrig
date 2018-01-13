@@ -104,36 +104,39 @@ namespace tr
   {
     //int col = sqlite3_column_count(pStmt); // Число колонок в результирующем наборе
     int col = sqlite3_data_count(pStmt);     // Число колонок в строке результата
+
+    //if(col < 1) return; ???
+
     int data_bytes = 0;
 
     std::vector<std::any> Row;
     std::vector<char> Ch_ceil;
     std::vector<unsigned char> Uch_ceil;
 
-    while (col > 0)
+    for (int i = 0; i < col; i++)
     {
-      int data_type = sqlite3_column_type(pStmt, --col);
+      int data_type = sqlite3_column_type(pStmt, i);
       Ch_ceil.clear();
       Uch_ceil.clear();
 
       switch (data_type)
       {
         case SQLITE_INTEGER:
-          Row.push_back(std::any(sqlite3_column_int(pStmt, col)));
+          Row.push_back(std::any(sqlite3_column_int(pStmt, i)));
           break;
         case SQLITE_FLOAT:
-          Row.push_back(std::any(sqlite3_column_double(pStmt, col)));
+          Row.push_back(std::any(sqlite3_column_double(pStmt, i)));
           break;
         case SQLITE_TEXT:
-          data_bytes = sqlite3_column_bytes(pStmt, col);
+          data_bytes = sqlite3_column_bytes(pStmt, i);
           Ch_ceil.resize(data_bytes + 1, '\0');
-          memcpy(Ch_ceil.data(), sqlite3_column_text(pStmt, col), data_bytes);
+          memcpy(Ch_ceil.data(), sqlite3_column_text(pStmt, i), data_bytes);
           Row.push_back(std::any(Ch_ceil));
           break;
         case SQLITE_BLOB:
-          data_bytes = sqlite3_column_bytes(pStmt, col);
+          data_bytes = sqlite3_column_bytes(pStmt, i);
           Uch_ceil.resize(data_bytes + 1, '\0');
-          memcpy(Uch_ceil.data(), sqlite3_column_blob(pStmt, col), data_bytes);
+          memcpy(Uch_ceil.data(), sqlite3_column_blob(pStmt, i), data_bytes);
           Row.push_back(std::any(Uch_ceil));
           break;
         case SQLITE_NULL:
@@ -152,6 +155,7 @@ namespace tr
   {
     bool complete = false;
 
+    Rows.clear();
     ErrorsList.clear();
     if(!request) ErrorsList.emplace_front("query can't be empty.");
 
@@ -287,7 +291,6 @@ namespace tr
     return;
   }
 
-
   //## Запись бинарных данных переданых в виде массива float и его размера
   void sqlw::request_put(const char * request, const float * fl, size_t fl_size)
   {
@@ -297,7 +300,6 @@ namespace tr
     request_put(request, data.get(), data_chars_size);
     return;
   }
-
 
   //## Обработчик запросов вставки/удаления
   void sqlw::update_callback( void* udp, int type, const char* db_name,

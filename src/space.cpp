@@ -48,7 +48,18 @@ namespace tr
 
     RigsDb0.init(g0); // загрузка данных уровня LOD-0
 
-    f3d pt = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
+    tr::f3d pt = {0.f, 0.f, 0.f};
+    try {
+      pt = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
+    }
+    catch(...)
+    {
+      #ifndef NDEBUG
+      tr::info("Setup ViewFrom point was fail.");
+      #endif
+      //TODO: установить точку обзора над поверхностью
+    }
+
     // используется в функциях пересчета границ отрисовки областей
     MoveFrom = {floor(pt.x), floor(pt.y), floor(pt.z)};
 

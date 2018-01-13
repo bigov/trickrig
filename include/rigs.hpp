@@ -16,6 +16,14 @@
 
 namespace tr
 {
+  // структура для обращения в тексте программы к индексам данных рига
+  enum RIG_SHIFT_ID {
+    SHIFT_X, SHIFT_Y, SHIFT_Z,        // координаты 3D
+    SHIFT_YAW, SHIFT_PIT, SHIFT_ROLL, // рыскание (yaw), тангаж (pitch), крен (roll)
+    SHIFT_ZOOM,                       // масштабирование
+    SHIFT_DIGITS                      // число элементов
+  };
+
   class rig //##  элемент пространства
   {
   /* содержит:
@@ -32,7 +40,14 @@ namespace tr
       rig(const tr::snip &);             // копирующий данные снипа
 
       int born;                            // метка времени создания
-      //tr::f3d shift = {};                // смещение
+
+      /// Данные для размещения Ареа относительно опорной точки рига:
+      /// - вектор смещения (x, y, z),
+      /// - углы поворота (a, b, c),
+      /// - масштаб отображения области
+      float shift[SHIFT_DIGITS] =
+        {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.0f};
+
       bool in_vbo = false;                 // данные расположены в VBO
       std::forward_list<tr::snip> Area {}; // список поверхностей
 

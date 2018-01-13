@@ -118,6 +118,8 @@ namespace tr {
   static const size_t digits_per_vertex = 14;
   // количество чисел (GLfloat) в блоке данных снипа
   static const size_t digits_per_snip = digits_per_vertex * vertices_per_snip;
+  // число элементов в поле shift элемента rig
+  //static const size_t digits_per_rig_shift = 7;
   // размер (число байт) блока данных снипа
   static const GLsizeiptr bytes_per_snip = digits_per_snip * sizeof(GLfloat);
   // число байт для записи данных одной вершины
