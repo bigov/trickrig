@@ -10,18 +10,6 @@
 
 namespace tr
 {
-  snip::snip(void)
-  {
-    return;
-  }
-
-  //## конструктор по-умолчанию
-  snip::snip(const tr::f3d & p)
-  {
-    point_set(p);
-    return;
-  }
-
   tr::snip& snip::operator= (const snip & Other)
   {
     if(this != &Other) copy_data(Other);
@@ -58,7 +46,7 @@ namespace tr
   }
 
   //## Перенос снипа на указанную точку в пространстве
-  void snip::point_set(const tr::f3d &P)
+  void snip::point_set(float x, float y, float z)
   {
     size_t n = 0;
     // В снипе 4 вершины. Найти индекс опорной (по минимальному значению)
@@ -74,9 +62,9 @@ namespace tr
          )) n = i;
 
     // вычислить дистанцию смещения опорной точки
-    tr::f3d d = { P.x - floor(data[n * ROW_STRIDE + COORD_X]),
-                  P.y - floor(data[n * ROW_STRIDE + COORD_Y]),
-                  P.z - floor(data[n * ROW_STRIDE + COORD_Z])};
+    tr::f3d d = { x - floor(data[n * ROW_STRIDE + COORD_X]),
+                  y - floor(data[n * ROW_STRIDE + COORD_Y]),
+                  z - floor(data[n * ROW_STRIDE + COORD_Z])};
 
     for(size_t n = 0; n < tr::vertices_per_snip; n++)
     {

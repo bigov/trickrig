@@ -33,7 +33,11 @@ namespace tr
   extern int random_int(void);
   extern short random_short(void);
 
-  // структура для оперирования с трехмерными координатами
+  // структуры для оперирования с трехмерными координатами
+
+  struct i3d { int x = 0, y = 0, z = 0;};
+  extern bool operator< (i3d const& left, i3d const& right);
+
   struct f3d
   {
     float x = 0.f, y = 0.f, z = 0.f;
@@ -51,7 +55,7 @@ namespace tr
     f3d(glm::vec3 v): x(v[0]), y(v[1]), z(v[2]) {}
   };
 
-  extern bool operator< (f3d const& left, f3d const& right);
+  //extern bool operator< (f3d const& left, f3d const& right);
 
   struct f2d { float x = 0.f, z = 0.f; };
   extern bool operator< (f2d const& left, f2d const& right);

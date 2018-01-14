@@ -25,14 +25,24 @@ namespace tr
   }
 
   //## Для обеспечения работы контейнера map c ключем f2d
-  bool operator< (f2d const& left, f2d const& right)
+  bool operator< (tr::f2d const& left, tr::f2d const& right)
   {
     if (left.x != right.x) return left.x < right.x;
     else return left.z < right.z;
   }
 
+  /*
   //## Для обеспечения работы контейнера map c ключем 3d
-  bool operator< (f3d const& left, f3d const& right)
+  bool operator< (tr::f3d const& left, tr::f3d const& right)
+  {
+    if (left.y != right.y)      {return left.y < right.y;}
+    else if (left.z != right.z) {return left.z < right.z;}
+    else                        {return left.x < right.x;}
+  }
+  */
+
+  //## Для обеспечения работы контейнера map c ключем i3d
+  bool operator< (tr::i3d const& left, tr::i3d const& right)
   {
     if (left.y != right.y)      {return left.y < right.y;}
     else if (left.z != right.z) {return left.z < right.z;}

@@ -24,46 +24,31 @@ namespace tr
     SHIFT_DIGITS                      // число элементов
   };
 
-  class rig //##  элемент пространства
+  class rig //## свойства элемента пространства
   {
-  /* содержит:
-   * - индекс типа элемента по которому выбирается текстура и поведение
-   * - время установки (будет использоваться) для динамических блоков
-   * - если данные записаны в VBO, то смещение адреса данных в GPU */
-
     public:
-      // --------------------------------- конструкторы
-      rig(void): born(tr::get_msec()) {} // пустой
-      rig(const tr::rig &);              // дублирующий конструктор
-      rig(const tr::f3d &);              // создающий снип в точке
-      rig(int, int, int);                // создающий снип в точке
-      rig(const tr::snip &);             // копирующий данные снипа
-
-      int born;                            // метка времени создания
-
-      /// Данные для размещения Ареа относительно опорной точки рига:
-      /// - вектор смещения (x, y, z),
-      /// - углы поворота (a, b, c),
-      /// - масштаб отображения области
-      float shift[SHIFT_DIGITS] =
-        {0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 1.0f};
-
-      bool in_vbo = false;                 // данные расположены в VBO
-      std::forward_list<tr::snip> Area {}; // список поверхностей
-
-      rig& operator= (const tr::rig &); // копирующее присваивание
-      void copy_snips(const tr::rig &); // копирование снипов с другого рига
-      void add_snip(const tr::f3d &);   // добавление в риг дефолтного снипа
+      int born = 0;                         // метка времени создания
+      float shift[SHIFT_DIGITS] = {
+        0.f, 0.f, 0.f, // сдвиг поверхности относительно опорной точки
+        0.f, 0.f, 0.f, // поворот по трем осям
+        1.0f           // размер (масштабирование)
+      };
+      std::forward_list<tr::snip> Trick {}; // список поверхностей
+      bool in_vbo = false;                  // данные помещены в VBO
+      // -------------------------------------
+      rig(void): born(tr::get_msec()) {}    // конструктор по-умолчанию
+      rig(const tr::rig &);                 // дублирующий конструктор
+      rig& operator= (const tr::rig &);     // копирующее присваивание
   };
 
   //## Клас для организации доступа к элементам уровня LOD
   class rigs
   {
     private:
-      std::map<tr::f3d, tr::rig> Db {};
-      float yMin = -100.f;
-      float yMax = 100.f;
-      float db_gage = 1.0f; // размер стороны элементов в текущем LOD
+      std::map<tr::i3d, tr::rig> Db {};
+      int yMin = -100;
+      int yMax = 100;
+      int lod = 1.0f; // размер стороны элементов в текущем LOD
 
       // Кэш адресов блоков данных в VBO, вышедших за границу рендера
       std::forward_list<GLsizeiptr> CachedOffset {};
@@ -82,18 +67,18 @@ namespace tr
     public:
       rigs(void);                  // конструктор
 
-      void set_visible(const tr::f3d &);  // разместить риг в графическом буфере
-      void set_hiding(const tr::f3d &);  // убрать риг из рендера
+      void set_visible(int, int, int); // разместить трик в графическом буфере
+      void set_hiding(int, int, int);  // убрать трик из рендера
       void draw(const glm::mat4 &); // Рендер кадра
       void clear_cashed_snips(void);
 
-      bool save(const tr::f3d &, const tr::f3d &);
-      void init(float);     // загрузка уровня
-      rig* get(float x, float y, float z);
-      rig* get(const tr::f3d&);
-      f3d search_down(float x, float y, float z);
-      f3d search_down(const glm::vec3 &);
-      bool exist(float x, float y, float z);
+      bool save(const tr::i3d &, const tr::i3d &);
+      void init(int);     // загрузка уровня
+      rig* get(int x, int y, int z);
+      rig* get(const tr::i3d&);
+      i3d search_down(int x, int y, int z);
+      i3d search_down(const glm::vec3 &);
+      bool exist(int, int, int);
   };
 
 } //namespace tr

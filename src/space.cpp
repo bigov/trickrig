@@ -48,9 +48,8 @@ namespace tr
 
     RigsDb0.init(g0); // загрузка данных уровня LOD-0
 
-    tr::f3d pt = {0.f, 0.f, 0.f};
     try {
-      pt = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
+      MoveFrom = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
     }
     catch(...)
     {
@@ -60,22 +59,19 @@ namespace tr
       //TODO: установить точку обзора над поверхностью
     }
 
-    // используется в функциях пересчета границ отрисовки областей
-    MoveFrom = {floor(pt.x), floor(pt.y), floor(pt.z)};
-
-    float // границы уровня lod_0
-      xMin = MoveFrom.x - ceil(tr::lod_0),
-      yMin = MoveFrom.y - ceil(tr::lod_0),
-      zMin = MoveFrom.z - ceil(tr::lod_0),
-      xMax = MoveFrom.x + ceil(tr::lod_0),
-      yMax = MoveFrom.y + ceil(tr::lod_0),
-      zMax = MoveFrom.z + ceil(tr::lod_0);
+    int // границы уровня lod_0
+      xMin = MoveFrom.x - tr::lod_0,
+      yMin = MoveFrom.y - tr::lod_0,
+      zMin = MoveFrom.z - tr::lod_0,
+      xMax = MoveFrom.x + tr::lod_0,
+      yMax = MoveFrom.y + tr::lod_0,
+      zMax = MoveFrom.z + tr::lod_0;
 
     // Загрузить в графический буфер атрибуты элементов
-    for(float x = xMin; x<= xMax; x += g0)
-      for(float y = yMin; y<= yMax; y += g0)
-        for(float z = zMin; z<= zMax; z += g0)
-          RigsDb0.set_visible(f3d(x, y, z));
+    for(int x = xMin; x<= xMax; x += g0)
+      for(int y = yMin; y<= yMax; y += g0)
+        for(int z = zMin; z<= zMax; z += g0)
+          RigsDb0.set_visible(x, y, z);
 
     return;
   }
@@ -84,12 +80,12 @@ namespace tr
   // TODO: ВНИМАНИЕ! проверяется только 10 слоев по Y
   void space::redraw_borders_x()
   {
-    float
-      yMin = -5.f, yMax =  5.f, // Y границы области сбора
+    int
+      yMin = -5, yMax =  5, // Y границы области сбора
       x_old, x_new,  // координаты линий удаления/вставки новых фрагментов
-      vf_x = floor(tr::Eye.ViewFrom.x),
-      vf_z = floor(tr::Eye.ViewFrom.z),
-      clod_0 = ceil(tr::lod_0);
+      vf_x = static_cast<int>(floor(tr::Eye.ViewFrom.x)),
+      vf_z = static_cast<int>(floor(tr::Eye.ViewFrom.z)),
+      clod_0 = tr::lod_0;
 
     if(MoveFrom.x > vf_x) {
       x_old = MoveFrom.x + clod_0;
@@ -104,16 +100,16 @@ namespace tr
     // Скрыть элементы с задней границы области
     zMin = MoveFrom.z - clod_0;
     zMax = MoveFrom.z + clod_0;
-    for(float y = yMin; y <= yMax; y += g0)
-      for(float z = zMin; z <= zMax; z += g0)
-        RigsDb0.set_hiding(tr::f3d(x_old, y, z));
+    for(int y = yMin; y <= yMax; y += g0)
+      for(int z = zMin; z <= zMax; z += g0)
+        RigsDb0.set_hiding(x_old, y, z);
 
     // Добавить линию элементов по направлению движения
     zMin = vf_z - clod_0;
     zMax = vf_z + clod_0;
-    for(float y = yMin; y <= yMax; y += g0)
-      for(float z = zMin; z <= zMax; z += g0)
-        RigsDb0.set_visible(tr::f3d(x_new, y, z));
+    for(int y = yMin; y <= yMax; y += g0)
+      for(int z = zMin; z <= zMax; z += g0)
+        RigsDb0.set_visible(x_new, y, z);
 
     MoveFrom.x = vf_x;
     return;
@@ -123,12 +119,12 @@ namespace tr
   // TODO: ВНИМАНИЕ! проверяется только 10 слоев по Y
   void space::redraw_borders_z()
   {
-    float
-      yMin = -5.f, yMax =  5.f, // Y границы области сбора
+    int
+      yMin = -5, yMax =  5, // Y границы области сбора
       z_old, z_new,  // координаты линий удаления/вставки новых фрагментов
-      vf_z = floor(tr::Eye.ViewFrom.z),
-      vf_x = floor(tr::Eye.ViewFrom.x),
-      clod_0 = ceil(tr::lod_0);
+      vf_z = static_cast<int>( floor(tr::Eye.ViewFrom.z) ),
+      vf_x = static_cast<int>( floor(tr::Eye.ViewFrom.x) ),
+      clod_0 = tr::lod_0;
 
     if(MoveFrom.z > vf_z) {
       z_old = MoveFrom.z + clod_0;
@@ -145,14 +141,14 @@ namespace tr
     xMax = MoveFrom.x + clod_0;
     for(float y = yMin; y <= yMax; y += g0)
       for(float x = xMin; x <= xMax; x += g0)
-        RigsDb0.set_hiding(tr::f3d(x, y, z_old));
+        RigsDb0.set_hiding(x, y, z_old);
 
     // Добавить линию элементов по направлению движения
     xMin = vf_x - clod_0;
     xMax = vf_x + clod_0;
     for(float y = yMin; y <= yMax; y += g0)
       for(float x = xMin; x <= xMax; x += g0)
-        RigsDb0.set_visible(tr::f3d(x, y, z_new));
+        RigsDb0.set_visible(x, y, z_new);
 
     MoveFrom.z = vf_z;
     return;
@@ -181,9 +177,9 @@ namespace tr
    * резких "маятниковых" перемещениях камеры туда-сюда.
    */
 
-    if(floor(tr::Eye.ViewFrom.x) != MoveFrom.x) redraw_borders_x();
+    if(static_cast<int>(floor(tr::Eye.ViewFrom.x)) != MoveFrom.x) redraw_borders_x();
     //if(floor(tr::Eye.ViewFrom.y) != MoveFrom.y) redraw_borders_y();
-    if(floor(tr::Eye.ViewFrom.z) != MoveFrom.z) redraw_borders_z();
+    if(static_cast<int>(floor(tr::Eye.ViewFrom.z)) != MoveFrom.z) redraw_borders_z();
     return;
   }
 
@@ -223,13 +219,13 @@ namespace tr
     return;
   }
 
-  //## Расчет координат ближнего блока, на который направлен взгляд
+  //## Расчет координат рига, на который направлен взгляд
   void space::calc_selected_area(glm::vec3 & s_dir)
   {
-     Selected = tr::Eye.ViewFrom - s_dir;
      return;
+     if(static_cast<int>(s_dir.x)) return;
 
-   /*               ******** ! отключено ! ********             */
+   /*               ******** ! отключено ! ********
 
     Selected = ViewTo;
     glm::vec3 check_step = { s_dir.x/8.f, s_dir.y/8.f, s_dir.z/8.f };
@@ -244,6 +240,7 @@ namespace tr
       }
       Selected += check_step;
     }
+    */
     return;
   }
 
@@ -258,7 +255,7 @@ namespace tr
     static int mod = 0;
     if((31 == ev.key_scancode) && (1 == mod))
     {
-      RigsDb0.save(tr::f3d(0.0f,0.0f,0.0f), tr::f3d(16.0f,1.0f,16.0f));
+      RigsDb0.save({0, 0, 0}, {16, 1, 16});
     }
     mod = 0;
     if (285 == ev.key_scancode) mod = 1;
