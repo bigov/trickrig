@@ -16,10 +16,10 @@ namespace tr
 {
   // структура для обращения в тексте программы к индексам данных вершин по названиям
   enum SNIP_DATA_ID {
-    COORD_X, COORD_Y, COORD_Z, COORD_W,
-    COLOR_R, COLOR_G, COLOR_B, COLOR_A,
-    NORM_X, NORM_Y, NORM_Z, NORM_W,
-    FRAGM_U, FRAGM_V, ROW_STRIDE
+    SNIP_X, SNIP_Y, SNIP_Z, SNIP_W,
+    SNIP_R, SNIP_G, SNIP_B, SNIP_A,
+    SNIP_NX, SNIP_NY, SNIP_NZ, SNIP_NW,
+    SNIP_U, SNIP_V, SNIP_ROW_DIGITS
   };
 
   //## Набор данных для формирования в GPU многоугольника с индексацией вершин
@@ -38,17 +38,16 @@ namespace tr
     };  // нормализованый вектор с небольшим наклоном: .46f, .76f,  .46f
 
     snip(void) {}
-    snip(const snip &);                  // дублирующий конструктор
+    snip(const snip &);                 // дублирующий конструктор
 
-    snip& operator=(const snip &);       // оператор присваивания
-    void copy_data(const snip &);        // копирование данных из другого снипа
-    void texture_set(GLfloat, GLfloat);  // установка фрагмента текстуры
-    void point_set(float, float, float); // установка 3D координат поверхности
+    snip& operator=(const snip &);      // оператор присваивания
+    void copy_data(const snip &);       // копирование данных из другого снипа
+    void texture_set(GLfloat, GLfloat); // установка фрагмента текстуры
 
     // Функции управления данными снипа в буферах VBO данных и VBO индекса
-    void vbo_append(tr::vbo &);
-    bool vbo_update(tr::vbo &, GLsizeiptr offset);
-    void vbo_jam   (tr::vbo &, GLintptr dst);
+    void vbo_append(const tr::f3d &, tr::vbo &);
+    bool vbo_update(const tr::f3d &, tr::vbo &, GLsizeiptr);
+    void vbo_jam   (tr::vbo &, GLintptr);
   };
 
 } //namespace tr

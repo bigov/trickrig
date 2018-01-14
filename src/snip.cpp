@@ -39,61 +39,57 @@ namespace tr
   {
     for(size_t n = 0; n < tr::vertices_per_snip; n++)
     {
-      data[ROW_STRIDE * n + FRAGM_U] += u;
-      data[ROW_STRIDE * n + FRAGM_V] += v;
-    }
-    return;
-  }
-
-  //## Перенос снипа на указанную точку в пространстве
-  void snip::point_set(float x, float y, float z)
-  {
-    size_t n = 0;
-    // В снипе 4 вершины. Найти индекс опорной (по минимальному значению)
-    for(size_t i = 1; i < 4; i++)
-      if((
-           data[n * ROW_STRIDE + COORD_X]
-         + data[n * ROW_STRIDE + COORD_Y]
-         + data[n * ROW_STRIDE + COORD_Z]
-            ) > (
-           data[i * ROW_STRIDE + COORD_X]
-         + data[i * ROW_STRIDE + COORD_Y]
-         + data[i * ROW_STRIDE + COORD_Z]
-         )) n = i;
-
-    // вычислить дистанцию смещения опорной точки
-    tr::f3d d = { x - floor(data[n * ROW_STRIDE + COORD_X]),
-                  y - floor(data[n * ROW_STRIDE + COORD_Y]),
-                  z - floor(data[n * ROW_STRIDE + COORD_Z])};
-
-    for(size_t n = 0; n < tr::vertices_per_snip; n++)
-    {
-      data[ROW_STRIDE * n + COORD_X] += d.x;
-      data[ROW_STRIDE * n + COORD_Y] += d.y;
-      data[ROW_STRIDE * n + COORD_Z] += d.z;
+      data[SNIP_ROW_DIGITS * n + SNIP_U] += u;
+      data[SNIP_ROW_DIGITS * n + SNIP_V] += v;
     }
     return;
   }
 
   //## добавление данных в буферы VBO
-  void snip::vbo_append(tr::vbo & VBOdata)
+  void snip::vbo_append(const tr::f3d &Point, tr::vbo & VBOdata)
   {
   /// Добавляет данные в конец VBO буфера данных и запоминает смещение
   /// адреса где в VBO были записаны данные
+  ///
+  /// Координаты вершин снипов в трике хранятся в нормализованом виде,
+  /// поэтому перед отправкой данных в VBO координаты вершин пересчитываются
+  /// в соответствии с координатами и данными(shift) связаного рига,
 
-    data_offset = VBOdata.data_append( tr::bytes_per_snip, data );
+    GLfloat vbo_data[tr::digits_per_snip] = {0.0f};
+    memcpy(vbo_data, data, tr::bytes_per_snip);
+    for(size_t n = 0; n < tr::vertices_per_snip; n++)
+    {
+      vbo_data[SNIP_ROW_DIGITS * n + SNIP_X] += Point.x;
+      vbo_data[SNIP_ROW_DIGITS * n + SNIP_Y] += Point.y;
+      vbo_data[SNIP_ROW_DIGITS * n + SNIP_Z] += Point.z;
+    }
+
+    data_offset = VBOdata.data_append( tr::bytes_per_snip, vbo_data );
     return;
   }
 
   //## обновление данных в VBO буфере
-  bool snip::vbo_update(tr::vbo & VBOdata, GLsizeiptr dst)
+  bool snip::vbo_update(const tr::f3d &Point, tr::vbo & VBOdata, GLsizeiptr dst)
   {
   /// Целевой адрес для перемещения блока данных в VBO (параметр "offset")
   /// берется обычно из кэша. При этом может возникнуть ситуация, когда в кэше
   /// остаются адреса блоков за текущей границей VBO. Такой адрес считается
   /// "протухшим", блок данных не перемещается, функция возвращает false.
+  ///
+  /// Координаты вершин снипов в трике хранятся в нормализованом виде,
+  /// поэтому перед отправкой данных в VBO координаты вершин пересчитываются
+  /// в соответствии с координатами и данными(shift) связаного рига,
 
-    if(VBOdata.data_update( tr::bytes_per_snip, data, dst ))
+    GLfloat vbo_data[tr::digits_per_snip] = {0.0f};
+    memcpy(vbo_data, data, tr::bytes_per_snip);
+    for(size_t n = 0; n < tr::vertices_per_snip; n++)
+    {
+      vbo_data[SNIP_ROW_DIGITS * n + SNIP_X] += Point.x;
+      vbo_data[SNIP_ROW_DIGITS * n + SNIP_Y] += Point.y;
+      vbo_data[SNIP_ROW_DIGITS * n + SNIP_Z] += Point.z;
+    }
+
+    if(VBOdata.data_update( tr::bytes_per_snip, vbo_data, dst ))
     {
       data_offset = dst;
       return true;

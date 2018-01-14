@@ -45,10 +45,11 @@ namespace tr
   class rigs
   {
     private:
-      std::map<tr::i3d, tr::rig> Db {};
+      std::map<tr::i3d, tr::rig> RigsDb {};  // карта поверхности
+      std::map<tr::i3d, tr::rig> TplRigs {}; // шаблон карты 16х16
       int yMin = -100;
       int yMax = 100;
-      int lod = 1.0f; // размер стороны элементов в текущем LOD
+      int lod = 1; // размер стороны элементов в текущем LOD
 
       // Кэш адресов блоков данных в VBO, вышедших за границу рендера
       std::forward_list<GLsizeiptr> CachedOffset {};
@@ -67,17 +68,19 @@ namespace tr
     public:
       rigs(void);                  // конструктор
 
-      void set_visible(int, int, int); // разместить трик в графическом буфере
-      void set_hiding(int, int, int);  // убрать трик из рендера
+      void show(int, int, int); // разместить трик в графическом буфере
+      void hide(int, int, int);  // убрать трик из рендера
       void draw(const glm::mat4 &); // Рендер кадра
       void clear_cashed_snips(void);
 
       bool save(const tr::i3d &, const tr::i3d &);
       void init(int);     // загрузка уровня
-      rig* get(int x, int y, int z);
-      rig* get(const tr::i3d&);
-      i3d search_down(int x, int y, int z);
-      i3d search_down(const glm::vec3 &);
+      tr::rig* get(int x, int y, int z);
+      tr::rig* get(const tr::i3d&);
+      tr::i3d search_down(int, int, int);
+      tr::i3d search_down(float, float, float);
+      tr::i3d search_down(const glm::vec3 &);
+      tr::rig load_rig(int, int, int);
       bool exist(int, int, int);
   };
 

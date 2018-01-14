@@ -107,38 +107,33 @@ namespace tr
   }
 
   //## Размещение элементов в графическом буфере
-  void rigs::set_visible(int x, int y, int z)
+  void rigs::show(int x, int y, int z)
   {
     tr::rig * Rig = get(x, y, z);
     if(nullptr == Rig) return;
     if(Rig->in_vbo) return;
 
-    for(tr::snip Snip: Rig->Trick)
+    for(tr::snip &Snip: Rig->Trick)
     {
-    /// Координаты вершин снипов в трике хранятся в нормализованом виде,
-    /// поэтому перед отправкой данных в VBO для каждого снипа создается
-    /// копия и все его координаты вершин пересчитываются в соответствии
-    /// с координатами и данными (shift) связаного рига
-    ///
-      Snip.point_set(
+      tr::f3d Point = {
         static_cast<float>(x) + Rig->shift[SHIFT_X],
         static_cast<float>(y) + Rig->shift[SHIFT_Y],
         static_cast<float>(z) + Rig->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
-      );
+      };
 
       bool data_is_recieved = false;
       while (!data_is_recieved)
       {
         if(CachedOffset.empty()) // Если кэш пустой, то добавляем данные в конец VBO
         {
-          Snip.vbo_append(VBOdata);
+          Snip.vbo_append(Point, VBOdata);
           render_points += tr::indices_per_snip;  // увеличить число точек рендера
           VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
           data_is_recieved = true;
         }
         else // если в кэше есть адреса свободных мест, то используем
         {    // их с контролем, успешно ли был перемещен блок данных
-          data_is_recieved = Snip.vbo_update(VBOdata, CachedOffset.front());
+          data_is_recieved = Snip.vbo_update(Point, VBOdata, CachedOffset.front());
           CachedOffset.pop_front();                           // укоротить кэш
           if(data_is_recieved) VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
         }
@@ -149,7 +144,7 @@ namespace tr
   }
 
   //## убрать риг из рендера
-  void rigs::set_hiding(int x, int y, int z)
+  void rigs::hide(int x, int y, int z)
   {
   /// Индексы размещенных в VBO данных, которые при перемещении камеры вышли
   /// за границу отображения, запоминаются в кэше, чтобы на их место
@@ -253,7 +248,42 @@ namespace tr
     return;
   }
 
-  //## Установка масштаба и загрузка пространства из БД
+  //## Загрузка из БД данных указанного рига
+  tr::rig rigs::load_rig(int x, int y, int z)
+  {
+    char buf_query[255];
+    std::vector<unsigned char> BufVector = {};
+
+    tr::sqlw DB = {};
+    DB.open(tr::Cfg.get(DB_TPL_FNAME));
+
+    sprintf(buf_query, DB.tpl_select_rig, x, y, z, '\0');
+    DB.request_get(buf_query);                 // Получить данные рига
+
+    auto Row = DB.Rows.front();
+    tr::rig Rig;
+    Rig.born = std::any_cast<int>(Row[0]);
+
+    BufVector.clear();
+    BufVector = std::any_cast<std::vector<unsigned char>>(Row[2]);
+    memcpy(Rig.shift, BufVector.data(), SHIFT_DIGITS * sizeof(float));
+
+    sprintf(buf_query, DB.tpl_select_snip, std::any_cast<int>(Row[1]), '\0');
+    DB.request_get(buf_query);                 // По id_area получить данные трика
+
+    for(auto Row: DB.Rows)
+    {
+      tr::snip Snip = {};
+      BufVector.clear();
+      BufVector = std::any_cast<std::vector<unsigned char>>(Row[0]);
+      memcpy(Snip.data, BufVector.data(), tr::bytes_per_snip);
+      Rig.Trick.push_front(Snip);
+    }
+    DB.close();
+    return Rig;
+  }
+
+  //## загрузка шаблона пространства из БД
   void rigs::init(int g)
   {
   /// Формирование в оперативной памяти приложения карты (std::map)
@@ -264,121 +294,29 @@ namespace tr
     lod = g; // TODO проверка масштаба на допустимость
     //_load_16x16_obj();
 
-    char query_buf[255];
-    std::vector<unsigned char> CharVector = {};
-    const char *tpl_select_rig =
-      "SELECT `born`, `id_area`, `shift` FROM `rigs` WHERE(`x`=%d AND `y`=%d AND `z`=%d);%c";
-    const char *tpl_select_snip =
-      "SELECT `snip` FROM `snips` WHERE `id_area`=%d;%c";
-
-    tr::sqlw DB = {};
-    DB.open(tr::Cfg.get(DB_TPL_FNAME));
-
     int y = 0;
-    for(int x = 0; x < 16; x++)
-    for(int z = 0; z < 16; z++) {
+    int tpl_side = 16; // длина стороны шаблона
 
-      // Запросить данные рига
-      sprintf(query_buf, tpl_select_rig, x, y, z, '\0');
-      DB.request_get(query_buf);
+    // Вначале из базы данных загружается шаблон поверхности 16x16
+    for(int x = 0; x < tpl_side; x++) for(int z = 0; z < tpl_side; z++)
+        TplRigs[tr::i3d{x, y, z}] = load_rig(x, y, z);
 
-      auto  Row = DB.Rows.front();
-      tr::rig Rig;
-      Rig.born = std::any_cast<int>(Row[0]);
-
-      CharVector.clear();
-      CharVector = std::any_cast<std::vector<unsigned char>>(Row[2]);
-      // Данные смещения/поворота/масштаба элементов рига
-      memcpy(Rig.shift, CharVector.data(), SHIFT_DIGITS * sizeof(float));
-
-      // Запросить данные группы снипов по id_area
-      sprintf(query_buf, tpl_select_snip, std::any_cast<int>(Row[1]), '\0');
-      DB.request_get(query_buf);
-
-      for(auto Row: DB.Rows)
+    // После чего этот шаблон дублируется 8х8 раз
+    int row_x = 0, row_z = 0;
+    for (int zn = -4; zn < 4; zn++)
+    {
+      row_z = zn * tpl_side;
+      for (int xn = -4; xn < 4; xn++)
       {
-        tr::snip Snip = {};
-        CharVector.clear();
-        CharVector = std::any_cast<std::vector<unsigned char>>(Row[0]);
-        memcpy(Snip.data, CharVector.data(), tr::bytes_per_snip);
-        Rig.Trick.push_front(Snip);
+        row_x = xn * tpl_side;
+        for(int x = 0; x < tpl_side; x++) for(int z = 0; z < tpl_side; z++)
+        {
+          RigsDb[tr::i3d{row_x + x, y, row_z + z}] = TplRigs[tr::i3d{x, y, z}];
+        }
       }
-      Db[tr::i3d{x, y, z}] = Rig;
     }
-
-    DB.close();
-
     return;
   }
-
-  /*
-    // Загрузка из Obj файла объекта "несколько-снипов/один-риг":
-    tr::obj_load Obj = {"../assets/test_flat.obj"};
-    tr::f3d P = {1.f, 0.f, 1.f};
-    for(auto &S: Obj.Area) S.point_set(P); // Установить объект в точке P
-    get(P)->Area.swap(Obj.Area);           // Загрузить в rig(P)
-  */
-
-/*
-  //## Загрузка данных из Obj файла (заданного в коде функции)
-  void rigs::_load_16x16_obj(void)
-  {
-  /// Загруженые данные представляют из себя поверхность 16х16 прямоугольников,
-  /// расположенную в центре оси кординат. Все прямоугольники проецируются в
-  /// горизонтальные квадраты со стороной 1.0f. Соответственно из каждого
-  /// формируется отдельный риг с одним снипом.
-  ///
-  /// Поверхность формируется в виде поля 8*8 путем дублирования 64 раза по
-  /// горизонтальным координатам X и Z, загруженый из файла фрагмент 16*16 снипов.
-
-    tr::obj_load Obj = {"../assets/surf16x16.obj"};
-
-    tr::i3d Base = {0, 0, 0};
-    tr::i3d Pt   = {0, 0, 0};
-
-    for (int z = -4; z < 4; z ++)
-    {
-      Base.z = z * 16 + 8;
-
-    for (int x = -4; x < 4; x ++)
-    {
-      Base.x = x * 16 + 8;
-
-      for(tr::snip S: Obj.Area)
-      {
-        size_t n = 0;
-        // В снипе 4 вершины, индекс опорной выбираем по минимальному значению длины
-        for(size_t i = 1; i < 4; i++)
-          if((
-               S.data[n * ROW_STRIDE + COORD_X]
-             + S.data[n * ROW_STRIDE + COORD_Y]
-             + S.data[n * ROW_STRIDE + COORD_Z]
-                ) > (
-               S.data[i * ROW_STRIDE + COORD_X]
-             + S.data[i * ROW_STRIDE + COORD_Y]
-             + S.data[i * ROW_STRIDE + COORD_Z]
-             )) n = i;
-
-        // Координаты найденой вершины используем для создания рига,
-        // к которому и привяжем текущий снип
-        Pt.x = static_cast<int>( floor(S.data[n * ROW_STRIDE + COORD_X]) ) + Base.x;
-        Pt.y = static_cast<int>( floor(S.data[n * ROW_STRIDE + COORD_Y]) ) + Base.y;
-        Pt.z = static_cast<int>( floor(S.data[n * ROW_STRIDE + COORD_Z]) ) + Base.z;
-
-        S.point_set(Pt);
-        tr::rig R = {};
-        R.Trick.push_front(S);
-        Db[Pt] = R;
-      }
-    } //for x
-    } //for z
-
-    // Выделить текстурой центр координат
-    get(0,0,0 )->Trick.front().texture_set(0.125, 0.125 * 4.0);
-
-    return;
-  }
-*/
 
   //## сохранение блока ригов в базу данных
   bool rigs::save(const tr::i3d & From, const tr::i3d & To)
@@ -396,10 +334,6 @@ namespace tr
 
     int id_area = 0;
     char query_buf[255];
-    const char *tpl_insert_rig = "INSERT OR REPLACE INTO `rigs`"
-      "(`x`,`y`,`z`,`born`,`id_area`, `shift`) VALUES(%d, %d, %d, %d, %d, ?);%c";
-    const char *tpl_insert_snip = "INSERT INTO `snips`(`id_area`, `snip`) VALUES(%d, ?);%c";
-    const char *tpl_update_snip = "UPDATE `snips` SET `id_area`=%d WHERE `id`=%d;%c";
 
     for(int x = From.x; x < To.x; x++)
       for(int y = From.y; y < To.y; y++)
@@ -411,17 +345,17 @@ namespace tr
             id_area = 0;
             for(auto & Snip: R->Trick)
             {
-              sprintf(query_buf, tpl_insert_snip, id_area, '\0');
+              sprintf(query_buf, DB.tpl_insert_snip, id_area, '\0');
               DB.request_put(query_buf, Snip.data, tr::digits_per_snip); // Запись снипа
 
               if(0 == id_area)
               {
                 id_area = DB.Result.rowid;
-                sprintf(query_buf, tpl_update_snip, id_area, id_area, '\0');
+                sprintf(query_buf, DB.tpl_update_snip, id_area, id_area, '\0');
                 DB.request_put(query_buf);    // Обновить номер группы в записи первого снипа
               }
             }
-            sprintf(query_buf, tpl_insert_rig, x, y, z, R->born, id_area, '\0');
+            sprintf(query_buf, DB.tpl_insert_rig, x, y, z, R->born, id_area, '\0');
             DB.request_put(query_buf, R->shift, SHIFT_DIGITS); // Запись рига
           }
         }
@@ -436,24 +370,31 @@ namespace tr
     else return true;
   }
 
-  //## поиск ближайшего нижнего блока по координатам точки
+  //## Поиск по координатам ближайшего блока снизу
   tr::i3d rigs::search_down(const glm::vec3& V)
   {
     return search_down(V.x, V.y, V.z);
   }
 
-  //## поиск ближайшего нижнего блока по координатам точки
+  //## Поиск по координатам ближайшего блока снизу
+  tr::i3d rigs::search_down(float x, float y, float z)
+  {
+    return search_down(
+      static_cast<int>(floor(x)),
+      static_cast<int>(floor(y)),
+      static_cast<int>(floor(z))
+    );
+  }
+
+  //## Поиск по координатам ближайшего блока снизу
   tr::i3d rigs::search_down(int x, int y, int z)
   {
     if(y < yMin) ERR("Y downflow"); if(y > yMax) ERR("Y overflow");
-
-    x = floor(x); y = floor(y); z = floor(z);
-
     while(y > yMin)
     {
       try
       { 
-        Db.at(tr::i3d {x, y, z});
+        RigsDb.at(tr::i3d {x, y, z});
         return tr::i3d {x, y, z};
       } catch (...)
       { y -= lod; }
@@ -473,7 +414,7 @@ namespace tr
     if(P.y < yMin) ERR("rigs::get -Y is overflow");
     if(P.y > yMax) ERR("rigs::get +Y is overflow");
 
-    try { return &Db.at(P); }
+    try { return &RigsDb.at(P); }
     catch (...) { return nullptr; }
   }
 

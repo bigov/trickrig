@@ -71,7 +71,7 @@ namespace tr
     for(int x = xMin; x<= xMax; x += g0)
       for(int y = yMin; y<= yMax; y += g0)
         for(int z = zMin; z<= zMax; z += g0)
-          RigsDb0.set_visible(x, y, z);
+          RigsDb0.show(x, y, z);
 
     return;
   }
@@ -95,21 +95,21 @@ namespace tr
       x_new = vf_x + clod_0;
     }
 
-    float zMin, zMax;
+    int zMin, zMax;
 
     // Скрыть элементы с задней границы области
     zMin = MoveFrom.z - clod_0;
     zMax = MoveFrom.z + clod_0;
     for(int y = yMin; y <= yMax; y += g0)
       for(int z = zMin; z <= zMax; z += g0)
-        RigsDb0.set_hiding(x_old, y, z);
+        RigsDb0.hide(x_old, y, z);
 
     // Добавить линию элементов по направлению движения
     zMin = vf_z - clod_0;
     zMax = vf_z + clod_0;
     for(int y = yMin; y <= yMax; y += g0)
       for(int z = zMin; z <= zMax; z += g0)
-        RigsDb0.set_visible(x_new, y, z);
+        RigsDb0.show(x_new, y, z);
 
     MoveFrom.x = vf_x;
     return;
@@ -134,21 +134,21 @@ namespace tr
       z_new = vf_z + clod_0;
     }
 
-    float xMin, xMax;
+    int xMin, xMax;
 
     // Скрыть элементы с задней границы области
     xMin = MoveFrom.x - clod_0;
     xMax = MoveFrom.x + clod_0;
     for(float y = yMin; y <= yMax; y += g0)
       for(float x = xMin; x <= xMax; x += g0)
-        RigsDb0.set_hiding(x, y, z_old);
+        RigsDb0.hide(x, y, z_old);
 
     // Добавить линию элементов по направлению движения
     xMin = vf_x - clod_0;
     xMax = vf_x + clod_0;
     for(float y = yMin; y <= yMax; y += g0)
       for(float x = xMin; x <= xMax; x += g0)
-        RigsDb0.set_visible(x, y, z_new);
+        RigsDb0.show(x, y, z_new);
 
     MoveFrom.z = vf_z;
     return;
@@ -178,7 +178,7 @@ namespace tr
    */
 
     if(static_cast<int>(floor(tr::Eye.ViewFrom.x)) != MoveFrom.x) redraw_borders_x();
-    //if(floor(tr::Eye.ViewFrom.y) != MoveFrom.y) redraw_borders_y();
+  //if(static_cast<int>(floor(tr::Eye.ViewFrom.y)) != MoveFrom.y) redraw_borders_y();
     if(static_cast<int>(floor(tr::Eye.ViewFrom.z)) != MoveFrom.z) redraw_borders_z();
     return;
   }

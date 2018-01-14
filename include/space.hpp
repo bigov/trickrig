@@ -24,7 +24,7 @@ namespace tr
       space operator=(const tr::space&);
 
       tr::rigs RigsDb0 {};   // структура 3D пространства LOD-0
-      const float g0 = 1.0f; // масштаб элементов в RigsDb0
+      const int g0 = 1; // масштаб элементов в RigsDb0
 
       GLuint m_textureObj = 0;
 
