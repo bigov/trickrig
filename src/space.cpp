@@ -23,7 +23,7 @@ namespace tr
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Загрузка из файла данных текстуры
-    image image = get_png_img(tr::Cfg.get(PNG_TEXTURE0));
+    tr::image ImgTex0 = get_png_img(tr::Cfg.get(PNG_TEXTURE0));
 
     tr::Eye.look_a = std::stof(tr::Cfg.get(LOOK_AZIM));
     tr::Eye.look_t = std::stof(tr::Cfg.get(LOOK_TANG));
@@ -35,7 +35,7 @@ namespace tr
     GLint level_of_details = 0;
     GLint frame = 0;
     glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-      image.w, image.h, frame, GL_RGBA, GL_UNSIGNED_BYTE, image.Data.data());
+      ImgTex0.w, ImgTex0.h, frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgTex0.Data.data());
 
     // Установка опций отрисовки текстур
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
@@ -48,16 +48,11 @@ namespace tr
 
     RigsDb0.init(g0); // загрузка данных уровня LOD-0
 
-    try {
-      MoveFrom = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
-    }
-    catch(...)
-    {
-      #ifndef NDEBUG
-      tr::info("Setup ViewFrom point was fail.");
-      #endif
-      //TODO: установить точку обзора над поверхностью
-    }
+    MoveFrom = {
+      static_cast<int>(floor(tr::Eye.ViewFrom.x)),
+      static_cast<int>(floor(tr::Eye.ViewFrom.y)) - 2,
+      static_cast<int>(floor(tr::Eye.ViewFrom.z)),
+    };
 
     int // границы уровня lod_0
       xMin = MoveFrom.x - tr::lod_0,
@@ -72,6 +67,17 @@ namespace tr
       for(int y = yMin; y<= yMax; y += g0)
         for(int z = zMin; z<= zMax; z += g0)
           RigsDb0.show(x, y, z);
+
+    try {
+      MoveFrom = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
+    }
+    catch(...)
+    {
+      #ifndef NDEBUG
+      tr::info("Fail setup 3d coordinates for ViewFrom point.");
+      #endif
+      //TODO: установить точку обзора над поверхностью
+    }
 
     return;
   }
