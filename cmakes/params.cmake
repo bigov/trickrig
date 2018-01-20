@@ -28,6 +28,9 @@ SET( MY_FLAGS "-m64 -std=c++17 -fexceptions -Werror -Wpedantic -Wextra\
  -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor -Wall\
  -Winit-self -Wunreachable-code" )
 
+## Пока работаем без установки программы
+SET( SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE )
+
 ## Установка параметров для сборки в MinGW-W64 под MS Windows
 if( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
   SET( CMAKE_CXX_FLAGS "${MY_FLAGS}" )
@@ -35,6 +38,7 @@ if( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
     SET( CMAKE_CXX_FLAGS "--static ${CMAKE_CXX_FLAGS} ${WIN_GUI}" )
   endif()
   SET( trLIBS mingw32 png_static gdi32 )
+  SET( BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE )
 endif( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
 
 ## Установка параметров для сборки на Linux

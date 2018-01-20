@@ -1,7 +1,5 @@
 
 # библиотека zlib
-SET( BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE )
-SET( SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE )
 SET( trINCLUDE_DIRS ${trINCLUDE_DIRS} "${trEXT_LIBS_DIR}/zlib" )
 add_subdirectory( "${trEXT_LIBS_DIR}/zlib" "${SUFFIX}/zlib" EXCLUDE_FROM_ALL )
 
