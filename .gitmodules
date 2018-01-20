@@ -14,3 +14,6 @@
 	path = .extlibs/glm
 	url = https://github.com/g-truc/glm.git
 	branch = master
+[submodule ".extlibs/zlib"]
+	path = .extlibs/zlib
+	url = https://github.com/madler/zlib.git
