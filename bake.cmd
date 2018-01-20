@@ -1,51 +1,44 @@
 ::
-:: Ключи командной строки:
+:: ╨Ъ╨╗╤О╤З╨╕ ╨║╨╛╨╝╨░╨╜╨┤╨╜╨╛╨╣ ╤Б╤В╤А╨╛╨║╨╕:
 ::
-:: clang - компиляция программой clang
-:: clang release - компиляция программой clang без отладки
-:: gcc release   - компиляция программой gcc без отладки
+:: clang - ╨║╨╛╨╝╨┐╨╕╨╗╤П╤Ж╨╕╤П ╨┐╤А╨╛╨│╤А╨░╨╝╨╝╨╛╨╣ clang
+:: clang release - ╨║╨╛╨╝╨┐╨╕╨╗╤П╤Ж╨╕╤П ╨┐╤А╨╛╨│╤А╨░╨╝╨╝╨╛╨╣ clang ╨▒╨╡╨╖ ╨╛╤В╨╗╨░╨┤╨║╨╕
+:: gcc release   - ╨║╨╛╨╝╨┐╨╕╨╗╤П╤Ж╨╕╤П ╨┐╤А╨╛╨│╤А╨░╨╝╨╝╨╛╨╣ gcc ╨▒╨╡╨╖ ╨╛╤В╨╗╨░╨┤╨║╨╕
 ::
-:: clean - полная очистка и пересборка
-:: init - создание Makefile без сборки бинарника
+:: clean - ╨┐╨╛╨╗╨╜╨░╤П ╨╛╤З╨╕╤Б╤В╨║╨░ ╨╕ ╨┐╨╡╤А╨╡╤Б╨▒╨╛╤А╨║╨░
+:: init - ╤Б╨╛╨╖╨┤╨░╨╜╨╕╨╡ Makefile ╨▒╨╡╨╖ ╤Б╨▒╨╛╤А╨║╨╕ ╨▒╨╕╨╜╨░╤А╨╜╨╕╨║╨░
 ::
 
 @ECHO OFF
 PUSHD
 SETLOCAL
-SET "WD=_dbg_"
+CHCP 65001
+
+:: ╨з╨╡╨╝ ╨▒╤Г╨┤╨╡╨╝ ╤Б╨╛╨▒╨╕╤А╨░╤В╤М:
+SET "PATH=%PATH%;C:\GCC\mingw64\bin"
+::SET "PATH=%PATH%;C:\GCC\TDM-GCC-64\bin"
 
 SET "n2=dbg"
 SET "n3=gcc"
 
-:: Если для сборки использовать clang
+:: ╨Х╤Б╨╗╨╕ ╨┤╨╗╤П ╤Б╨▒╨╛╤А╨║╨╕ ╨╕╤Б╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╤М clang
 IF "%1"=="clang" (
-	SET "CC=clang.exe"
-	SET "CXX=clang++.exe"
-	SET "n3=clang"
-)
-
-IF EXIST CMakeLists.txt (
-	MKDIR %WD%
-	COPY /Y /L bake.cmd %WD%\
-	CD %WD%
-	ECHO.
-	ECHO ВНИМАНИЕ! Для сборки используйте папку '%WD%'.
-	ECHO.
-	CALL bake.cmd
-	GOTO _eof
+  SET "CC=clang.exe"
+  SET "CXX=clang++.exe"
+  SET "n3=clang"
 )
 
 IF "%1"=="clean" (
-	RD /Q /S CMakeFiles
-	DEL /Q *make*.*
-	GOTO _eof
+  RD /Q /S CMakeFiles
+  DEL /Q *make*.*
+  GOTO _eof
 )
 
 IF "%2"=="release" (
-	cmake -DCMAKE_BUILD_TYPE=Release ..\ -G "MinGW Makefiles"
-	SET "n2=rel"
+  cmake -DCMAKE_BUILD_TYPE=Release ..\ -G "MinGW Makefiles"
+  SET "n2=rel"
 ) ELSE (
-	cmake -DCMAKE_BUILD_TYPE=Debug ..\ -G "MinGW Makefiles"
+  cmake -DCMAKE_BUILD_TYPE=Debug ..\ -G "MinGW Makefiles"
 )
 
 IF "%1"=="init" GOTO _eof
@@ -54,11 +47,11 @@ IF "%2"=="init" GOTO _eof
 cmake --build .
 
 IF ERRORLEVEL 1 (
-	ECHO ----------------
-	ECHO ..ошибка сборки
-	ECHO.
-	pause
-	GOTO _eof
+  ECHO ----------------
+  ECHO ..╨╛╤И╨╕╨▒╨║╨░ ╤Б╨▒╨╛╤А╨║╨╕
+  ECHO.
+  pause
+  GOTO _eof
 )
 
 CALL app%n2%_%n3%.exe
@@ -66,5 +59,6 @@ IF ERRORLEVEL 1 pause
 
 :_eof
 ECHO.
+CHCP 866
 ENDLOCAL
 POPD
