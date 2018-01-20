@@ -10,7 +10,7 @@
 #include "io.hpp"
 #include "scene.hpp"
 #include "glfw.hpp"
-#include "dbw.hpp"
+#include "dbwrap.hpp"
 
 namespace tr {
   tr::camera_3d Eye = {};   // главная камера 3D вида

@@ -15,8 +15,7 @@ SETLOCAL
 CHCP 65001
 
 :: Чем будем собирать:
-SET "PATH=%PATH%;C:\GCC\mingw64\bin"
-::SET "PATH=%PATH%;C:\GCC\TDM-GCC-64\bin"
+::SET "PATH=%PATH%;C:\GCC\mingw64\bin"
 
 SET "n2=dbg"
 SET "n3=gcc"

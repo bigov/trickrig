@@ -10,7 +10,7 @@
 
 #include "main.hpp"
 #include "io.hpp"
-#include "dbw.hpp"
+#include "dbwrap.hpp"
 
 namespace tr
 {

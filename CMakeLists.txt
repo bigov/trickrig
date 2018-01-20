@@ -1,10 +1,12 @@
 #
-# Сборка приложения - при вызове команды "cmake" НЕОБХОДИМО указать тип сборки:
+# При вызове команды "cmake" (под win32) НЕОБХОДИМО указать тип сборки,
+# например, для сборки в MinGW GCC указывается -
+#
 # -DCMAKE_BUILD_TYPE=Release ../ -G "MinGW Makefiles"
-
+#
 # Потом (для всех)
 #   cmake --build .
-
+#
 #
 # Под Linux можно собрать так:
 #
@@ -14,105 +16,15 @@
 # https://cmake.org/Wiki/CMake_Useful_Variables
 #
 
-cmake_minimum_required( VERSION 3.0 )    # Проверка версии CMake.
+cmake_minimum_required( VERSION 3.0 )
 project( trickrig )
 SET( CMAKE_VERBOSE_MAKEFILE OFF )
 
-# Для сборки релиза следует указать: "-D CMAKE_BUILD_TYPE=Release"
-if( "_${CMAKE_BUILD_TYPE}" MATCHES "^_Rel" )
-  OPTION( WITH_DEBUG_MODE "Build with debug mode" OFF )
-  SET( CMAKE_BUILD_TYPE "Release")
-  SET( SUFFIX "rel")
-  SET( WIN_GUI "-mwindows -Wl,-subsystem,windows" )
-  MESSAGE( WARNING "\n--- CMAKE_BUILD_TYPE: Release ---")
-else() # Иначе собирается "Debug"
-  OPTION( WITH_DEBUG_MODE "Build with debug mode" ON )
-  SET( CMAKE_BUILD_TYPE "Debug")
-  SET( SUFFIX "dbg")
-  SET( WIN_GUI "" )
-  MESSAGE( WARNING "\n--- CMAKE_BUILD_TYPE: Debug ---")
-endif()
-
-if("_$ENV{CC}" MATCHES "clang")
-  SET( SUFFIX "${SUFFIX}_clang")
-  SET(CLANG TRUE)
-else()
-  SET( SUFFIX "${SUFFIX}_gcc")
-  SET(CLANG FALSE)
-endif()
-
-SET( EXEC_NAME "app${SUFFIX}" )
-
-# библиотека LIBPNG
-SET(PNG_BUILD_ZLIB ON CACHE BOOL "Build libpng with zlib" FORCE)
-SET(PNG_DEBUG OFF CACHE BOOL "Build libpng with debug" FORCE)
-SET(PNG_FRAMEWORK OFF CACHE BOOL "Build libpng with " FORCE)
-SET(PNG_HARDWARE_OPTIMIZATIONS ON CACHE BOOL "Build libpng with HW-opt" FORCE)
-SET(PNG_SHARED OFF CACHE BOOL "Build shared lib" FORCE)
-SET(PNG_STATIC ON CACHE BOOL "Build libpng static" FORCE)
-SET(PNG_TESTS OFF CACHE BOOL "Build libpng tests" FORCE)
-add_subdirectory( ".extlibs/libpng" "${SUFFIX}/libpng" EXCLUDE_FROM_ALL)
-
-# библиотека freetype2
-add_subdirectory( ".extlibs/freetype2" "${SUFFIX}/freetype" EXCLUDE_FROM_ALL)
-
-# библиотека glcore33
-add_subdirectory( ".extlibs/glcore33" "${SUFFIX}/glcore33" EXCLUDE_FROM_ALL)
-
-# библиотека sqlite3
-add_subdirectory( ".extlibs/sqlite3" "${SUFFIX}/sqlite3" EXCLUDE_FROM_ALL)
-
-# библиотека GLFW3
-SET(GLFW_BUILD_DOCS OFF CACHE BOOL "Build the GLFW documentation" FORCE)
-SET(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "Build the GLFW example programs" FORCE)
-SET(GLFW_BUILD_TESTS OFF CACHE BOOL "Build the GLFW test programs" FORCE)
-SET(GLFW_DOCUMENT_INTERNALS OFF CACHE BOOL "Build the GLFW document" FORCE)
-SET(GLFW_INSTALL OFF CACHE BOOL "Build the GLFW install" FORCE)
-SET(GLFW_USE_MIR OFF CACHE BOOL "Build the GLFW with Mir" FORCE)
-SET(GLFW_USE_OSMESA OFF CACHE BOOL "Build the GLFW with os mesa" FORCE)
-SET(GLFW_USE_WAYLAND OFF CACHE BOOL "Build the GLFW with Wayland server" FORCE)
-SET(GLFW_VULKAN_STATIC OFF CACHE BOOL "Use the Vulkan" FORCE)
-add_subdirectory( ".extlibs/glfw" "${SUFFIX}/glfw" EXCLUDE_FROM_ALL)
-
-# где искать заголовки
-include_directories( "include" "lib"
- "${CMAKE_CURRENT_BINARY_DIR}/${SUFFIX}/libpng"
- ".extlibs/freetype2/include"
- ".extlibs/glfw/include"
- ".extlibs/glm"
- ".extlibs/libpng"
- ".extlibs/sqlite3"
- ".extlibs/glcore33")
-
-SET( MY_FLAGS "-m64 -std=c++17 -fexceptions -Werror -Wpedantic -Wextra\
- -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor -Wall\
- -Winit-self -Wunreachable-code" )
-
-## Список общих библиотек
-SET( UNILIBS pthread glcore33 glfw freetype sqlite3 )
-
-###
-# Установка параметров для сборки в MinGW-W64 под MS Windows
-#
-if( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
-  SET( CMAKE_CXX_FLAGS "${MY_FLAGS}" )
-  if(NOT ${CLANG})
-    SET( CMAKE_CXX_FLAGS "--static ${CMAKE_CXX_FLAGS} ${WIN_GUI}" )
-    MESSAGE( WARNING "\n*** Static build is enabled. ***")
-  endif()
-  SET( LIBS mingw32 png_static gdi32 )
-endif( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
-
-###
-# Установка параметров для сборки на Linux
-#
-if( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
-SET( CMAKE_CXX_FLAGS "${MY_FLAGS} -no-pie" )
-SET( LIBS png )
-endif( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
+SET( trCMAKES "${CMAKE_SOURCE_DIR}/cmakes" )
+SET( trEXT_LIBS_DIR "${CMAKE_SOURCE_DIR}/.extlibs" )
+SET( trINCLUDE_DIRS "${CMAKE_SOURCE_DIR}/include" )
 
 # список исходников
-file( GLOB SRC "src/*.cpp" )
+file( GLOB trSRC "${CMAKE_SOURCE_DIR}/src/*.cpp" )
 
-add_executable( ${EXEC_NAME} ${SRC} )
-target_link_libraries( ${EXEC_NAME} ${UNILIBS} ${LIBS} )
+include( "${trCMAKES}/main.cmake" )
