@@ -6,7 +6,6 @@
 include( "${trCMAKES}/params.cmake" )
 
 # подключение исходных файлов библиотек
-include( "${trCMAKES}/extlibs/zlib.cmake" )
 include( "${trCMAKES}/extlibs/libpng.cmake" )
 include( "${trCMAKES}/extlibs/freetype2.cmake" )
 include( "${trCMAKES}/extlibs/glcore33.cmake" )
@@ -18,7 +17,7 @@ include( "${trCMAKES}/extlibs/glm.cmake" )
 include_directories( ${trINCLUDE_DIRS} )
 
 ## Список библиотек
-SET( trLIBS ${trLIBS} pthread glcore33 zlibstatic freetype glfw sqlite3 )
+SET( trLIBS ${trLIBS} pthread glcore33 freetype glfw sqlite3 )
 
 add_executable( ${EXEC_NAME} ${trSRC} )
 target_link_libraries( ${EXEC_NAME} ${trLIBS} )

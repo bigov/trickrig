@@ -1,6 +1,6 @@
 
 # библиотека LIBPNG
-SET(PNG_BUILD_ZLIB ON CACHE BOOL "Собрать zlib самостоятельно" FORCE)
+SET(PNG_BUILD_ZLIB OFF CACHE BOOL "Собрать zlib самостоятельно" FORCE)
 SET(PNG_DEBUG OFF CACHE BOOL "Build libpng with debug" FORCE)
 SET(PNG_FRAMEWORK OFF CACHE BOOL "Build libpng with " FORCE)
 SET(PNG_HARDWARE_OPTIMIZATIONS ON CACHE BOOL "Build libpng with HW-opt" FORCE)
