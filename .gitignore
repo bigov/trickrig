@@ -1,76 +1,63 @@
-# This file is used to ignore files which are generated
-# ----------------------------------------------------------------------------
-
-*~
-*.autosave
+!core/
+*.*#
+*.Debug
+*.Release
 *.a
+*.app
+*.autosave
 *.back
 *.core
-*.moc
-*.o
-*.orig
-*.rej
-*.so
-*.so.*
-*_pch.h.cpp
-*_resource.rc
-*.qm
-.#*
-.hg
-_dbg_
-CMakeLists.txt.user
-*.*#
-core
-!core/
-*/tags
-tags
-.DS_Store
-.directory
 *.debug
-Makefile*
-*.prl
-*.app
-moc_*.cpp
-ui_*.h
-qrc_*.cpp
-Thumbs.db
-*.res
-*.rc
-/.qmake.cache
-/.qmake.stash
-
-# qtcreator generated files
-*.pro.user*
-
-# xemacs temporary files
+*.dll
+*.exe
 *.flc
-
-# Vim temporary files
-.*.swp
-
-# Visual Studio generated files
 *.ib_pdb_index
 *.idb
 *.ilk
+*.moc
+*.ncb
+*.o
+*.opensdf
+*.orig
 *.pdb
+*.prl
+*.pro.user*
+*.pyc
+*.qm
+*.rc
+*.rej
+*.res
+*.sdf
 *.sln
+*.so
+*.so.*
 *.suo
 *.vcproj
-*vcproj.*.*.user
-*.ncb
-*.sdf
-*.opensdf
 *.vcxproj
+*/tags
+*_pch.h.cpp
+*_resource.rc
+*vcproj.*.*.user
 *vcxproj.*
+*~
+.#*
+.*.swp
+.DS_Store
+.directory
+.hg
+/.qmake.cache
+/.qmake.stash
+CMakeLists.txt.user
+Makefile*
+Thumbs.db
+_dbg_
+bin
+build
+core
+moc_*.cpp
+qrc_*.cpp
+*/bin
+*/build
+tags
+ui_*.h
 
-# MinGW generated files
-*.Debug
-*.Release
-
-# Python byte code
-*.pyc
-
-# Binaries
-# --------
-*.dll
-*.exe

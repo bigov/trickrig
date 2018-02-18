@@ -107,7 +107,7 @@ namespace tr
   }
 
   //## Размещение элементов в графическом буфере
-  void rigs::show(int x, int y, int z)
+  void rigs::put_in_vbo(int x, int y, int z)
   {
     tr::rig * Rig = get(x, y, z);
     if(nullptr == Rig) return;
@@ -144,7 +144,7 @@ namespace tr
   }
 
   //## убрать риг из рендера
-  void rigs::hide(int x, int y, int z)
+  void rigs::remove_from_vbo(int x, int y, int z)
   {
   /// Индексы размещенных в VBO данных, которые при перемещении камеры вышли
   /// за границу отображения, запоминаются в кэше, чтобы на их место
@@ -346,28 +346,24 @@ namespace tr
             for(auto & Snip: R->Trick)
             {
               sprintf(query_buf, DB.tpl_insert_snip, id_area, '\0');
-              DB.request_put(query_buf, Snip.data, tr::digits_per_snip); // Запись снипа
+              // Запись снипа
+              DB.request_put(query_buf, Snip.data, tr::digits_per_snip);
 
               if(0 == id_area)
               {
                 id_area = DB.Result.rowid;
                 sprintf(query_buf, DB.tpl_update_snip, id_area, id_area, '\0');
-                DB.request_put(query_buf);    // Обновить номер группы в записи первого снипа
+                // Обновить номер группы в записи первого снипа
+                DB.request_put(query_buf);
               }
             }
             sprintf(query_buf, DB.tpl_insert_rig, x, y, z, R->born, id_area, '\0');
-            DB.request_put(query_buf, R->shift, SHIFT_DIGITS); // Запись рига
+            // Запись рига
+            DB.request_put(query_buf, R->shift, SHIFT_DIGITS);
           }
         }
     DB.close();
     return true;
-  }
-
-  //## Проверка наличия блока в заданных координатах
-  bool rigs::exist(int x, int y, int z)
-  {
-    if (nullptr == get(x, y, z)) return false;
-    else return true;
   }
 
   //## Поиск по координатам ближайшего блока снизу

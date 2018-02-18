@@ -41,7 +41,7 @@ namespace tr
       rig& operator= (const tr::rig &);     // копирующее присваивание
   };
 
-  //## Клас для организации доступа к элементам уровня LOD
+  //## Клас для управления данными поверхности одного уровня LOD
   class rigs
   {
     private:
@@ -57,21 +57,20 @@ namespace tr
       // Карта размещения cнипов по адресам в VBO
       std::unordered_map<GLsizeiptr, tr::snip*> VisibleSnips {};
 
-      tr::vbo VBOdata = {GL_ARRAY_BUFFER};   // VBO вершин поверхности
-      tr::glsl Prog3d {};   // GLSL программа шейдеров
+      tr::vbo VBOdata = {GL_ARRAY_BUFFER};  // VBO вершин поверхности
+      tr::glsl Prog3d {};                   // GLSL программа шейдеров
 
-      GLuint space_vao = 0; // ID VAO
-      GLsizei render_points = 0; // число точек передаваемых в рендер
+      GLuint space_vao = 0;                 // ID VAO
+      GLsizei render_points = 0;            // число точек передаваемых в рендер
 
       void _load_16x16_obj(void);
 
     public:
-      rigs(void);                  // конструктор
-
-      void show(int, int, int); // разместить трик в графическом буфере
-      void hide(int, int, int);  // убрать трик из рендера
-      void draw(const glm::mat4 &); // Рендер кадра
-      void clear_cashed_snips(void);
+      rigs(void);                          // конструктор
+      void put_in_vbo(int, int, int);      // разместить трик в VBO буфере
+      void remove_from_vbo(int, int, int); // убрать трик из рендера
+      void draw(const glm::mat4 &);        // Рендерить кадр
+      void clear_cashed_snips(void);       // очистка промежуточного кэша
 
       bool save(const tr::i3d &, const tr::i3d &);
       void init(int);     // загрузка уровня
@@ -81,7 +80,6 @@ namespace tr
       tr::i3d search_down(float, float, float);
       tr::i3d search_down(const glm::vec3 &);
       tr::rig load_rig(int, int, int);
-      bool exist(int, int, int);
   };
 
 } //namespace tr

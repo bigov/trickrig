@@ -66,7 +66,7 @@ namespace tr
     for(int x = xMin; x<= xMax; x += g0)
       for(int y = yMin; y<= yMax; y += g0)
         for(int z = zMin; z<= zMax; z += g0)
-          RigsDb0.show(x, y, z);
+          RigsDb0.put_in_vbo(x, y, z);
 
     try {
       MoveFrom = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
@@ -108,14 +108,14 @@ namespace tr
     zMax = MoveFrom.z + clod_0;
     for(int y = yMin; y <= yMax; y += g0)
       for(int z = zMin; z <= zMax; z += g0)
-        RigsDb0.hide(x_old, y, z);
+        RigsDb0.remove_from_vbo(x_old, y, z);
 
     // Добавить линию элементов по направлению движения
     zMin = vf_z - clod_0;
     zMax = vf_z + clod_0;
     for(int y = yMin; y <= yMax; y += g0)
       for(int z = zMin; z <= zMax; z += g0)
-        RigsDb0.show(x_new, y, z);
+        RigsDb0.put_in_vbo(x_new, y, z);
 
     MoveFrom.x = vf_x;
     return;
@@ -147,14 +147,14 @@ namespace tr
     xMax = MoveFrom.x + clod_0;
     for(float y = yMin; y <= yMax; y += g0)
       for(float x = xMin; x <= xMax; x += g0)
-        RigsDb0.hide(x, y, z_old);
+        RigsDb0.remove_from_vbo(x, y, z_old);
 
     // Добавить линию элементов по направлению движения
     xMin = vf_x - clod_0;
     xMax = vf_x + clod_0;
     for(float y = yMin; y <= yMax; y += g0)
       for(float x = xMin; x <= xMax; x += g0)
-        RigsDb0.show(x, y, z_new);
+        RigsDb0.put_in_vbo(x, y, z_new);
 
     MoveFrom.z = vf_z;
     return;
