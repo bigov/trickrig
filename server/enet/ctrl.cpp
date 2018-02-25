@@ -1,4 +1,5 @@
 /*
+ * 
  * Контрольная часть (клиент) на базе библиотеки enet
  *
  */
@@ -44,12 +45,9 @@ void tr_ctrl(ENetHost* client, ENetPeer* peer)
 
   while(ctrl)
   {
-    std::cout << "command: ";
+    std::cout << "srv: ";
     UserCommand.clear();
     std::getline( std::cin, UserCommand );
-
-    //std::cout << UserCommand.c_str() << "=" << UserCommand.size() << "\n";
-
     packet = enet_packet_create( UserCommand.c_str(), UserCommand.size() + 1,
       ENET_PACKET_FLAG_RELIABLE );
     enet_peer_send (peer, channel, packet);
@@ -61,6 +59,7 @@ void tr_ctrl(ENetHost* client, ENetPeer* peer)
   return;
 }
 
+//## Enter point
 int main()
 {
   std::cout << "\nstart\n";
