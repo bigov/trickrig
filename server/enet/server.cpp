@@ -3,15 +3,26 @@
  *
  */
 #include <iostream>
+#include <cwctype>
 #include <cstdlib>
 #include <enet/enet.h>
+#include <map>
+#include <vector>
+
+enum SRV_CMD {
+	CMD_STOP,
+	CMD_ENUM_END,
+};
+
+std::map<SRV_CMD, std::vector<wchar_t>> CmdMap = {};
 
 void tr_loop(ENetHost* srv)
 {
   ENetEvent event;
   char adm_key = 10;              //TODO: статус авторизации клиента
   bool listen_clients = true;
-  const char cmd_stop[] = "stop"; // команда для выключения сервера
+  
+	CmdMap.emplace(CMD_STOP, L"stop"); // команда для выключения
 	                                
   /* интервал ожидания события 1 секунда (1000 мсек) */
   while(( enet_host_service( srv, &event, 1000 ) > 0 ) || listen_clients )
