@@ -18,6 +18,20 @@
 
 cmake_minimum_required( VERSION 3.0 )
 project( trickrig )
+set(PROJECT_AUTHOR "bigov")
+set(PROJECT_AUTHOR_EMAIL "bigov@yandex.ru")
+
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
+    message(FATAL_ERROR "Prevented in-tree built. Please create a build directory outside of the source code and call cmake from there. Thank you.")
+endif()
+
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug)
+endif()
+
+## Пока работаем без установки программы
+SET( SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE )
+
 SET( CMAKE_VERBOSE_MAKEFILE OFF )
 
 SET( trCMAKES "${CMAKE_SOURCE_DIR}/cmakes" )
@@ -28,3 +42,4 @@ SET( trINCLUDE_DIRS "${CMAKE_SOURCE_DIR}/include" )
 file( GLOB trSRC "${CMAKE_SOURCE_DIR}/src/*.cpp" )
 
 include( "${trCMAKES}/main.cmake" )
+

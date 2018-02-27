@@ -5,6 +5,8 @@
 # установка параметров, необходимых для сборки проекта
 include( "${trCMAKES}/params.cmake" )
 
+include( "${trCMAKES}/server.cmake" )
+
 # подключение исходных файлов библиотек
 include( "${trCMAKES}/extlibs/libpng.cmake" )
 include( "${trCMAKES}/extlibs/freetype2.cmake" )

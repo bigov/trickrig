@@ -4,26 +4,27 @@
  */
 #include <iostream>
 #include <cwctype>
+#include <cstring>
 #include <cstdlib>
 #include <enet/enet.h>
 #include <map>
 #include <vector>
 
 enum SRV_CMD {
-	CMD_STOP,
-	CMD_ENUM_END,
+  CMD_STOP,
+  CMD_ENUM_END,
 };
 
-std::map<SRV_CMD, std::vector<wchar_t>> CmdMap = {};
+std::map<SRV_CMD, std::vector<unsigned char>> CmdMap = {
+  {CMD_STOP, {'s','t','o','p'}}, // команда для выключения
+};
 
 void tr_loop(ENetHost* srv)
 {
   ENetEvent event;
   char adm_key = 10;              //TODO: статус авторизации клиента
   bool listen_clients = true;
-  
-	CmdMap.emplace(CMD_STOP, L"stop"); // команда для выключения
-	                                
+
   /* интервал ожидания события 1 секунда (1000 мсек) */
   while(( enet_host_service( srv, &event, 1000 ) > 0 ) || listen_clients )
   {
@@ -32,17 +33,16 @@ void tr_loop(ENetHost* srv)
       case ENET_EVENT_TYPE_CONNECT:
         event.peer->data = &adm_key; // можно сохранить информацию о клиенте
         break;                       //TODO: добавить уровни доступа
-      
-			case ENET_EVENT_TYPE_RECEIVE:
+      case ENET_EVENT_TYPE_RECEIVE:
         std::cout << "Recieved packet: "
          << event.packet->data << "\n";
 
         // Если клиент с уровнем "adm_key" сказал "stop", то выключить сервер
-				if((0 == strncmp(reinterpret_cast<const char*>(event.packet->data),
-          cmd_stop, 4)) && (event.peer->data == &adm_key))
-				{
-					listen_clients = false;
-				}
+        if((memcmp(event.packet->data, CmdMap[CMD_STOP].data(),
+          event.packet->dataLength) == 0 ) && (event.peer->data == &adm_key))
+        {
+          listen_clients = false;
+        }
 
         /*
         event.packet->dataLength // длина пакета
@@ -51,16 +51,16 @@ void tr_loop(ENetHost* srv)
         event.channelID          // по какому каналу
         */
 
-				// после обработки пакет следует удалить
+        // после обработки пакет следует удалить
         enet_packet_destroy( event.packet );
         break;
-      
-			case ENET_EVENT_TYPE_DISCONNECT:
+
+        case ENET_EVENT_TYPE_DISCONNECT:
         std::cout << event.peer->data << " disconnected\n";
         event.peer->data = NULL;
         break;
-      
-			case ENET_EVENT_TYPE_NONE:
+
+        case ENET_EVENT_TYPE_NONE:
         break;
     }
   }
