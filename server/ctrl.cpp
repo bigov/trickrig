@@ -3,7 +3,9 @@
  * Контрольная часть (клиент) на базе библиотеки enet
  *
  */
-#include "server.hpp"
+#include "enetw.hpp"
+
+namespace tr {
 
 //## Отключиться от сервера
 void tr_disconnect(ENetHost* client, ENetPeer* peer)
@@ -70,7 +72,7 @@ void listen_events(ENetHost* client, int timeout)
 }
 
 //## Передача на сервер данных
-void tr_ctrl(ENetHost* client, ENetPeer* peer)
+void ctrl(ENetHost* client, ENetPeer* peer)
 {
   std::string UserCommand = {};
   enet_uint8 channel = 0;       // id канала для отправки пакета
@@ -96,11 +98,12 @@ void tr_ctrl(ENetHost* client, ENetPeer* peer)
   tr_disconnect( client, peer ); // Закрыть соединение
   return;
 }
+} //namespace tr
 
 //## Enter point
 int main()
 {
-  std::cout << "\nstart\n";
+  const char hostname[] = "localhost";
 
   // enet prepare
   if( 0 != enet_initialize() )
@@ -127,14 +130,14 @@ int main()
   }
   // job start
   ENetAddress address = {};
-  enet_address_set_host( &address, "localhost" );
+  enet_address_set_host( &address, hostname );
   address.port = 12888;
   ENetEvent event = {};
 
   // установить соединение с сервером
   ENetPeer* peer = nullptr;
   size_t channels_count = 1; // запрашиваемое число каналов для передачи даных
-  enet_uint32 user_data = 0; // целое, видимое сервером как "event.data"
+  enet_uint32 user_data = tr::admin_key; // целое, видимое сервером как "event.data"
   peer = enet_host_connect( tr_client, &address, channels_count, user_data );
   if( nullptr == peer )
   {
@@ -146,7 +149,7 @@ int main()
     if(( enet_host_service( tr_client, &event, 1000 ) > 0 ) &&
        ( event.type == ENET_EVENT_TYPE_CONNECT ))
     {
-      std::cout << "Connected to " << peer->address.host
+      std::cout << "detected server " << peer->address.host
         <<":" << peer->address.port << "\n";
     } else {
       std::cout << "Fail connecting - reset\n";
@@ -155,7 +158,7 @@ int main()
     }
   }
 
-  if( nullptr != peer ) tr_ctrl( tr_client, peer ); // Цикл управления сервером
+  if( nullptr != peer ) tr::ctrl( tr_client, peer ); // Цикл управления сервером
   enet_host_destroy( tr_client );   // Очиститьданные - закончить работу
   std::cout << "completed\n";
   return EXIT_SUCCESS;

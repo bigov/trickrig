@@ -3,9 +3,16 @@
 #
 
 # серверная часть
-SET( SRV_SRC "${CMAKE_SOURCE_DIR}/server/server.cpp" )
+SET( SRV_SRC
+  "${CMAKE_SOURCE_DIR}/server/server.cpp"
+  "${CMAKE_SOURCE_DIR}/server/enetw.cpp"
+)
+
 # управление/контроль
-SET( CTRL_SRC "${CMAKE_SOURCE_DIR}/server/ctrl.cpp" )
+SET( CTRL_SRC
+  "${CMAKE_SOURCE_DIR}/server/ctrl.cpp"
+  "${CMAKE_SOURCE_DIR}/server/enetw.cpp"
+)
 
 find_package( PkgConfig REQUIRED )
 pkg_check_modules( ENET REQUIRED libenet )
