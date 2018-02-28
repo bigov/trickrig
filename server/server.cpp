@@ -2,70 +2,71 @@
  * Сервераная часть на базе библиотеки enet
  *
  */
-#include <iostream>
-#include <cwctype>
-#include <cstring>
-#include <cstdlib>
-#include <enet/enet.h>
-#include <map>
-#include <vector>
+#include "server.hpp"
+/*
+// === SAMPLES
 
-enum SRV_CMD {
-  CMD_STOP,
-  CMD_ENUM_END,
-};
+// Если клиент с уровнем "adm_key" сказал "stop", то выключить сервер
+ if((memcmp(event.packet->data, CmdMap[CMD_STOP].data(),
+    event.packet->dataLength) == 0 ) && (event.peer->data == &adm_key))
 
-std::map<SRV_CMD, std::vector<unsigned char>> CmdMap = {
-  {CMD_STOP, {'s','t','o','p'}}, // команда для выключения
-};
+// Структура данных
+event.packet->dataLength // длина пакета
+event.packet->data       // данные
+event.peer->data         // информация, установленая в блоке сверху
+event.channelID          // по какому каналу
+*/
 
+//## Главный цикл обработки сервером событий
 void tr_loop(ENetHost* srv)
 {
   ENetEvent event;
-  char adm_key = 10;              //TODO: статус авторизации клиента
+  ENetPacket * packet = nullptr;
+  char adm_key = 10;      // TODO: статус авторизации клиента
   bool listen_clients = true;
+  int cmd[1] = { 0, };
+  enet_uint8 channel = 0; // id канала для отправки пакета
 
-  /* интервал ожидания события 1 секунда (1000 мсек) */
-  while(( enet_host_service( srv, &event, 1000 ) > 0 ) || listen_clients )
+  int timeout = 500; // интервал обработки событий 500 мсек = 0.5сек
+  while(( enet_host_service( srv, &event, timeout ) > 0 ) || listen_clients )
   {
+    timeout = 500;
     switch( event.type )
     {
       case ENET_EVENT_TYPE_CONNECT:
         event.peer->data = &adm_key; // можно сохранить информацию о клиенте
+        cmd[0] = CMD_HELLO;
+        packet = enet_packet_create( cmd, sizeof(cmd), ENET_PACKET_FLAG_RELIABLE );
+        enet_peer_send (event.peer, channel, packet);
+        enet_host_flush (srv);
+        timeout = 1;
         break;                       //TODO: добавить уровни доступа
       case ENET_EVENT_TYPE_RECEIVE:
-        std::cout << "Recieved packet: "
-         << event.packet->data << "\n";
-
-        // Если клиент с уровнем "adm_key" сказал "stop", то выключить сервер
-        if((memcmp(event.packet->data, CmdMap[CMD_STOP].data(),
-          event.packet->dataLength) == 0 ) && (event.peer->data == &adm_key))
+        if(event.packet->dataLength != sizeof(cmd)) break;
+        memcpy(cmd, event.packet->data, event.packet->dataLength);
+        if(( cmd[0] == CMD_STOP) && (event.peer->data == &adm_key))
         {
+          std::cout << "Recieved CMD_STOP\n";
           listen_clients = false;
         }
 
-        /*
-        event.packet->dataLength // длина пакета
-        event.packet->data       // данные
-        event.peer->data         // информация, установленая в блоке сверху
-        event.channelID          // по какому каналу
-        */
+        // ответ клиенту
+        cmd[0] = CMD_BY;
+        packet = enet_packet_create( cmd, sizeof(cmd), ENET_PACKET_FLAG_RELIABLE );
+        enet_peer_send (event.peer, channel, packet);
+        enet_host_flush (srv);
 
         // после обработки пакет следует удалить
         enet_packet_destroy( event.packet );
         break;
-
-        case ENET_EVENT_TYPE_DISCONNECT:
+      case ENET_EVENT_TYPE_DISCONNECT:
         std::cout << event.peer->data << " disconnected\n";
         event.peer->data = NULL;
         break;
-
-        case ENET_EVENT_TYPE_NONE:
+      case ENET_EVENT_TYPE_NONE:
         break;
     }
   }
-
-  std::cout << "Shootdown server.\n";
   return;
 }
 
@@ -105,6 +106,6 @@ int main()
   // job end
   enet_host_destroy( tr_server );
 
-  std::cout << "Server completed.\n";
+  std::cout << "Server closed.\n";
   return EXIT_SUCCESS;
 }

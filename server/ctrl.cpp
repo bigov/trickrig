@@ -3,9 +3,7 @@
  * Контрольная часть (клиент) на базе библиотеки enet
  *
  */
-#include <iostream>
-#include <cstdlib>
-#include <enet/enet.h>
+#include "server.hpp"
 
 //## Отключиться от сервера
 void tr_disconnect(ENetHost* client, ENetPeer* peer)
@@ -35,6 +33,42 @@ void tr_disconnect(ENetHost* client, ENetPeer* peer)
   return;
 }
 
+//## Получение ответа от сервера
+//   int timeout - время ожидания ответа (миллисекунд)
+void listen_events(ENetHost* client, int timeout)
+{
+  ENetEvent event;
+  int cmd[1] = { 0, };
+
+  while( enet_host_service(client, &event, timeout) > 0 )
+  {
+    switch( event.type )
+    {
+      case ENET_EVENT_TYPE_CONNECT:
+        std::cout << "Connected\n";
+        break;
+      case ENET_EVENT_TYPE_RECEIVE:
+        if(event.packet->dataLength != sizeof(cmd))
+        {
+          std::cout << "Wrong event.packet->dataLength\n";
+          break;
+        }
+        memcpy(cmd, event.packet->data, event.packet->dataLength);
+        std::cout << "Recieved " << std::to_string(cmd[0]) <<"\n";
+        // после обработки пакет следует удалить
+        enet_packet_destroy( event.packet );
+        break;
+      case ENET_EVENT_TYPE_DISCONNECT:
+        std::cout << "Server disconnected\n";
+        event.peer->data = NULL;
+        break;
+      case ENET_EVENT_TYPE_NONE:
+        break;
+    }
+  }
+  return;
+}
+
 //## Передача на сервер данных
 void tr_ctrl(ENetHost* client, ENetPeer* peer)
 {
@@ -42,16 +76,20 @@ void tr_ctrl(ENetHost* client, ENetPeer* peer)
   enet_uint8 channel = 0;       // id канала для отправки пакета
   ENetPacket * packet = nullptr;
   bool ctrl = true;
+  int cmd[1] = { 0, };
 
   while(ctrl)
   {
     std::cout << "srv: ";
     UserCommand.clear();
     std::getline( std::cin, UserCommand );
-    packet = enet_packet_create( UserCommand.c_str(), UserCommand.size() + 1,
-      ENET_PACKET_FLAG_RELIABLE );
+    cmd[0] = CMD_STOP;
+    packet = enet_packet_create( cmd, sizeof(cmd), ENET_PACKET_FLAG_RELIABLE );
     enet_peer_send (peer, channel, packet);
     enet_host_flush (client);
+
+    listen_events(client, 500);
+
     if( UserCommand == "exit" ) ctrl = false;
   }
 
