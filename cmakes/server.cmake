@@ -17,6 +17,9 @@ SET( CTRL_SRC
 find_package( PkgConfig REQUIRED )
 pkg_check_modules( ENET REQUIRED libenet )
 
+# еще есть параметры обнаруженного пакета:
+#  ${ENET_LIBRARY_DIRS} и ${ENET_INCLUDE_DIRS}
+
 add_executable( server ${SRV_SRC} )
 target_link_libraries( server ${ENET_LIBRARIES} )
 
