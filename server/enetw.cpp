@@ -15,6 +15,22 @@ namespace tr {
 
   int admin_key = 888; // ключ администратора TODO: сделать вычисляемым
 
+  //## Обработчик подключения
+  void enetw::ev_connect(void)
+  {
+    //event.peer->data - информация от клиента при подключении
+    int cmd[1] = { 0, };
+    enet_uint8 channel = 0; // id канала для отправки пакета
+
+    cmd[0] = CMD_HELLO;
+    ENetPacket * packet = enet_packet_create( cmd, sizeof(cmd),
+      ENET_PACKET_FLAG_RELIABLE );
+    enet_peer_send (event.peer, channel, packet);
+    enet_host_flush (enetw_host);
+
+    return;
+  }
+
   //## Default constructor
   enetw::enetw(void)
   {
@@ -46,7 +62,6 @@ namespace tr {
   {
     create_server();
 
-    ENetEvent event;
     ENetPacket * packet = nullptr;
     bool listen_clients = true;
     int cmd[1] = { 0, };
@@ -59,11 +74,7 @@ namespace tr {
       switch( event.type )
       {
       case ENET_EVENT_TYPE_CONNECT:
-        event.peer->data = &tr::admin_key; // можно сохранить информацию о клиенте
-        cmd[0] = CMD_HELLO;
-        packet = enet_packet_create( cmd, sizeof(cmd), ENET_PACKET_FLAG_RELIABLE );
-        enet_peer_send (event.peer, channel, packet);
-        enet_host_flush (enetw_host);
+        ev_connect();
         timeout = 1;
         break;                       //TODO: добавить уровни доступа
       case ENET_EVENT_TYPE_RECEIVE:

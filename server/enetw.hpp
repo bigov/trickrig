@@ -46,16 +46,20 @@ namespace tr {
 
   class enetw
   {
-  public:
-    enetw(void);
-    ~enetw(void);
-
+  private:
+    ENetEvent event;
     ENetHost* enetw_host = nullptr;
     ENetAddress address = {};
     int n_connections = 8;        // количество подключений
     int n_channels = 0;           // max число каналов для каждого подключения
     int in_bw = 0;                // скорость приема (Кбайт/с)
     int out_bw = 0;               // скорость передачи (Кбайт/с)
+
+    void ev_connect(void);
+
+  public:
+    enetw(void);
+    ~enetw(void);
 
     void create_server(void);
     void run_server(void);
