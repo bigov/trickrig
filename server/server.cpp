@@ -8,6 +8,7 @@
 int main()
 {
   tr::enetw ServerEnet = {};
+  ServerEnet.init_server();
   ServerEnet.run_server();
 
   return EXIT_SUCCESS;

@@ -31,6 +31,9 @@ event.channelID          // по какому каналу
 
 namespace tr {
 
+  //DEBUG
+  extern void log(const char *);
+
   enum SRV_CMD {
     CMD_ZERO,      // нуль не используется как команда
     CMD_HELLO,     // control me
@@ -41,28 +44,45 @@ namespace tr {
     CMD_ENUM_END,  // end of the list commands
   };
 
-  extern std::map<SRV_CMD, std::vector<unsigned char>> CmdMap;
+  extern std::map<SRV_CMD, std::vector<char>> CmdMap;
   extern int admin_key; // ключ администратора TODO: сделать вычисляемым
 
   class enetw
   {
   private:
-    ENetEvent event;
-    ENetHost* enetw_host = nullptr;
+    bool listen_clients = false;
+    ENetHost* nethost = nullptr;
     ENetAddress address = {};
-    int n_connections = 8;        // количество подключений
-    int n_channels = 0;           // max число каналов для каждого подключения
-    int in_bw = 0;                // скорость приема (Кбайт/с)
-    int out_bw = 0;               // скорость передачи (Кбайт/с)
+    ENetPeer* cl_peer = nullptr; // клиентский peer
 
-    void ev_connect(void);
+    // настройки сервера
+    int srv_conns = 8;     // количество подключений
+    int srv_channels = 0;  // max число каналов для каждого подключения
+    int srv_in_bw = 0;     // скорость приема (Кбайт/с)
+    int srv_out_bw = 0;    // скорость передачи (Кбайт/с)
+
+    // настройки клиента
+    int cl_conns = 1;      // количество подключений
+    int cl_channels = 1;   // max число каналов для каждого подключения
+    int cl_in_bw = 0;      // скорость приема (Кбайт/с)
+    int cl_out_bw = 0;     // скорость передачи (Кбайт/с)
+
+    void ev_connect(ENetPeer*);
+    void ev_disconnect(ENetPeer*);
+    void ev_receive(ENetPeer*, ENetPacket*);
+    void send_by_peer(ENetPeer*, std::vector<enet_uint8>&);
 
   public:
     enetw(void);
     ~enetw(void);
 
-    void create_server(void);
+    void init_server(void);
+    void init_client(void);
+    bool connect(std::string&, enet_uint32);
+    void disconnect(void);
     void run_server(void);
+    void send_data(std::vector<enet_uint8>&);
+    void check_events(int timeout);
 
   };
 
