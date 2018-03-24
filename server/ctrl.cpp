@@ -16,7 +16,6 @@ int main()
   if(!ClientEnet.connect(srv_name, 0)) return EXIT_FAILURE;
 
   bool ctrl = true;
-  //int timeout = 500;
   std::vector<enet_uint8> CmdEnet = {};
 
   while(ctrl)
