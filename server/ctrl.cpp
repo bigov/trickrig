@@ -8,7 +8,6 @@
 //## Enter point
 int main()
 {
-
   tr::enetw ClientEnet = {};
   ClientEnet.init_client();
 

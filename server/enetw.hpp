@@ -53,7 +53,6 @@ namespace tr {
     bool listen_clients = false;
     ENetHost* nethost = nullptr;
     ENetAddress address = {};
-    ENetPeer* cl_peer = nullptr; // клиентский peer
 
     // настройки сервера
     int srv_conns = 8;     // количество подключений
@@ -66,6 +65,7 @@ namespace tr {
     int cl_channels = 1;   // max число каналов для каждого подключения
     int cl_in_bw = 0;      // скорость приема (Кбайт/с)
     int cl_out_bw = 0;     // скорость передачи (Кбайт/с)
+    ENetPeer* cl_peer = nullptr; // клиентский peer
 
     void ev_connect(ENetPeer*);
     void ev_disconnect(ENetPeer*);
