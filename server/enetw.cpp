@@ -41,8 +41,7 @@ namespace tr {
   //## Create ENet host as network server
   void enetw::init_server(void)
   {
-    nethost = enet_host_create( &address,
-      srv_conns, srv_channels, srv_in_bw, srv_out_bw );
+    nethost = enet_host_create( &address, srv_conns, srv_channels, in_bw, out_bw );
     if(nullptr == nethost) ERR("An error on creating an ENet server host");
     listen_clients = true;
     return;
