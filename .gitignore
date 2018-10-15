@@ -1,4 +1,10 @@
-!core/
+bin
+_bin
+_bin_
+dbg
+_dbg
+_dbg_
+build
 *.*#
 *.Debug
 *.Release
@@ -50,9 +56,6 @@
 CMakeLists.txt.user
 Makefile*
 Thumbs.db
-_dbg_
-bin
-build
 core
 moc_*.cpp
 qrc_*.cpp
