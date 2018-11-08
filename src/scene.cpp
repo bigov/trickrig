@@ -22,9 +22,9 @@ namespace tr
     ttf.load_chars( L"fps: 0123456789" );
     ttf.set_cursor( 2, 1 );
     ttf.set_color( 0x18, 0x18, 0x18 );
-    show_fps.w = 46;
-    show_fps.h = 15;
-    show_fps.size = static_cast<size_t>( show_fps.w * show_fps.h ) * 4;
+    FpsDisplay.w = 46;
+    FpsDisplay.h = 15;
+    FpsDisplay.size = static_cast<size_t>( FpsDisplay.w * FpsDisplay.h ) * 4;
     //show_fps.img.assign( show_fps.size, 0x00 );
 
     // Загрузка обрамления окна (HUD) из файла
@@ -71,8 +71,8 @@ namespace tr
     glBindTexture(GL_TEXTURE_2D, Eye.texco_buf);
 
     GLint level_of_details = 0, frame = 0;
-    glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-      tr::GlWin.width, tr::GlWin.height, frame, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA, tr::GlWin.width,
+          tr::GlWin.height, frame, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -151,13 +151,13 @@ namespace tr
 
     // Табличка с текстом на экране отображается в виде наложенного на GL_TEXTURE1 изображения
     glActiveTexture(GL_TEXTURE1);
-    show_fps.Data.clear();
-    show_fps.Data.assign(show_fps.size, 0xCD);
+    FpsDisplay.Data.clear();
+    FpsDisplay.Data.assign(FpsDisplay.size, 0xCD);
     ttf.set_cursor(2,1);
-    ttf.write_wstring(show_fps, {L"fps:" + std::to_wstring(ev.fps)});
-    show_fps.flip_vert();
+    ttf.write_wstring(FpsDisplay, {L"fps:" + std::to_wstring(ev.fps)});
+    FpsDisplay.flip_vert();
     glTexSubImage2D(GL_TEXTURE_2D, 0, 8, tr::GlWin.height - 22,
-      show_fps.w, show_fps.h, GL_RGBA, GL_UNSIGNED_BYTE, show_fps.Data.data());
+      FpsDisplay.w, FpsDisplay.h, GL_RGBA, GL_UNSIGNED_BYTE, FpsDisplay.Data.data());
 
     // Второй проход рендера - по текстуре из фреймбуфера
     glBindVertexArray(vaoQuad);

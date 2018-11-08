@@ -5,8 +5,8 @@
 //
 //
 //============================================================================
-#ifndef __IO_HPP__
-#define __IO_HPP__
+#ifndef IO_HPP
+#define IO_HPP
 
 #include "main.hpp"
 #include "png.h"
@@ -16,6 +16,8 @@
 
 namespace tr
 {
+  // структура для хранения данных изображения ввиде
+  // "прямоугольного" массива для вывода во фрейм-буфер
   struct image
   {
     GLsizei w = 0;
@@ -61,4 +63,4 @@ namespace tr
   extern bool operator< (f2d const& left, f2d const& right);
 }
 
-#endif //__IO_HPP__
+#endif //IO_HPP
