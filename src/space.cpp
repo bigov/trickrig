@@ -23,10 +23,10 @@ namespace tr
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // Загрузка из файла данных текстуры
-    tr::image ImgTex0 = get_png_img(tr::Cfg.get(PNG_TEXTURE0));
+    tr::image ImgTex0 = get_png_img(tr::TrConfig.get(PNG_TEXTURE0));
 
-    tr::Eye.look_a = std::stof(tr::Cfg.get(LOOK_AZIM));
-    tr::Eye.look_t = std::stof(tr::Cfg.get(LOOK_TANG));
+    tr::Eye.look_a = std::stof(tr::TrConfig.get(LOOK_AZIM));
+    tr::Eye.look_t = std::stof(tr::TrConfig.get(LOOK_TANG));
 
     glGenTextures(1, &m_textureObj);
     glActiveTexture(GL_TEXTURE0); // можно загрузить не меньше 48

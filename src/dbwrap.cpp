@@ -333,23 +333,22 @@ namespace tr
   }
 
   //## Подключиться к DB
-  void sqlw::open(const std::string & fname)
+  bool sqlw::open(const std::string & fname)
   {
   /* Закрывает текущий файл БД (если был открыт) и открывает новый
    */
     if(is_open) close();
     DbFileName = fname;
-    open();
-    return;
+    return open();
   }
 
   //## Подключиться к DB
-  void sqlw::open(void)
+  bool sqlw::open(void)
   {
     if(DbFileName.empty())
     {
       ErrorsList.emplace_front("Sqlw: no specified DB to open.");
-      return;
+      return false;
     }
 
     ErrorsList.clear();
@@ -366,7 +365,7 @@ namespace tr
       is_open = true;
       sqlite3_update_hook(db, update_callback, &empty);
     }
-    return;
+    return is_open;
   }
 
   //## Выполнение запроса
@@ -379,15 +378,24 @@ namespace tr
   //## Выполнение запроса
   void sqlw::exec(const char *query)
   {
-    if(!is_open) open();
-    char *err_msg = nullptr;
-    ErrorsList.clear();
-    Table_rows.clear();
-    num_rows = 0;
-    if(SQLITE_OK != sqlite3_exec(db, query, callback, 0, &err_msg))
+    if(is_open || open())
     {
-      ErrorsList.emplace_front("sqlw::exec: " + std::string(err_msg));
-      sqlite3_free(err_msg);
+      char* err_msg = nullptr;
+      ErrorsList.clear();
+      Table_rows.clear();
+      num_rows = 0;
+      if(SQLITE_OK != sqlite3_exec(db, query, callback, 0, &err_msg))
+      {
+        if(nullptr == err_msg)
+        {
+          ErrorsList.emplace_front("sqlw::exec: can't exec query "
+                                   + std::string(query));
+        } else
+        {
+          ErrorsList.emplace_front("sqlw::exec: " + std::string(err_msg));
+          sqlite3_free(err_msg);
+        }
+      }
     }
 
     #ifndef NDEBUG

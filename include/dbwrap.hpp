@@ -42,8 +42,8 @@ class sqlw
 
     void set_db_name(const char *);
     void set_db_name(const std::string &);
-    void open(void);
-    void open(const std::string &);
+    bool open(void);
+    bool open(const std::string &);
     void close(void);
     void exec(const char *);
     void exec(const std::string &);

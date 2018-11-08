@@ -13,8 +13,8 @@
 #include "dbwrap.hpp"
 
 namespace tr {
-  tr::camera_3d Eye = {};   // главная камера 3D вида
-  tr::cfg Cfg = {};         // настройка параметров
+  tr::camera_3d Eye = {};  // главная камера 3D вида
+  tr::cfg TrConfig = {};   // настройка параметров
 }
 
 //##
@@ -27,11 +27,11 @@ int main()
 
   try
   {
-    tr::Cfg.load();           // Загрузка конфигурации
+    tr::TrConfig.load();      // Загрузка конфигурации
     tr::window_glfw Win = {}; // Настройка OpenGL окна
     tr::scene Scene = {};     // Сборка сцены
     Win.show(Scene);          // Цикл рендера
-    tr::Cfg.save();           // Сохранение конфигурации
+    tr::TrConfig.save();      // Сохранение конфигурации
   }
   catch(std::exception & e)
   {
@@ -54,7 +54,7 @@ void tr::init_config_db(const std::string & fname)
 /// Процедура вызывается при инициализации класса конфигурации,
 /// в случае, если он не находит файл базы данных.
 
-  tr::info("Установка начальных значений...\n");
+  tr::info("Init new database file.\n");
   tr::sqlw Db;
   Db.open(fname);
   for(auto &msg: Db.ErrorsList) tr::info(msg);

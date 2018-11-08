@@ -153,14 +153,14 @@ namespace tr
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
 
     // Начальные настройки камеры вида и размера окна
-    tr::Eye.ViewFrom.x = std::stof(tr::Cfg.get(VIEW_FROM_X));
-    tr::Eye.ViewFrom.y = std::stof(tr::Cfg.get(VIEW_FROM_Y));
-    tr::Eye.ViewFrom.z = std::stof(tr::Cfg.get(VIEW_FROM_Z));
-    tr::GlWin.width = std::stoi(tr::Cfg.get(WINDOW_WIDTH));
-    tr::GlWin.height = std::stoi(tr::Cfg.get(WINDOW_HEIGHT));
+    tr::Eye.ViewFrom.x = std::stof(tr::TrConfig.get(VIEW_FROM_X));
+    tr::Eye.ViewFrom.y = std::stof(tr::TrConfig.get(VIEW_FROM_Y));
+    tr::Eye.ViewFrom.z = std::stof(tr::TrConfig.get(VIEW_FROM_Z));
+    tr::GlWin.width = std::stoi(tr::TrConfig.get(WINDOW_WIDTH));
+    tr::GlWin.height = std::stoi(tr::TrConfig.get(WINDOW_HEIGHT));
 
-    tr::GlWin.top = std::stoi(tr::Cfg.get(WINDOW_TOP));
-    tr::GlWin.left = std::stoi(tr::Cfg.get(WINDOW_LEFT));
+    tr::GlWin.top = std::stoi(tr::TrConfig.get(WINDOW_TOP));
+    tr::GlWin.left = std::stoi(tr::TrConfig.get(WINDOW_LEFT));
 
     tr::GlWin.Cursor.x = static_cast<float>(tr::GlWin.width/2) + 0.5;
     tr::GlWin.Cursor.y = static_cast<float>(tr::GlWin.height/2) + 0.5;

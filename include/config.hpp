@@ -38,7 +38,7 @@ namespace tr
       static std::string get(tr::ENUM_INIT);
   };
 
-  extern cfg Cfg;
+  extern cfg TrConfig;
 
 } //namespace
 

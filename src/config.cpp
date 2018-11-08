@@ -58,7 +58,7 @@ namespace tr
   /* Загрузка конфига производится отдельным вызовом из главного
    * модуля с перехватом и выводом сообщений об ошибках.
    */
-    SqlDb.open(UserConfig);
+    if (!SqlDb.open(UserConfig)) init_config_db(UserConfig);
     SqlDb.exec("SELECT * FROM init;");
     if(SqlDb.num_rows < 1)
     {
