@@ -5,8 +5,8 @@
 // Подключаем все внешние модули из одного места
 //
 //============================================================================
-#ifndef __MAIN_HPP__
-#define __MAIN_HPP__
+#ifndef MAIN_HPP
+#define MAIN_HPP
 
 #include <sys/stat.h>
 #include <any>
@@ -32,6 +32,7 @@
 #include <vector>
 #include <unordered_map>
 #include <utility>
+#include <filesystem>
 
 #include "gl_core33.h"
 #define GLM_FORCE_RADIANS
@@ -81,9 +82,9 @@ namespace tr {
     int left = 0;
     int top = 0;
     float aspect = 1.0f;
-    glm::vec3 Cursor = {200.5f, 200.5f, 4.0f}; // x=u, y=v, z - длина стороны курсора
+    glm::vec3 Cursor = { 200.5f, 200.5f, 4.0f }; // x=u, y=v, z - длина стороны курсора
   };
-  extern opengl_window_params GlWin;
+  extern opengl_window_params WinGl;
 
   // Настройка параметров главной камеры 3D вида
   struct camera_3d {

@@ -18,12 +18,13 @@ namespace tr
     framebuffer_init();
 
     // Загрузка символов для отображения fps
-    ttf.init(tr::cfg::get(TTF_FONT), 9);
-    ttf.load_chars( L"fps: 0123456789" );
+    ttf.init(tr::cfg::get(TTF_FONT), 10);
+    ttf.load_chars( //L"fps: 0123456789" );
+      L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz: 0123456789" );
     ttf.set_cursor( 2, 1 );
-    ttf.set_color( 0x18, 0x18, 0x18 );
-    FpsDisplay.w = 46;
-    FpsDisplay.h = 15;
+    ttf.set_color( 0x18, 0x18, 0x18, 0xee );
+    FpsDisplay.w = 120;
+    FpsDisplay.h = 50;
     FpsDisplay.size = static_cast<size_t>( FpsDisplay.w * FpsDisplay.h ) * 4;
     //show_fps.img.assign( show_fps.size, 0x00 );
 
@@ -71,8 +72,8 @@ namespace tr
     glBindTexture(GL_TEXTURE_2D, Eye.texco_buf);
 
     GLint level_of_details = 0, frame = 0;
-    glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA, tr::GlWin.width,
-          tr::GlWin.height, frame, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA, tr::WinGl.width,
+          tr::WinGl.height, frame, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -85,7 +86,7 @@ namespace tr
     glGenRenderbuffers(1, &Eye.rendr_buf);
     glBindRenderbuffer(GL_RENDERBUFFER, Eye.rendr_buf);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-      tr::GlWin.width, tr::GlWin.height);
+      tr::WinGl.width, tr::WinGl.height);
 
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
       GL_RENDERBUFFER, Eye.rendr_buf);
@@ -138,6 +139,7 @@ namespace tr
   //## Рендеринг
   void scene::draw(const evInput& ev)
   {
+  //
   // Кадр сцены рендерится в изображение на (2D) "холсте" фреймбуфера,
   // после чего это изображение в виде текстуры накладывается на прямоугольник
   // окна. Курсор и дополнительные (HUD) элементы сцены изображаются
@@ -149,21 +151,41 @@ namespace tr
     space.draw(ev);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    // Табличка с текстом на экране отображается в виде наложенного на GL_TEXTURE1 изображения
-    glActiveTexture(GL_TEXTURE1);
-    FpsDisplay.Data.clear();
-    FpsDisplay.Data.assign(FpsDisplay.size, 0xCD);
-    ttf.set_cursor(2,1);
-    ttf.write_wstring(FpsDisplay, {L"fps:" + std::to_wstring(ev.fps)});
+    // Табличка с текстом на экране отображается в виде
+    // наложенного на GL_TEXTURE2 изображения, которое шейдером складывается
+    // с изображением трехмерной сцены, отрендереным во фреймбуфере.
+    glActiveTexture(GL_TEXTURE2);
+
+    FpsDisplay.Data.clear(); // массив данных для формирования изображения
+    FpsDisplay.Data.resize(FpsDisplay.size);
+    size_t i = 0;
+    while(i < FpsDisplay.size)
+    {
+      FpsDisplay.Data[i++] = 0xCF;
+      FpsDisplay.Data[i++] = 0xFF;
+      FpsDisplay.Data[i++] = 0xCF;
+      FpsDisplay.Data[i++] = 0x88;
+    }
+
+    ttf.set_cursor(2, 2);
+    ttf.write_wstring(FpsDisplay, { L"fps:" + std::to_wstring(ev.fps) });
+
+    ttf.set_cursor(2, 14);
+    ttf.write_wstring(FpsDisplay, { L"w:" + std::to_wstring(tr::WinGl.width) });
+
+    ttf.set_cursor(2, 26);
+    ttf.write_wstring(FpsDisplay, { L"h:" + std::to_wstring(tr::WinGl.height) });
+
+
     FpsDisplay.flip_vert();
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 8, tr::GlWin.height - 22,
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 8, 200, //tr::WinGl.height,
       FpsDisplay.w, FpsDisplay.h, GL_RGBA, GL_UNSIGNED_BYTE, FpsDisplay.Data.data());
 
     // Второй проход рендера - по текстуре из фреймбуфера
     glBindVertexArray(vaoQuad);
     glDisable(GL_DEPTH_TEST);
     screenShaderProgram.use();
-    screenShaderProgram.set_uniform("Cursor", tr::GlWin.Cursor);
+    screenShaderProgram.set_uniform("Cursor", tr::WinGl.Cursor);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     screenShaderProgram.unuse();
 

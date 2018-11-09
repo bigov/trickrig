@@ -335,9 +335,7 @@ namespace tr
   //## Подключиться к DB
   bool sqlw::open(const std::string & fname)
   {
-  /* Закрывает текущий файл БД (если был открыт) и открывает новый
-   */
-    if(is_open) close();
+    if(is_open) close(); // закрыть, если был открыт, текущий файл
     DbFileName = fname;
     return open();
   }
@@ -354,7 +352,7 @@ namespace tr
     ErrorsList.clear();
 
     int rc = sqlite3_open_v2(DbFileName.c_str(), &db,
-      SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, NULL);
+      SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
     if (rc != SQLITE_OK)
     {
       ErrorsList.emplace_front(std::string(sqlite3_errmsg(db))

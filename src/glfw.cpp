@@ -16,7 +16,7 @@ namespace tr
   double window_glfw::win_center_y = 0;
   //glm::vec3 ViewFrom = {};      // 3D координаты точка обзора
 
-  opengl_window_params GlWin = {};
+  opengl_window_params WinGl = {};
 
   //## Errors callback
   void window_glfw::error_callback(int error, const char* description)
@@ -93,8 +93,8 @@ namespace tr
     int left, int top)
   {
     if (!window) ERR("Error on call GLFW window_pos_callback.");
-    tr::GlWin.left = left;
-    tr::GlWin.top = top;
+    tr::WinGl.left = left;
+    tr::WinGl.top = top;
     return;
   }
 
@@ -110,30 +110,30 @@ namespace tr
 
     if(width < 64)  width  = 64;
     if(height < 48) height = 48;
-    tr::GlWin.width  = width;
-    tr::GlWin.height = height;
+    tr::WinGl.width  = width;
+    tr::WinGl.height = height;
 
     // пересчет координат курсора
-    tr::GlWin.Cursor.x = static_cast<float>(tr::GlWin.width/2) + 0.5;
-    tr::GlWin.Cursor.y = static_cast<float>(tr::GlWin.height/2) + 0.5;
+    tr::WinGl.Cursor.x = static_cast<float>(tr::WinGl.width/2) + 0.5;
+    tr::WinGl.Cursor.y = static_cast<float>(tr::WinGl.height/2) + 0.5;
 
     // пересчет матрицы проекции
-    tr::GlWin.aspect = static_cast<float>(tr::GlWin.width)
-                     / static_cast<float>(tr::GlWin.height);
-    tr::MatProjection = glm::perspective(1.118f, tr::GlWin.aspect, 0.01f, 1000.0f);
+    tr::WinGl.aspect = static_cast<float>(tr::WinGl.width)
+                     / static_cast<float>(tr::WinGl.height);
+    tr::MatProjection = glm::perspective(1.118f, tr::WinGl.aspect, 0.01f, 1000.0f);
 
     // Перестрока фреймбуфера
     glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);
 
     // настройка размера текстуры
     glBindTexture(GL_TEXTURE_2D, Eye.texco_buf);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tr::GlWin.width, tr::GlWin.height, 0,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tr::WinGl.width, tr::WinGl.height, 0,
       GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
     // настройка размера рендербуфера
     glBindRenderbuffer(GL_RENDERBUFFER, Eye.rendr_buf);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-      tr::GlWin.width, tr::GlWin.height);
+      tr::WinGl.width, tr::WinGl.height);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -156,26 +156,26 @@ namespace tr
     tr::Eye.ViewFrom.x = std::stof(tr::TrConfig.get(VIEW_FROM_X));
     tr::Eye.ViewFrom.y = std::stof(tr::TrConfig.get(VIEW_FROM_Y));
     tr::Eye.ViewFrom.z = std::stof(tr::TrConfig.get(VIEW_FROM_Z));
-    tr::GlWin.width = std::stoi(tr::TrConfig.get(WINDOW_WIDTH));
-    tr::GlWin.height = std::stoi(tr::TrConfig.get(WINDOW_HEIGHT));
+    tr::WinGl.width = std::stoi(tr::TrConfig.get(WINDOW_WIDTH));
+    tr::WinGl.height = std::stoi(tr::TrConfig.get(WINDOW_HEIGHT));
 
-    tr::GlWin.top = std::stoi(tr::TrConfig.get(WINDOW_TOP));
-    tr::GlWin.left = std::stoi(tr::TrConfig.get(WINDOW_LEFT));
+    tr::WinGl.top = std::stoi(tr::TrConfig.get(WINDOW_TOP));
+    tr::WinGl.left = std::stoi(tr::TrConfig.get(WINDOW_LEFT));
 
-    tr::GlWin.Cursor.x = static_cast<float>(tr::GlWin.width/2) + 0.5;
-    tr::GlWin.Cursor.y = static_cast<float>(tr::GlWin.height/2) + 0.5;
-    tr::GlWin.aspect = static_cast<float>(tr::GlWin.width)
-                     / static_cast<float>(tr::GlWin.height);
-    tr::MatProjection = glm::perspective(1.118f, tr::GlWin.aspect, 0.01f, 1000.0f);
+    tr::WinGl.Cursor.x = static_cast<float>(tr::WinGl.width/2) + 0.5;
+    tr::WinGl.Cursor.y = static_cast<float>(tr::WinGl.height/2) + 0.5;
+    tr::WinGl.aspect = static_cast<float>(tr::WinGl.width)
+                     / static_cast<float>(tr::WinGl.height);
+    tr::MatProjection = glm::perspective(1.118f, tr::WinGl.aspect, 0.01f, 1000.0f);
 
     //  Создание 3D окна
     glfwWindowHint(GLFW_VISIBLE, 0);
-    win_ptr = glfwCreateWindow(tr::GlWin.width, tr::GlWin.height,
+    win_ptr = glfwCreateWindow(tr::WinGl.width, tr::WinGl.height,
                          title.c_str(), NULL, nullptr);
     if (nullptr == win_ptr) ERR("Creating Window fail.");
 
     // Размещение
-    glfwSetWindowPos(win_ptr, tr::GlWin.left, tr::GlWin.top);
+    glfwSetWindowPos(win_ptr, tr::WinGl.left, tr::WinGl.top);
     glfwShowWindow(win_ptr);
 
     glfwMakeContextCurrent(win_ptr);
@@ -187,8 +187,8 @@ namespace tr
 
     if(!ogl_LoadFunctions())  ERR("Can't load OpenGl finctions");
 
-    win_center_x = static_cast<double>(tr::GlWin.width / 2);
-    win_center_y = static_cast<double>(tr::GlWin.height / 2);
+    win_center_x = static_cast<double>(tr::WinGl.width / 2);
+    win_center_y = static_cast<double>(tr::WinGl.height / 2);
 
     return;
   }

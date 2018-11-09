@@ -58,12 +58,15 @@ namespace tr
   /* Загрузка конфига производится отдельным вызовом из главного
    * модуля с перехватом и выводом сообщений об ошибках.
    */
-    if (!SqlDb.open(UserConfig)) init_config_db(UserConfig);
+    if(!SqlDb.open(CfgFname))
+    {
+      init_config_db(CfgFname);
+    }
     SqlDb.exec("SELECT * FROM init;");
     if(SqlDb.num_rows < 1)
     {
       SqlDb.close();
-      init_config_db(UserConfig);
+      init_config_db(CfgFname);
       SqlDb.exec("SELECT * FROM init;");
       if(SqlDb.num_rows < 1)
       {
@@ -99,16 +102,26 @@ namespace tr
 #ifdef _WIN32_WINNT
     DS = "\\";
     const char *env_p = getenv("USERPROFILE");
-    if(nullptr == env_p) ERR("config::set_user_dir: can'd setup users directory");
+    if(nullptr == env_p) ERR("config::set_user_dir: can't setup users directory");
     UserDir = std::string(env_p) + std::string("\\AppData\\Roaming");
 #else
     DS = "/";
     const char *env_p = getenv("HOME");
-    if(nullptr == env_p) ERR("config::set_user_dir: can'd setup users directory");
+    if(nullptr == env_p) ERR("config::set_user_dir: can't setup users directory");
     UserDir = std::string(env_p);
 #endif
-    UserDir += DS +".config" + DS + "TrickRig" + DS;
-    UserConfig = UserDir + UserConfig;
+
+    UserDir += DS +".config";
+    if(!std::filesystem::exists(UserDir))
+      std::filesystem::create_directory(UserDir);
+
+    UserDir += DS + "TrickRig";
+    if(!std::filesystem::exists(UserDir))
+      std::filesystem::create_directory(UserDir);
+
+    if(!std::filesystem::exists(UserDir)) ERR("Can't create: " + UserDir);
+
+    CfgFname = UserDir + DS + CfgFname;
     return;
   }
 
@@ -140,19 +153,19 @@ namespace tr
     sprintf(q, tpl, p.c_str(), LOOK_TANG);
     Query += q;
 
-    p = std::to_string(tr::GlWin.left);
+    p = std::to_string(tr::WinGl.left);
     sprintf(q, tpl, p.c_str(), WINDOW_LEFT);
     Query += q;
 
-    p = std::to_string(tr::GlWin.top);
+    p = std::to_string(tr::WinGl.top);
     sprintf(q, tpl, p.c_str(), WINDOW_TOP);
     Query += q;
 
-    p = std::to_string(tr::GlWin.width);
+    p = std::to_string(tr::WinGl.width);
     sprintf(q, tpl, p.c_str(), WINDOW_WIDTH);
     Query += q;
 
-    p = std::to_string(tr::GlWin.height);
+    p = std::to_string(tr::WinGl.height);
     sprintf(q, tpl, p.c_str(), WINDOW_HEIGHT);
     Query += q;
 

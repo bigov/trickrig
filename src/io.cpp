@@ -95,7 +95,7 @@ namespace tr
     res.size = PNG_IMAGE_SIZE(info);
     res.Data.assign(res.size, '\0');
 
-    if (!png_image_finish_read(&info, NULL, res.Data.data(), 0, NULL ))
+    if (!png_image_finish_read(&info, nullptr, res.Data.data(), 0, nullptr ))
     {
       png_image_free(&info);
       ERR(info.message);

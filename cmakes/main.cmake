@@ -19,7 +19,7 @@ include( "${trCMAKES}/extlibs/glm.cmake" )
 include_directories( ${trINCLUDE_DIRS} )
 
 ## Список библиотек
-SET( trLIBS ${trLIBS} pthread glcore33 freetype glfw sqlite3 )
+SET( trLIBS ${trLIBS} pthread stdc++fs glcore33 freetype glfw sqlite3 )
 
 add_executable( ${EXEC_NAME} ${trSRC} )
 target_link_libraries( ${EXEC_NAME} ${trLIBS} )

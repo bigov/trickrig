@@ -99,7 +99,7 @@ namespace tr
     glBindVertexArray(space_vao);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    glDrawElements(GL_TRIANGLES, render_points, GL_UNSIGNED_INT, NULL);
+    glDrawElements(GL_TRIANGLES, render_points, GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
     Prog3d.unuse(); // отключить шейдерную программу
 

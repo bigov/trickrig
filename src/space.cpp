@@ -226,12 +226,14 @@ namespace tr
   }
 
   //## Расчет координат рига, на который направлен взгляд
-  void space::calc_selected_area(glm::vec3 & s_dir)
+  //void space::calc_selected_area(glm::vec3 & s_dir)
+  void space::calc_selected_area(glm::vec3&)
   {
      return;
-     if(static_cast<int>(s_dir.x)) return;
 
    /*               ******** ! отключено ! ********
+
+    if(static_cast<int>(s_dir.x)) return;
 
     Selected = ViewTo;
     glm::vec3 check_step = { s_dir.x/8.f, s_dir.y/8.f, s_dir.z/8.f };
@@ -246,8 +248,9 @@ namespace tr
       }
       Selected += check_step;
     }
-    */
+
     return;
+    */
   }
 
   //## Функция, вызываемая из цикла окна для рендера сцены

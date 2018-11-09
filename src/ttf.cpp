@@ -87,9 +87,9 @@ namespace tr
   //
   void ttf::load_chars(std::wstring in_chars_string)
   {
-    FT_Library ftLibrary = 0;
+    FT_Library ftLibrary {};
     FT_Init_FreeType(&ftLibrary);
-    FT_Face ftFace = 0;
+    FT_Face ftFace {};
     FT_New_Face(ftLibrary, font.c_str(), 0, &ftFace);
     FT_Set_Pixel_Sizes(ftFace, pixel_width, 0);
 

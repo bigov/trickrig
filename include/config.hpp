@@ -5,8 +5,8 @@
 // Заголовок класса управления настройками приложения
 //
 //============================================================================
-#ifndef __CONFIG_HPP__
-#define __CONFIG_HPP__
+#ifndef CONFIG_HPP
+#define CONFIG_HPP
 
 #include "main.hpp"
 #include "io.hpp"
@@ -28,7 +28,7 @@ namespace tr
       static std::unordered_map<int, std::string> InitParams;
 
     public:
-      std::string UserConfig = "config.db";  // конфиг пользователя
+      std::string CfgFname = "config.db";  // конфиг пользователя
 
       cfg(void);
       ~cfg(void);
