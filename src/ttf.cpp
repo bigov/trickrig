@@ -21,7 +21,7 @@ namespace tr
   //## Наложение на картинку текстовой строки
   // TODO контроль границ
   //
-  void ttf::write_wstring(image & Image, const std::wstring & Text)
+  void ttf::write_wstring(image& Image, const std::wstring& Text)
   {
     for (const wchar_t & wChar: Text)
     {

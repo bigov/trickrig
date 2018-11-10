@@ -9,24 +9,98 @@
 
 namespace tr
 {
-  struct pixel {
-    unsigned char r = 0x00;
-    unsigned char g = 0x00;
-    unsigned char b = 0x00;
-    unsigned char a = 0x00;
-  };
 
-  /// формирование полупрозрачной полосы в нижней части сцены
-  void hud_fill(pixel* ptr)
+  void scene::make_button(std::vector<pixel>& P, const std::wstring& label)
   {
-    int hud_height = 48;
-    if(WinGl.height < hud_height) hud_height = WinGl.height;
+    int btn_w = 100;
+    int btn_h = 24;
+    image Btn {btn_w, btn_h};
 
-    size_t i_max = WinGl.width * WinGl.height;
-    pixel h{0x00, 0x88, 0x00, 0x40};           // RGBA цвет заполнения
+    size_t i = 0;
+    size_t max = btn_w * 4;
+    while(i < max)
+    {
+      Btn.Data[i++] = 0xB0;
+      Btn.Data[i++] = 0xB0;
+      Btn.Data[i++] = 0xB0;
+      Btn.Data[i++] = 0xFF;
+    }
 
-    size_t i = i_max - WinGl.width * hud_height;
-    while(i < i_max) *(ptr + i++) = h;
+    max = Btn.Data.size() - btn_w * 4;
+    while(i < max)
+    {
+      Btn.Data[i++] = 0xE0;
+      Btn.Data[i++] = 0xE0;
+      Btn.Data[i++] = 0xE0;
+      Btn.Data[i++] = 0xFF;
+    }
+
+    max = Btn.Data.size();
+    while(i < max)
+    {
+      Btn.Data[i++] = 0xB0;
+      Btn.Data[i++] = 0xB0;
+      Btn.Data[i++] = 0xB0;
+      Btn.Data[i++] = 0xFF;
+    }
+
+    i = 0;
+    while(i < max)
+    {
+      Btn.Data[i+0] = 0xB0;
+      Btn.Data[i+1] = 0xB0;
+      Btn.Data[i+2] = 0xB0;
+      Btn.Data[i+3] = 0xFF;
+      i += btn_w * 4 - 4;
+      Btn.Data[i+0] = 0xB0;
+      Btn.Data[i+1] = 0xB0;
+      Btn.Data[i+2] = 0xB0;
+    Btn.Data[i+3] = 0xFF;
+      i += 4;
+    }
+
+    TTF12.set_cursor(32, 2);
+    TTF12.write_wstring(Btn, label);
+
+    // координаты кнопки на экране
+    int x = WinGl.width/2 - btn_w/2;
+    int y = WinGl.height/2 - btn_h/2;
+
+    int j = 0;
+    for (int bt_y = 0; bt_y < btn_h; ++bt_y)
+      for (int bt_x = 0; bt_x < btn_w; ++bt_x)
+    {
+      size_t i = (y + bt_y) * WinGl.width + x + bt_x;
+      P[i] = {Btn.Data[j++], Btn.Data[j++], Btn.Data[j++], Btn.Data[j++]};
+    }
+
+    return;
+  }
+
+  /// Создание визуальных элементов управления окном
+  void scene::hud_fill(std::vector<pixel>& P)
+  {
+    pixel p {};
+    if(!WinGl.is_open) p = {0xE0, 0xE0, 0xE0, 0xC0};
+    P.resize(WinGl.width * WinGl.height, p);
+
+    if(!WinGl.is_open)
+    {
+      make_button( P, L"Open" );
+      return;
+    }
+    else
+    {
+      int hud_height = 48;
+      if(WinGl.height < hud_height) hud_height = WinGl.height;
+
+      size_t i_max = WinGl.width * WinGl.height;
+      pixel h{0x00, 0x88, 0x00, 0x40};           // RGBA цвет заполнения
+
+      pixel* ptr = &P[0];
+      size_t i = i_max - WinGl.width * hud_height;
+      while(i < i_max) *(ptr + i++) = h;
+    }
 
     return;
   }
@@ -39,37 +113,21 @@ namespace tr
     framebuffer_init();
 
     // Загрузка символов для отображения fps
-    ttf.init(tr::cfg::get(TTF_FONT), 10);
-    ttf.load_chars( //L"fps: 0123456789" );
+    TTF10.init(tr::cfg::get(TTF_FONT), 10);
+    TTF10.set_color( 0x20, 0x20, 0x20, 0xFF );
+    TTF10.load_chars(
       L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz: 0123456789" );
-    ttf.set_cursor( 2, 1 );
-    ttf.set_color( 0x18, 0x18, 0x18, 0xee );
-    Label.w = 120;
-    Label.h = 50;
-    Label.size = static_cast<size_t>( Label.w * Label.h ) * 4;
 
-    // Обрамление окна (HUD)
-    std::vector<pixel> Hud {};
-    Hud.resize(WinGl.width*WinGl.height, {0x00, 0x00, 0x00, 0x00});
-    hud_fill(&Hud[0]);
+    TTF12.init(tr::cfg::get(TTF_FONT), 12);
+    TTF12.set_color( 0x30, 0x30, 0x30, 0xFF );
+    TTF12.load_chars(
+      L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz: 0123456789" );
 
+
+    // Настройки отображения HUD
     glGenTextures(1, &tex_hud);
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, tex_hud);
-
-    GLint level_of_details = 0, frame = 0;
-
-    // Эта текстура растягивается на все окно. Если указать 4-й/5-й параметры
-    // не соответствующие размеру окна (в пикселях), то текстура будет
-    // равномерно растянута или сжата до размера окна.
-    glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-      WinGl.width, WinGl.height, frame, GL_RGBA, GL_UNSIGNED_BYTE, Hud.data());
-
-    //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    // Clamping to edges is important to prevent artifacts when scaling
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    
     // Linear filtering usually looks best for text
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -184,55 +242,52 @@ namespace tr
 
     // Первый проход рендера - во фреймбуфер
     glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);
-    space.draw(ev);
+    Space.draw(ev);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    glActiveTexture(GL_TEXTURE2);
 
     // Если размер окна изменился, то пересчитать размер HUD-текстуры
     // TODO: переместить сборку HUD в отдельный метод
-    if(WinGl.new_size)
+    if(WinGl.renew)
     {
-      glActiveTexture(GL_TEXTURE2);
+      std::vector<pixel> H {};
+      hud_fill(H);
       glBindTexture(GL_TEXTURE_2D, tex_hud);
-
-      std::vector<pixel> H{};
-      H.resize(WinGl.width*WinGl.height, {0x00, 0x00, 0x00, 0x00});
-      hud_fill(&H[0]);
-
-      GLint level_of_details = 0, frame = 0;
-      glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-        WinGl.width, WinGl.height, frame, GL_RGBA, GL_UNSIGNED_BYTE, H.data());
-
-      WinGl.new_size = false;
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WinGl.width, WinGl.height, 0,
+                   GL_RGBA, GL_UNSIGNED_BYTE, H.data());
+      WinGl.renew = false;
     }
 
     // Табличка с текстом на экране отображается в виде
     // наложенного на GL_TEXTURE2 изображения, которое шейдером складывается
     // с изображением трехмерной сцены, отрендереным во фреймбуфере.
-    glActiveTexture(GL_TEXTURE2);
-
-    Label.Data.resize(Label.size);
-    size_t i = 0;
-    while(i < Label.size)
+    if(WinGl.is_open)
     {
-      Label.Data[i++] = 0xCF;
-      Label.Data[i++] = 0xFF;
-      Label.Data[i++] = 0xCF;
-      Label.Data[i++] = 0x88;
-    }
+      size_t i = 0;
+      size_t max = Label.Data.size();
+      while(i < max)
+      {
+        Label.Data[i++] = 0xCF;
+        Label.Data[i++] = 0xFF;
+        Label.Data[i++] = 0xCF;
+        Label.Data[i++] = 0x88;
+      }
 
-    ttf.set_cursor(4, 2);
-    ttf.write_wstring(Label, { L"fps:" + std::to_wstring(ev.fps) });
+      TTF10.set_cursor(4, 2);
+      TTF10.write_wstring(Label, { L"fps:" + std::to_wstring(ev.fps) });
 
-    ttf.set_cursor(6, 14);
-    ttf.write_wstring(Label, { L"w:" + std::to_wstring(tr::WinGl.width) });
+      TTF10.set_cursor(6, 14);
+      TTF10.write_wstring(Label, { L"w:" + std::to_wstring(tr::WinGl.width) });
 
-    ttf.set_cursor(5, 26);
-    ttf.write_wstring(Label, { L"h:" + std::to_wstring(tr::WinGl.height) });
+      TTF10.set_cursor(5, 26);
+      TTF10.write_wstring(Label, { L"h:" + std::to_wstring(tr::WinGl.height) });
 
-    int xpos = 8; // Положение элемента относительно
-    int ypos = 8; // верхнего-левого угла окна
-    glTexSubImage2D(GL_TEXTURE_2D, 0, xpos, ypos, Label.w, Label.h,
+      int xpos = 8; // Положение элемента относительно
+      int ypos = 8; // верхнего-левого угла окна
+      glTexSubImage2D(GL_TEXTURE_2D, 0, xpos, ypos, Label.w, Label.h,
                     GL_RGBA, GL_UNSIGNED_BYTE, Label.Data.data());
+    }
 
     // Второй проход рендера - по текстуре из фреймбуфера
     glBindVertexArray(vaoQuad);

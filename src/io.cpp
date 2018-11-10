@@ -89,11 +89,10 @@ namespace tr
       ERR("Can't read PNG image file");
 
     info.format = PNG_FORMAT_RGBA;
-    image res {};
-    res.w = static_cast<GLsizei>(info.width);
-    res.h = static_cast<GLsizei>(info.height);
-    res.size = PNG_IMAGE_SIZE(info);
-    res.Data.assign(res.size, '\0');
+
+    image res {
+      static_cast<GLsizei>(info.width), static_cast<GLsizei>(info.height)
+    };
 
     if (!png_image_finish_read(&info, nullptr, res.Data.data(), 0, nullptr ))
     {

@@ -13,7 +13,6 @@ namespace tr
   {
     static evInput keys;
     static std::string title;
-    static bool cursor_is_captured;
     static double win_center_x, win_center_y; // центр окна
 
     public:

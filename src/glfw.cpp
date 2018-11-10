@@ -11,7 +11,6 @@ namespace tr
 {
   evInput window_glfw::keys = {0.0, 0.0, 0, 0, 0, 0, 0, 0, 120};
   std::string window_glfw::title = "TrickRig: v.development";
-  bool window_glfw::cursor_is_captured = false;
   double window_glfw::win_center_x = 0;
   double window_glfw::win_center_y = 0;
   //glm::vec3 ViewFrom = {};      // 3D координаты точка обзора
@@ -36,7 +35,7 @@ namespace tr
   //##
   void window_glfw::cursor_grab(GLFWwindow * window)
   {
-    cursor_is_captured = true;
+    WinGl.show_3d(true);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     glfwSetCursorPos(window, win_center_x, win_center_y);
     return;
@@ -45,7 +44,7 @@ namespace tr
   //##
   void window_glfw::cursor_free(GLFWwindow * window)
   {
-    cursor_is_captured = false;
+    WinGl.show_3d(false);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     return;
   }
@@ -55,7 +54,7 @@ namespace tr
     GLFWwindow* window, int button, int action, int mods)
   {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-      if (!cursor_is_captured) cursor_grab(window);
+      if (!WinGl.is_open) cursor_grab(window);
 
     keys.mouse_mods = mods;
     return;
@@ -69,7 +68,7 @@ namespace tr
     keys.key_mods = mods;
     keys.key_scancode = scancode;
 
-    if (cursor_is_captured)
+    if (WinGl.is_open)
     {
       keys.fb = glfwGetKey(window, k_FRONT) - glfwGetKey(window, k_BACK);
       keys.ud = glfwGetKey(window, k_DOWN)  - glfwGetKey(window, k_UP);
@@ -78,7 +77,7 @@ namespace tr
 
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
     {
-      if (cursor_is_captured)
+      if (WinGl.is_open)
       {
         keys.fb = 0;
         keys.ud = 0;
@@ -107,7 +106,7 @@ namespace tr
   void window_glfw::framebuffer_size_callback(GLFWwindow * window,
     int width, int height)
   {
-    tr::WinGl.new_size = true; // для пересчета параметров сцены
+    tr::WinGl.renew = true; // для пересчета параметров сцены
 
     win_center_x = static_cast<double>(width / 2);
     win_center_y = static_cast<double>(height / 2);
@@ -218,7 +217,7 @@ namespace tr
   void window_glfw::cursor_position_callback(GLFWwindow* ptWin,
                                              double xpos, double ypos)
   {
-    if (!cursor_is_captured) return;
+    if (!WinGl.is_open) return;
     keys.dx += static_cast<float>(xpos - win_center_x);
     keys.dy += static_cast<float>(ypos - win_center_y);
     glfwSetCursorPos(ptWin, win_center_x, win_center_y);
@@ -248,7 +247,7 @@ namespace tr
 
       Scene.draw(keys);
 
-      if(cursor_is_captured) keys.dx = keys.dy = 0.f;
+      if(WinGl.is_open) keys.dx = keys.dy = 0.f;
 
       glfwSwapBuffers(win_ptr);
       glfwPollEvents();

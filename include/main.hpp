@@ -79,11 +79,18 @@ namespace tr {
   struct window_gl {
     int width = 400;
     int height = 400;
-    bool new_size = false;
+    bool renew = true;
+    bool is_open = false;
+    void show_3d(bool state)
+    {
+      is_open = state;
+      Cursor[2] = state ? 4.0f : .0f;
+      renew = true;
+    }
     int left = 0;
     int top = 0;
     float aspect = 1.0f;
-    glm::vec3 Cursor = { 200.5f, 200.5f, 4.0f }; // x=u, y=v, z - длина стороны курсора
+    glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина стороны курсора
   };
   extern window_gl WinGl;
 
