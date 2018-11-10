@@ -107,6 +107,8 @@ namespace tr
   void window_glfw::framebuffer_size_callback(GLFWwindow * window,
     int width, int height)
   {
+    tr::WinGl.new_size = true; // для пересчета параметров сцены
+
     win_center_x = static_cast<double>(width / 2);
     win_center_y = static_cast<double>(height / 2);
 

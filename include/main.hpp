@@ -79,6 +79,7 @@ namespace tr {
   struct window_gl {
     int width = 400;
     int height = 400;
+    bool new_size = false;
     int left = 0;
     int top = 0;
     float aspect = 1.0f;

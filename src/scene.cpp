@@ -22,10 +22,10 @@ namespace tr
     int hud_height = 48;
     if(WinGl.height < hud_height) hud_height = WinGl.height;
 
-    size_t i_max = WinGl.width * hud_height; // сколько пикселей заполнить
-    pixel h{0x00, 0x88, 0x00, 0x40};         // RGBA цвет заполнения
+    size_t i_max = WinGl.width * WinGl.height;
+    pixel h{0x00, 0x88, 0x00, 0x40};           // RGBA цвет заполнения
 
-    size_t i = 0;
+    size_t i = i_max - WinGl.width * hud_height;
     while(i < i_max) *(ptr + i++) = h;
 
     return;
@@ -35,7 +35,6 @@ namespace tr
   //
   scene::scene()
   {
-
     program2d_init();
     framebuffer_init();
 
@@ -48,7 +47,6 @@ namespace tr
     Label.w = 120;
     Label.h = 50;
     Label.size = static_cast<size_t>( Label.w * Label.h ) * 4;
-    //show_fps.img.assign( show_fps.size, 0x00 );
 
     // Обрамление окна (HUD)
     std::vector<pixel> Hud {};
@@ -149,8 +147,11 @@ namespace tr
 
     tr::vbo vboTexcoord = {GL_ARRAY_BUFFER};
 
-    //GLfloat Texcoord[] = { 0.f, 0.f, 1.f, 0.f, 0.f, 1.f, 1.f, 1.f };
-
+    // Переворачиваем текстуру фрейм-буфера - меняем порядок следования
+    // координат текстуры с 1-2-3-4 на 3-4-1-2, при этом верх и низ меняются
+    // местами. Благодаря этому точка окна с нулевыми координатами (0,0)
+    // перемещается в более привычный верхний-левый угол. Кроме того, это
+    // позволяет накладывать на окно загруженные изображения без переворота.
     GLfloat Texcoord[] = {
       0.f, 1.f, //3
       1.f, 1.f, //4
@@ -176,17 +177,33 @@ namespace tr
   //## Рендеринг
   void scene::draw(const evInput& ev)
   {
-  //
   // Кадр сцены рендерится в изображение на (2D) "холсте" фреймбуфера,
   // после чего это изображение в виде текстуры накладывается на прямоугольник
   // окна. Курсор и дополнительные (HUD) элементы окна изображаются
   // как наложеные сверху дополнительные изображения
-  //
 
     // Первый проход рендера - во фреймбуфер
     glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);
     space.draw(ev);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+    // Если размер окна изменился, то пересчитать размер HUD-текстуры
+    // TODO: переместить сборку HUD в отдельный метод
+    if(WinGl.new_size)
+    {
+      glActiveTexture(GL_TEXTURE2);
+      glBindTexture(GL_TEXTURE_2D, tex_hud);
+
+      std::vector<pixel> H{};
+      H.resize(WinGl.width*WinGl.height, {0x00, 0x00, 0x00, 0x00});
+      hud_fill(&H[0]);
+
+      GLint level_of_details = 0, frame = 0;
+      glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
+        WinGl.width, WinGl.height, frame, GL_RGBA, GL_UNSIGNED_BYTE, H.data());
+
+      WinGl.new_size = false;
+    }
 
     // Табличка с текстом на экране отображается в виде
     // наложенного на GL_TEXTURE2 изображения, которое шейдером складывается
@@ -203,13 +220,13 @@ namespace tr
       Label.Data[i++] = 0x88;
     }
 
-    ttf.set_cursor(2, 2);
+    ttf.set_cursor(4, 2);
     ttf.write_wstring(Label, { L"fps:" + std::to_wstring(ev.fps) });
 
-    ttf.set_cursor(2, 14);
+    ttf.set_cursor(6, 14);
     ttf.write_wstring(Label, { L"w:" + std::to_wstring(tr::WinGl.width) });
 
-    ttf.set_cursor(2, 26);
+    ttf.set_cursor(5, 26);
     ttf.write_wstring(Label, { L"h:" + std::to_wstring(tr::WinGl.height) });
 
     int xpos = 8; // Положение элемента относительно

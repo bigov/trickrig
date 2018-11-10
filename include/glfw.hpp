@@ -11,8 +11,6 @@ namespace tr
 {
   class window_glfw
   {
-
-
     static evInput keys;
     static std::string title;
     static bool cursor_is_captured;
