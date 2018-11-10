@@ -192,7 +192,7 @@ namespace tr
   //## Расчет положения и направления движения камеры
   void space::calc_position(const evInput & ev)
   {
-    Eye.look_a += ev.dx * Eye.look_speed;
+    Eye.look_a -= ev.dx * Eye.look_speed;
     if(Eye.look_a > two_pi) Eye.look_a -= two_pi;
     if(Eye.look_a < 0) Eye.look_a += two_pi;
 
@@ -225,7 +225,8 @@ namespace tr
     return;
   }
 
-  //## Расчет координат рига, на который направлен взгляд
+  /// Расчет координат рига, на который направлен взгляд
+  ///
   //void space::calc_selected_area(glm::vec3 & s_dir)
   void space::calc_selected_area(glm::vec3&)
   {
@@ -253,14 +254,15 @@ namespace tr
     */
   }
 
-  //## Функция, вызываемая из цикла окна для рендера сцены
+  /// Функция, вызываемая из цикла окна для рендера сцены
+  ///
   void space::draw(const evInput & ev)
   {
     calc_position(ev);
     recalc_borders();
 
-    /// Запись в базу данных: Ctrl+S (285, 31).
-    /// Код отрабатывает последовательное нажатие клавиш Ctrl(285) и S(31)
+    // Запись в базу данных: Ctrl+S (285, 31).
+    // Код отрабатывает последовательное нажатие клавиш Ctrl(285) и S(31)
     static int mod = 0;
     if((31 == ev.key_scancode) && (1 == mod))
     {

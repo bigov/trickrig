@@ -35,7 +35,7 @@ namespace tr
       glm::mat4 MatView = {};
       glm::vec3
         ViewTo = {},
-        UpWard = {0.0, 1.0, 0.0}; // направление наверх
+        UpWard = {0.0, -1.0, 0.0}; // направление наверх
 
       void calc_position(const tr::evInput &);
       void calc_selected_area(glm::vec3 & sight_direction);

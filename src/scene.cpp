@@ -9,6 +9,28 @@
 
 namespace tr
 {
+  struct pixel {
+    unsigned char r = 0x00;
+    unsigned char g = 0x00;
+    unsigned char b = 0x00;
+    unsigned char a = 0x00;
+  };
+
+  /// формирование полупрозрачной полосы в нижней части сцены
+  void hud_fill(pixel* ptr)
+  {
+    int hud_height = 48;
+    if(WinGl.height < hud_height) hud_height = WinGl.height;
+
+    size_t i_max = WinGl.width * hud_height; // сколько пикселей заполнить
+    pixel h{0x00, 0x88, 0x00, 0x40};         // RGBA цвет заполнения
+
+    size_t i = 0;
+    while(i < i_max) *(ptr + i++) = h;
+
+    return;
+  }
+
   //## Конструктор
   //
   scene::scene()
@@ -23,21 +45,27 @@ namespace tr
       L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz: 0123456789" );
     ttf.set_cursor( 2, 1 );
     ttf.set_color( 0x18, 0x18, 0x18, 0xee );
-    FpsDisplay.w = 120;
-    FpsDisplay.h = 50;
-    FpsDisplay.size = static_cast<size_t>( FpsDisplay.w * FpsDisplay.h ) * 4;
+    Label.w = 120;
+    Label.h = 50;
+    Label.size = static_cast<size_t>( Label.w * Label.h ) * 4;
     //show_fps.img.assign( show_fps.size, 0x00 );
 
-    // Загрузка обрамления окна (HUD) из файла
-    image ImgHud = get_png_img(tr::cfg::get(PNG_HUD));
+    // Обрамление окна (HUD)
+    std::vector<pixel> Hud {};
+    Hud.resize(WinGl.width*WinGl.height, {0x00, 0x00, 0x00, 0x00});
+    hud_fill(&Hud[0]);
 
     glGenTextures(1, &tex_hud);
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, tex_hud);
 
     GLint level_of_details = 0, frame = 0;
+
+    // Эта текстура растягивается на все окно. Если указать 4-й/5-й параметры
+    // не соответствующие размеру окна (в пикселях), то текстура будет
+    // равномерно растянута или сжата до размера окна.
     glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-      ImgHud.w, ImgHud.h, frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgHud.Data.data());
+      WinGl.width, WinGl.height, frame, GL_RGBA, GL_UNSIGNED_BYTE, Hud.data());
 
     //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     // Clamping to edges is important to prevent artifacts when scaling
@@ -120,7 +148,16 @@ namespace tr
         2, GL_FLOAT, GL_FALSE, 0, nullptr );
 
     tr::vbo vboTexcoord = {GL_ARRAY_BUFFER};
-    GLfloat Texcoord[] = { 0.f, 0.f, 1.f, 0.f, 0.f, 1.f, 1.f, 1.f };
+
+    //GLfloat Texcoord[] = { 0.f, 0.f, 1.f, 0.f, 0.f, 1.f, 1.f, 1.f };
+
+    GLfloat Texcoord[] = {
+      0.f, 1.f, //3
+      1.f, 1.f, //4
+      0.f, 0.f, //1
+      1.f, 0.f, //2
+    };
+
     vboTexcoord.allocate( sizeof(Texcoord), Texcoord );
     vboTexcoord.attrib( screenShaderProgram.attrib_location_get("texcoord"),
         2, GL_FLOAT, GL_FALSE, 0, nullptr );
@@ -142,7 +179,7 @@ namespace tr
   //
   // Кадр сцены рендерится в изображение на (2D) "холсте" фреймбуфера,
   // после чего это изображение в виде текстуры накладывается на прямоугольник
-  // окна. Курсор и дополнительные (HUD) элементы сцены изображаются
+  // окна. Курсор и дополнительные (HUD) элементы окна изображаются
   // как наложеные сверху дополнительные изображения
   //
 
@@ -156,30 +193,29 @@ namespace tr
     // с изображением трехмерной сцены, отрендереным во фреймбуфере.
     glActiveTexture(GL_TEXTURE2);
 
-    FpsDisplay.Data.clear(); // массив данных для формирования изображения
-    FpsDisplay.Data.resize(FpsDisplay.size);
+    Label.Data.resize(Label.size);
     size_t i = 0;
-    while(i < FpsDisplay.size)
+    while(i < Label.size)
     {
-      FpsDisplay.Data[i++] = 0xCF;
-      FpsDisplay.Data[i++] = 0xFF;
-      FpsDisplay.Data[i++] = 0xCF;
-      FpsDisplay.Data[i++] = 0x88;
+      Label.Data[i++] = 0xCF;
+      Label.Data[i++] = 0xFF;
+      Label.Data[i++] = 0xCF;
+      Label.Data[i++] = 0x88;
     }
 
     ttf.set_cursor(2, 2);
-    ttf.write_wstring(FpsDisplay, { L"fps:" + std::to_wstring(ev.fps) });
+    ttf.write_wstring(Label, { L"fps:" + std::to_wstring(ev.fps) });
 
     ttf.set_cursor(2, 14);
-    ttf.write_wstring(FpsDisplay, { L"w:" + std::to_wstring(tr::WinGl.width) });
+    ttf.write_wstring(Label, { L"w:" + std::to_wstring(tr::WinGl.width) });
 
     ttf.set_cursor(2, 26);
-    ttf.write_wstring(FpsDisplay, { L"h:" + std::to_wstring(tr::WinGl.height) });
+    ttf.write_wstring(Label, { L"h:" + std::to_wstring(tr::WinGl.height) });
 
-
-    FpsDisplay.flip_vert();
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 8, 200, //tr::WinGl.height,
-      FpsDisplay.w, FpsDisplay.h, GL_RGBA, GL_UNSIGNED_BYTE, FpsDisplay.Data.data());
+    int xpos = 8; // Положение элемента относительно
+    int ypos = 8; // верхнего-левого угла окна
+    glTexSubImage2D(GL_TEXTURE_2D, 0, xpos, ypos, Label.w, Label.h,
+                    GL_RGBA, GL_UNSIGNED_BYTE, Label.Data.data());
 
     // Второй проход рендера - по текстуре из фреймбуфера
     glBindVertexArray(vaoQuad);

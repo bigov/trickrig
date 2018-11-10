@@ -16,7 +16,15 @@ namespace tr
   double window_glfw::win_center_y = 0;
   //glm::vec3 ViewFrom = {};      // 3D координаты точка обзора
 
-  opengl_window_params WinGl = {};
+  // TODO: сделать привязку через конфиг
+  int window_glfw::k_FRONT = GLFW_KEY_W;
+  int window_glfw::k_BACK  = GLFW_KEY_S;
+  int window_glfw::k_UP    = GLFW_KEY_LEFT_SHIFT;
+  int window_glfw::k_DOWN  = GLFW_KEY_SPACE;
+  int window_glfw::k_RIGHT = GLFW_KEY_D;
+  int window_glfw::k_LEFT  = GLFW_KEY_A;
+
+  window_gl WinGl = {};
 
   //## Errors callback
   void window_glfw::error_callback(int error, const char* description)
@@ -57,6 +65,17 @@ namespace tr
   void window_glfw::key_callback(GLFWwindow* window, int key, int scancode,
     int action, int mods)
   {
+
+    keys.key_mods = mods;
+    keys.key_scancode = scancode;
+
+    if (cursor_is_captured)
+    {
+      keys.fb = glfwGetKey(window, k_FRONT) - glfwGetKey(window, k_BACK);
+      keys.ud = glfwGetKey(window, k_DOWN)  - glfwGetKey(window, k_UP);
+      keys.rl = glfwGetKey(window, k_LEFT) - glfwGetKey(window, k_RIGHT);
+    }
+
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
     {
       if (cursor_is_captured)
@@ -71,20 +90,6 @@ namespace tr
       else glfwSetWindowShouldClose(window, true);
     }
 
-    keys.key_mods = mods;
-    keys.key_scancode = scancode;
-    return;
-  }
-
-  //## Опрос состояния клавиш управления
-  void window_glfw::check_keys_state(void)
-  {
-    keys.fb = glfwGetKey(win_ptr, k_FRONT)
-            - glfwGetKey(win_ptr, k_BACK);
-    keys.ud = glfwGetKey(win_ptr, k_DOWN)
-            - glfwGetKey(win_ptr, k_UP);
-    keys.rl = glfwGetKey(win_ptr, k_RIGHT)
-            - glfwGetKey(win_ptr, k_LEFT);
     return;
   }
 
@@ -127,8 +132,8 @@ namespace tr
 
     // настройка размера текстуры
     glBindTexture(GL_TEXTURE_2D, Eye.texco_buf);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tr::WinGl.width, tr::WinGl.height, 0,
-      GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tr::WinGl.width, tr::WinGl.height,
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
     // настройка размера рендербуфера
     glBindRenderbuffer(GL_RENDERBUFFER, Eye.rendr_buf);
@@ -182,6 +187,7 @@ namespace tr
     glfwSwapInterval(0);
     glfwSetKeyCallback(win_ptr, key_callback);
     glfwSetMouseButtonCallback(win_ptr, mouse_button_callback);
+    glfwSetCursorPosCallback(win_ptr, cursor_position_callback);
     glfwSetFramebufferSizeCallback(win_ptr, framebuffer_size_callback);
     glfwSetWindowPosCallback(win_ptr, window_pos_callback);
 
@@ -201,29 +207,32 @@ namespace tr
     return;
   }
 
-  //## Опрос положения указателя мыши и возврат его в центр окна
-  // производится в конце отрисовки каждого кадра
-  void window_glfw::check_mouse_pos(void)
+  ///
+  /// Обработчик окна для перемещений курсора мыши
+  /// \param ptWin - указатель окна
+  /// \param xpos  - X координата курсора в окне
+  /// \param ypos  - Y координата курсора в окне
+  ///
+  void window_glfw::cursor_position_callback(GLFWwindow* ptWin,
+                                             double xpos, double ypos)
   {
-    glfwGetCursorPos(win_ptr, &mouse_x, &mouse_y);
-    glfwSetCursorPos(win_ptr, win_center_x, win_center_y);
-
-    keys.dx = static_cast<float>(mouse_x - win_center_x);
-    keys.dy = static_cast<float>(mouse_y - win_center_y);
+    if (!cursor_is_captured) return;
+    keys.dx += static_cast<float>(xpos - win_center_x);
+    keys.dy += static_cast<float>(ypos - win_center_y);
+    glfwSetCursorPos(ptWin, win_center_x, win_center_y);
     return;
   }
 
   //## Show content
-  void window_glfw::show(tr::scene & space)
+  void window_glfw::show(tr::scene & Scene)
   {
     glfwSetInputMode(win_ptr, GLFW_STICKY_KEYS, 0);
 
     int fps = 0;
     std::chrono::seconds one_second(1);
     std::chrono::time_point<std::chrono::system_clock> t_start, t_frame;
-    //std::string win_title = title + std::to_string(fps);
-
     t_start = std::chrono::system_clock::now();
+
     while (!glfwWindowShouldClose(win_ptr))
     {
       fps++;
@@ -235,17 +244,14 @@ namespace tr
         fps = 0;
       }
 
-      if (cursor_is_captured)
-      {
-        check_mouse_pos();
-        check_keys_state();
-      }
+      Scene.draw(keys);
 
-      space.draw(keys);
+      if(cursor_is_captured) keys.dx = keys.dy = 0.f;
 
       glfwSwapBuffers(win_ptr);
       glfwPollEvents();
     }
+
     glfwDestroyWindow(win_ptr);
     return;
   }

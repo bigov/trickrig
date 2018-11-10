@@ -9,9 +9,10 @@
 
 namespace tr
 {
-
   class window_glfw
   {
+
+
     static evInput keys;
     static std::string title;
     static bool cursor_is_captured;
@@ -21,8 +22,6 @@ namespace tr
       window_glfw(void);
       ~window_glfw(void);
       void show(tr::scene&);
-      void check_mouse_pos(void);
-      void check_keys_state(void);
 
     private:
       GLFWwindow * win_ptr = nullptr;
@@ -32,12 +31,12 @@ namespace tr
              mouse_y = 0.0;
 
       // TODO: setup by Config
-      int k_FRONT = GLFW_KEY_W;
-      int k_BACK  = GLFW_KEY_S;
-      int k_UP    = GLFW_KEY_LEFT_SHIFT;
-      int k_DOWN  = GLFW_KEY_SPACE;
-      int k_RIGHT = GLFW_KEY_D;
-      int k_LEFT  = GLFW_KEY_A;
+      static int k_FRONT;
+      static int k_BACK;
+      static int k_UP;
+      static int k_DOWN;
+      static int k_RIGHT;
+      static int k_LEFT;
 
       window_glfw(const tr::window_glfw &);
       window_glfw operator=(const tr::window_glfw &);
@@ -45,6 +44,9 @@ namespace tr
       static void cursor_free(GLFWwindow*);
 
       static void error_callback(int error_id, const char* description);
+
+      static void cursor_position_callback(
+          GLFWwindow* window, double xpos, double ypos);
 
       static void mouse_button_callback(
         GLFWwindow* window, int button, int action, int mods);

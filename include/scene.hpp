@@ -23,7 +23,7 @@ namespace tr
       GLuint tex_hud = 0;
       tr::ttf ttf {};                   // создание надписей
       tr::space space {};               // виртуальное пространство
-      tr::image FpsDisplay {};          // табличка с fps
+      tr::image Label {};          // табличка с fps
       tr::glsl screenShaderProgram {};  // шейдерная программа
 
       void framebuffer_init(void);

@@ -76,7 +76,7 @@ namespace tr {
   extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
 
   // Настройка параметров 3D окна
-  struct opengl_window_params {
+  struct window_gl {
     int width = 400;
     int height = 400;
     int left = 0;
@@ -84,7 +84,7 @@ namespace tr {
     float aspect = 1.0f;
     glm::vec3 Cursor = { 200.5f, 200.5f, 4.0f }; // x=u, y=v, z - длина стороны курсора
   };
-  extern opengl_window_params WinGl;
+  extern window_gl WinGl;
 
   // Настройка параметров главной камеры 3D вида
   struct camera_3d {
@@ -105,7 +105,7 @@ namespace tr {
 
   /** Начальная дистанция рендера окружения
    *
-   * - блок, над которым расположена камера отображается всегда, даже при lod_0 = 0.0f
+   * - блок, над которым расположена камера рендерится всегда, даже при lod_0 = 0.0f
    * - при значении 0.0f < lod_0 <= 1.0f рисуется площадка из 9 блоков
    * - координаты блока (нулевая точка) вычилсяется через floor(), граница - через ceil()
    */

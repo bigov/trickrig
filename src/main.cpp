@@ -27,11 +27,11 @@ int main()
 
   try
   {
-    tr::TrConfig.load();      // Загрузка конфигурации
-    tr::window_glfw Win = {}; // Настройка OpenGL окна
-    tr::scene Scene = {};     // Сборка сцены
-    Win.show(Scene);          // Цикл рендера
-    tr::TrConfig.save();      // Сохранение конфигурации
+    tr::TrConfig.load();     // Загрузка конфигурации
+    tr::window_glfw Win {};  // Настройка OpenGL окна
+    tr::scene Scene {};      // Сборка сцены
+    Win.show(Scene);         // Цикл рендера
+    tr::TrConfig.save();     // Сохранение конфигурации
   }
   catch(std::exception & e)
   {
@@ -68,7 +68,7 @@ void tr::init_config_db(const std::string & fname)
   const char *tpl = "INSERT INTO init (key, val) VALUES (%d, '%s');";
 
   sprintf(q, tpl, TTF_FONT,           "DejaVuSansMono.ttf"); Q += q;
-  sprintf(q, tpl, PNG_HUD,            "hud.png");            Q += q;
+//  sprintf(q, tpl, PNG_HUD,            "hud.png");            Q += q;
   sprintf(q, tpl, PNG_TEXTURE0,       "tex0_512.png");       Q += q;
   sprintf(q, tpl, SHADER_VERT_SCENE,  "vert.glsl");          Q += q;
   sprintf(q, tpl, SHADER_GEOM_SCENE,  "geom.glsl");          Q += q;

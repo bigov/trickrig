@@ -52,16 +52,14 @@ namespace tr
     return;
   }
 
-  //## Загрузка конфигурации приложения
+  /// Загрузка конфигурации приложения
+  /// производится отдельным вызовом из главного модуля
+  ///
   void cfg::load(void)
   {
-  /* Загрузка конфига производится отдельным вызовом из главного
-   * модуля с перехватом и выводом сообщений об ошибках.
-   */
-    if(!SqlDb.open(CfgFname))
-    {
-      init_config_db(CfgFname);
-    }
+  if(!SqlDb.open(CfgFname)) init_config_db(CfgFname);
+
+
     SqlDb.exec("SELECT * FROM init;");
     if(SqlDb.num_rows < 1)
     {
