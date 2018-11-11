@@ -20,14 +20,14 @@ namespace tr
   // "прямоугольного" массива для вывода во фрейм-буфер
   struct image
   {
-    image(GLsizei width, GLsizei height): w(width), h(height)
+    image(UINT _w, UINT _h): w(_w), h(_h)
     {
       Data.resize(w * h * 4, 0x00);
     }
 
-    GLsizei w;
-    GLsizei h;
-    std::vector<unsigned char> Data {};
+    UINT w;
+    UINT h;
+    std::vector<UCHAR> Data {};
     void flip_vert(void);
 
   private:

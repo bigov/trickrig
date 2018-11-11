@@ -36,6 +36,8 @@ class ttf
     void set_color(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
     void set_color(uint8_t r, uint8_t g, uint8_t b);
     void set_cursor(uint32_t x, uint32_t y);
+    double width(const std::wstring &);
+    double height(const std::wstring &);
 
   private:
     uint32_t cur_x = 0, cur_y = 0, // координаты курсора

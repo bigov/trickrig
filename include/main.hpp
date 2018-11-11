@@ -77,20 +77,23 @@ namespace tr {
 
   // Настройка параметров 3D окна
   struct window_gl {
-    int width = 400;
-    int height = 400;
-    bool renew = true;
-    bool is_open = false;
-    void show_3d(bool state)
+    int width = 400;      // ширина окна
+    int height = 400;     // высота окна
+    int left = 0;         // положение окна по горизонтали
+    int top = 0;          // положение окна по вертикали
+    float aspect = 1.0f;  // соотношение размеров окна
+    bool renew = true;    // флаг наличия изменений параметров окна
+    bool is_open = false; // индикатор того, что окно открыто в режиме 3D
+    double xpos = 0;      // позиция указателя относительно левой границы
+    double ypos = 0;      // позиция указателя относительно верхней границы
+    glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина прицела
+
+    void show_3d(bool state) // Изменение режима окна 3d/2d
     {
       is_open = state;
       Cursor[2] = state ? 4.0f : .0f;
       renew = true;
     }
-    int left = 0;
-    int top = 0;
-    float aspect = 1.0f;
-    glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина стороны курсора
   };
   extern window_gl WinGl;
 

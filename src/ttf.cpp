@@ -18,6 +18,31 @@ namespace tr
     return;
   }
 
+  ///
+  /// Подсчет ширины надписи
+  /// \param Text
+  /// \return
+  ///
+  double ttf::width(const std::wstring& Text)
+  {
+    double res = 0;
+    for (const wchar_t & wChar: Text) res += CharsMap[wChar].width;
+    return res;
+  }
+
+  ///
+  /// Определение высоты надписи по самому высокому символу
+  /// \param Text
+  /// \return
+  ///
+  double ttf::height(const std::wstring& Text)
+  {
+    double res = 0;
+    for (const wchar_t & wChar: Text)
+      if(CharsMap[wChar].height > res) res = CharsMap[wChar].height;
+    return res;
+  }
+
   //## Наложение на картинку текстовой строки
   // TODO контроль границ
   //

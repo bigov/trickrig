@@ -90,9 +90,7 @@ namespace tr
 
     info.format = PNG_FORMAT_RGBA;
 
-    image res {
-      static_cast<GLsizei>(info.width), static_cast<GLsizei>(info.height)
-    };
+    image res{ info.width, info.height };
 
     if (!png_image_finish_read(&info, nullptr, res.Data.data(), 0, nullptr ))
     {

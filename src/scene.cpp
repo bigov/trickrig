@@ -9,99 +9,31 @@
 
 namespace tr
 {
-
-  void scene::make_button(std::vector<pixel>& P, const std::wstring& label)
+  ///
+  /// \brief Создание элементов интерфейса окна
+  ///
+  /// \details Окно приложения может иметь два состояния - открытое, в котором
+  /// происходит основной процесс, и режим настройка/управление (закрытое). В
+  /// обоих режимах поверх основного изображения OpenGL сцены накладываются
+  /// изображения дополнительных элементов. В первом случае это HUD и
+  /// контрольные элементы взаимодействия с контентом сцены, во втором -
+  /// элементы управления и настройки приложения.
+  ///
+  /// Из всех необходимых элементов собирается общее графическое изображение в
+  /// виде пиксельного массива и передается для рендера OpenGL изображения в
+  /// качестве накладываемой текстуры фрейм-буфера.
+  ///
+  void scene::build_gui(std::vector<UCHAR>& P)
   {
-    int btn_w = 100;
-    int btn_h = 24;
-    image Btn {btn_w, btn_h};
-
-    size_t i = 0;
-    size_t max = btn_w * 4;
-    while(i < max)
+    if(WinGl.is_open)
     {
-      Btn.Data[i++] = 0xB0;
-      Btn.Data[i++] = 0xB0;
-      Btn.Data[i++] = 0xB0;
-      Btn.Data[i++] = 0xFF;
-    }
-
-    max = Btn.Data.size() - btn_w * 4;
-    while(i < max)
-    {
-      Btn.Data[i++] = 0xE0;
-      Btn.Data[i++] = 0xE0;
-      Btn.Data[i++] = 0xE0;
-      Btn.Data[i++] = 0xFF;
-    }
-
-    max = Btn.Data.size();
-    while(i < max)
-    {
-      Btn.Data[i++] = 0xB0;
-      Btn.Data[i++] = 0xB0;
-      Btn.Data[i++] = 0xB0;
-      Btn.Data[i++] = 0xFF;
-    }
-
-    i = 0;
-    while(i < max)
-    {
-      Btn.Data[i+0] = 0xB0;
-      Btn.Data[i+1] = 0xB0;
-      Btn.Data[i+2] = 0xB0;
-      Btn.Data[i+3] = 0xFF;
-      i += btn_w * 4 - 4;
-      Btn.Data[i+0] = 0xB0;
-      Btn.Data[i+1] = 0xB0;
-      Btn.Data[i+2] = 0xB0;
-    Btn.Data[i+3] = 0xFF;
-      i += 4;
-    }
-
-    TTF12.set_cursor(32, 2);
-    TTF12.write_wstring(Btn, label);
-
-    // координаты кнопки на экране
-    int x = WinGl.width/2 - btn_w/2;
-    int y = WinGl.height/2 - btn_h/2;
-
-    int j = 0;
-    for (int bt_y = 0; bt_y < btn_h; ++bt_y)
-      for (int bt_x = 0; bt_x < btn_w; ++bt_x)
-    {
-      size_t i = (y + bt_y) * WinGl.width + x + bt_x;
-      P[i] = {Btn.Data[j++], Btn.Data[j++], Btn.Data[j++], Btn.Data[j++]};
-    }
-
-    return;
-  }
-
-  /// Создание визуальных элементов управления окном
-  void scene::hud_fill(std::vector<pixel>& P)
-  {
-    pixel p {};
-    if(!WinGl.is_open) p = {0xE0, 0xE0, 0xE0, 0xC0};
-    P.resize(WinGl.width * WinGl.height, p);
-
-    if(!WinGl.is_open)
-    {
-      make_button( P, L"Open" );
-      return;
+      GUI.make_panel(P);
     }
     else
     {
-      int hud_height = 48;
-      if(WinGl.height < hud_height) hud_height = WinGl.height;
-
-      size_t i_max = WinGl.width * WinGl.height;
-      pixel h{0x00, 0x88, 0x00, 0x40};           // RGBA цвет заполнения
-
-      pixel* ptr = &P[0];
-      size_t i = i_max - WinGl.width * hud_height;
-      while(i < i_max) *(ptr + i++) = h;
+      GUI.obscure(P);
+      GUI.make_button(P, TTF12, L"Open" );
     }
-
     return;
   }
 
@@ -122,7 +54,6 @@ namespace tr
     TTF12.set_color( 0x30, 0x30, 0x30, 0xFF );
     TTF12.load_chars(
       L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz: 0123456789" );
-
 
     // Настройки отображения HUD
     glGenTextures(1, &tex_hud);
@@ -247,15 +178,14 @@ namespace tr
 
     glActiveTexture(GL_TEXTURE2);
 
-    // Если размер окна изменился, то пересчитать размер HUD-текстуры
-    // TODO: переместить сборку HUD в отдельный метод
+    // Если окно изменилось - перерисовать GUI элементы
     if(WinGl.renew)
     {
-      std::vector<pixel> H {};
-      hud_fill(H);
+      std::vector<UCHAR> TexImg(WinGl.width * WinGl.height * 4, 0x00);
+      build_gui(TexImg);
       glBindTexture(GL_TEXTURE_2D, tex_hud);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WinGl.width, WinGl.height, 0,
-                   GL_RGBA, GL_UNSIGNED_BYTE, H.data());
+                   GL_RGBA, GL_UNSIGNED_BYTE, TexImg.data());
       WinGl.renew = false;
     }
 

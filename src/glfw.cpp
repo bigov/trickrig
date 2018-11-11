@@ -217,10 +217,20 @@ namespace tr
   void window_glfw::cursor_position_callback(GLFWwindow* ptWin,
                                              double xpos, double ypos)
   {
-    if (!WinGl.is_open) return;
-    keys.dx += static_cast<float>(xpos - win_center_x);
-    keys.dy += static_cast<float>(ypos - win_center_y);
-    glfwSetCursorPos(ptWin, win_center_x, win_center_y);
+    if(WinGl.is_open)
+    {
+      keys.dx += static_cast<float>(xpos - win_center_x);
+      keys.dy += static_cast<float>(ypos - win_center_y);
+      glfwSetCursorPos(ptWin, win_center_x, win_center_y);
+    }
+    else
+    {
+      // В режиме настройки перемещение указателя мыши вызывает
+      // изменения вида элементов управления и перерисовку окна
+      WinGl.xpos = xpos;
+      WinGl.ypos = ypos;
+      WinGl.renew = true;
+    }
     return;
   }
 
