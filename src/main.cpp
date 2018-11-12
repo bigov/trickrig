@@ -14,7 +14,6 @@
 
 namespace tr {
   tr::camera_3d Eye {};  // главная камера 3D вида
-  //tr::cfg TrConfig {};   // настройка параметров
 }
 
 //##

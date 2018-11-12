@@ -9,19 +9,61 @@ gui::gui(void)
   TTF12.load_chars(
     L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz: 0123456789" );
 
+  data = WinGui.data();
+  return;
+}
+
+///
+/// \brief Создание элементов интерфейса окна
+///
+/// \details Окно приложения может иметь два состояния - открытое, в котором
+/// происходит основной процесс, и режим настройка/управление (закрытое). В
+/// обоих режимах поверх основного изображения OpenGL сцены накладываются
+/// изображения дополнительных элементов. В первом случае это HUD и
+/// контрольные элементы взаимодействия с контентом сцены, во втором -
+/// элементы управления и настройки приложения.
+///
+/// Из всех необходимых элементов собирается общее графическое изображение в
+/// виде пиксельного массива и передается для рендера OpenGL изображения в
+/// качестве накладываемой текстуры фрейм-буфера.
+///
+void gui::make(void)
+{
+  WinGui.clear();
+  WinGui.resize(WinGl.width * WinGl.height * 4, 0x00);
+
+  if(WinGl.is_open)
+  {
+    panel();
+  }
+  else
+  {
+    obscure();
+    button(L"Open");
+  }
+
+  data = WinGui.data();
+  return;
+}
+
+///
+/// \brief gui::update
+///
+void gui::update(void)
+{
+  //tr::image Label {100, 50};
+
   return;
 }
 
 ///
 /// \brief Формирование на текстуре прямоугольной панели
-/// \param Texture
 /// \param height
 /// \param width
 /// \param top
 /// \param left
 ///
-void gui::make_panel(std::vector<UCHAR>& Texture,
-     UINT height, UINT width, UINT top, UINT left)
+void gui::panel(UINT height, UINT width, UINT top, UINT left)
 {
   // Высота не должна быть больше высоты окна
   if(WinGl.height < height) height = WinGl.height;
@@ -41,28 +83,27 @@ void gui::make_panel(std::vector<UCHAR>& Texture,
 
   while(i < i_max)
   {
-    Texture[i++] = bg_hud.r;
-    Texture[i++] = bg_hud.g;
-    Texture[i++] = bg_hud.b;
-    Texture[i++] = bg_hud.a;
+    WinGui[i++] = bg_hud.r;
+    WinGui[i++] = bg_hud.g;
+    WinGui[i++] = bg_hud.b;
+    WinGui[i++] = bg_hud.a;
   }
   return;
 }
 
 ///
-/// \brief Затенить текстуру окна
-/// \param Texture
+/// \brief Затенить текстуру GIU
 ///
-void gui::obscure(std::vector<UCHAR>& Texture)
+void gui::obscure(void)
 {
   size_t i = 0;
-  size_t max = Texture.size();
+  size_t max = WinGui.size();
   while(i < max)
   {
-    Texture[i++] = bg.r;
-    Texture[i++] = bg.g;
-    Texture[i++] = bg.b;
-    Texture[i++] = bg.a;
+    WinGui[i++] = bg.r;
+    WinGui[i++] = bg.g;
+    WinGui[i++] = bg.b;
+    WinGui[i++] = bg.a;
   }
   return;
 }
@@ -73,7 +114,7 @@ void gui::obscure(std::vector<UCHAR>& Texture)
 /// \param Font
 /// \param Docket
 ///
-void gui::make_button(TRvuch& Img, const std::wstring& D)
+void gui::button(const std::wstring& D)
 {
   UINT btn_w = 100;  // ширина кнопки
   UINT btn_h = 24;   // высота кнопки
@@ -144,7 +185,7 @@ void gui::make_button(TRvuch& Img, const std::wstring& D)
      for (UINT bt_x = 0; bt_x < btn_w * 4; ++bt_x)
   {
     size_t i = (y + bt_y) * WinGl.width * 4 + x * 4 + bt_x;
-    Img[i] = Btn.Data[j++];
+    WinGui[i] = Btn.Data[j++];
   }
 
   return;

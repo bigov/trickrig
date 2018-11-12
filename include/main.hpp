@@ -86,6 +86,7 @@ namespace tr {
     bool is_open = false; // индикатор того, что окно открыто в режиме 3D
     double xpos = 0;      // позиция указателя относительно левой границы
     double ypos = 0;      // позиция указателя относительно верхней границы
+    int fps = 120;        // частота кадров (для коррекции скорости движения)
     glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина прицела
 
     void show_3d(bool state) // Изменение режима окна 3d/2d
@@ -141,8 +142,7 @@ namespace tr {
   {
     float dx, dy;   // смещение указателя мыши в активном окне
     int fb, rl, ud, // управление направлением движения в 3D пространстве
-    key_scancode, key_mods, mouse_mods,
-    fps; // частота кадров (для коррекции скорости движения)
+    key_scancode, key_mods, mouse_mods;
   };
 
   const float pi = glm::pi<glm::float_t>();

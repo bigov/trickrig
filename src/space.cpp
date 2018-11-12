@@ -35,7 +35,9 @@ namespace tr
     GLint level_of_details = 0;
     GLint frame = 0;
     glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-      ImgTex0.w, ImgTex0.h, frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgTex0.Data.data());
+                 static_cast<GLsizei>(ImgTex0.w),
+                 static_cast<GLsizei>(ImgTex0.h),
+                 frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgTex0.Data.data());
 
     // Установка опций отрисовки текстур
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
@@ -49,9 +51,9 @@ namespace tr
     RigsDb0.init(g0); // загрузка данных уровня LOD-0
 
     MoveFrom = {
-      static_cast<int>(floor(tr::Eye.ViewFrom.x)),
-      static_cast<int>(floor(tr::Eye.ViewFrom.y)) - 2,
-      static_cast<int>(floor(tr::Eye.ViewFrom.z)),
+      static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
+      static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.y))) - 2,
+      static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.z))),
     };
 
     int // границы уровня lod_0
@@ -89,8 +91,8 @@ namespace tr
     int
       yMin = -5, yMax =  5, // Y границы области сбора
       x_old, x_new,  // координаты линий удаления/вставки новых фрагментов
-      vf_x = static_cast<int>(floor(tr::Eye.ViewFrom.x)),
-      vf_z = static_cast<int>(floor(tr::Eye.ViewFrom.z)),
+      vf_x = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
+      vf_z = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.z))),
       clod_0 = tr::lod_0;
 
     if(MoveFrom.x > vf_x) {
@@ -128,8 +130,8 @@ namespace tr
     int
       yMin = -5, yMax =  5, // Y границы области сбора
       z_old, z_new,  // координаты линий удаления/вставки новых фрагментов
-      vf_z = static_cast<int>( floor(tr::Eye.ViewFrom.z) ),
-      vf_x = static_cast<int>( floor(tr::Eye.ViewFrom.x) ),
+      vf_z = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.z))),
+      vf_x = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
       clod_0 = tr::lod_0;
 
     if(MoveFrom.z > vf_z) {
@@ -200,7 +202,7 @@ namespace tr
     if(Eye.look_t > look_up) Eye.look_t = look_up;
     if(Eye.look_t < look_down) Eye.look_t = look_down;
 
-    float _k = Eye.speed / static_cast<float>(ev.fps); // корректировка по FPS
+    float _k = Eye.speed / static_cast<float>(WinGl.fps); // корректировка по FPS
 
     //if (!space_is_empty(tr::Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
 

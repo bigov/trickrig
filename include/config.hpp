@@ -22,11 +22,11 @@ namespace tr
       cfg& operator=(const tr::cfg &) = delete;
 
       static tr::sqlw SqlDb;
-      static std::string UserDir;     // папка конфигов пользователя
-      static std::string DS;          // символ разделителя папок
-      static std::string AssetsDir;   // папка конфигов пользователя
+      static std::string UserDir;   // папка конфигов пользователя
+      static std::string DS;        // символ разделителя папок
+      static std::string AssetsDir; // папка конфигов пользователя
       static std::unordered_map<int, std::string> InitParams;
-      static void set_user_conf_dir(void); // выбор пользовательской папки
+      static void user_dir(void);   // выбор пользовательской папки
 
     public:
       static std::string CfgFname; // конфиг пользователя

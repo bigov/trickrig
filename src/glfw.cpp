@@ -9,7 +9,7 @@
 
 namespace tr
 {
-  evInput window_glfw::keys = {0.0, 0.0, 0, 0, 0, 0, 0, 0, 120};
+  evInput window_glfw::keys = {0.0, 0.0, 0, 0, 0, 0, 0, 0};
   std::string window_glfw::title = "TrickRig: v.development";
   double window_glfw::win_center_x = 0;
   double window_glfw::win_center_y = 0;
@@ -250,7 +250,7 @@ namespace tr
       if (t_frame - t_start >= one_second)
       {
         t_start = std::chrono::system_clock::now();
-        keys.fps = fps;
+        WinGl.fps = fps;
         fps = 0;
       }
       Scene.draw(keys);

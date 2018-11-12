@@ -20,7 +20,7 @@ namespace tr
 
       GLuint vaoQuad = 0;
       GLuint tex_hud = 0;
-      tr::gui GUI {};                  // Интерфейс окна
+      tr::gui GuiImage {};             // Интерфейс окна
       tr::ttf TTF10 {};                // создание надписей
       tr::space Space {};              // виртуальное пространство
       tr::image Label {100, 50};       // табличка с fps
@@ -28,7 +28,6 @@ namespace tr
 
       void framebuffer_init(void);
       void program2d_init(void);
-      void build_gui(std::vector<UCHAR>&);
 
     public:
       scene(void);

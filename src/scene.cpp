@@ -9,34 +9,6 @@
 
 namespace tr
 {
-  ///
-  /// \brief Создание элементов интерфейса окна
-  ///
-  /// \details Окно приложения может иметь два состояния - открытое, в котором
-  /// происходит основной процесс, и режим настройка/управление (закрытое). В
-  /// обоих режимах поверх основного изображения OpenGL сцены накладываются
-  /// изображения дополнительных элементов. В первом случае это HUD и
-  /// контрольные элементы взаимодействия с контентом сцены, во втором -
-  /// элементы управления и настройки приложения.
-  ///
-  /// Из всех необходимых элементов собирается общее графическое изображение в
-  /// виде пиксельного массива и передается для рендера OpenGL изображения в
-  /// качестве накладываемой текстуры фрейм-буфера.
-  ///
-  void scene::build_gui(std::vector<UCHAR>& P)
-  {
-    if(WinGl.is_open)
-    {
-      GUI.make_panel(P);
-    }
-    else
-    {
-      GUI.obscure(P);
-      GUI.make_button(P, L"Open");
-    }
-    return;
-  }
-
   //## Конструктор
   //
   scene::scene()
@@ -174,22 +146,25 @@ namespace tr
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glActiveTexture(GL_TEXTURE2);
+    glBindTexture(GL_TEXTURE_2D, tex_hud);
 
-    // Если окно изменилось - перерисовать GUI элементы
+    // Если окно изменилось, то перестроить изображение GUI
     if(WinGl.renew)
     {
-      std::vector<UCHAR> TexImg(WinGl.width * WinGl.height * 4, 0x00);
-      build_gui(TexImg);
-      glBindTexture(GL_TEXTURE_2D, tex_hud);
+      GuiImage.make();
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                    static_cast<GLint>(WinGl.width),
                    static_cast<GLint>(WinGl.height), 0,
-                   GL_RGBA, GL_UNSIGNED_BYTE, TexImg.data());
+                   GL_RGBA, GL_UNSIGNED_BYTE, GuiImage.data);
       WinGl.renew = false;
     }
+    else
+    {
+      GuiImage.update();
+    }
 
-    // Табличка с текстом на экране отображается в виде
-    // наложенного на GL_TEXTURE2 изображения, которое шейдером складывается
+    // Табличка с текстом на экране отображается в виде наложенного
+    // на GL_TEXTURE2 изображения, которое шейдером складывается
     // с изображением трехмерной сцены, отрендереным во фреймбуфере.
     if(WinGl.is_open)
     {
@@ -204,13 +179,13 @@ namespace tr
       }
 
       TTF10.set_cursor(4, 2);
-      TTF10.write_wstring(Label, { L"fps:" + std::to_wstring(ev.fps) });
+      TTF10.write_wstring(Label, { L"fps:" + std::to_wstring(WinGl.fps) });
 
       TTF10.set_cursor(6, 14);
-      TTF10.write_wstring(Label, { L"w:" + std::to_wstring(tr::WinGl.width) });
+      TTF10.write_wstring(Label, { L"w:" + std::to_wstring(WinGl.width) });
 
       TTF10.set_cursor(5, 26);
-      TTF10.write_wstring(Label, { L"h:" + std::to_wstring(tr::WinGl.height) });
+      TTF10.write_wstring(Label, { L"h:" + std::to_wstring(WinGl.height) });
 
       int xpos = 8; // Положение элемента относительно
       int ypos = 8; // верхнего-левого угла окна
@@ -224,7 +199,7 @@ namespace tr
     glBindVertexArray(vaoQuad);
     glDisable(GL_DEPTH_TEST);
     screenShaderProgram.use();
-    screenShaderProgram.set_uniform("Cursor", tr::WinGl.Cursor);
+    screenShaderProgram.set_uniform("Cursor", WinGl.Cursor);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     screenShaderProgram.unuse();
 

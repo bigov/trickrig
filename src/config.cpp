@@ -48,7 +48,7 @@ namespace tr
   ///
   void cfg::load(void)
   {
-    set_user_conf_dir();
+    user_dir();
 
     // При ошибке открытия конфигурации - иницировать новый файл
     if(!SqlDb.open(CfgFname)) init_config_db(CfgFname);
@@ -88,7 +88,7 @@ namespace tr
   }
 
   //## Поиск и настройка пользовательского каталога
-  void cfg::set_user_conf_dir(void)
+  void cfg::user_dir(void)
   {
 #ifdef _WIN32_WINNT
     DS = "\\";

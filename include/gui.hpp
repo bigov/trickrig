@@ -19,16 +19,21 @@ struct pixel
 
 class gui
 {
-  public:
-    gui(void);
+  private:
     pixel bg     {0xE0, 0xE0, 0xE0, 0xC0}; // фон заполнения неактивного окна
     pixel bg_hud {0x00, 0x88, 0x00, 0x40}; // фон панелей HUD (активного окна)
-    tr::ttf TTF12 {};                      // создание подписей на кнопках
+    ttf TTF12 {};                          // создание подписей на кнопках
+    TRvuch WinGui {};                      // RGBA массив изображения GUI
 
-    void make_panel(TRvuch& Texture,
-                    UINT h=48, UINT w=UINT_MAX, UINT t=UINT_MAX, UINT l=0);
-    void obscure(TRvuch&);
-    void make_button(TRvuch&, const std::wstring&);
+    void panel(UINT h=48, UINT w=UINT_MAX, UINT t=UINT_MAX, UINT l=0);
+    void obscure(void);
+    void button(const std::wstring&);
+
+  public:
+    gui(void);
+    UCHAR* data = nullptr;            // адрес RGBA массива GIU
+    void make(void);                  // формирование изображения GIU окна
+    void update(void);                // обновление кадра
 };
 
 } //tr
