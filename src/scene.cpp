@@ -16,12 +16,6 @@ namespace tr
     program2d_init();
     framebuffer_init();
 
-    // Загрузка символов для отображения fps
-    TTF10.init(tr::cfg::get(TTF_FONT), 10);
-    TTF10.set_color( 0x20, 0x20, 0x20, 0xFF );
-    TTF10.load_chars(
-      L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz: 0123456789" );
-
     // Настройки отображения HUD
     glGenTextures(1, &tex_hud);
     glActiveTexture(GL_TEXTURE2);
@@ -105,10 +99,10 @@ namespace tr
 
     tr::vbo vboTexcoord = {GL_ARRAY_BUFFER};
 
-    // Переворачиваем текстуру фрейм-буфера - меняем порядок следования
-    // координат текстуры с 1-2-3-4 на 3-4-1-2, при этом верх и низ меняются
-    // местами. Благодаря этому точка окна с нулевыми координатами (0,0)
-    // перемещается в более привычный верхний-левый угол. Кроме того, это
+    // Переворачиваем текстуру фрейм-буфера изменив порядок следования
+    // координат текстуры с 1-2-3-4 на 3-4-1-2, при этом верх и низ в сцене
+    // меняются местами. Благодаря этому нулевой координатой (0,0) окна
+    // становится более привычный верхний-левый угол. Кроме того, это
     // позволяет накладывать на окно загруженные изображения без переворота.
     GLfloat Texcoord[] = {
       0.f, 1.f, //3
@@ -161,38 +155,6 @@ namespace tr
     else
     {
       GuiImage.update();
-    }
-
-    // Табличка с текстом на экране отображается в виде наложенного
-    // на GL_TEXTURE2 изображения, которое шейдером складывается
-    // с изображением трехмерной сцены, отрендереным во фреймбуфере.
-    if(WinGl.is_open)
-    {
-      size_t i = 0;
-      size_t max = Label.Data.size();
-      while(i < max)
-      {
-        Label.Data[i++] = 0xCF;
-        Label.Data[i++] = 0xFF;
-        Label.Data[i++] = 0xCF;
-        Label.Data[i++] = 0x88;
-      }
-
-      TTF10.set_cursor(4, 2);
-      TTF10.write_wstring(Label, { L"fps:" + std::to_wstring(WinGl.fps) });
-
-      TTF10.set_cursor(6, 14);
-      TTF10.write_wstring(Label, { L"w:" + std::to_wstring(WinGl.width) });
-
-      TTF10.set_cursor(5, 26);
-      TTF10.write_wstring(Label, { L"h:" + std::to_wstring(WinGl.height) });
-
-      int xpos = 8; // Положение элемента относительно
-      int ypos = 8; // верхнего-левого угла окна
-      glTexSubImage2D(GL_TEXTURE_2D, 0, xpos, ypos,
-                      static_cast<GLsizei>(Label.w),
-                      static_cast<GLsizei>(Label.h),
-                    GL_RGBA, GL_UNSIGNED_BYTE, Label.Data.data());
     }
 
     // Второй проход рендера - по текстуре из фреймбуфера

@@ -4,10 +4,15 @@ namespace tr {
 
 gui::gui(void)
 {
+  TTF10.init(tr::cfg::get(TTF_FONT), 10);
+  TTF10.set_color( 0x10, 0x10, 0x10, 0xFF );
+  TTF10.load_chars(
+    L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz:.,+- 0123456789" );
+
   TTF12.init(tr::cfg::get(TTF_FONT), 12);
   TTF12.set_color( 0x30, 0x30, 0x30, 0xFF );
   TTF12.load_chars(
-    L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz: 0123456789" );
+    L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz:.,+- 0123456789" );
 
   data = WinGui.data();
   return;
@@ -51,8 +56,52 @@ void gui::make(void)
 ///
 void gui::update(void)
 {
-  //tr::image Label {100, 50};
+  // Табличка с текстом на экране отображается в виде наложенного
+  // на GL_TEXTURE2 изображения, которое шейдером складывается
+  // с изображением трехмерной сцены, отрендереным во фреймбуфере.
+  if(WinGl.is_open)
+  {
+    tr::image Label {33, 16};
+    size_t i = 0;
+    size_t max = Label.Data.size();
+    while(i < max)
+    {
+      Label.Data[i++] = 0xF0;
+      Label.Data[i++] = 0xF0;
+      Label.Data[i++] = 0xF0;
+      Label.Data[i++] = 0xA0;
+    }
 
+    wchar_t line[5]; // the expected string plus 1 null terminator
+    std::swprintf(line, 5, L"%.4i", WinGl.fps);
+    TTF10.set_cursor(4, 0);
+    TTF10.write_wstring(Label, line);
+
+/*
+    TTF10.set_cursor(6, 14);
+    TTF10.write_wstring(Label, { L"win:" + std::to_wstring(WinGl.width) +
+                                 L"x" + std::to_wstring(WinGl.height) });
+
+    std::swprintf(line, sz, L"X: %+06.1f", Eye.ViewFrom.x);
+    TTF10.set_cursor(6, 26);
+    TTF10.write_wstring(Label, line);
+
+    std::swprintf(line, sz, L"Y: %+06.1f", Eye.ViewFrom.y);
+    TTF10.set_cursor(6, 38);
+    TTF10.write_wstring(Label, line);
+
+    std::swprintf(line, sz, L"Z: %+06.1f", Eye.ViewFrom.z);
+    TTF10.set_cursor(6, 50);
+    TTF10.write_wstring(Label, line);
+*/
+
+    glTexSubImage2D(GL_TEXTURE_2D, 0,
+                    2,                           // координата X
+                    WinGl.height - Label.h - 2,  // координата Y
+                    static_cast<GLsizei>(Label.w),
+                    static_cast<GLsizei>(Label.h),
+                    GL_RGBA, GL_UNSIGNED_BYTE, Label.Data.data());
+  }
   return;
 }
 
