@@ -255,7 +255,7 @@ namespace tr
     std::vector<unsigned char> BufVector = {};
 
     tr::sqlw DB = {};
-    DB.open(tr::TrConfig.get(DB_TPL_FNAME));
+    DB.open(tr::cfg::get(DB_TPL_FNAME));
 
     sprintf(buf_query, DB.tpl_select_rig, x, y, z, '\0');
     DB.request_get(buf_query);                 // Получить данные рига
@@ -330,7 +330,7 @@ namespace tr
   ///
 
     tr::sqlw DB = {};
-    DB.open(tr::TrConfig.get(DB_TPL_FNAME));
+    DB.open(tr::cfg::get(DB_TPL_FNAME));
 
     int id_area = 0;
     char query_buf[255];

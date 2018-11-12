@@ -13,8 +13,8 @@
 #include "dbwrap.hpp"
 
 namespace tr {
-  tr::camera_3d Eye = {};  // главная камера 3D вида
-  tr::cfg TrConfig = {};   // настройка параметров
+  tr::camera_3d Eye {};  // главная камера 3D вида
+  //tr::cfg TrConfig {};   // настройка параметров
 }
 
 //##
@@ -27,11 +27,11 @@ int main()
 
   try
   {
-    tr::TrConfig.load();     // Загрузка конфигурации
+    tr::cfg::load();     // Загрузка конфигурации
     tr::window_glfw Win {};  // Настройка OpenGL окна
     tr::scene Scene {};      // Сборка сцены
     Win.show(Scene);         // Цикл рендера
-    tr::TrConfig.save();     // Сохранение конфигурации
+    tr::cfg::save();     // Сохранение конфигурации
   }
   catch(std::exception & e)
   {

@@ -38,27 +38,20 @@ namespace tr
   glm::mat4 MatProjection {}; // матрица проекции 3D сцены
   std::unordered_map<int, std::string> cfg::InitParams {};
   std::string cfg::AssetsDir = "../assets/";
-
-  //## Конструктор
-  cfg::cfg()
-  {
-    set_user_conf_dir();
-    return;
-  }
-
-  //## Деструктор класса
-  cfg::~cfg(void)
-  {
-    return;
-  }
+  tr::sqlw cfg::SqlDb {};
+  std::string cfg::UserDir  = "";          // папка конфигов пользователя
+  std::string cfg::DS       = "";          // символ разделителя папок
+  std::string cfg::CfgFname = "config.db"; // конфиг пользователя
 
   /// Загрузка конфигурации приложения
   /// производится отдельным вызовом из главного модуля
   ///
   void cfg::load(void)
   {
-  if(!SqlDb.open(CfgFname)) init_config_db(CfgFname);
+    set_user_conf_dir();
 
+    // При ошибке открытия конфигурации - иницировать новый файл
+    if(!SqlDb.open(CfgFname)) init_config_db(CfgFname);
 
     SqlDb.exec("SELECT * FROM init;");
     if(SqlDb.num_rows < 1)

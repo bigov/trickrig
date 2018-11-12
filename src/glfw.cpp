@@ -97,8 +97,8 @@ namespace tr
     int left, int top)
   {
     if (!window) ERR("Error on call GLFW window_pos_callback.");
-    tr::WinGl.left = left;
-    tr::WinGl.top = top;
+    tr::WinGl.left = static_cast<UINT>(left);
+    tr::WinGl.top = static_cast<UINT>(top);
     return;
   }
 
@@ -108,20 +108,20 @@ namespace tr
   {
     tr::WinGl.renew = true; // для пересчета параметров сцены
 
-    win_center_x = static_cast<double>(width / 2);
-    win_center_y = static_cast<double>(height / 2);
+    win_center_x = static_cast<double>(width / 2);  // Координаты точки для
+    win_center_y = static_cast<double>(height / 2); // установки прицела
 
     if (!window) ERR("Error on call GLFW framebuffer_size_callback.");
     glViewport(0, 0, width, height);
 
     if(width < 64)  width  = 64;
     if(height < 48) height = 48;
-    tr::WinGl.width  = width;
-    tr::WinGl.height = height;
+    tr::WinGl.width  = static_cast<UINT>(width);
+    tr::WinGl.height = static_cast<UINT>(height);
 
     // пересчет координат курсора
-    tr::WinGl.Cursor.x = static_cast<float>(tr::WinGl.width/2) + 0.5;
-    tr::WinGl.Cursor.y = static_cast<float>(tr::WinGl.height/2) + 0.5;
+    tr::WinGl.Cursor.x = static_cast<float>(tr::WinGl.width/2) + 0.5f;
+    tr::WinGl.Cursor.y = static_cast<float>(tr::WinGl.height/2) + 0.5f;
 
     // пересчет матрицы проекции
     tr::WinGl.aspect = static_cast<float>(tr::WinGl.width)
@@ -133,20 +133,24 @@ namespace tr
 
     // настройка размера текстуры
     glBindTexture(GL_TEXTURE_2D, Eye.texco_buf);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tr::WinGl.width, tr::WinGl.height,
-                 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                 static_cast<GLsizei>(tr::WinGl.width),
+                 static_cast<GLsizei>(tr::WinGl.height),
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     // настройка размера рендербуфера
     glBindRenderbuffer(GL_RENDERBUFFER, Eye.rendr_buf);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-      tr::WinGl.width, tr::WinGl.height);
+                 static_cast<GLsizei>(tr::WinGl.width),
+                 static_cast<GLsizei>(tr::WinGl.height));
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return;
   }
 
-  //## Создание нового окна с обработчиками ввода и настройка контекста отображения OpenGL
+  //## Создание нового окна с обработчиками ввода и настройка контекста
+  // отображения OpenGL
   window_glfw::window_glfw(void)
   {
     glfwSetErrorCallback(error_callback);
@@ -159,31 +163,30 @@ namespace tr
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
 
     // Начальные настройки камеры вида и размера окна
-    tr::Eye.ViewFrom.x = std::stof(tr::TrConfig.get(VIEW_FROM_X));
-    tr::Eye.ViewFrom.y = std::stof(tr::TrConfig.get(VIEW_FROM_Y));
-    tr::Eye.ViewFrom.z = std::stof(tr::TrConfig.get(VIEW_FROM_Z));
-    tr::WinGl.width = std::stoi(tr::TrConfig.get(WINDOW_WIDTH));
-    tr::WinGl.height = std::stoi(tr::TrConfig.get(WINDOW_HEIGHT));
-
-    tr::WinGl.top = std::stoi(tr::TrConfig.get(WINDOW_TOP));
-    tr::WinGl.left = std::stoi(tr::TrConfig.get(WINDOW_LEFT));
-
-    tr::WinGl.Cursor.x = static_cast<float>(tr::WinGl.width/2) + 0.5;
-    tr::WinGl.Cursor.y = static_cast<float>(tr::WinGl.height/2) + 0.5;
+    tr::Eye.ViewFrom.x = std::stof(tr::cfg::get(VIEW_FROM_X));
+    tr::Eye.ViewFrom.y = std::stof(tr::cfg::get(VIEW_FROM_Y));
+    tr::Eye.ViewFrom.z = std::stof(tr::cfg::get(VIEW_FROM_Z));
+    tr::WinGl.width = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_WIDTH)));
+    tr::WinGl.height = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_HEIGHT)));
+    tr::WinGl.top = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_TOP)));
+    tr::WinGl.left = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_LEFT)));
+    tr::WinGl.Cursor.x = static_cast<float>(tr::WinGl.width/2) + 0.5f;
+    tr::WinGl.Cursor.y = static_cast<float>(tr::WinGl.height/2) + 0.5f;
     tr::WinGl.aspect = static_cast<float>(tr::WinGl.width)
                      / static_cast<float>(tr::WinGl.height);
     tr::MatProjection = glm::perspective(1.118f, tr::WinGl.aspect, 0.01f, 1000.0f);
 
     //  Создание 3D окна
     glfwWindowHint(GLFW_VISIBLE, 0);
-    win_ptr = glfwCreateWindow(tr::WinGl.width, tr::WinGl.height,
-                         title.c_str(), NULL, nullptr);
+    win_ptr = glfwCreateWindow(static_cast<int>(tr::WinGl.width),
+                               static_cast<int>(tr::WinGl.height),
+                         title.c_str(), nullptr, nullptr);
     if (nullptr == win_ptr) ERR("Creating Window fail.");
 
     // Размещение
-    glfwSetWindowPos(win_ptr, tr::WinGl.left, tr::WinGl.top);
+    glfwSetWindowPos(win_ptr, static_cast<int>(tr::WinGl.left),
+                     static_cast<int>(tr::WinGl.top));
     glfwShowWindow(win_ptr);
-
     glfwMakeContextCurrent(win_ptr);
     glfwSwapInterval(0);
     glfwSetKeyCallback(win_ptr, key_callback);
@@ -191,9 +194,7 @@ namespace tr
     glfwSetCursorPosCallback(win_ptr, cursor_position_callback);
     glfwSetFramebufferSizeCallback(win_ptr, framebuffer_size_callback);
     glfwSetWindowPosCallback(win_ptr, window_pos_callback);
-
     if(!ogl_LoadFunctions())  ERR("Can't load OpenGl finctions");
-
     win_center_x = static_cast<double>(tr::WinGl.width / 2);
     win_center_y = static_cast<double>(tr::WinGl.height / 2);
 
@@ -238,12 +239,10 @@ namespace tr
   void window_glfw::show(tr::scene & Scene)
   {
     glfwSetInputMode(win_ptr, GLFW_STICKY_KEYS, 0);
-
     int fps = 0;
     std::chrono::seconds one_second(1);
     std::chrono::time_point<std::chrono::system_clock> t_start, t_frame;
     t_start = std::chrono::system_clock::now();
-
     while (!glfwWindowShouldClose(win_ptr))
     {
       fps++;
@@ -254,15 +253,11 @@ namespace tr
         keys.fps = fps;
         fps = 0;
       }
-
       Scene.draw(keys);
-
       if(WinGl.is_open) keys.dx = keys.dy = 0.f;
-
       glfwSwapBuffers(win_ptr);
       glfwPollEvents();
     }
-
     glfwDestroyWindow(win_ptr);
     return;
   }

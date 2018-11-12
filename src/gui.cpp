@@ -4,6 +4,11 @@ namespace tr {
 
 gui::gui(void)
 {
+  TTF12.init(tr::cfg::get(TTF_FONT), 12);
+  TTF12.set_color( 0x30, 0x30, 0x30, 0xFF );
+  TTF12.load_chars(
+    L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz: 0123456789" );
+
   return;
 }
 
@@ -16,23 +21,23 @@ gui::gui(void)
 /// \param left
 ///
 void gui::make_panel(std::vector<UCHAR>& Texture,
-     double height, double width, double top, double left)
+     UINT height, UINT width, UINT top, UINT left)
 {
   // Высота не должна быть больше высоты окна
   if(WinGl.height < height) height = WinGl.height;
 
   // Если ширина не была указана, или указана больше ширины окна,
   // то установить ширину панели равной ширине окна
-  if(-1 == width || width > WinGl.width) width = WinGl.width;
+  if(UINT_MAX == width || width > WinGl.width) width = WinGl.width;
 
   // По-умолчанию расположить панель внизу
-  if(-1 == top) top = WinGl.height - height;
+  if(UINT_MAX == top) top = WinGl.height - height;
 
   // Индекс первого элемента первого пикселя панели на текстуре GIU
-  size_t i = top * WinGl.width * 4 + left * 4;
+  UINT i = static_cast<unsigned>(top * WinGl.width * 4 + left * 4);
 
   // Индекс последнего элемента панели
-  size_t i_max = i + width * height * 4;
+  UINT i_max = i + static_cast<unsigned>(width * height * 4);
 
   while(i < i_max)
   {
@@ -68,22 +73,17 @@ void gui::obscure(std::vector<UCHAR>& Texture)
 /// \param Font
 /// \param Docket
 ///
-void gui::make_button(vuch& Img, tr::ttf& F, const std::wstring& D)
+void gui::make_button(TRvuch& Img, const std::wstring& D)
 {
   UINT btn_w = 100;  // ширина кнопки
   UINT btn_h = 24;   // высота кнопки
-  double x = WinGl.width/2 - btn_w/2; // координата X
-  double y = WinGl.height/2 - btn_h/2; // координата Y
+  UINT x = WinGl.width/2 - btn_w/2; // координата X
+  UINT y = WinGl.height/2 - btn_h/2; // координата Y
   image Btn {btn_w, btn_h};
-  bool over = false;
-
-  if( WinGl.xpos >= x &&
-      WinGl.xpos <= x + btn_w &&
-      WinGl.ypos >= y &&
-      WinGl.ypos <= y + btn_h ) over = true;
 
   pixel body {};
-  if(over)
+  if( WinGl.xpos >= x && WinGl.xpos <= x + btn_w &&
+      WinGl.ypos >= y && WinGl.ypos <= y + btn_h )
   {
     body = {0xE0, 0xFF, 0xE0, 0xFF};
   }
@@ -135,10 +135,10 @@ void gui::make_button(vuch& Img, tr::ttf& F, const std::wstring& D)
     i += 4;
   }
 
-  F.set_cursor(32, 2);
-  F.write_wstring(Btn, D);
+  TTF12.set_cursor(32, 2);
+  TTF12.write_wstring(Btn, D);
 
-  int j = 0; // индекс элементов изображения кнопки
+  UINT j = 0; // индекс элементов изображения кнопки
 
   for (UINT bt_y = 0; bt_y < btn_h; ++bt_y)
      for (UINT bt_x = 0; bt_x < btn_w * 4; ++bt_x)
@@ -147,18 +147,6 @@ void gui::make_button(vuch& Img, tr::ttf& F, const std::wstring& D)
     Img[i] = Btn.Data[j++];
   }
 
-  return;
-}
-
-object::object()
-{
-  return;
-}
-
-button::button(const ttf& f, const std::wstring& d): font(f), docket(d)
-{
-  width = padding_left + padding_right;
-  height = padding_top + padding_bottom;
   return;
 }
 

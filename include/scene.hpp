@@ -22,7 +22,6 @@ namespace tr
       GLuint tex_hud = 0;
       tr::gui GUI {};                  // Интерфейс окна
       tr::ttf TTF10 {};                // создание надписей
-      tr::ttf TTF12 {};                // создание подписей
       tr::space Space {};              // виртуальное пространство
       tr::image Label {100, 50};       // табличка с fps
       tr::glsl screenShaderProgram {}; // шейдерная программа

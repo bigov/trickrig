@@ -2,9 +2,10 @@
 #define GUI_HPP
 
 #include "main.hpp"
+#include "config.hpp"
 #include "ttf.hpp"
 
-typedef std::vector<UCHAR> vuch;
+typedef std::vector<unsigned char> TRvuch;
 
 namespace tr {
 
@@ -22,38 +23,12 @@ class gui
     gui(void);
     pixel bg     {0xE0, 0xE0, 0xE0, 0xC0}; // фон заполнения неактивного окна
     pixel bg_hud {0x00, 0x88, 0x00, 0x40}; // фон панелей HUD (активного окна)
+    tr::ttf TTF12 {};                      // создание подписей на кнопках
 
-    void make_panel(vuch& Texture,
-                    double h=48, double w=-1, double t=-1, double l=0);
-    void obscure(vuch&);
-    void make_button(vuch&, tr::ttf&, const std::wstring&);
-};
-
-class object
-{
-  public:
-    object();
-
-  protected:
-    double width = 0;
-    double height = 0;
-    double left = 0;
-    double top = 0;
-};
-
-class button: public object
-{
-  public:
-    button(const ttf&, const std::wstring&);
-
-  protected:
-    double padding_top = 2;
-    double padding_right = 2;
-    double padding_bottom = 2;
-    double padding_left = 2;
-
-    const ttf& font;
-    const std::wstring& docket;
+    void make_panel(TRvuch& Texture,
+                    UINT h=48, UINT w=UINT_MAX, UINT t=UINT_MAX, UINT l=0);
+    void obscure(TRvuch&);
+    void make_button(TRvuch&, const std::wstring&);
 };
 
 } //tr

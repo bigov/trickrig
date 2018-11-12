@@ -17,28 +17,23 @@ namespace tr
   class cfg
   {
     private:
-      tr::sqlw SqlDb = {};
-      std::string UserDir    = "";           // папка конфигов пользователя
-      std::string DS = "";                   // символ разделителя папок
-      static std::string AssetsDir;          // папка конфигов пользователя
-
+      cfg(void)                       = delete;
       cfg(const tr::cfg &)            = delete;
       cfg& operator=(const tr::cfg &) = delete;
-      void set_user_conf_dir(void); // выбор пользовательской папки
+
+      static tr::sqlw SqlDb;
+      static std::string UserDir;     // папка конфигов пользователя
+      static std::string DS;          // символ разделителя папок
+      static std::string AssetsDir;   // папка конфигов пользователя
       static std::unordered_map<int, std::string> InitParams;
+      static void set_user_conf_dir(void); // выбор пользовательской папки
 
     public:
-      std::string CfgFname = "config.db";  // конфиг пользователя
-
-      cfg(void);
-      ~cfg(void);
-
-      void load(void);
-      void save(void);
+      static std::string CfgFname; // конфиг пользователя
+      static void load(void);
+      static void save(void);
       static std::string get(tr::ENUM_INIT);
   };
-
-  extern cfg TrConfig;
 
 } //namespace
 

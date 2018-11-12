@@ -32,7 +32,7 @@ namespace tr
     else
     {
       GUI.obscure(P);
-      GUI.make_button(P, TTF12, L"Open" );
+      GUI.make_button(P, L"Open");
     }
     return;
   }
@@ -48,11 +48,6 @@ namespace tr
     TTF10.init(tr::cfg::get(TTF_FONT), 10);
     TTF10.set_color( 0x20, 0x20, 0x20, 0xFF );
     TTF10.load_chars(
-      L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz: 0123456789" );
-
-    TTF12.init(tr::cfg::get(TTF_FONT), 12);
-    TTF12.set_color( 0x30, 0x30, 0x30, 0xFF );
-    TTF12.load_chars(
       L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz: 0123456789" );
 
     // Настройки отображения HUD
@@ -87,21 +82,23 @@ namespace tr
     glBindTexture(GL_TEXTURE_2D, Eye.texco_buf);
 
     GLint level_of_details = 0, frame = 0;
-    glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA, tr::WinGl.width,
-          tr::WinGl.height, frame, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
+                 static_cast<GLsizei>(tr::WinGl.width),
+                 static_cast<GLsizei>(tr::WinGl.height),
+                 frame, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glFramebufferTexture2D(
-      GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, Eye.texco_buf, 0
-    );
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                           GL_TEXTURE_2D, Eye.texco_buf, 0);
     
     //GLuint Eye.rendr_buf;
     glGenRenderbuffers(1, &Eye.rendr_buf);
     glBindRenderbuffer(GL_RENDERBUFFER, Eye.rendr_buf);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-      tr::WinGl.width, tr::WinGl.height);
+                          static_cast<GLsizei>(tr::WinGl.width),
+                          static_cast<GLsizei>(tr::WinGl.height));
 
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
       GL_RENDERBUFFER, Eye.rendr_buf);
@@ -184,7 +181,9 @@ namespace tr
       std::vector<UCHAR> TexImg(WinGl.width * WinGl.height * 4, 0x00);
       build_gui(TexImg);
       glBindTexture(GL_TEXTURE_2D, tex_hud);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, WinGl.width, WinGl.height, 0,
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                   static_cast<GLint>(WinGl.width),
+                   static_cast<GLint>(WinGl.height), 0,
                    GL_RGBA, GL_UNSIGNED_BYTE, TexImg.data());
       WinGl.renew = false;
     }
@@ -215,7 +214,9 @@ namespace tr
 
       int xpos = 8; // Положение элемента относительно
       int ypos = 8; // верхнего-левого угла окна
-      glTexSubImage2D(GL_TEXTURE_2D, 0, xpos, ypos, Label.w, Label.h,
+      glTexSubImage2D(GL_TEXTURE_2D, 0, xpos, ypos,
+                      static_cast<GLsizei>(Label.w),
+                      static_cast<GLsizei>(Label.h),
                     GL_RGBA, GL_UNSIGNED_BYTE, Label.Data.data());
     }
 
