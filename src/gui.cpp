@@ -4,14 +4,14 @@ namespace tr {
 
 gui::gui(void)
 {
-  TTF10.init(tr::cfg::get(TTF_FONT), 10);
-  TTF10.set_color( 0x10, 0x10, 0x10, 0xFF );
-  TTF10.load_chars(
+  TTFsmall.init(tr::cfg::get(TTF_FONT), 10);
+  TTFsmall.set_color( 0x10, 0x10, 0x10, 0xFF );
+  TTFsmall.load_chars(
     L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz:.,+- 0123456789" );
 
-  TTF12.init(tr::cfg::get(TTF_FONT), 12);
-  TTF12.set_color( 0x30, 0x30, 0x30, 0xFF );
-  TTF12.load_chars(
+  TTFbig.init(tr::cfg::get(TTF_FONT), 18);
+  TTFbig.set_color( 0x30, 0x30, 0x30, 0xFF );
+  TTFbig.load_chars(
     L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz:.,+- 0123456789" );
 
   data = WinGui.data();
@@ -74,8 +74,8 @@ void gui::update(void)
 
     wchar_t line[5]; // the expected string plus 1 null terminator
     std::swprintf(line, 5, L"%.4i", WinGl.fps);
-    TTF10.set_cursor(4, 0);
-    TTF10.write_wstring(Label, line);
+    TTFsmall.set_cursor(4, 0);
+    TTFsmall.write_wstring(Label, line);
 
 /*
     TTF10.set_cursor(6, 14);
@@ -95,12 +95,13 @@ void gui::update(void)
     TTF10.write_wstring(Label, line);
 */
 
-    glTexSubImage2D(GL_TEXTURE_2D, 0,
-                    2,                           // координата X
-                    WinGl.height - Label.h - 2,  // координата Y
-                    static_cast<GLsizei>(Label.w),
-                    static_cast<GLsizei>(Label.h),
-                    GL_RGBA, GL_UNSIGNED_BYTE, Label.Data.data());
+    glTexSubImage2D(GL_TEXTURE_2D, 0,                               // place
+                    2,                                              // left
+                    static_cast<GLint>(WinGl.height - Label.h - 2), // top
+                    static_cast<GLsizei>(Label.w),                  // width
+                    static_cast<GLsizei>(Label.h),                  // height
+                    GL_RGBA, GL_UNSIGNED_BYTE,                      // mode
+                    Label.Data.data());                             // data
   }
   return;
 }
@@ -166,7 +167,7 @@ void gui::obscure(void)
 void gui::button(const std::wstring& D)
 {
   UINT btn_w = 100;  // ширина кнопки
-  UINT btn_h = 24;   // высота кнопки
+  UINT btn_h = 36;   // высота кнопки
   UINT x = WinGl.width/2 - btn_w/2; // координата X
   UINT y = WinGl.height/2 - btn_h/2; // координата Y
   image Btn {btn_w, btn_h};
@@ -225,8 +226,8 @@ void gui::button(const std::wstring& D)
     i += 4;
   }
 
-  TTF12.set_cursor(32, 2);
-  TTF12.write_wstring(Btn, D);
+  TTFbig.set_cursor(27, 4);
+  TTFbig.write_wstring(Btn, D);
 
   UINT j = 0; // индекс элементов изображения кнопки
 

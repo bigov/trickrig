@@ -34,6 +34,7 @@ SET( SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE )
 ## Установка параметров для сборки в MinGW-W64 под MS Windows
 if( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
   SET( CMAKE_CXX_FLAGS "${MY_FLAGS}" )
+  link_directories( "tp_libs/bin_mw64" )
   if(NOT ${CLANG})
     # --static отключен из-за отсутствия статической сборки libenet
     #SET( CMAKE_CXX_FLAGS "--static ${CMAKE_CXX_FLAGS} ${WIN_GUI}" )
@@ -45,6 +46,7 @@ endif( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
 
 ## Установка параметров для сборки на Linux
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
-SET( CMAKE_CXX_FLAGS "${MY_FLAGS} -no-pie" )
-SET( trLIBS png )
+  SET( CMAKE_CXX_FLAGS "${MY_FLAGS} -no-pie" )
+  SET( trLIBS png )
 endif( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
+

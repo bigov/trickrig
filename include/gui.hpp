@@ -22,8 +22,8 @@ class gui
   private:
     pixel bg     {0xE0, 0xE0, 0xE0, 0xC0}; // фон заполнения неактивного окна
     pixel bg_hud {0x00, 0x88, 0x00, 0x40}; // фон панелей HUD (активного окна)
-    ttf TTF10 {};                          // создание надписей
-    ttf TTF12 {};                          // создание подписей на кнопках
+    ttf TTFsmall {};                       // создание надписей
+    ttf TTFbig {};                         // создание подписей на кнопках
     TRvuch WinGui {};                      // RGBA массив изображения GUI
 
     void panel(UINT h=48, UINT w=UINT_MAX, UINT t=UINT_MAX, UINT l=0);

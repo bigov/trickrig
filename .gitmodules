@@ -1,7 +1,3 @@
-[submodule ".extlibs/freetype2"]
-	path = .extlibs/freetype2
-	url = https://git.savannah.gnu.org/git/freetype/freetype2.git
-	branch = master
 [submodule ".extlibs/glfw"]
 	path = .extlibs/glfw
 	url = https://github.com/glfw/glfw.git
