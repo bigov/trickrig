@@ -55,19 +55,24 @@ namespace tr
   void window_glfw::mouse_button_callback(
     GLFWwindow* window, int button, int action, int mods)
   {
-    if( !WinGl.is_open &&
-        button == GLFW_MOUSE_BUTTON_LEFT &&
-        action == GLFW_RELEASE )
+    if( !WinGl.is_open )
     {
-      switch (WinGl.OverButton) {
-        case BTN_OPEN:
-          scene_open(window);
-          break;
-        case BTN_CLOSE:
-          glfwSetWindowShouldClose(window, true);
-          break;
-        case NONE: default:
-          break;
+      WinGl.renew = true;
+      WinGl.mouse_lbutton_on = (button == GLFW_MOUSE_BUTTON_LEFT &&
+                                action == GLFW_PRESS);
+
+      if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE )
+      {
+        switch (WinGl.OverButton) {
+          case BTN_OPEN:
+            scene_open(window);
+            break;
+          case BTN_CLOSE:
+            glfwSetWindowShouldClose(window, true);
+            break;
+          case NONE: default:
+            break;
+        }
       }
     }
 

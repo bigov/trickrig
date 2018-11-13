@@ -9,7 +9,7 @@ gui::gui(void)
   TTFsmall.load_chars(
     L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz:.,+- 0123456789" );
 
-  TTFbig.init(tr::cfg::get(TTF_FONT), 16);
+  TTFbig.init(tr::cfg::get(TTF_FONT), 12);
   TTFbig.set_color( 0x30, 0x30, 0x30, 0xFF );
   TTFbig.load_chars(
     L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz:.,+- 0123456789" );
@@ -52,10 +52,10 @@ void gui::make(void)
     UINT x = WinGl.width/2 - btn_w/2;
     // координата Y
     UINT y = WinGl.height/2 - btn_h * 1.25;
-    button(BTN_OPEN, x, y, L"Open");
+    button(BTN_OPEN, x, y, L"START");
 
     y += 1.5 * btn_h;
-    button(BTN_CLOSE, x, y, L"Close");
+    button(BTN_CLOSE, x, y, L"EXIT");
 
   }
   data = WinGui.data();
@@ -170,6 +170,108 @@ void gui::obscure(void)
 }
 
 ///
+/// \brief Построение картинки кнопки
+/// \param w
+/// \param h
+///
+///  Список цветов сверху-вниз
+///
+/// верхняя и боковые линии: B6B6B3
+/// нижняя линия: 91918C
+///
+/// неактивной (средняя яркость) кнопки:
+///   FAFAFA
+///   от E7E7E6 -> 24 градации цвета темнее
+/// активной кнопки (светлее):
+///   FFFFFF
+///   от F6F6F6 -> 24 градации цвета темнее
+///
+void gui::button_bg(TRvuch& D, UINT w, UINT h, BUTTON_STATE s)
+{
+  double step = static_cast<double>(h-3)/256.0*24.0; // градации цвета
+
+  pixel line_0  { 0xB6, 0xB6, 0xB3, 0xFF }; // верх и боковые
+  pixel line_1 {};                    // блик (вторая линия)
+  pixel line_bg {};                   // фоновый цвет
+  pixel line_f  { 0x91, 0x91, 0x8C, 0xFF }; // нижняя
+
+  switch (s) {
+    case ST_PRESSED:
+      line_bg = { 0xDE, 0xDE, 0xDE, 0xFF };
+      line_1  = line_bg;
+      step = 0;
+      break;
+    case ST_OVER:
+      line_1  = { 0xFF, 0xFF, 0xFF, 0xFF };
+      line_bg = { 0xF6, 0xF6, 0xF6, 0xFF };
+      break;
+    case ST_NORMAL: default:
+      line_1  = { 0xFA, 0xFA, 0xFA, 0xFF };
+      line_bg = { 0xE7, 0xE7, 0xE6, 0xFF };
+      break;
+  }
+
+  UINT row_length = w * 4; // число значений в одной строке
+
+  // верхняя линия
+  size_t i = 0;
+  size_t max = row_length;
+  while(i < max)
+  {
+    D[i++] = line_0.r; D[i++] = line_0.g; D[i++] = line_0.b; D[i++] = line_0.a;
+  }
+
+  // вторая линия
+  max += row_length;
+  while(i < max)
+  {
+    D[i++] = line_1.r; D[i++] = line_1.g; D[i++] = line_1.b; D[i++] = line_1.a;
+  }
+
+  // основной фон
+  UCHAR S = 0;         // коэффициент построчного уменьшения яркости
+  UINT np = 0;         // счетчик значений
+  double nr = 0.0;     // счетчик строк
+
+  max += row_length * (h - 3);
+  while (i < max)
+  {
+    D[i++] = S > line_bg.r ? 0 : line_bg.r - S;
+    D[i++] = S > line_bg.g ? 0 : line_bg.g - S;
+    D[i++] = S > line_bg.b ? 0 : line_bg.b - S;
+    D[i++] = line_bg.a;
+
+    np++;
+    if(np >= row_length)
+    {
+      np = 0;
+      nr += 1.0;
+      S = static_cast<UCHAR>(nr * step);
+    }
+
+  }
+
+  // нижняя линия
+  max += row_length;
+  while(i < max)
+  {
+    D[i++] = line_f.r; D[i++] = line_f.g; D[i++] = line_f.b; D[i++] = line_f.a;
+  }
+
+  // боковинки
+  i = 0;
+  while(i < max)
+  {
+    D[i++] = line_f.r; D[i++] = line_f.g; D[i++] = line_f.b; D[i++] = line_f.a;
+    i += row_length - 8;
+    D[i++] = line_f.r; D[i++] = line_f.g; D[i++] = line_f.b; D[i++] = line_f.a;
+  }
+
+
+  return;
+}
+
+///
 /// \brief Формирование кнопки
 /// \param Texture Image
 /// \param Font
@@ -179,63 +281,23 @@ void gui::button(BUTTON_ID btn_id, UINT x, UINT y, const std::wstring& D)
 {
   image Btn {btn_w, btn_h};
 
-  pixel body {};
   if( WinGl.xpos >= x && WinGl.xpos <= x + btn_w &&
       WinGl.ypos >= y && WinGl.ypos <= y + btn_h )
   {
     // Указатель находится над кнопкой
     WinGl.OverButton = btn_id;
-    body = {0xE0, 0xFF, 0xE0, 0xFF};
+    if(WinGl.mouse_lbutton_on) button_bg(Btn.Data, btn_w, btn_h, ST_PRESSED);
+    else button_bg(Btn.Data, btn_w, btn_h, ST_OVER);
   }
   else
   {
-    body = {0xE0, 0xE0, 0xE0, 0xFF};
+    button_bg(Btn.Data, btn_w, btn_h, ST_NORMAL);
   }
 
-  size_t i = 0;
-  size_t max = btn_w * 4;
-  while(i < max)
-  {
-    Btn.Data[i++] = 0xB0;
-    Btn.Data[i++] = 0xB0;
-    Btn.Data[i++] = 0xB0;
-    Btn.Data[i++] = 0xFF;
-  }
+  UINT text_w = TTFbig.width(D);
+  UINT text_h = TTFbig.height();
 
-  max = Btn.Data.size() - btn_w * 4;
-  while(i < max)
-  {
-    Btn.Data[i++] = body.r;
-    Btn.Data[i++] = body.g;
-    Btn.Data[i++] = body.b;
-    Btn.Data[i++] = body.a;
-  }
-
-  max = Btn.Data.size();
-  while(i < max)
-  {
-    Btn.Data[i++] = 0xB0;
-    Btn.Data[i++] = 0xB0;
-    Btn.Data[i++] = 0xB0;
-    Btn.Data[i++] = 0xFF;
-  }
-
-  i = 0;
-  while(i < max)
-  {
-    Btn.Data[i+0] = 0xB0;
-    Btn.Data[i+1] = 0xB0;
-    Btn.Data[i+2] = 0xB0;
-    Btn.Data[i+3] = 0xFF;
-    i += btn_w * 4 - 4;
-    Btn.Data[i+0] = 0xB0;
-    Btn.Data[i+1] = 0xB0;
-    Btn.Data[i+2] = 0xB0;
-    Btn.Data[i+3] = 0xFF;
-    i += 4;
-  }
-
-  TTFbig.set_cursor(38, 6);
+  TTFbig.set_cursor( (btn_w - text_w)/2, btn_h/2 - 0.7 * text_h );
   TTFbig.write_wstring(Btn, D);
 
   UINT j = 0; // индекс элементов изображения кнопки

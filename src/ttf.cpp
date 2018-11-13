@@ -9,6 +9,12 @@
 
 namespace tr
 {
+  ttf::~ttf(void)
+  {
+    CharsMap.clear();
+    return;
+  }
+
   //## Установка параметров загрузки шрифта
   //
   void ttf::init(const std::string &file_name, FT_UInt font_size)
@@ -35,12 +41,9 @@ namespace tr
   /// \param Text
   /// \return
   ///
-  double ttf::height(const std::wstring& Text)
+  uint32_t ttf::height(void)
   {
-    double res = 0;
-    for (const wchar_t & wChar: Text)
-      if(CharsMap[wChar].height > res) res = CharsMap[wChar].height;
-    return res;
+    return _height;
   }
 
   //## Наложение на картинку текстовой строки
@@ -119,14 +122,14 @@ namespace tr
     FT_Set_Pixel_Sizes(ftFace, pixel_width, 0);
 
     for (const wchar_t &charcode: in_chars_string)
-    try {CharsMap.at(charcode);} catch(...)
     { 
         if (0 != FT_Load_Char(ftFace, charcode, FT_LOAD_RENDER))
         if (0 != FT_Load_Char(ftFace, L'.', FT_LOAD_RENDER)) continue;
 
-        symbol wchar {};
         FT_GlyphSlot slot = ftFace->glyph;
         auto b = slot->bitmap;
+
+        symbol wchar {};
         wchar.base   = static_cast<uint32_t>(slot->bitmap_top);
         wchar.height = b.rows;
         wchar.width = static_cast<uint32_t>(slot->advance.x >> 6 );
@@ -139,7 +142,7 @@ namespace tr
             _y * static_cast<uint32_t>(b.pitch)];
 
         _height = std::max(_height, wchar.height + 2); //отступ от Y курсора
-        CharsMap[charcode] = std::move(wchar);
+        CharsMap[charcode] = wchar;
     }
 
     FT_Done_Face(ftFace);

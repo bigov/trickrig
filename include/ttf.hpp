@@ -14,19 +14,23 @@
 namespace tr
 {
 
-struct symbol
+class symbol
 {
-  uint32_t base   = 0; // расстояние от базовой линии
-  uint32_t width  = 0; // ширина символа
-  uint32_t height = 0; // высота символа
-  std::vector<uint8_t> Data {};
+  public:
+    symbol(){}
+    ~symbol() { Data.clear(); }
+
+    uint32_t base   = 0; // расстояние от базовой линии
+    uint32_t width  = 0; // ширина символа
+    uint32_t height = 0; // высота символа
+    std::vector<uint8_t> Data {};
 };
 
 class ttf
 {
   public:
     ttf(void) {}
-    ~ttf(void) {}
+    ~ttf(void);
 
     std::map<wchar_t, symbol> CharsMap {};
 
@@ -37,12 +41,12 @@ class ttf
     void set_color(uint8_t r, uint8_t g, uint8_t b);
     void set_cursor(uint32_t x, uint32_t y);
     double width(const std::wstring &);
-    double height(const std::wstring &);
+    uint32_t height(void);
 
   private:
     uint32_t cur_x = 0, cur_y = 0, // координаты курсора
     _height = 0; // отступ курсора равен высоте самого высокого символа
-    float _r = 20.f, _g = 20.f, _b = 20.f, _a = 255.f;
+    float _r = 0.f, _g = 0.f, _b = 0.f, _a = 255.f;
     std::string font {};
     FT_UInt pixel_width = 0;
 };

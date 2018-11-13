@@ -17,6 +17,13 @@ struct pixel
   unsigned char a = 0x00;
 };
 
+// состояние кнопки
+enum BUTTON_STATE {
+  ST_NORMAL,
+  ST_OVER,
+  ST_PRESSED
+};
+
 class gui
 {
   private:
@@ -31,6 +38,7 @@ class gui
     void panel(UINT h=48, UINT w=UINT_MAX, UINT t=UINT_MAX, UINT l=0);
     void obscure(void);
     void button(BUTTON_ID, UINT x, UINT y, const std::wstring&);
+    void button_bg(TRvuch& Data, UINT w, UINT h, BUTTON_STATE);
 
   public:
     gui(void);
