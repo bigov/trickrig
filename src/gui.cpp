@@ -9,7 +9,7 @@ gui::gui(void)
   TTFsmall.load_chars(
     L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz:.,+- 0123456789" );
 
-  TTFbig.init(tr::cfg::get(TTF_FONT), 18);
+  TTFbig.init(tr::cfg::get(TTF_FONT), 16);
   TTFbig.set_color( 0x30, 0x30, 0x30, 0xFF );
   TTFbig.load_chars(
     L"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz:.,+- 0123456789" );
@@ -37,6 +37,10 @@ void gui::make(void)
   WinGui.clear();
   WinGui.resize(WinGl.width * WinGl.height * 4, 0x00);
 
+  // По-умолчанию указываем, что активной кнопки нет, процедура построения
+  // кнопки установит свой BUTTON_ID, если курсор находится над ней
+  WinGl.OverButton = NONE;
+
   if(WinGl.is_open)
   {
     panel();
@@ -44,9 +48,16 @@ void gui::make(void)
   else
   {
     obscure();
-    button(L"Open");
-  }
+    // координата X
+    UINT x = WinGl.width/2 - btn_w/2;
+    // координата Y
+    UINT y = WinGl.height/2 - btn_h * 1.25;
+    button(BTN_OPEN, x, y, L"Open");
 
+    y += 1.5 * btn_h;
+    button(BTN_CLOSE, x, y, L"Close");
+
+  }
   data = WinGui.data();
   return;
 }
@@ -164,18 +175,16 @@ void gui::obscure(void)
 /// \param Font
 /// \param Docket
 ///
-void gui::button(const std::wstring& D)
+void gui::button(BUTTON_ID btn_id, UINT x, UINT y, const std::wstring& D)
 {
-  UINT btn_w = 100;  // ширина кнопки
-  UINT btn_h = 36;   // высота кнопки
-  UINT x = WinGl.width/2 - btn_w/2; // координата X
-  UINT y = WinGl.height/2 - btn_h/2; // координата Y
   image Btn {btn_w, btn_h};
 
   pixel body {};
   if( WinGl.xpos >= x && WinGl.xpos <= x + btn_w &&
       WinGl.ypos >= y && WinGl.ypos <= y + btn_h )
   {
+    // Указатель находится над кнопкой
+    WinGl.OverButton = btn_id;
     body = {0xE0, 0xFF, 0xE0, 0xFF};
   }
   else
@@ -226,7 +235,7 @@ void gui::button(const std::wstring& D)
     i += 4;
   }
 
-  TTFbig.set_cursor(27, 4);
+  TTFbig.set_cursor(38, 6);
   TTFbig.write_wstring(Btn, D);
 
   UINT j = 0; // индекс элементов изображения кнопки

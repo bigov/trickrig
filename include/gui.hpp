@@ -25,10 +25,12 @@ class gui
     ttf TTFsmall {};                       // создание надписей
     ttf TTFbig {};                         // создание подписей на кнопках
     TRvuch WinGui {};                      // RGBA массив изображения GUI
+    UINT btn_w = 120;  // ширина кнопки
+    UINT btn_h = 36;   // высота кнопки
 
     void panel(UINT h=48, UINT w=UINT_MAX, UINT t=UINT_MAX, UINT l=0);
     void obscure(void);
-    void button(const std::wstring&);
+    void button(BUTTON_ID, UINT x, UINT y, const std::wstring&);
 
   public:
     gui(void);

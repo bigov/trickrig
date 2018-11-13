@@ -75,6 +75,12 @@ namespace tr {
 
   extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
 
+  enum BUTTON_ID {          // Идентификаторы кнопок GIU
+    BTN_OPEN,
+    BTN_CLOSE,
+    NONE
+  };
+
   // Настройка параметров 3D окна
   struct window_gl {
     UINT width = 400;     // ширина окна
@@ -88,6 +94,8 @@ namespace tr {
     double ypos = 0;      // позиция указателя относительно верхней границы
     int fps = 120;        // частота кадров (для коррекции скорости движения)
     glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина прицела
+
+    BUTTON_ID OverButton = NONE; // Над какой кнопкой курсор
 
     void show_3d(bool state) // Изменение режима окна 3d/2d
     {

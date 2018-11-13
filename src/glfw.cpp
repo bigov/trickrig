@@ -33,11 +33,13 @@ namespace tr
   }
 
   //##
-  void window_glfw::cursor_grab(GLFWwindow * window)
+  void window_glfw::scene_open(GLFWwindow * window)
   {
     WinGl.show_3d(true);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     glfwSetCursorPos(window, win_center_x, win_center_y);
+    WinGl.xpos = win_center_x;
+    WinGl.ypos = win_center_y;
     return;
   }
 
@@ -53,8 +55,21 @@ namespace tr
   void window_glfw::mouse_button_callback(
     GLFWwindow* window, int button, int action, int mods)
   {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-      if (!WinGl.is_open) cursor_grab(window);
+    if( !WinGl.is_open &&
+        button == GLFW_MOUSE_BUTTON_LEFT &&
+        action == GLFW_RELEASE )
+    {
+      switch (WinGl.OverButton) {
+        case BTN_OPEN:
+          scene_open(window);
+          break;
+        case BTN_CLOSE:
+          glfwSetWindowShouldClose(window, true);
+          break;
+        case NONE: default:
+          break;
+      }
+    }
 
     keys.mouse_mods = mods;
     return;
