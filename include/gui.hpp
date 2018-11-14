@@ -34,11 +34,22 @@ class gui
     TRvuch WinGui {};                      // RGBA массив изображения GUI
     UINT btn_w = 120;  // ширина кнопки
     UINT btn_h = 36;   // высота кнопки
+    const std::wstring Font = L"\
+ЁЖЗИЙКЛМНОРПСТУФ\
+ЧЦЧШЩЪЫЬЭЮЯabcde\
+ABCDEFGHIJKLMNOP\
+QRSTUVWXYZАБВГОЕ\
+fghijklmnopqrstu\
+vwxyzабвгдеёжзий\
+клмнопрстуфхцчшщ\
+ъыьэюя0123456789\
+@#$%^&*(){}[]<>_-+=;:'\"\"\\|/~!?,.";
 
     void panel(UINT h=48, UINT w=UINT_MAX, UINT t=UINT_MAX, UINT l=0);
     void obscure(void);
     void button(BUTTON_ID, UINT x, UINT y, const std::wstring&);
     void button_bg(TRvuch& Data, UINT w, UINT h, BUTTON_STATE);
+    void add_text(const std::wstring& text, tr::image& Data, UINT x, UINT y);
 
   public:
     gui(void);
