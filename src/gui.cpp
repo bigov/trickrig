@@ -10,7 +10,7 @@ tr::image TexFn15 = get_png_img("../assets/font_08x15_nr.png");
 
 gui::gui(void)
 {
-  data = WinGui.data();
+  data = GuiRGBA.data();
   return;
 }
 
@@ -80,8 +80,8 @@ void gui::add_text(const image& Src, const std::wstring& Wt,
 ///
 void gui::make(void)
 {
-  WinGui.clear();
-  WinGui.resize(WinGl.width * WinGl.height * 4, 0x00);
+  GuiRGBA.clear();
+  GuiRGBA.resize(WinGl.width * WinGl.height * 4, 0x00);
 
   // По-умолчанию указываем, что активной кнопки нет, процедура построения
   // кнопки установит свой BUTTON_ID, если курсор находится над ней
@@ -94,15 +94,15 @@ void gui::make(void)
   else
   {
     obscure();
-    UINT x = WinGl.width/2 - btn_w/2;       // X координата положения кнопки
-    UINT y = WinGl.height/2 - btn_h * 1.25; // Y координата кнопки
+    UINT x = WinGl.width/2 - WinGl.btn_w/2;       // X координата положения кнопки
+    UINT y = WinGl.height/2 - WinGl.btn_h * 1.25; // Y координата кнопки
     button(BTN_OPEN, x, y, L"Start");
 
-    y += 1.5 * btn_h;
+    y += 1.5 * WinGl.btn_h;
     button(BTN_CLOSE, x, y, L"Close");
 
   }
-  data = WinGui.data();
+  data = GuiRGBA.data();
   return;
 }
 
@@ -187,10 +187,10 @@ void gui::panel(UINT height, UINT width, UINT top, UINT left)
 
   while(i < i_max)
   {
-    WinGui[i++] = bg_hud.r;
-    WinGui[i++] = bg_hud.g;
-    WinGui[i++] = bg_hud.b;
-    WinGui[i++] = bg_hud.a;
+    GuiRGBA[i++] = bg_hud.r;
+    GuiRGBA[i++] = bg_hud.g;
+    GuiRGBA[i++] = bg_hud.b;
+    GuiRGBA[i++] = bg_hud.a;
   }
   return;
 }
@@ -201,13 +201,13 @@ void gui::panel(UINT height, UINT width, UINT top, UINT left)
 void gui::obscure(void)
 {
   size_t i = 0;
-  size_t max = WinGui.size();
+  size_t max = GuiRGBA.size();
   while(i < max)
   {
-    WinGui[i++] = bg.r;
-    WinGui[i++] = bg.g;
-    WinGui[i++] = bg.b;
-    WinGui[i++] = bg.a;
+    GuiRGBA[i++] = bg.r;
+    GuiRGBA[i++] = bg.g;
+    GuiRGBA[i++] = bg.b;
+    GuiRGBA[i++] = bg.a;
   }
   return;
 }
@@ -320,30 +320,30 @@ void gui::button_bg(TRvuch& D, UINT w, UINT h, BUTTON_STATE s)
 ///
 void gui::button(BUTTON_ID btn_id, UINT x, UINT y, const std::wstring& D)
 {
-  image Btn {btn_w, btn_h};
+  image Btn {WinGl.btn_w, WinGl.btn_h};
 
-  if( WinGl.xpos >= x && WinGl.xpos <= x + btn_w &&
-      WinGl.ypos >= y && WinGl.ypos <= y + btn_h )
+  if( WinGl.xpos >= x && WinGl.xpos <= x + WinGl.btn_w &&
+      WinGl.ypos >= y && WinGl.ypos <= y + WinGl.btn_h )
   {
     // Указатель находится над кнопкой
     WinGl.OverButton = btn_id;
-    if(WinGl.mouse_lbutton_on) button_bg(Btn.Data, btn_w, btn_h, ST_PRESSED);
-    else button_bg(Btn.Data, btn_w, btn_h, ST_OVER);
+    if(WinGl.mouse_lbutton_on) button_bg(Btn.Data, WinGl.btn_w, WinGl.btn_h, ST_PRESSED);
+    else button_bg(Btn.Data, WinGl.btn_w, WinGl.btn_h, ST_OVER);
   }
   else
   {
-    button_bg(Btn.Data, btn_w, btn_h, ST_NORMAL);
+    button_bg(Btn.Data, WinGl.btn_w, WinGl.btn_h, ST_NORMAL);
   }
 
-  add_text(TexFn18, D, Btn, btn_w/2, btn_h/2);
+  add_text(TexFn18, D, Btn, WinGl.btn_w/2, WinGl.btn_h/2);
   UINT j = 0; // индекс данных писелей на изображении кнопки
 
   // Скопировать изображение кнопки на текстуру окна
-  for (UINT bt_y = 0; bt_y < btn_h; ++bt_y)
-     for (UINT bt_x = 0; bt_x < btn_w * 4; ++bt_x)
+  for (UINT bt_y = 0; bt_y < WinGl.btn_h; ++bt_y)
+     for (UINT bt_x = 0; bt_x < WinGl.btn_w * 4; ++bt_x)
   {
     size_t i = (y + bt_y) * WinGl.width * 4 + x * 4 + bt_x;
-    WinGui[i] = Btn.Data[j++];
+    GuiRGBA[i] = Btn.Data[j++];
   }
 
   return;

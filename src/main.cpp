@@ -26,11 +26,11 @@ int main()
 
   try
   {
-    tr::cfg::load();     // Загрузка конфигурации
-    tr::window_glfw Win {};  // Настройка OpenGL окна
-    tr::scene Scene {};      // Сборка сцены
-    Win.show(Scene);         // Цикл рендера
-    tr::cfg::save();     // Сохранение конфигурации
+    tr::cfg::load();        // Загрузка конфигурации
+    tr::glfw_wr Win {}; // Настройка OpenGL окна
+    tr::scene Scene {};     // Сборка сцены
+    Win.show(Scene);        // Цикл рендера
+    tr::cfg::save();        // Сохранение конфигурации
   }
   catch(std::exception & e)
   {

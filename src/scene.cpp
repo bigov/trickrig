@@ -79,6 +79,40 @@ namespace tr
     return;
   }
 
+  ///
+  /// \brief Перестрока фреймбуфера
+  ///
+  void scene::framebuffer_resize(void)
+  {
+    // пересчет координат курсора
+    tr::WinGl.Cursor.x = static_cast<float>(tr::WinGl.width/2) + 0.5f;
+    tr::WinGl.Cursor.y = static_cast<float>(tr::WinGl.height/2) + 0.5f;
+
+    // пересчет матрицы проекции
+    tr::WinGl.aspect = static_cast<float>(tr::WinGl.width)
+                     / static_cast<float>(tr::WinGl.height);
+    tr::MatProjection = glm::perspective(1.118f, tr::WinGl.aspect, 0.01f, 1000.0f);
+
+    glViewport(0, 0, tr::WinGl.width, tr::WinGl.height);
+    glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);
+
+    // настройка размера текстуры
+    glBindTexture(GL_TEXTURE_2D, Eye.texco_buf);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                 static_cast<GLsizei>(tr::WinGl.width),
+                 static_cast<GLsizei>(tr::WinGl.height),
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    // настройка размера рендербуфера
+    glBindRenderbuffer(GL_RENDERBUFFER, Eye.rendr_buf);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
+                 static_cast<GLsizei>(tr::WinGl.width),
+                 static_cast<GLsizei>(tr::WinGl.height));
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return;
+  }
+
   //## Инициализация GLSL программы обработки текстуры из фреймбуфера.
   void scene::program2d_init(void)
   {
@@ -134,6 +168,20 @@ namespace tr
   // окна. Курсор и дополнительные (HUD) элементы окна изображаются
   // как наложеные сверху дополнительные изображения
 
+    // Если окно изменилось, то перестроить изображение GUI
+    if(WinGl.renew)
+    {
+      framebuffer_resize();
+      GuiImage.make();
+      glBindTexture(GL_TEXTURE_2D, tex_hud);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                   static_cast<GLint>(WinGl.width),
+                   static_cast<GLint>(WinGl.height), 0,
+                   GL_RGBA, GL_UNSIGNED_BYTE, GuiImage.data);
+      WinGl.renew = false;
+    }
+    else { GuiImage.update(); }
+
     // Первый проход рендера - во фреймбуфер
     glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);
     Space.draw(ev);
@@ -141,21 +189,6 @@ namespace tr
 
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, tex_hud);
-
-    // Если окно изменилось, то перестроить изображение GUI
-    if(WinGl.renew)
-    {
-      GuiImage.make();
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                   static_cast<GLint>(WinGl.width),
-                   static_cast<GLint>(WinGl.height), 0,
-                   GL_RGBA, GL_UNSIGNED_BYTE, GuiImage.data);
-      WinGl.renew = false;
-    }
-    else
-    {
-      GuiImage.update();
-    }
 
     // Второй проход рендера - по текстуре из фреймбуфера
     glBindVertexArray(vaoQuad);

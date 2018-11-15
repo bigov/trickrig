@@ -25,6 +25,7 @@ namespace tr
       tr::glsl screenShaderProgram {}; // шейдерная программа
 
       void framebuffer_init(void);
+      void framebuffer_resize(void);
       void program2d_init(void);
 
     public:

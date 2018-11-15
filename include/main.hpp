@@ -82,11 +82,17 @@ namespace tr {
   };
 
   // Настройка параметров 3D окна
-  struct window_gl {
-    UINT width = 400;     // ширина окна
-    UINT height = 400;    // высота окна
-    UINT left = 0;         // положение окна по горизонтали
-    UINT top = 0;          // положение окна по вертикали
+  struct main_window {
+    UINT width = 400;    // ширина окна
+    UINT height = 400;   // высота окна
+    UINT left = 0;       // положение окна по горизонтали
+    UINT top = 0;        // положение окна по вертикали
+
+    UINT btn_w = 120;            // ширина кнопки GUI
+    UINT btn_h = 36;             // высота кнопки GUI
+    int minwidth = btn_w + 8;    // минимально допустимая ширина окна
+    int minheight = btn_h * 2.5; // минимально допустимая высота окна
+
     float aspect = 1.0f;  // соотношение размеров окна
     bool renew = true;    // флаг наличия изменений параметров окна
     bool is_open = false; // индикатор того, что окно открыто в режиме 3D
@@ -105,7 +111,7 @@ namespace tr {
       renew = true;
     }
   };
-  extern window_gl WinGl;
+  extern main_window WinGl;
 
   // Настройка параметров главной камеры 3D вида
   struct camera_3d {

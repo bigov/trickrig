@@ -28,9 +28,7 @@ class gui
   private:
     pixel bg     {0xE0, 0xE0, 0xE0, 0xC0}; // фон заполнения неактивного окна
     pixel bg_hud {0x00, 0x88, 0x00, 0x40}; // фон панелей HUD (активного окна)
-    TRvuch WinGui {};                      // RGBA массив изображения GUI
-    UINT btn_w = 120;  // ширина кнопки
-    UINT btn_h = 36;   // высота кнопки
+    TRvuch GuiRGBA {};                     // RGBA массив изображения GUI
     const std::wstring Font { L"_`”~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghijklmn\
 opqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклмнопрстуфхцчшщъы\
 ьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };

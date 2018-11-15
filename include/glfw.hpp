@@ -9,15 +9,15 @@
 
 namespace tr
 {
-  class window_glfw
+  class glfw_wr
   {
     static evInput keys;
     static std::string title;
-    static double win_center_x, win_center_y; // центр окна
+    //static int win_center_x, win_center_y; // центр окна
 
     public:
-      window_glfw(void);
-      ~window_glfw(void);
+      glfw_wr(void);
+      ~glfw_wr(void);
       void show(tr::scene&);
 
     private:
@@ -35,8 +35,8 @@ namespace tr
       static int k_RIGHT;
       static int k_LEFT;
 
-      window_glfw(const tr::window_glfw &);
-      window_glfw operator=(const tr::window_glfw &);
+      glfw_wr(const tr::glfw_wr &);
+      glfw_wr operator=(const tr::glfw_wr &);
       static void scene_open(GLFWwindow*);
       static void cursor_free(GLFWwindow*);
 
