@@ -3,7 +3,6 @@
 
 #include "main.hpp"
 #include "config.hpp"
-#include "ttf.hpp"
 
 typedef std::vector<unsigned char> TRvuch;
 
@@ -29,27 +28,19 @@ class gui
   private:
     pixel bg     {0xE0, 0xE0, 0xE0, 0xC0}; // фон заполнения неактивного окна
     pixel bg_hud {0x00, 0x88, 0x00, 0x40}; // фон панелей HUD (активного окна)
-    ttf TTFsmall {};                       // создание надписей
-    ttf TTFbig {};                         // создание подписей на кнопках
     TRvuch WinGui {};                      // RGBA массив изображения GUI
     UINT btn_w = 120;  // ширина кнопки
     UINT btn_h = 36;   // высота кнопки
-    const std::wstring Font = L"\
-ЁЖЗИЙКЛМНОРПСТУФ\
-ЧЦЧШЩЪЫЬЭЮЯabcde\
-ABCDEFGHIJKLMNOP\
-QRSTUVWXYZАБВГОЕ\
-fghijklmnopqrstu\
-vwxyzабвгдеёжзий\
-клмнопрстуфхцчшщ\
-ъыьэюя0123456789\
-@#$%^&*(){}[]<>_-+=;:'\"\"\\|/~!?,.";
+    const std::wstring Font { L"_`”~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghijklmn\
+opqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклмнопрстуфхцчшщъы\
+ьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };
 
     void panel(UINT h=48, UINT w=UINT_MAX, UINT t=UINT_MAX, UINT l=0);
     void obscure(void);
     void button(BUTTON_ID, UINT x, UINT y, const std::wstring&);
     void button_bg(TRvuch& Data, UINT w, UINT h, BUTTON_STATE);
-    void add_text(const std::wstring& text, tr::image& Data, UINT x, UINT y);
+    void add_text(const tr::image& Font, const std::wstring& text,
+                  tr::image& Data, UINT x, UINT y);
 
   public:
     gui(void);
