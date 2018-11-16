@@ -202,7 +202,7 @@ namespace tr
     if(Eye.look_t > look_up) Eye.look_t = look_up;
     if(Eye.look_t < look_down) Eye.look_t = look_down;
 
-    float _k = Eye.speed / static_cast<float>(WinGl.fps); // корректировка по FPS
+    float _k = Eye.speed / static_cast<float>(AppWin.fps); // корректировка по FPS
 
     //if (!space_is_empty(tr::Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
 

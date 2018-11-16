@@ -49,8 +49,8 @@ namespace tr
 
     GLint level_of_details = 0, frame = 0;
     glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-                 static_cast<GLsizei>(tr::WinGl.width),
-                 static_cast<GLsizei>(tr::WinGl.height),
+                 static_cast<GLsizei>(tr::AppWin.width),
+                 static_cast<GLsizei>(tr::AppWin.height),
                  frame, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -63,8 +63,8 @@ namespace tr
     glGenRenderbuffers(1, &Eye.rendr_buf);
     glBindRenderbuffer(GL_RENDERBUFFER, Eye.rendr_buf);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-                          static_cast<GLsizei>(tr::WinGl.width),
-                          static_cast<GLsizei>(tr::WinGl.height));
+                          static_cast<GLsizei>(tr::AppWin.width),
+                          static_cast<GLsizei>(tr::AppWin.height));
 
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
       GL_RENDERBUFFER, Eye.rendr_buf);
@@ -85,29 +85,29 @@ namespace tr
   void scene::framebuffer_resize(void)
   {
     // пересчет координат курсора
-    tr::WinGl.Cursor.x = static_cast<float>(tr::WinGl.width/2) + 0.5f;
-    tr::WinGl.Cursor.y = static_cast<float>(tr::WinGl.height/2) + 0.5f;
+    tr::AppWin.Cursor.x = static_cast<float>(tr::AppWin.width/2) + 0.5f;
+    tr::AppWin.Cursor.y = static_cast<float>(tr::AppWin.height/2) + 0.5f;
 
     // пересчет матрицы проекции
-    tr::WinGl.aspect = static_cast<float>(tr::WinGl.width)
-                     / static_cast<float>(tr::WinGl.height);
-    tr::MatProjection = glm::perspective(1.118f, tr::WinGl.aspect, 0.01f, 1000.0f);
+    tr::AppWin.aspect = static_cast<float>(tr::AppWin.width)
+                     / static_cast<float>(tr::AppWin.height);
+    tr::MatProjection = glm::perspective(1.118f, tr::AppWin.aspect, 0.01f, 1000.0f);
 
-    glViewport(0, 0, tr::WinGl.width, tr::WinGl.height);
+    glViewport(0, 0, tr::AppWin.width, tr::AppWin.height);
     glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);
 
     // настройка размера текстуры
     glBindTexture(GL_TEXTURE_2D, Eye.texco_buf);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                 static_cast<GLsizei>(tr::WinGl.width),
-                 static_cast<GLsizei>(tr::WinGl.height),
+                 static_cast<GLsizei>(tr::AppWin.width),
+                 static_cast<GLsizei>(tr::AppWin.height),
                  0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     // настройка размера рендербуфера
     glBindRenderbuffer(GL_RENDERBUFFER, Eye.rendr_buf);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
-                 static_cast<GLsizei>(tr::WinGl.width),
-                 static_cast<GLsizei>(tr::WinGl.height));
+                 static_cast<GLsizei>(tr::AppWin.width),
+                 static_cast<GLsizei>(tr::AppWin.height));
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     return;
@@ -169,16 +169,16 @@ namespace tr
   // как наложеные сверху дополнительные изображения
 
     // Если окно изменилось, то перестроить изображение GUI
-    if(WinGl.renew)
+    if(AppWin.renew)
     {
       framebuffer_resize();
       GuiImage.make();
       glBindTexture(GL_TEXTURE_2D, tex_hud);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                   static_cast<GLint>(WinGl.width),
-                   static_cast<GLint>(WinGl.height), 0,
+                   static_cast<GLint>(AppWin.width),
+                   static_cast<GLint>(AppWin.height), 0,
                    GL_RGBA, GL_UNSIGNED_BYTE, GuiImage.data);
-      WinGl.renew = false;
+      AppWin.renew = false;
     }
     else { GuiImage.update(); }
 
@@ -194,7 +194,7 @@ namespace tr
     glBindVertexArray(vaoQuad);
     glDisable(GL_DEPTH_TEST);
     screenShaderProgram.use();
-    screenShaderProgram.set_uniform("Cursor", WinGl.Cursor);
+    screenShaderProgram.set_uniform("Cursor", AppWin.Cursor);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     screenShaderProgram.unuse();
 

@@ -144,19 +144,19 @@ namespace tr
     sprintf(q, tpl, p.c_str(), LOOK_TANG);
     Query += q;
 
-    p = std::to_string(tr::WinGl.left);
+    p = std::to_string(tr::AppWin.left);
     sprintf(q, tpl, p.c_str(), WINDOW_LEFT);
     Query += q;
 
-    p = std::to_string(tr::WinGl.top);
+    p = std::to_string(tr::AppWin.top);
     sprintf(q, tpl, p.c_str(), WINDOW_TOP);
     Query += q;
 
-    p = std::to_string(tr::WinGl.width);
+    p = std::to_string(tr::AppWin.width);
     sprintf(q, tpl, p.c_str(), WINDOW_WIDTH);
     Query += q;
 
-    p = std::to_string(tr::WinGl.height);
+    p = std::to_string(tr::AppWin.height);
     sprintf(q, tpl, p.c_str(), WINDOW_HEIGHT);
     Query += q;
 

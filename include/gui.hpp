@@ -28,15 +28,15 @@ class gui
   private:
     pixel bg     {0xE0, 0xE0, 0xE0, 0xC0}; // фон заполнения неактивного окна
     pixel bg_hud {0x00, 0x88, 0x00, 0x40}; // фон панелей HUD (активного окна)
-    TRvuch GuiRGBA {};                     // RGBA массив изображения GUI
+    TRvuch vecGUI {};                     // RGBA массив изображения GUI
     const std::wstring Font { L"_`”~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghijklmn\
 opqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклмнопрстуфхцчшщъы\
 ьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };
 
-    void panel(UINT h=48, UINT w=UINT_MAX, UINT t=UINT_MAX, UINT l=0);
+    void add_hud_panel(UINT h=48, UINT w=UINT_MAX, UINT t=UINT_MAX, UINT l=0);
     void obscure(void);
-    void button(BUTTON_ID, UINT x, UINT y, const std::wstring&);
-    void button_bg(TRvuch& Data, UINT w, UINT h, BUTTON_STATE);
+    void add_button(BUTTON_ID, UINT x, UINT y, const std::wstring&);
+    void button_body(TRvuch& Data, UINT w, UINT h, BUTTON_STATE);
     void add_text(const tr::image& Font, const std::wstring& text,
                   tr::image& Data, UINT x, UINT y);
 

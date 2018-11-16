@@ -23,7 +23,7 @@ namespace tr
   int glfw_wr::k_RIGHT = GLFW_KEY_D;
   int glfw_wr::k_LEFT  = GLFW_KEY_A;
 
-  main_window WinGl = {};
+  main_window AppWin = {};
 
   ///
   /// Errors callback
@@ -40,11 +40,11 @@ namespace tr
   ///
   void glfw_wr::scene_open(GLFWwindow * window)
   {
-    WinGl.show_3d(true);
+    AppWin.set_mode(OPEN);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-    WinGl.xpos = WinGl.width/2;
-    WinGl.ypos = WinGl.height/2;
-    glfwSetCursorPos(window, WinGl.xpos, WinGl.ypos);
+    AppWin.xpos = AppWin.width/2;
+    AppWin.ypos = AppWin.height/2;
+    glfwSetCursorPos(window, AppWin.xpos, AppWin.ypos);
     return;
   }
 
@@ -54,7 +54,7 @@ namespace tr
   ///
   void glfw_wr::cursor_free(GLFWwindow * window)
   {
-    WinGl.show_3d(false);
+    AppWin.set_mode(MENU_1);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     return;
   }
@@ -69,15 +69,15 @@ namespace tr
   void glfw_wr::mouse_button_callback(
     GLFWwindow* window, int button, int action, int mods)
   {
-    if( !WinGl.is_open )
+    if( AppWin.mode != OPEN)
     {
-      WinGl.renew = true;
-      WinGl.mouse_lbutton_on = (button == GLFW_MOUSE_BUTTON_LEFT &&
+      AppWin.renew = true;
+      AppWin.mouse_lbutton_on = (button == GLFW_MOUSE_BUTTON_LEFT &&
                                 action == GLFW_PRESS);
 
       if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE )
       {
-        switch (WinGl.OverButton) {
+        switch (AppWin.OverButton) {
           case BTN_OPEN:
             scene_open(window);
             break;
@@ -104,7 +104,7 @@ namespace tr
     keys.key_mods = mods;
     keys.key_scancode = scancode;
 
-    if (WinGl.is_open)
+    if (AppWin.mode == OPEN)
     {
       keys.fb = glfwGetKey(window, k_FRONT) - glfwGetKey(window, k_BACK);
       keys.ud = glfwGetKey(window, k_DOWN)  - glfwGetKey(window, k_UP);
@@ -113,7 +113,7 @@ namespace tr
 
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
     {
-      if (WinGl.is_open)
+      if (AppWin.mode == OPEN)
       {
         keys.fb = 0;
         keys.ud = 0;
@@ -135,8 +135,8 @@ namespace tr
     int left, int top)
   {
     if (!window) ERR("Error on call GLFW window_pos_callback.");
-    tr::WinGl.left = static_cast<UINT>(left);
-    tr::WinGl.top = static_cast<UINT>(top);
+    tr::AppWin.left = static_cast<UINT>(left);
+    tr::AppWin.top = static_cast<UINT>(top);
     return;
   }
 
@@ -147,9 +147,9 @@ namespace tr
     int width, int height)
   {
     if (!window) ERR("Error on call GLFW framebuffer_size_callback.");
-    tr::WinGl.width  = static_cast<UINT>(width);
-    tr::WinGl.height = static_cast<UINT>(height);
-    tr::WinGl.renew = true; // для пересчета параметров сцены
+    tr::AppWin.width  = static_cast<UINT>(width);
+    tr::AppWin.height = static_cast<UINT>(height);
+    tr::AppWin.renew = true; // для пересчета параметров сцены
     return;
   }
 
@@ -172,28 +172,28 @@ namespace tr
     tr::Eye.ViewFrom.x = std::stof(tr::cfg::get(VIEW_FROM_X));
     tr::Eye.ViewFrom.y = std::stof(tr::cfg::get(VIEW_FROM_Y));
     tr::Eye.ViewFrom.z = std::stof(tr::cfg::get(VIEW_FROM_Z));
-    tr::WinGl.width = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_WIDTH)));
-    tr::WinGl.height = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_HEIGHT)));
-    tr::WinGl.top = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_TOP)));
-    tr::WinGl.left = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_LEFT)));
-    tr::WinGl.Cursor.x = static_cast<float>(tr::WinGl.width/2) + 0.5f;
-    tr::WinGl.Cursor.y = static_cast<float>(tr::WinGl.height/2) + 0.5f;
-    tr::WinGl.aspect = static_cast<float>(tr::WinGl.width)
-                     / static_cast<float>(tr::WinGl.height);
-    tr::MatProjection = glm::perspective(1.118f, tr::WinGl.aspect, 0.01f, 1000.0f);
+    tr::AppWin.width = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_WIDTH)));
+    tr::AppWin.height = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_HEIGHT)));
+    tr::AppWin.top = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_TOP)));
+    tr::AppWin.left = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_LEFT)));
+    tr::AppWin.Cursor.x = static_cast<float>(tr::AppWin.width/2) + 0.5f;
+    tr::AppWin.Cursor.y = static_cast<float>(tr::AppWin.height/2) + 0.5f;
+    tr::AppWin.aspect = static_cast<float>(tr::AppWin.width)
+                     / static_cast<float>(tr::AppWin.height);
+    tr::MatProjection = glm::perspective(1.118f, tr::AppWin.aspect, 0.01f, 1000.0f);
 
     //  Создание 3D окна
     glfwWindowHint(GLFW_VISIBLE, 0);
-    win_ptr = glfwCreateWindow(static_cast<int>(tr::WinGl.width),
-                               static_cast<int>(tr::WinGl.height),
+    win_ptr = glfwCreateWindow(static_cast<int>(tr::AppWin.width),
+                               static_cast<int>(tr::AppWin.height),
                          title.c_str(), nullptr, nullptr);
     if (nullptr == win_ptr) ERR("Creating Window fail.");
 
-    glfwSetWindowSizeLimits(win_ptr, WinGl.minwidth, WinGl.minheight,
+    glfwSetWindowSizeLimits(win_ptr, AppWin.minwidth, AppWin.minheight,
                             GLFW_DONT_CARE, GLFW_DONT_CARE);
 
-    glfwSetWindowPos(win_ptr, static_cast<int>(tr::WinGl.left),
-                     static_cast<int>(tr::WinGl.top));
+    glfwSetWindowPos(win_ptr, static_cast<int>(tr::AppWin.left),
+                     static_cast<int>(tr::AppWin.top));
 
     glfwShowWindow(win_ptr);
     glfwMakeContextCurrent(win_ptr);
@@ -204,8 +204,8 @@ namespace tr
     glfwSetFramebufferSizeCallback(win_ptr, framebuffer_size_callback);
     glfwSetWindowPosCallback(win_ptr, window_pos_callback);
     if(!ogl_LoadFunctions())  ERR("Can't load OpenGl finctions");
-    WinGl.xpos = WinGl.width / 2;
-    WinGl.ypos = WinGl.height / 2;
+    AppWin.xpos = AppWin.width / 2;
+    AppWin.ypos = AppWin.height / 2;
 
     return;
   }
@@ -229,19 +229,19 @@ namespace tr
   void glfw_wr::cursor_position_callback(GLFWwindow* ptWin,
                                              double x, double y)
   {
-    if(WinGl.is_open)
+    if(AppWin.mode == OPEN)
     {
-      keys.dx += static_cast<float>(x - WinGl.xpos);
-      keys.dy += static_cast<float>(y - WinGl.ypos);
-      glfwSetCursorPos(ptWin, WinGl.xpos, WinGl.ypos);
+      keys.dx += static_cast<float>(x - AppWin.xpos);
+      keys.dy += static_cast<float>(y - AppWin.ypos);
+      glfwSetCursorPos(ptWin, AppWin.xpos, AppWin.ypos);
     }
     else
     {
       // В режиме настройки перемещение указателя мыши вызывает
       // изменения вида элементов управления и перерисовку окна
-      WinGl.xpos = x;
-      WinGl.ypos = y;
-      WinGl.renew = true;
+      AppWin.xpos = x;
+      AppWin.ypos = y;
+      AppWin.renew = true;
     }
     return;
   }
@@ -263,11 +263,11 @@ namespace tr
       if (t_frame - t_start >= one_second)
       {
         t_start = std::chrono::system_clock::now();
-        WinGl.fps = fps;
+        AppWin.fps = fps;
         fps = 0;
       }
       Scene.draw(keys);
-      if(WinGl.is_open) keys.dx = keys.dy = 0.f;
+      if(AppWin.mode == OPEN) keys.dx = keys.dy = 0.f;
       glfwSwapBuffers(win_ptr);
       glfwPollEvents();
     }

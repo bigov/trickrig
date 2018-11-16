@@ -10,7 +10,7 @@ tr::image TexFn15 = get_png_img("../assets/font_08x15_nr.png");
 
 gui::gui(void)
 {
-  data = GuiRGBA.data();
+  data = vecGUI.data();
   return;
 }
 
@@ -80,29 +80,33 @@ void gui::add_text(const image& Src, const std::wstring& Wt,
 ///
 void gui::make(void)
 {
-  GuiRGBA.clear();
-  GuiRGBA.resize(WinGl.width * WinGl.height * 4, 0x00);
+  vecGUI.clear();
+  vecGUI.resize(AppWin.width * AppWin.height * 4, 0x00);
 
   // По-умолчанию указываем, что активной кнопки нет, процедура построения
   // кнопки установит свой BUTTON_ID, если курсор находится над ней
-  WinGl.OverButton = NONE;
+  AppWin.OverButton = NONE;
 
-  if(WinGl.is_open)
+  if(AppWin.mode == OPEN)
   {
-    panel();
+    add_hud_panel();
   }
   else
   {
     obscure();
-    UINT x = WinGl.width/2 - WinGl.btn_w/2;       // X координата положения кнопки
-    UINT y = WinGl.height/2 - WinGl.btn_h * 1.25; // Y координата кнопки
-    button(BTN_OPEN, x, y, L"Start");
 
-    y += 1.5 * WinGl.btn_h;
-    button(BTN_CLOSE, x, y, L"Close");
+    UINT x = AppWin.width/2 - AppWin.btn_w/2;       // X координата положения кнопки
+    UINT y = AppWin.height/2 - AppWin.btn_h/2; // Y координата кнопки
+    add_button(BTN_CONFIG, x, y, L"Настроить");
+
+    y -= 1.5 * AppWin.btn_h;
+    add_button(BTN_OPEN, x, y, L"Играть");
+
+    y += 3 * AppWin.btn_h;
+    add_button(BTN_CLOSE, x, y, L"Закрыть");
 
   }
-  data = GuiRGBA.data();
+  data = vecGUI.data();
   return;
 }
 
@@ -111,12 +115,12 @@ void gui::make(void)
 ///
 void gui::update(void)
 {
-  // Табличка с текстом на экране отображается в виде наложенного
-  // на GL_TEXTURE2 изображения, которое шейдером складывается
-  // с изображением трехмерной сцены, отрендереным во фреймбуфере.
-  if(WinGl.is_open)
+  // Прямоугольная область с текстом накладывается напрямую в память GPU
+  // поверх загруженой ранее текстуры GUI, используя метод glTexSubImage2D
+  if(AppWin.mode == OPEN)
   {
-    tr::image Label {36, 17};
+    UINT label_width = 4 * TexFn15.w/160 + 4;
+    tr::image Label {label_width, 17};
     size_t i = 0;
     size_t max = Label.Data.size();
     while(i < max)
@@ -128,7 +132,7 @@ void gui::update(void)
     }
 
     wchar_t line[5]; // the expected string plus 1 null terminator
-    std::swprintf(line, 5, L"%.4i", WinGl.fps);
+    std::swprintf(line, 5, L"%.4i", AppWin.fps);
     add_text(TexFn15, line, Label, Label.w/2, Label.h/2);
 
 /*
@@ -151,7 +155,7 @@ void gui::update(void)
 
     glTexSubImage2D(GL_TEXTURE_2D, 0,                               // place
                     2,                                              // left
-                    static_cast<GLint>(WinGl.height - Label.h - 2), // top
+                    static_cast<GLint>(AppWin.height - Label.h - 2), // top
                     static_cast<GLsizei>(Label.w),                  // width
                     static_cast<GLsizei>(Label.h),                  // height
                     GL_RGBA, GL_UNSIGNED_BYTE,                      // mode
@@ -167,30 +171,30 @@ void gui::update(void)
 /// \param top
 /// \param left
 ///
-void gui::panel(UINT height, UINT width, UINT top, UINT left)
+void gui::add_hud_panel(UINT height, UINT width, UINT top, UINT left)
 {
   // Высота не должна быть больше высоты окна
-  if(WinGl.height < height) height = WinGl.height;
+  if(AppWin.height < height) height = AppWin.height;
 
   // Если ширина не была указана, или указана больше ширины окна,
   // то установить ширину панели равной ширине окна
-  if(UINT_MAX == width || width > WinGl.width) width = WinGl.width;
+  if(UINT_MAX == width || width > AppWin.width) width = AppWin.width;
 
   // По-умолчанию расположить панель внизу
-  if(UINT_MAX == top) top = WinGl.height - height;
+  if(UINT_MAX == top) top = AppWin.height - height;
 
   // Индекс первого элемента первого пикселя панели на текстуре GIU
-  UINT i = static_cast<unsigned>(top * WinGl.width * 4 + left * 4);
+  UINT i = static_cast<unsigned>(top * AppWin.width * 4 + left * 4);
 
   // Индекс последнего элемента панели
   UINT i_max = i + static_cast<unsigned>(width * height * 4);
 
   while(i < i_max)
   {
-    GuiRGBA[i++] = bg_hud.r;
-    GuiRGBA[i++] = bg_hud.g;
-    GuiRGBA[i++] = bg_hud.b;
-    GuiRGBA[i++] = bg_hud.a;
+    vecGUI[i++] = bg_hud.r;
+    vecGUI[i++] = bg_hud.g;
+    vecGUI[i++] = bg_hud.b;
+    vecGUI[i++] = bg_hud.a;
   }
   return;
 }
@@ -201,13 +205,13 @@ void gui::panel(UINT height, UINT width, UINT top, UINT left)
 void gui::obscure(void)
 {
   size_t i = 0;
-  size_t max = GuiRGBA.size();
+  size_t max = vecGUI.size();
   while(i < max)
   {
-    GuiRGBA[i++] = bg.r;
-    GuiRGBA[i++] = bg.g;
-    GuiRGBA[i++] = bg.b;
-    GuiRGBA[i++] = bg.a;
+    vecGUI[i++] = bg.r;
+    vecGUI[i++] = bg.g;
+    vecGUI[i++] = bg.b;
+    vecGUI[i++] = bg.a;
   }
   return;
 }
@@ -229,15 +233,17 @@ void gui::obscure(void)
 ///   FFFFFF
 ///   от F6F6F6 -> 24 градации цвета темнее
 ///
-void gui::button_bg(TRvuch& D, UINT w, UINT h, BUTTON_STATE s)
+void gui::button_body(TRvuch& D, UINT w, UINT h, BUTTON_STATE s)
 {
   double step = static_cast<double>(h-3)/256.0*24.0; // градации цвета
 
+  // Используемые цвета
   pixel line_0  { 0xB6, 0xB6, 0xB3, 0xFF }; // верх и боковые
-  pixel line_1 {};                    // блик (вторая линия)
-  pixel line_bg {};                   // фоновый цвет
+  pixel line_1 {};                          // блик (вторая линия)
+  pixel line_bg {};                         // фоновый цвет
   pixel line_f  { 0x91, 0x91, 0x8C, 0xFF }; // нижняя
 
+  // Настройка цветовых значений
   switch (s) {
     case ST_PRESSED:
       line_bg = { 0xDE, 0xDE, 0xDE, 0xFF };
@@ -254,7 +260,7 @@ void gui::button_bg(TRvuch& D, UINT w, UINT h, BUTTON_STATE s)
       break;
   }
 
-  UINT row_length = w * 4; // число значений в одной строке
+  UINT row_length = w * 4; // количество значений UCHAR в строке
 
   // верхняя линия
   size_t i = 0;
@@ -314,36 +320,40 @@ void gui::button_bg(TRvuch& D, UINT w, UINT h, BUTTON_STATE s)
 
 ///
 /// \brief Формирование кнопки
+///
+/// Вначале формируется отдельное изображение кнопки, потом оно копируется
+/// в указанное координатами (x,y) место окна.
+///
 /// \param Texture Image
 /// \param Font
 /// \param Docket
 ///
-void gui::button(BUTTON_ID btn_id, UINT x, UINT y, const std::wstring& D)
+void gui::add_button(BUTTON_ID btn_id, UINT x, UINT y, const std::wstring& D)
 {
-  image Btn {WinGl.btn_w, WinGl.btn_h};
+  image Btn {AppWin.btn_w, AppWin.btn_h};
 
-  if( WinGl.xpos >= x && WinGl.xpos <= x + WinGl.btn_w &&
-      WinGl.ypos >= y && WinGl.ypos <= y + WinGl.btn_h )
+  if( AppWin.xpos >= x && AppWin.xpos <= x + AppWin.btn_w &&
+      AppWin.ypos >= y && AppWin.ypos <= y + AppWin.btn_h )
   {
     // Указатель находится над кнопкой
-    WinGl.OverButton = btn_id;
-    if(WinGl.mouse_lbutton_on) button_bg(Btn.Data, WinGl.btn_w, WinGl.btn_h, ST_PRESSED);
-    else button_bg(Btn.Data, WinGl.btn_w, WinGl.btn_h, ST_OVER);
+    AppWin.OverButton = btn_id;
+    if(AppWin.mouse_lbutton_on) button_body(Btn.Data, AppWin.btn_w, AppWin.btn_h, ST_PRESSED);
+    else button_body(Btn.Data, AppWin.btn_w, AppWin.btn_h, ST_OVER);
   }
   else
   {
-    button_bg(Btn.Data, WinGl.btn_w, WinGl.btn_h, ST_NORMAL);
+    button_body(Btn.Data, AppWin.btn_w, AppWin.btn_h, ST_NORMAL);
   }
 
-  add_text(TexFn18, D, Btn, WinGl.btn_w/2, WinGl.btn_h/2);
-  UINT j = 0; // индекс данных писелей на изображении кнопки
+  add_text(TexFn18, D, Btn, AppWin.btn_w/2, AppWin.btn_h/2);
 
+  UINT j = 0; // индекс данных писелей на изображении кнопки
   // Скопировать изображение кнопки на текстуру окна
-  for (UINT bt_y = 0; bt_y < WinGl.btn_h; ++bt_y)
-     for (UINT bt_x = 0; bt_x < WinGl.btn_w * 4; ++bt_x)
+  for (UINT bt_y = 0; bt_y < AppWin.btn_h; ++bt_y)
+     for (UINT bt_x = 0; bt_x < AppWin.btn_w * 4; ++bt_x)
   {
-    size_t i = (y + bt_y) * WinGl.width * 4 + x * 4 + bt_x;
-    GuiRGBA[i] = Btn.Data[j++];
+    size_t i = (y + bt_y) * AppWin.width * 4 + x * 4 + bt_x;
+    vecGUI[i] = Btn.Data[j++];
   }
 
   return;

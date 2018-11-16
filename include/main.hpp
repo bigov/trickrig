@@ -78,24 +78,32 @@ namespace tr {
   enum BUTTON_ID {          // Идентификаторы кнопок GIU
     BTN_OPEN,
     BTN_CLOSE,
+    BTN_CONFIG,
     NONE
   };
 
-  // Настройка параметров 3D окна
+  enum WIN_MODE {   // режимы окна
+    OPEN,           // основной (игровой) режим работы с 3D окружением
+    MENU_0,         // начальное меню
+    MENU_1,         // выбор игры
+    MENU_2,         // создание новой игры / настройка подключения
+  };
+
+  // Параметры и режимы окна приложения
   struct main_window {
     UINT width = 400;    // ширина окна
     UINT height = 400;   // высота окна
     UINT left = 0;       // положение окна по горизонтали
     UINT top = 0;        // положение окна по вертикали
 
-    UINT btn_w = 120;            // ширина кнопки GUI
-    UINT btn_h = 36;             // высота кнопки GUI
-    int minwidth = btn_w + 8;    // минимально допустимая ширина окна
-    int minheight = btn_h * 2.5; // минимально допустимая высота окна
+    UINT btn_w = 120;               // ширина кнопки GUI
+    UINT btn_h = 36;                // высота кнопки GUI
+    int minwidth = btn_w + 8;       // минимально допустимая ширина окна
+    int minheight = btn_h * 4 + 8;  // минимально допустимая высота окна
+    WIN_MODE mode = MENU_0;         // режим окна приложения
 
     float aspect = 1.0f;  // соотношение размеров окна
     bool renew = true;    // флаг наличия изменений параметров окна
-    bool is_open = false; // индикатор того, что окно открыто в режиме 3D
     double xpos = 0;      // позиция указателя относительно левой границы
     double ypos = 0;      // позиция указателя относительно верхней границы
     int fps = 120;        // частота кадров (для коррекции скорости движения)
@@ -104,14 +112,14 @@ namespace tr {
     BUTTON_ID OverButton = NONE;   // Над какой кнопкой курсор
     bool mouse_lbutton_on = false; // нажата левая кнопка мыши
 
-    void show_3d(bool state) // Изменение режима окна 3d/2d
+    void set_mode(WIN_MODE m) // Изменение режима окна 3d/2d
     {
-      is_open = state;
-      Cursor[2] = state ? 4.0f : .0f;
+      mode = m;
+      Cursor[2] = ( OPEN == m ? 4.0f : .0f );
       renew = true;
     }
   };
-  extern main_window WinGl;
+  extern main_window AppWin;
 
   // Настройка параметров главной камеры 3D вида
   struct camera_3d {
