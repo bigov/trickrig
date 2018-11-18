@@ -20,7 +20,7 @@ namespace tr
 
       GLuint vaoQuad = 0;
       GLuint tex_hud = 0;
-      tr::gui GuiImage {};             // Интерфейс окна
+      tr::gui WinGui {};               // Интерфейс окна
       tr::space Space {};              // виртуальное пространство
       tr::glsl screenShaderProgram {}; // шейдерная программа
 

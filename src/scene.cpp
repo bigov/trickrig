@@ -172,15 +172,18 @@ namespace tr
     if(AppWin.renew)
     {
       framebuffer_resize();
-      GuiImage.make();
+      WinGui.make();
       glBindTexture(GL_TEXTURE_2D, tex_hud);
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                    static_cast<GLint>(AppWin.width),
                    static_cast<GLint>(AppWin.height), 0,
-                   GL_RGBA, GL_UNSIGNED_BYTE, GuiImage.data);
+                   GL_RGBA, GL_UNSIGNED_BYTE, WinGui.uchar());
       AppWin.renew = false;
     }
-    else { GuiImage.update(); }
+    else
+    {
+      WinGui.update();
+    }
 
     // Первый проход рендера - во фреймбуфер
     glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);

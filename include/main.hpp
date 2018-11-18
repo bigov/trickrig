@@ -75,7 +75,7 @@ namespace tr {
 
   extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
 
-  enum BUTTON_ID {          // Идентификаторы кнопок GIU
+  enum BUTTON_ID { // Идентификаторы кнопок GIU
     BTN_OPEN,
     BTN_CLOSE,
     BTN_CONFIG,
@@ -91,11 +91,10 @@ namespace tr {
 
   // Параметры и режимы окна приложения
   struct main_window {
-    UINT width = 400;    // ширина окна
-    UINT height = 400;   // высота окна
-    UINT left = 0;       // положение окна по горизонтали
-    UINT top = 0;        // положение окна по вертикали
-
+    UINT width = 400;               // ширина окна
+    UINT height = 400;              // высота окна
+    UINT left = 0;                  // положение окна по горизонтали
+    UINT top = 0;                   // положение окна по вертикали
     UINT btn_w = 120;               // ширина кнопки GUI
     UINT btn_h = 36;                // высота кнопки GUI
     int minwidth = btn_w + 8;       // минимально допустимая ширина окна

@@ -2,64 +2,28 @@
 
 namespace tr {
 
-// Текстура шрифта 10х18 пикселей (с тенью)
-tr::image TexFn18 = get_png_img("../assets/font_10x18_sh.png");
-
-// Текстура шрифта 08х15 пикселей
-tr::image TexFn15 = get_png_img("../assets/font_08x15_nr.png");
-
 gui::gui(void)
 {
-  data = vecGUI.data();
   return;
 }
 
 ///
-/// \brief Добавление текста
+/// \brief Добавление текста из текстурного атласа
+///
 /// \param текстура шрифта
 /// \param строка текста
 /// \param массив пикселей, в который добавляется текст
 /// \param х - координата
 /// \param y - координата
 ///
-void gui::add_text(const image& Src, const std::wstring& Wt,
-                   tr::image& Dst, UINT x, UINT y)
+void gui::add_text(const img &Src, const std::wstring& TextString,
+                   img& Dst, UINT x, UINT y)
 {
-  UINT ch_w = Src.w / Font.length(); // ширина одного символа в пикселях
-  UINT ch_h = Src.h;                 // высота символа в пикселях
-
-  x -= ch_w * Wt.length()/2;    // Корректировка на длину строки
-  y -= ch_h/2;                  // Корректировка на высоту символа
-
-  UINT i_src = 0;                 // индекc на исходном изображении
-  UINT i_dst = 4 * (x + y * Dst.w); // индекс целевого изображения
-  UINT i_max = 0;
-
-  UINT i = 0; // счетчик напечатанных символов
-
-  for (const wchar_t& w_char: Wt)
+  UINT row = 0; // номер строки в текстуре шрифта
+  UINT i = 0;   // номер символа в выводимой строке
+  for (const wchar_t &wch: TextString)
   {
-    auto w_char_id = Font.find(w_char);        // индекс символа в текстуре
-    i_src = 4 * ( w_char_id * ch_w );        // индекс пикселя источника
-    i_dst = 4 * (i * ch_w + x + y * Dst.w); // индекс пикселя приемника
-
-    for(UINT y = 0; y < ch_h; y++)
-    {
-      i_max = i_dst + ch_w * 4;
-      while(i_dst < i_max)
-      {
-        if( Src.Data[i_src+3] == 0xFF )
-        {
-          Dst.Data[i_dst++] = Src.Data[i_src++];
-          Dst.Data[i_dst++] = Src.Data[i_src++];
-          Dst.Data[i_dst++] = Src.Data[i_src++];
-        }
-        i_dst++; i_src++;
-      }
-      i_dst += 4 * (Dst.w - ch_w);
-      i_src += 4 * (Src.w - ch_w);
-    }
-    i++;
+    Src.copy(Font.find(wch), row, Dst, x + (i++) * Src.w_cell, y);
   }
   return;
 }
@@ -80,8 +44,7 @@ void gui::add_text(const image& Src, const std::wstring& Wt,
 ///
 void gui::make(void)
 {
-  vecGUI.clear();
-  vecGUI.resize(AppWin.width * AppWin.height * 4, 0x00);
+  GuiImg.resize(AppWin.width, AppWin.height);
 
   // По-умолчанию указываем, что активной кнопки нет, процедура построения
   // кнопки установит свой BUTTON_ID, если курсор находится над ней
@@ -95,8 +58,8 @@ void gui::make(void)
   {
     obscure();
 
-    UINT x = AppWin.width/2 - AppWin.btn_w/2;       // X координата положения кнопки
-    UINT y = AppWin.height/2 - AppWin.btn_h/2; // Y координата кнопки
+    UINT x = AppWin.width/2 - AppWin.btn_w/2;   // X координата положения кнопки
+    UINT y = AppWin.height/2 - AppWin.btn_h/2;  // Y координата кнопки
     add_button(BTN_CONFIG, x, y, L"Настроить");
 
     y -= 1.5 * AppWin.btn_h;
@@ -104,9 +67,8 @@ void gui::make(void)
 
     y += 3 * AppWin.btn_h;
     add_button(BTN_CLOSE, x, y, L"Закрыть");
-
   }
-  data = vecGUI.data();
+
   return;
 }
 
@@ -119,21 +81,20 @@ void gui::update(void)
   // поверх загруженой ранее текстуры GUI, используя метод glTexSubImage2D
   if(AppWin.mode == OPEN)
   {
-    UINT label_width = 4 * TexFn15.w/160 + 4;
-    tr::image Label {label_width, 17};
+    UINT label_width = 4 * TexFn15.w_summ/160 + 4;
+    img Label {label_width, 17};
     size_t i = 0;
     size_t max = Label.Data.size();
     while(i < max)
     {
-      Label.Data[i++] = 0xF0;
-      Label.Data[i++] = 0xF0;
-      Label.Data[i++] = 0xF0;
-      Label.Data[i++] = 0xA0;
+      Label.Data[i++] = { 0xF0, 0xF0, 0xF0, 0xA0 } ;
     }
 
     wchar_t line[5]; // the expected string plus 1 null terminator
     std::swprintf(line, 5, L"%.4i", AppWin.fps);
-    add_text(TexFn15, line, Label, Label.w/2, Label.h/2);
+
+    add_text(TexFn15, line, Label, 2, 1);
+
 
 /*
     TTF10.set_cursor(6, 14);
@@ -155,9 +116,9 @@ void gui::update(void)
 
     glTexSubImage2D(GL_TEXTURE_2D, 0,                               // place
                     2,                                              // left
-                    static_cast<GLint>(AppWin.height - Label.h - 2), // top
-                    static_cast<GLsizei>(Label.w),                  // width
-                    static_cast<GLsizei>(Label.h),                  // height
+                    static_cast<GLint>(AppWin.height - Label.h_summ - 2), // top
+                    static_cast<GLsizei>(Label.w_summ),                  // width
+                    static_cast<GLsizei>(Label.h_summ),                  // height
                     GL_RGBA, GL_UNSIGNED_BYTE,                      // mode
                     Label.Data.data());                             // data
   }
@@ -184,18 +145,13 @@ void gui::add_hud_panel(UINT height, UINT width, UINT top, UINT left)
   if(UINT_MAX == top) top = AppWin.height - height;
 
   // Индекс первого элемента первого пикселя панели на текстуре GIU
-  UINT i = static_cast<unsigned>(top * AppWin.width * 4 + left * 4);
+  UINT i = static_cast<unsigned>(top * AppWin.width + left);
 
   // Индекс последнего элемента панели
-  UINT i_max = i + static_cast<unsigned>(width * height * 4);
+  UINT i_max = i + static_cast<unsigned>(width * height);
 
-  while(i < i_max)
-  {
-    vecGUI[i++] = bg_hud.r;
-    vecGUI[i++] = bg_hud.g;
-    vecGUI[i++] = bg_hud.b;
-    vecGUI[i++] = bg_hud.a;
-  }
+  while(i < i_max) GuiImg.Data[i++] = bg_hud;
+
   return;
 }
 
@@ -205,13 +161,10 @@ void gui::add_hud_panel(UINT height, UINT width, UINT top, UINT left)
 void gui::obscure(void)
 {
   size_t i = 0;
-  size_t max = vecGUI.size();
+  size_t max = GuiImg.Data.size();
   while(i < max)
   {
-    vecGUI[i++] = bg.r;
-    vecGUI[i++] = bg.g;
-    vecGUI[i++] = bg.b;
-    vecGUI[i++] = bg.a;
+    GuiImg.Data[i++] = bg;
   }
   return;
 }
@@ -233,15 +186,15 @@ void gui::obscure(void)
 ///   FFFFFF
 ///   от F6F6F6 -> 24 градации цвета темнее
 ///
-void gui::button_body(TRvuch& D, UINT w, UINT h, BUTTON_STATE s)
+void gui::button_body(img &D, BUTTON_STATE s)
 {
-  double step = static_cast<double>(h-3)/256.0*24.0; // градации цвета
+  double step = static_cast<double>(D.h_summ-3) / 256.0 * 7.0; // градации цвета
 
   // Используемые цвета
-  pixel line_0  { 0xB6, 0xB6, 0xB3, 0xFF }; // верх и боковые
-  pixel line_1 {};                          // блик (вторая линия)
-  pixel line_bg {};                         // фоновый цвет
-  pixel line_f  { 0x91, 0x91, 0x8C, 0xFF }; // нижняя
+  px line_0  { 0xB6, 0xB6, 0xB3, 0xFF }; // верх и боковые
+  px line_f  { 0x91, 0x91, 0x8C, 0xFF }; // нижняя
+  px line_1;                             // блик (вторая линия)
+  px line_bg;                            // фоновый цвет
 
   // Настройка цветовых значений
   switch (s) {
@@ -260,38 +213,29 @@ void gui::button_body(TRvuch& D, UINT w, UINT h, BUTTON_STATE s)
       break;
   }
 
-  UINT row_length = w * 4; // количество значений UCHAR в строке
-
   // верхняя линия
   size_t i = 0;
-  size_t max = row_length;
-  while(i < max)
-  {
-    D[i++] = line_0.r; D[i++] = line_0.g; D[i++] = line_0.b; D[i++] = line_0.a;
-  }
+  size_t max = D.w_summ;
+  while(i < max) D.Data[i++] = line_0;
 
   // вторая линия
-  max += row_length;
-  while(i < max)
-  {
-    D[i++] = line_1.r; D[i++] = line_1.g; D[i++] = line_1.b; D[i++] = line_1.a;
-  }
+  max += D.w_summ;
+  while(i < max) D.Data[i++] = line_1;
 
   // основной фон
-  UCHAR S = 0;         // коэффициент построчного уменьшения яркости
-  UINT np = 0;         // счетчик значений
-  double nr = 0.0;     // счетчик строк
+  int S = 0;         // коэффициент построчного уменьшения яркости
+  UINT np = 0;       // счетчик значений
+  double nr = 0.0;   // счетчик строк
 
-  max += row_length * (h - 3);
+  max += D.w_summ * (D.h_summ - 3);
   while (i < max)
   {
-    D[i++] = S > line_bg.r ? 0 : line_bg.r - S;
-    D[i++] = S > line_bg.g ? 0 : line_bg.g - S;
-    D[i++] = S > line_bg.b ? 0 : line_bg.b - S;
-    D[i++] = line_bg.a;
-
+    D.Data[i++] = { static_cast<int>(line_bg.r) - S,
+                    static_cast<int>(line_bg.g) - S,
+                    static_cast<int>(line_bg.b) - S,
+                    static_cast<int>(line_bg.a) };
     np++;
-    if(np >= row_length)
+    if(np >= D.w_summ)
     {
       np = 0;
       nr += 1.0;
@@ -301,20 +245,21 @@ void gui::button_body(TRvuch& D, UINT w, UINT h, BUTTON_STATE s)
   }
 
   // нижняя линия
-  max += row_length;
+  max += D.w_summ;
   while(i < max)
   {
-    D[i++] = line_f.r; D[i++] = line_f.g; D[i++] = line_f.b; D[i++] = line_f.a;
+    D.Data[i++] = line_f;
   }
 
   // боковинки
   i = 0;
   while(i < max)
   {
-    D[i++] = line_f.r; D[i++] = line_f.g; D[i++] = line_f.b; D[i++] = line_f.a;
-    i += row_length - 8;
-    D[i++] = line_f.r; D[i++] = line_f.g; D[i++] = line_f.b; D[i++] = line_f.a;
+    D.Data[i++] = line_f;
+    i += D.w_summ - 2;
+    D.Data[i++] = line_f;
   }
+
   return;
 }
 
@@ -324,39 +269,39 @@ void gui::button_body(TRvuch& D, UINT w, UINT h, BUTTON_STATE s)
 /// Вначале формируется отдельное изображение кнопки, потом оно копируется
 /// в указанное координатами (x,y) место окна.
 ///
-/// \param Texture Image
-/// \param Font
-/// \param Docket
 ///
-void gui::add_button(BUTTON_ID btn_id, UINT x, UINT y, const std::wstring& D)
+void gui::add_button(BUTTON_ID btn_id, UINT x, UINT y, const std::wstring &D)
 {
-  image Btn {AppWin.btn_w, AppWin.btn_h};
+  img Btn { AppWin.btn_w, AppWin.btn_h };
 
   if( AppWin.xpos >= x && AppWin.xpos <= x + AppWin.btn_w &&
       AppWin.ypos >= y && AppWin.ypos <= y + AppWin.btn_h )
   {
-    // Указатель находится над кнопкой
-    AppWin.OverButton = btn_id;
-    if(AppWin.mouse_lbutton_on) button_body(Btn.Data, AppWin.btn_w, AppWin.btn_h, ST_PRESSED);
-    else button_body(Btn.Data, AppWin.btn_w, AppWin.btn_h, ST_OVER);
+    AppWin.OverButton = btn_id; // Указатель находится над кнопкой
+    if(AppWin.mouse_lbutton_on) button_body(Btn, ST_PRESSED);
+    else button_body(Btn, ST_OVER);
   }
   else
   {
-    button_body(Btn.Data, AppWin.btn_w, AppWin.btn_h, ST_NORMAL);
+    button_body(Btn, ST_NORMAL);
   }
 
-  add_text(TexFn18, D, Btn, AppWin.btn_w/2, AppWin.btn_h/2);
+  auto t_width = TexFn18.w_cell * D.length();
+  auto t_height = TexFn18.h_cell;
 
-  UINT j = 0; // индекс данных писелей на изображении кнопки
-  // Скопировать изображение кнопки на текстуру окна
-  for (UINT bt_y = 0; bt_y < AppWin.btn_h; ++bt_y)
-     for (UINT bt_x = 0; bt_x < AppWin.btn_w * 4; ++bt_x)
-  {
-    size_t i = (y + bt_y) * AppWin.width * 4 + x * 4 + bt_x;
-    vecGUI[i] = Btn.Data[j++];
-  }
+  add_text(TexFn18, D, Btn, AppWin.btn_w/2 - t_width/2, AppWin.btn_h/2 - t_height/2);
+  Btn.copy(0, 0, GuiImg, x, y);
 
   return;
+}
+
+///
+/// \brief gui::uchar
+/// \return
+///
+UCHAR* gui::uchar(void)
+{
+  return GuiImg.uchar();
 }
 
 } //tr

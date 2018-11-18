@@ -4,17 +4,7 @@
 #include "main.hpp"
 #include "config.hpp"
 
-typedef std::vector<unsigned char> TRvuch;
-
 namespace tr {
-
-struct pixel
-{
-  unsigned char r = 0x00;
-  unsigned char g = 0x00;
-  unsigned char b = 0x00;
-  unsigned char a = 0x00;
-};
 
 // состояние кнопки
 enum BUTTON_STATE {
@@ -26,23 +16,28 @@ enum BUTTON_STATE {
 class gui
 {
   private:
-    pixel bg     {0xE0, 0xE0, 0xE0, 0xC0}; // фон заполнения неактивного окна
-    pixel bg_hud {0x00, 0x88, 0x00, 0x40}; // фон панелей HUD (активного окна)
-    TRvuch vecGUI {};                     // RGBA массив изображения GUI
+    px bg      {0xE0, 0xE0, 0xE0, 0xC0}; // фон заполнения неактивного окна
+    px bg_hud  {0x00, 0x88, 0x00, 0x40}; // фон панелей HUD (активного окна)
+    img GuiImg { 0, 0 };                 // GUI-текстура окна приложения
+
     const std::wstring Font { L"_`”~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghijklmn\
 opqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклмнопрстуфхцчшщъы\
 ьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };
 
+    UINT f_len = 160; // количество символов в текстуре шрифта
+    img TexFn15 { "../assets/font_08x15_nr.png", f_len }; //шрифт 08х15
+    img TexFn18 { "../assets/font_10x18_sh.png", f_len }; //шрифт 10x18 с тенью
+
     void add_hud_panel(UINT h=48, UINT w=UINT_MAX, UINT t=UINT_MAX, UINT l=0);
     void obscure(void);
     void add_button(BUTTON_ID, UINT x, UINT y, const std::wstring&);
-    void button_body(TRvuch& Data, UINT w, UINT h, BUTTON_STATE);
-    void add_text(const tr::image& Font, const std::wstring& text,
-                  tr::image& Data, UINT x, UINT y);
+    void button_body(img &Data, BUTTON_STATE);
+    void add_text(const img &Font, const std::wstring& TextString,
+                  img& Data, UINT x, UINT y);
 
   public:
     gui(void);
-    UCHAR* data = nullptr;            // адрес RGBA массива GIU
+    UCHAR* uchar(void);
     void make(void);                  // формирование изображения GIU окна
     void update(void);                // обновление кадра
 };

@@ -22,8 +22,7 @@ namespace tr
     glEnable(GL_BLEND);      // поддержка прозрачности
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Загрузка из файла данных текстуры
-    tr::image ImgTex0 = get_png_img(tr::cfg::get(PNG_TEXTURE0));
+    img ImgTex0 { tr::cfg::get(PNG_TEXTURE0) }; // Загрузка из файла текстуры
 
     tr::Eye.look_a = std::stof(tr::cfg::get(LOOK_AZIM));
     tr::Eye.look_t = std::stof(tr::cfg::get(LOOK_TANG));
@@ -35,9 +34,9 @@ namespace tr
     GLint level_of_details = 0;
     GLint frame = 0;
     glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-                 static_cast<GLsizei>(ImgTex0.w),
-                 static_cast<GLsizei>(ImgTex0.h),
-                 frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgTex0.Data.data());
+                 static_cast<GLsizei>(ImgTex0.w_summ),
+                 static_cast<GLsizei>(ImgTex0.h_summ),
+                 frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgTex0.uchar());
 
     // Установка опций отрисовки текстур
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);

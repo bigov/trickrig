@@ -10,36 +10,6 @@
 
 namespace tr
 {
-  //## Переворачивает рисунок по вертикали копируя построчно
-  void image::flip_vert(void)
-  {
-    auto tmp = Data;
-    size_t width = Data.size()/h; // длина строки в байтах
-    size_t i = 0;
-    for (size_t row = h - 1; row > 0; row--)
-    {
-      memcpy(&Data[i], &tmp[width * row], width);
-      i += width;
-    }
-    return;
-  }
-
-  //## Для обеспечения работы контейнера map c ключем f2d
-  bool operator< (tr::f2d const& left, tr::f2d const& right)
-  {
-    if (left.x != right.x) return left.x < right.x;
-    else return left.z < right.z;
-  }
-
-  /*
-  //## Для обеспечения работы контейнера map c ключем 3d
-  bool operator< (tr::f3d const& left, tr::f3d const& right)
-  {
-    if (left.y != right.y)      {return left.y < right.y;}
-    else if (left.z != right.z) {return left.z < right.z;}
-    else                        {return left.x < right.x;}
-  }
-  */
 
   //## Для обеспечения работы контейнера map c ключем i3d
   bool operator< (tr::i3d const& left, tr::i3d const& right)
@@ -73,32 +43,177 @@ namespace tr
     return static_cast<int>(ms.count() % k);
   }
 
-  //## Чтение файла в формате PNG
-  image get_png_img(const std::string & f_n)
-  {
-    const char * filename = f_n.c_str();
-    #if not defined PNG_SIMPLIFIED_READ_SUPPORTED
-      ERR("FAILURE: you must update the \"libpng\".");
-    #endif
 
+  ///
+  /// \brief Вспомогательная функция для структуры "px"
+  ///
+  UCHAR int_to_uchar(int v)
+  {
+    if(v < 0)         return 0x00;
+    else if (v > 255) return 0xFF;
+    else return static_cast<UCHAR>(v);
+  }
+
+  ///
+  /// \brief img::img
+  /// \param width
+  /// \param height
+  ///
+  img::img(UINT width, UINT height)
+    : Data(width * height), n_cols(_c), n_rows(_r),
+    w_cell(_wc), h_cell(_hc), w_summ(_w), h_summ(_h)
+  {
+    _w = width;  // ширина изображения в пикселях
+    _h = height; // высота изображения в пикселях
+    _c = 1;      // число ячеек в строке
+    _r = 1;      // число строк
+    _wc = _w/_c; // ширина ячейки в пикселях
+    _hc = _h/_r; // высота ячейки в пикселях
+
+    return;
+  }
+
+  ///
+  /// \brief img::img
+  /// \param width
+  /// \param height
+  /// \param pixel
+  ///
+  img::img(UINT width, UINT height, const px &pixel)
+    : Data(width * height, pixel), n_cols(_c), n_rows(_r),
+    w_cell(_wc), h_cell(_hc), w_summ(_w), h_summ(_h)
+  {
+    _c = 1;      // число ячеек в строке (по-умолчанию)
+    _r = 1;      // число строк (по-умолчанию)
+    _w = width;  // ширина изображения в пикселях
+    _h = height; // высота изображения в пикселях
+    _wc = _w/_c; // ширина ячейки в пикселях
+    _hc = _h/_r; // высота ячейки в пикселях
+
+    return;
+  }
+
+  ///
+  /// \brief Конструктор c загрузкой данных из файла
+  /// \param filename
+  /// \param cols
+  /// \param rows
+  ///
+  img::img(const std::string &filename, UINT cols, UINT rows)
+    : Data(0),  n_cols(_c), n_rows(_r),
+      w_cell(_wc), h_cell(_hc), w_summ(_w), h_summ(_h)
+  {
+    _c = cols;
+    _r = rows;
+    load(filename);
+    return;
+  }
+
+  ///
+  /// \brief Установка размеров
+  /// \param W
+  /// \param H
+  ///
+  void img::resize(UINT width, UINT height)
+  {
+    _w = width;  // ширина изображения в пикселях
+    _h = height; // высота изображения в пикселях
+
+    _wc = _w/_c; // ширина ячейки в пикселях
+    _hc = _h/_r; // высота ячейки в пикселях
+    Data.clear();
+    Data.resize(_w * _h);
+    return;
+  }
+
+  ///
+  /// \brief img::uchar_data
+  /// \return
+  ///
+  UCHAR* img::uchar(void)
+  {
+    return reinterpret_cast<UCHAR*>(px_data());
+  }
+
+  ///
+  /// \brief img::px_data
+  /// \return
+  ///
+  px* img::px_data(void)
+  {
+    return Data.data();
+  }
+
+  ///
+  /// \brief Загрузки избражения из .PNG файла
+  ///
+  /// В случае загрузки текстуры можно указать количество элементов в строке
+  /// и число строк. По-умолчанию оба параметра устанавливаются равными 1.
+  ///
+  /// \param filename
+  ///
+  void img::load(const std::string &fname)
+  {
     png_image info;
     memset(&info, 0, sizeof info);
     info.version = PNG_IMAGE_VERSION;
 
-    if (!png_image_begin_read_from_file(&info, filename))
+    if (!png_image_begin_read_from_file(&info, fname.c_str()))
       ERR("Can't read PNG image file");
 
     info.format = PNG_FORMAT_RGBA;
 
-    image res{ info.width, info.height };
+    resize(info.width, info.height);
 
-    if (!png_image_finish_read(&info, nullptr, res.Data.data(), 0, nullptr ))
+    if (!png_image_finish_read(&info, nullptr, uchar(), 0, nullptr ))
     {
       png_image_free(&info);
       ERR(info.message);
     }
-    
-    return res;
+    return;
+  }
+
+  ///
+  /// \brief     Копирование изображения
+  ///
+  /// \param C   номер ячейки в строке таблицы текстур
+  /// \param R   номер строки таблицы текстур
+  /// \param dst изображение-приемник
+  /// \param X   координата пикселя приемника
+  /// \param Y   координата пикселя приемника
+  ///
+  void img::copy(UINT C, UINT R, img& dst, UINT X, UINT Y) const
+  {
+    UINT frag_w = w_summ / n_cols;             // ширина фрагмента в пикселях
+    UINT frag_h = h_summ / n_rows;             // высота фрагмента в пикселях
+    UINT frag_sz = frag_h * frag_w;  // число копируемых пикселей
+
+    UINT frag_i = C * frag_w + R * frag_h * w_summ; // индекс начала фрагмента
+
+    UINT dst_i = X + Y * dst.w_summ;       // индекс начала в приемнике
+    //UINT dst_max = dst.w * dst.h;     // число пикселей в приемнике
+
+    UINT i = 0;              // сумма скопированных пикселей
+    while(i < frag_sz)
+    {
+      UINT d = dst_i;        // текущий индекс приемника
+      UINT s = frag_i;       // текущий индекс источника
+      UINT l = d + frag_w;   // конец копируемой строки пикселей
+
+      // В данной версии копируются только полностью непрозрачные пиксели
+      while(d < l)
+      {
+        if(Data[s].a == 0xFF) dst.Data[d] = Data[s];
+        ++d;
+        ++s;
+        ++i;
+      }
+
+      dst_i += dst.w_summ; // переход на следующую строку приемника
+      frag_i += w_summ;    // переход на следующую строку источника
+    }
+
+    return;
   }
 
   //## Преобразователь типов
