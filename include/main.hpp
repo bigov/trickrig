@@ -79,14 +79,16 @@ namespace tr {
     BTN_OPEN,
     BTN_CLOSE,
     BTN_CONFIG,
+    BTN_LOCATION,
+    BTN_CREATE,
     NONE
   };
 
-  enum WIN_MODE {   // режимы окна
-    OPEN,           // основной (игровой) режим работы с 3D окружением
-    MENU_0,         // начальное меню
-    MENU_1,         // выбор игры
-    MENU_2,         // создание новой игры / настройка подключения
+  enum COVER_MODE {    // режимы окна
+    COVER_OFF,         // основной режим - без шторки
+    COVER_START,       // начальное меню
+    COVER_LOCATION,    // выбор игры
+    COVER_CONFIG,      // настройки
   };
 
   // Параметры и режимы окна приложения
@@ -99,22 +101,22 @@ namespace tr {
     UINT btn_h = 36;                // высота кнопки GUI
     int minwidth = btn_w + 8;       // минимально допустимая ширина окна
     int minheight = btn_h * 4 + 8;  // минимально допустимая высота окна
-    WIN_MODE mode = MENU_0;         // режим окна приложения
+    COVER_MODE cover = COVER_START; // режим окна приложения
 
     float aspect = 1.0f;  // соотношение размеров окна
     bool renew = true;    // флаг наличия изменений параметров окна
-    double xpos = 0;      // позиция указателя относительно левой границы
-    double ypos = 0;      // позиция указателя относительно верхней границы
+    double xpos = 0.0;    // позиция указателя относительно левой границы
+    double ypos = 0.0;    // позиция указателя относительно верхней границы
     int fps = 120;        // частота кадров (для коррекции скорости движения)
     glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина прицела
 
     BUTTON_ID OverButton = NONE;   // Над какой кнопкой курсор
     bool mouse_lbutton_on = false; // нажата левая кнопка мыши
 
-    void set_mode(WIN_MODE m) // Изменение режима окна 3d/2d
+    void set_mode(COVER_MODE m) // Изменение режима окна 3d/2d
     {
-      mode = m;
-      Cursor[2] = ( OPEN == m ? 4.0f : .0f );
+      cover = m;
+      Cursor[2] = ( COVER_OFF == m ? 4.0f : .0f );
       renew = true;
     }
   };

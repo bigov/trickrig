@@ -40,7 +40,7 @@ namespace tr
   ///
   void glfw_wr::scene_open(GLFWwindow * window)
   {
-    AppWin.set_mode(OPEN);
+    AppWin.set_mode(COVER_OFF);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     AppWin.xpos = AppWin.width/2;
     AppWin.ypos = AppWin.height/2;
@@ -54,7 +54,7 @@ namespace tr
   ///
   void glfw_wr::cursor_free(GLFWwindow * window)
   {
-    AppWin.set_mode(MENU_1);
+    AppWin.set_mode(COVER_LOCATION);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     return;
   }
@@ -69,7 +69,7 @@ namespace tr
   void glfw_wr::mouse_button_callback(
     GLFWwindow* window, int button, int action, int mods)
   {
-    if( AppWin.mode != OPEN)
+    if( AppWin.cover != COVER_OFF)
     {
       AppWin.renew = true;
       AppWin.mouse_lbutton_on = (button == GLFW_MOUSE_BUTTON_LEFT &&
@@ -80,6 +80,12 @@ namespace tr
         switch (AppWin.OverButton) {
           case BTN_OPEN:
             scene_open(window);
+            break;
+          case BTN_CONFIG:
+            AppWin.cover = COVER_CONFIG;
+            break;
+          case BTN_LOCATION:
+            AppWin.cover = COVER_LOCATION;
             break;
           case BTN_CLOSE:
             glfwSetWindowShouldClose(window, true);
@@ -95,6 +101,33 @@ namespace tr
   }
 
   ///
+  /// \brief glfw_wr::escape_key
+  /// \param window
+  ///
+  void glfw_wr::escape_key(GLFWwindow* window)
+  {
+    switch (AppWin.cover) {
+      case COVER_OFF:
+        keys.fb = 0;
+        keys.ud = 0;
+        keys.rl = 0;
+        keys.dx = 0;
+        keys.dy = 0;
+        cursor_free(window);
+        break;
+      case COVER_LOCATION:
+        AppWin.cover = COVER_START;
+        break;
+      case COVER_CONFIG:
+        AppWin.cover = COVER_START;
+        break;
+      case COVER_START: default:
+        glfwSetWindowShouldClose(window, true);
+    }
+    return;
+  }
+
+  ///
   /// Keys events callback
   ///
   void glfw_wr::key_callback(GLFWwindow* window, int key, int scancode,
@@ -104,7 +137,7 @@ namespace tr
     keys.key_mods = mods;
     keys.key_scancode = scancode;
 
-    if (AppWin.mode == OPEN)
+    if (AppWin.cover == COVER_OFF)
     {
       keys.fb = glfwGetKey(window, k_FRONT) - glfwGetKey(window, k_BACK);
       keys.ud = glfwGetKey(window, k_DOWN)  - glfwGetKey(window, k_UP);
@@ -113,16 +146,8 @@ namespace tr
 
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
     {
-      if (AppWin.mode == OPEN)
-      {
-        keys.fb = 0;
-        keys.ud = 0;
-        keys.rl = 0;
-        keys.dx = 0;
-        keys.dy = 0;
-        cursor_free(window);
-      }
-      else glfwSetWindowShouldClose(window, true);
+      escape_key(window);
+      AppWin.renew = true;
     }
 
     return;
@@ -204,8 +229,6 @@ namespace tr
     glfwSetFramebufferSizeCallback(win_ptr, framebuffer_size_callback);
     glfwSetWindowPosCallback(win_ptr, window_pos_callback);
     if(!ogl_LoadFunctions())  ERR("Can't load OpenGl finctions");
-    AppWin.xpos = AppWin.width / 2;
-    AppWin.ypos = AppWin.height / 2;
 
     return;
   }
@@ -229,7 +252,7 @@ namespace tr
   void glfw_wr::cursor_position_callback(GLFWwindow* ptWin,
                                              double x, double y)
   {
-    if(AppWin.mode == OPEN)
+    if(AppWin.cover == COVER_OFF)
     {
       keys.dx += static_cast<float>(x - AppWin.xpos);
       keys.dy += static_cast<float>(y - AppWin.ypos);
@@ -267,7 +290,7 @@ namespace tr
         fps = 0;
       }
       Scene.draw(keys);
-      if(AppWin.mode == OPEN) keys.dx = keys.dy = 0.f;
+      if(AppWin.cover == COVER_OFF) keys.dx = keys.dy = 0.f;
       glfwSwapBuffers(win_ptr);
       glfwPollEvents();
     }

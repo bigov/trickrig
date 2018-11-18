@@ -51,6 +51,7 @@ namespace tr
       static void key_callback(
         GLFWwindow* window, int key, int scancode, int action, int mods);
 
+      static void escape_key(GLFWwindow* window);
       static void window_pos_callback(GLFWwindow*, int, int);
       static void framebuffer_size_callback(GLFWwindow*, int, int);
 
