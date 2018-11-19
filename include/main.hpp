@@ -49,6 +49,11 @@
 
 namespace tr {
 
+#ifndef _WIN32_WINNT
+  typedef unsigned int UINT;
+  typedef unsigned char UCHAR;
+#endif
+
   enum ENUM_INIT {
     TTF_FONT,
     PNG_TEXTURE0,
@@ -88,6 +93,7 @@ namespace tr {
     COVER_OFF,         // основной режим - без шторки
     COVER_START,       // начальное меню
     COVER_LOCATION,    // выбор игры
+    COVER_CREATE,      // создание нового района
     COVER_CONFIG,      // настройки
   };
 
@@ -102,6 +108,8 @@ namespace tr {
     int minwidth = btn_w + 8;       // минимально допустимая ширина окна
     int minheight = btn_h * 4 + 8;  // минимально допустимая высота окна
     COVER_MODE cover = COVER_START; // режим окна приложения
+    std::wstring user_input {};     // строка ввода пользователя
+    bool key_backspace = false;
 
     float aspect = 1.0f;  // соотношение размеров окна
     bool renew = true;    // флаг наличия изменений параметров окна

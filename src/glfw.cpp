@@ -87,6 +87,10 @@ namespace tr
           case BTN_LOCATION:
             AppWin.cover = COVER_LOCATION;
             break;
+          case BTN_CREATE:
+            AppWin.user_input.clear();
+            AppWin.cover = COVER_CREATE;
+            break;
           case BTN_CLOSE:
             glfwSetWindowShouldClose(window, true);
             break;
@@ -118,6 +122,9 @@ namespace tr
       case COVER_LOCATION:
         AppWin.cover = COVER_START;
         break;
+      case COVER_CREATE:
+        AppWin.cover = COVER_LOCATION;
+        break;
       case COVER_CONFIG:
         AppWin.cover = COVER_START;
         break;
@@ -143,13 +150,31 @@ namespace tr
       keys.ud = glfwGetKey(window, k_DOWN)  - glfwGetKey(window, k_UP);
       keys.rl = glfwGetKey(window, k_LEFT) - glfwGetKey(window, k_RIGHT);
     }
-
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
+    else
     {
-      escape_key(window);
+      if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
+        escape_key(window);
+      if (key == GLFW_KEY_BACKSPACE && action == GLFW_PRESS)
+        AppWin.key_backspace = true;
+
       AppWin.renew = true;
     }
 
+    return;
+  }
+
+  ///
+  /// \brief glfw_wr::character_callback
+  /// \param window
+  /// \param key
+  ///
+  void glfw_wr::character_callback(GLFWwindow*, unsigned int ch)
+  {
+    if(COVER_CREATE == AppWin.cover)
+    {
+      AppWin.user_input += static_cast<wchar_t>(ch);
+      AppWin.renew = true;
+    }
     return;
   }
 
@@ -224,11 +249,12 @@ namespace tr
     glfwMakeContextCurrent(win_ptr);
     glfwSwapInterval(0);
     glfwSetKeyCallback(win_ptr, key_callback);
+    glfwSetCharCallback(win_ptr, character_callback);
     glfwSetMouseButtonCallback(win_ptr, mouse_button_callback);
     glfwSetCursorPosCallback(win_ptr, cursor_position_callback);
     glfwSetFramebufferSizeCallback(win_ptr, framebuffer_size_callback);
     glfwSetWindowPosCallback(win_ptr, window_pos_callback);
-    if(!ogl_LoadFunctions())  ERR("Can't load OpenGl finctions");
+    if(!ogl_LoadFunctions()) ERR("Can't load OpenGl finctions");
 
     return;
   }

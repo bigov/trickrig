@@ -184,6 +184,9 @@ namespace tr
   ///
   void img::copy(UINT C, UINT R, img& dst, UINT X, UINT Y) const
   {
+    if(C >= n_cols) C = 0;
+    if(R >= n_rows) R = 0;
+
     UINT frag_w = w_summ / n_cols;             // ширина фрагмента в пикселях
     UINT frag_h = h_summ / n_rows;             // высота фрагмента в пикселях
     UINT frag_sz = frag_h * frag_w;  // число копируемых пикселей

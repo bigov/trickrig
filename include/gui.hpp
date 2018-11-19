@@ -26,7 +26,9 @@ lmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклм
 щъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };
 
     UINT f_len = 160; // количество символов в текстуре шрифта
+    img Font12n { "../assets/font_07x12_nr.png", f_len }; //шрифт 07х12 (норм)
     img Font15n { "../assets/font_08x15_nr.png", f_len }; //шрифт 08х15 (норм)
+    img Font18n { "../assets/font_10x18_nr.png", f_len }; //шрифт 10x18 (норм)
     img Font18s { "../assets/font_10x18_sh.png", f_len }; //шрифт 10x18 (тень)
     img Font18l { "../assets/font_10x18_lt.png", f_len }; //шрифт 10x18 (светл)
 
@@ -38,6 +40,7 @@ lmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклм
     void add_text(const img &FontImg, const std::wstring& TextString,
                   img& Data, UINT x, UINT y);
 
+    void cover_create(void);
     void cover_location(void);
     void cover_start(void);
     void cover_config(void);

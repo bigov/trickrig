@@ -23,7 +23,9 @@ void gui::add_text(const img &FontImg, const std::wstring& TextString,
   UINT i = 0;   // номер символа в выводимой строке
   for (const wchar_t &wch: TextString)
   {
-    FontImg.copy(FontMap.find(wch), row, Dst, x + (i++) * FontImg.w_cell, y);
+    auto id = FontMap.find(wch);
+    if(id == std::wstring::npos) id = 0;
+    FontImg.copy(id, row, Dst, x + (i++) * FontImg.w_cell, y);
   }
   return;
 }
@@ -49,6 +51,48 @@ void gui::cover_start(void)
 }
 
 ///
+/// \brief Ввод названия для создания нового района
+///
+void gui::cover_create(void)
+{
+  obscure_screen();
+  px color {0xFF, 0xFF, 0xDD, 0xFF};
+  img label{ GuiImg.w_summ - 4, Font18s.h_cell * 2 - 4, color};
+
+  std::wstring title = L"СОЗДАНИЕ НОВОГО РАЙОНА";
+  UINT x = GuiImg.w_summ/2 - title.length() * Font18s.w_cell / 2;
+  add_text(Font18s, title, label, x, Font18s.h_cell/2);
+  label.copy(0, 0, GuiImg, 2, 2);
+
+  // Ввод названия
+  if(AppWin.key_backspace)
+  {
+    if (AppWin.user_input.length() > 0) AppWin.user_input.pop_back();
+    AppWin.key_backspace = false;
+  }
+
+  color = {0xF0, 0xF0, 0xF0, 0xFF};
+  UINT row_width = GuiImg.w_summ - Font18n.w_cell * 2;
+  UINT row_height = Font18n.h_cell * 2;
+  img RowInput{ row_width, row_height, color};
+  // добавить текст
+  UINT y = (row_height - Font18n.h_cell)/2;
+  add_text(Font18n, AppWin.user_input, RowInput, Font18n.w_cell, y);
+
+  img Cursor {2, Font18n.h_cell, {0x11, 0xDD, 0x00, 0xFF}};
+  Cursor.copy(0, 0, RowInput,
+              Font18n.w_cell * (AppWin.user_input.length() + 1) + 1,
+              (RowInput.h_cell - Font18n.h_cell) / 2 );
+
+  // скопировать на экран
+  x = (GuiImg.w_summ - RowInput.w_summ) / 2;
+  y = GuiImg.h_summ / 2 - 2 * AppWin.btn_h;
+  RowInput.copy(0, 0, GuiImg, x, y);
+
+  return;
+}
+
+///
 /// \brief gui::cover_config
 ///
 void gui::cover_config(void)
@@ -60,8 +104,8 @@ void gui::cover_config(void)
   std::wstring title = L"НАСТРОЙКИ";
   UINT x = GuiImg.w_summ/2 - title.length() * Font18s.w_cell / 2;
   add_text(Font18s, title, label, x, Font18s.h_cell/2);
-
   label.copy(0, 0, GuiImg, 2, 2);
+
   return;
 }
 
@@ -80,13 +124,13 @@ void gui::cover_location(void)
   // Курсор выбора
   title = L"новый район";
   color = {0xF0, 0xF0, 0xF0, 0xFF};
-  UINT cursor_width = Font15n.w_cell * title.length() * 2;
-  UINT cursor_height = Font15n.h_cell * 1.5;
+  UINT cursor_width = Font18n.w_cell * title.length() * 2;
+  UINT cursor_height = Font18n.h_cell * 2;
   img Cursor{ cursor_width, cursor_height, color};
   // добавить текст
-  x = (cursor_width - title.length() * Font15n.w_cell) / 2;
-  UINT y = (cursor_height - Font15n.h_cell)/2;
-  add_text(Font15n, title, Cursor, x, y);
+  x = (cursor_width - title.length() * Font18n.w_cell) / 2;
+  UINT y = (cursor_height - Font18n.h_cell)/2;
+  add_text(Font18n, title, Cursor, x, y);
   // скопировать на экран
   x = (GuiImg.w_summ - Cursor.w_summ) / 2;
   y = GuiImg.h_summ / 2 - 2 * AppWin.btn_h;
@@ -130,6 +174,9 @@ void gui::make(void)
       break;
     case COVER_CONFIG:
       cover_config();
+      break;
+    case COVER_CREATE:
+      cover_create();
       break;
     case COVER_LOCATION:
       cover_location();

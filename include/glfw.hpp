@@ -54,7 +54,7 @@ namespace tr
       static void escape_key(GLFWwindow* window);
       static void window_pos_callback(GLFWwindow*, int, int);
       static void framebuffer_size_callback(GLFWwindow*, int, int);
-
+      static void character_callback(GLFWwindow*, unsigned int);
   };
 } //namespace tr
 
