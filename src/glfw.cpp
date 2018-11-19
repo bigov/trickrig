@@ -71,7 +71,6 @@ namespace tr
   {
     if( AppWin.cover != COVER_OFF)
     {
-      AppWin.renew = true;
       AppWin.mouse_lbutton_on = (button == GLFW_MOUSE_BUTTON_LEFT &&
                                 action == GLFW_PRESS);
 
@@ -82,7 +81,8 @@ namespace tr
             scene_open(window);
             break;
           case BTN_CONFIG:
-            AppWin.cover = COVER_CONFIG;
+            scene_open(window);
+            //AppWin.cover = COVER_CONFIG;
             break;
           case BTN_LOCATION:
             AppWin.cover = COVER_LOCATION;
@@ -152,13 +152,12 @@ namespace tr
     }
     else
     {
-      if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
-        escape_key(window);
       if (key == GLFW_KEY_BACKSPACE && action == GLFW_PRESS)
         AppWin.key_backspace = true;
-
-      AppWin.renew = true;
     }
+
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
+      escape_key(window);
 
     return;
   }
@@ -173,7 +172,6 @@ namespace tr
     if(COVER_CREATE == AppWin.cover)
     {
       AppWin.user_input += static_cast<wchar_t>(ch);
-      AppWin.renew = true;
     }
     return;
   }
@@ -197,9 +195,9 @@ namespace tr
     int width, int height)
   {
     if (!window) ERR("Error on call GLFW framebuffer_size_callback.");
-    tr::AppWin.width  = static_cast<UINT>(width);
-    tr::AppWin.height = static_cast<UINT>(height);
-    tr::AppWin.renew = true; // для пересчета параметров сцены
+    AppWin.width  = static_cast<UINT>(width);
+    AppWin.height = static_cast<UINT>(height);
+    AppWin.newsize = true; // для пересчета фреймбуфера
     return;
   }
 
@@ -290,7 +288,6 @@ namespace tr
       // изменения вида элементов управления и перерисовку окна
       AppWin.xpos = x;
       AppWin.ypos = y;
-      AppWin.renew = true;
     }
     return;
   }

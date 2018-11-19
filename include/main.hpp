@@ -112,7 +112,7 @@ namespace tr {
     bool key_backspace = false;
 
     float aspect = 1.0f;  // соотношение размеров окна
-    bool renew = true;    // флаг наличия изменений параметров окна
+    bool newsize = true;  // флаг наличия изменений параметров окна
     double xpos = 0.0;    // позиция указателя относительно левой границы
     double ypos = 0.0;    // позиция указателя относительно верхней границы
     int fps = 120;        // частота кадров (для коррекции скорости движения)
@@ -125,7 +125,6 @@ namespace tr {
     {
       cover = m;
       Cursor[2] = ( COVER_OFF == m ? 4.0f : .0f );
-      renew = true;
     }
   };
   extern main_window AppWin;

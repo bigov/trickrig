@@ -1,9 +1,13 @@
 #include "gui.hpp"
 
+#include <chrono>
+#include <thread>
+
 namespace tr {
 
 gui::gui(void)
 {
+  TimeStart = std::chrono::system_clock::now();
   return;
 }
 
@@ -79,7 +83,15 @@ void gui::cover_create(void)
   UINT y = (row_height - Font18n.h_cell)/2;
   add_text(Font18n, AppWin.user_input, RowInput, Font18n.w_cell, y);
 
-  img Cursor {2, Font18n.h_cell, {0x11, 0xDD, 0x00, 0xFF}};
+  px c = {0x11, 0xDD, 0x00, 0xFF};
+  int tm = std::chrono::duration_cast<std::chrono::milliseconds>
+      ( std::chrono::system_clock::now()-TimeStart ).count();
+
+  int tc = trunc(tm/1000) * 1000;
+  if(tm - tc > 500) c.a = 0xFF;
+  else c.a = 0x00;
+
+  img Cursor {2, Font18n.h_cell, c};
   Cursor.copy(0, 0, RowInput,
               Font18n.w_cell * (AppWin.user_input.length() + 1) + 1,
               (RowInput.h_cell - Font18n.h_cell) / 2 );
@@ -160,7 +172,7 @@ void gui::cover_location(void)
 /// виде пиксельного массива и передается для рендера OpenGL изображения в
 /// качестве накладываемой текстуры фрейм-буфера.
 ///
-void gui::make(void)
+void gui::draw(void)
 {
   GuiImg.resize(AppWin.width, AppWin.height);
 
@@ -170,7 +182,13 @@ void gui::make(void)
 
   switch (AppWin.cover) {
     case COVER_OFF:
+      /*
+       * TODO: надо чтобы при COVER_OFF текстура HUD не перестраивалась каждый
+       * кадр полностью, а только те части, которые изменяются
+       *
+       */
       add_hud_panel();
+      update();
       break;
     case COVER_CONFIG:
       cover_config();
@@ -186,6 +204,10 @@ void gui::make(void)
       break;
   }
 
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+               static_cast<GLint>(AppWin.width),
+               static_cast<GLint>(AppWin.height), 0,
+               GL_RGBA, GL_UNSIGNED_BYTE, uchar());
   return;
 }
 

@@ -44,11 +44,12 @@ lmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклм
     void cover_location(void);
     void cover_start(void);
     void cover_config(void);
+    std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
   public:
     gui(void);
     UCHAR* uchar(void);
-    void make(void);                  // формирование изображения GIU окна
+    void draw(void);                  // формирование изображения GIU окна
     void update(void);                // обновление кадра
 };
 

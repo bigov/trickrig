@@ -168,22 +168,14 @@ namespace tr
   // окна. Курсор и дополнительные (HUD) элементы окна изображаются
   // как наложеные сверху дополнительные изображения
 
-    // Если окно изменилось, то перестроить изображение GUI
-    if(AppWin.renew)
+    if(AppWin.newsize)
     {
       framebuffer_resize();
-      WinGui.make();
-      glBindTexture(GL_TEXTURE_2D, tex_hud);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                   static_cast<GLint>(AppWin.width),
-                   static_cast<GLint>(AppWin.height), 0,
-                   GL_RGBA, GL_UNSIGNED_BYTE, WinGui.uchar());
-      AppWin.renew = false;
+      AppWin.newsize = false;
     }
-    else
-    {
-      WinGui.update();
-    }
+
+    glBindTexture(GL_TEXTURE_2D, tex_hud);
+    WinGui.draw();
 
     // Первый проход рендера - во фреймбуфер
     glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);
