@@ -49,11 +49,6 @@
 
 namespace tr {
 
-#ifndef _WIN32_WINNT
-  typedef unsigned int UINT;
-  typedef unsigned char UCHAR;
-#endif
-
   enum ENUM_INIT {
     TTF_FONT,
     PNG_TEXTURE0,
@@ -99,14 +94,14 @@ namespace tr {
 
   // Параметры и режимы окна приложения
   struct main_window {
-    UINT width = 400;               // ширина окна
-    UINT height = 400;              // высота окна
-    UINT left = 0;                  // положение окна по горизонтали
-    UINT top = 0;                   // положение окна по вертикали
-    UINT btn_w = 120;               // ширина кнопки GUI
-    UINT btn_h = 36;                // высота кнопки GUI
-    int minwidth = btn_w + 8;       // минимально допустимая ширина окна
-    int minheight = btn_h * 4 + 8;  // минимально допустимая высота окна
+    u_int width = 400;               // ширина окна
+    u_int height = 400;              // высота окна
+    u_int left = 0;                  // положение окна по горизонтали
+    u_int top = 0;                   // положение окна по вертикали
+    u_int btn_w = 120;               // ширина кнопки GUI
+    u_int btn_h = 36;                // высота кнопки GUI
+    u_int minwidth = btn_w + 8;       // минимально допустимая ширина окна
+    u_int minheight = btn_h * 4 + 8;  // минимально допустимая высота окна
     COVER_MODE cover = COVER_START; // режим окна приложения
     std::wstring user_input {};     // строка ввода пользователя
     bool key_backspace = false;
@@ -134,7 +129,7 @@ namespace tr {
     float look_a = 0.0f;       // азимут (0 - X)
     float look_t = 0.0f;       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
     float look_speed = 0.002f; // зависимость угла поворота от сдвига мыши /Config
-    float speed = 4.0f;        // корректировка скорости от FPS /Config
+    float speed = 2.0f;        // корректировка скорости от FPS /Config
     glm::vec3 ViewFrom = {};   // 3D координаты точки положения
 
     // ID фреймбуфера и его текстуры требуется для call-back функции GLFW, вызываемой

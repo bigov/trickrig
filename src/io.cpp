@@ -47,11 +47,11 @@ namespace tr
   ///
   /// \brief Вспомогательная функция для структуры "px"
   ///
-  UCHAR int_to_uchar(int v)
+  u_char int_to_uchar(int v)
   {
     if(v < 0)         return 0x00;
     else if (v > 255) return 0xFF;
-    else return static_cast<UCHAR>(v);
+    else return static_cast<u_char>(v);
   }
 
   ///
@@ -59,12 +59,12 @@ namespace tr
   /// \param width
   /// \param height
   ///
-  img::img(UINT width, UINT height)
+  img::img(u_long width, u_long height)
     : Data(width * height), n_cols(_c), n_rows(_r),
     w_cell(_wc), h_cell(_hc), w_summ(_w), h_summ(_h)
   {
-    _w = width;  // ширина изображения в пикселях
-    _h = height; // высота изображения в пикселях
+    _w = static_cast<u_int>(width);  // ширина изображения в пикселях
+    _h = static_cast<u_int>(height); // высота изображения в пикселях
     _c = 1;      // число ячеек в строке
     _r = 1;      // число строк
     _wc = _w/_c; // ширина ячейки в пикселях
@@ -79,14 +79,14 @@ namespace tr
   /// \param height
   /// \param pixel
   ///
-  img::img(UINT width, UINT height, const px &pixel)
+  img::img(u_long width, u_long height, const px &pixel)
     : Data(width * height, pixel), n_cols(_c), n_rows(_r),
     w_cell(_wc), h_cell(_hc), w_summ(_w), h_summ(_h)
   {
     _c = 1;      // число ячеек в строке (по-умолчанию)
     _r = 1;      // число строк (по-умолчанию)
-    _w = width;  // ширина изображения в пикселях
-    _h = height; // высота изображения в пикселях
+    _w = static_cast<u_int>(width);  // ширина изображения в пикселях
+    _h = static_cast<u_int>(height); // высота изображения в пикселях
     _wc = _w/_c; // ширина ячейки в пикселях
     _hc = _h/_r; // высота ячейки в пикселях
 
@@ -99,7 +99,7 @@ namespace tr
   /// \param cols
   /// \param rows
   ///
-  img::img(const std::string &filename, UINT cols, UINT rows)
+  img::img(const std::string &filename, u_int cols, u_int rows)
     : Data(0),  n_cols(_c), n_rows(_r),
       w_cell(_wc), h_cell(_hc), w_summ(_w), h_summ(_h)
   {
@@ -114,7 +114,7 @@ namespace tr
   /// \param W
   /// \param H
   ///
-  void img::resize(UINT width, UINT height)
+  void img::resize(u_int width, u_int height)
   {
     _w = width;  // ширина изображения в пикселях
     _h = height; // высота изображения в пикселях
@@ -122,7 +122,7 @@ namespace tr
     _wc = _w/_c; // ширина ячейки в пикселях
     _hc = _h/_r; // высота ячейки в пикселях
     Data.clear();
-    Data.resize(_w * _h);
+    Data.resize(_w * _h, {0x00, 0x00, 0x00, 0x00});
     return;
   }
 
@@ -130,18 +130,18 @@ namespace tr
   /// \brief img::uchar_data
   /// \return
   ///
-  UCHAR* img::uchar(void)
+  u_char* img::uchar(void) const
   {
-    return reinterpret_cast<UCHAR*>(px_data());
+    return reinterpret_cast<u_char*>(px_data());
   }
 
   ///
   /// \brief img::px_data
   /// \return
   ///
-  px* img::px_data(void)
+  px* img::px_data(void) const
   {
-    return Data.data();
+    return const_cast<px*>(Data.data());
   }
 
   ///
@@ -182,26 +182,26 @@ namespace tr
   /// \param X   координата пикселя приемника
   /// \param Y   координата пикселя приемника
   ///
-  void img::copy(UINT C, UINT R, img& dst, UINT X, UINT Y) const
+  void img::copy(u_int C, u_int R, img& dst, u_long X, u_long Y) const
   {
     if(C >= n_cols) C = 0;
     if(R >= n_rows) R = 0;
 
-    UINT frag_w = w_summ / n_cols;             // ширина фрагмента в пикселях
-    UINT frag_h = h_summ / n_rows;             // высота фрагмента в пикселях
-    UINT frag_sz = frag_h * frag_w;  // число копируемых пикселей
+    u_int frag_w = w_summ / n_cols;             // ширина фрагмента в пикселях
+    u_int frag_h = h_summ / n_rows;             // высота фрагмента в пикселях
+    u_int frag_sz = frag_h * frag_w;  // число копируемых пикселей
 
-    UINT frag_i = C * frag_w + R * frag_h * w_summ; // индекс начала фрагмента
+    u_int frag_i = C * frag_w + R * frag_h * w_summ; // индекс начала фрагмента
 
-    UINT dst_i = X + Y * dst.w_summ;       // индекс начала в приемнике
+    auto dst_i = X + Y * dst.w_summ;       // индекс начала в приемнике
     //UINT dst_max = dst.w * dst.h;     // число пикселей в приемнике
 
-    UINT i = 0;              // сумма скопированных пикселей
+    u_int i = 0;              // сумма скопированных пикселей
     while(i < frag_sz)
     {
-      UINT d = dst_i;        // текущий индекс приемника
-      UINT s = frag_i;       // текущий индекс источника
-      UINT l = d + frag_w;   // конец копируемой строки пикселей
+      auto d = dst_i;        // текущий индекс приемника
+      u_int s = frag_i;       // текущий индекс источника
+      auto l = d + frag_w;   // конец копируемой строки пикселей
 
       // В данной версии копируются только полностью непрозрачные пиксели
       while(d < l)

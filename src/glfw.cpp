@@ -45,6 +45,7 @@ namespace tr
     AppWin.xpos = AppWin.width/2;
     AppWin.ypos = AppWin.height/2;
     glfwSetCursorPos(window, AppWin.xpos, AppWin.ypos);
+    AppWin.newsize = true; // для обновления текстуры фреймбуфера
     return;
   }
 
@@ -81,8 +82,7 @@ namespace tr
             scene_open(window);
             break;
           case BTN_CONFIG:
-            scene_open(window);
-            //AppWin.cover = COVER_CONFIG;
+            AppWin.cover = COVER_CONFIG;
             break;
           case BTN_LOCATION:
             AppWin.cover = COVER_LOCATION;
@@ -94,7 +94,7 @@ namespace tr
           case BTN_CLOSE:
             glfwSetWindowShouldClose(window, true);
             break;
-          case NONE: default:
+          case NONE:
             break;
         }
       }
@@ -128,7 +128,7 @@ namespace tr
       case COVER_CONFIG:
         AppWin.cover = COVER_START;
         break;
-      case COVER_START: default:
+      case COVER_START:
         glfwSetWindowShouldClose(window, true);
     }
     return;
@@ -167,7 +167,7 @@ namespace tr
   /// \param window
   /// \param key
   ///
-  void glfw_wr::character_callback(GLFWwindow*, unsigned int ch)
+  void glfw_wr::character_callback(GLFWwindow*, u_int ch)
   {
     if(COVER_CREATE == AppWin.cover)
     {
@@ -179,24 +179,22 @@ namespace tr
   ///
   /// GLFW window moving callback
   ///
-  void glfw_wr::window_pos_callback(GLFWwindow * window,
+  void glfw_wr::window_pos_callback(GLFWwindow*,
     int left, int top)
   {
-    if (!window) ERR("Error on call GLFW window_pos_callback.");
-    tr::AppWin.left = static_cast<UINT>(left);
-    tr::AppWin.top = static_cast<UINT>(top);
+    tr::AppWin.left = static_cast<u_int>(left);
+    tr::AppWin.top = static_cast<u_int>(top);
     return;
   }
 
   ///
   /// GLFW framebuffer callback resize
   ///
-  void glfw_wr::framebuffer_size_callback(GLFWwindow * window,
+  void glfw_wr::framebuffer_size_callback(GLFWwindow*,
     int width, int height)
   {
-    if (!window) ERR("Error on call GLFW framebuffer_size_callback.");
-    AppWin.width  = static_cast<UINT>(width);
-    AppWin.height = static_cast<UINT>(height);
+    AppWin.width  = static_cast<u_int>(width);
+    AppWin.height = static_cast<u_int>(height);
     AppWin.newsize = true; // для пересчета фреймбуфера
     return;
   }
@@ -220,10 +218,10 @@ namespace tr
     tr::Eye.ViewFrom.x = std::stof(tr::cfg::get(VIEW_FROM_X));
     tr::Eye.ViewFrom.y = std::stof(tr::cfg::get(VIEW_FROM_Y));
     tr::Eye.ViewFrom.z = std::stof(tr::cfg::get(VIEW_FROM_Z));
-    tr::AppWin.width = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_WIDTH)));
-    tr::AppWin.height = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_HEIGHT)));
-    tr::AppWin.top = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_TOP)));
-    tr::AppWin.left = static_cast<UINT>(std::stoi(tr::cfg::get(WINDOW_LEFT)));
+    tr::AppWin.width = static_cast<u_int>(std::stoi(tr::cfg::get(WINDOW_WIDTH)));
+    tr::AppWin.height = static_cast<u_int>(std::stoi(tr::cfg::get(WINDOW_HEIGHT)));
+    tr::AppWin.top = static_cast<u_int>(std::stoi(tr::cfg::get(WINDOW_TOP)));
+    tr::AppWin.left = static_cast<u_int>(std::stoi(tr::cfg::get(WINDOW_LEFT)));
     tr::AppWin.Cursor.x = static_cast<float>(tr::AppWin.width/2) + 0.5f;
     tr::AppWin.Cursor.y = static_cast<float>(tr::AppWin.height/2) + 0.5f;
     tr::AppWin.aspect = static_cast<float>(tr::AppWin.width)

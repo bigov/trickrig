@@ -93,7 +93,8 @@ namespace tr
                      / static_cast<float>(tr::AppWin.height);
     tr::MatProjection = glm::perspective(1.118f, tr::AppWin.aspect, 0.01f, 1000.0f);
 
-    glViewport(0, 0, tr::AppWin.width, tr::AppWin.height);
+    glViewport(0, 0, static_cast<GLsizei>(AppWin.width),
+     static_cast<GLsizei>(AppWin.height));
     glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);
 
     // настройка размера текстуры
@@ -167,28 +168,26 @@ namespace tr
   // после чего это изображение в виде текстуры накладывается на прямоугольник
   // окна. Курсор и дополнительные (HUD) элементы окна изображаются
   // как наложеные сверху дополнительные изображения
-
-    if(AppWin.newsize)
-    {
-      framebuffer_resize();
-      AppWin.newsize = false;
-    }
-
-    glBindTexture(GL_TEXTURE_2D, tex_hud);
-    WinGui.draw();
+    if(AppWin.newsize) framebuffer_resize();
 
     // Первый проход рендера - во фреймбуфер
     glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);
-    Space.draw(ev);
+    // TODO: генерировать фоновый рисунок для GUI разово и кэшировать -
+    //if((AppWin.cover == COVER_OFF) and (!(AppWin.newsize)))
+     Space.draw(ev);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+    // Поверх биндим текстуру GUI окна или HUD
     glActiveTexture(GL_TEXTURE2);
     glBindTexture(GL_TEXTURE_2D, tex_hud);
+    // и рисуем на ней необходимые элементы
+    WinGui.draw();
 
     // Второй проход рендера - по текстуре из фреймбуфера
     glBindVertexArray(vaoQuad);
     glDisable(GL_DEPTH_TEST);
     screenShaderProgram.use();
+    // Прицел должен динамически изменять яркость, поэтому используем шейдер
     screenShaderProgram.set_uniform("Cursor", AppWin.Cursor);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     screenShaderProgram.unuse();
