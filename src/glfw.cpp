@@ -91,6 +91,9 @@ namespace tr
             AppWin.user_input.clear();
             AppWin.cover = COVER_CREATE;
             break;
+          case BTN_ENTER_NAME:
+            AppWin.cover = COVER_LOCATION;
+            break;
           case BTN_CLOSE:
             glfwSetWindowShouldClose(window, true);
             break;

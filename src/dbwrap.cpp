@@ -77,7 +77,7 @@ namespace tr
     Table_rows.push_front(Row);
     num_rows++; // у контейнера forward_list нет счетчика элементов
 
-    if(0 != x) return 1; // В этой реализации значение x всегда равно 0
+    if(nullptr != x) return 1; // В этой реализации значение x всегда равно 0
     else return 0;
   }
 
@@ -99,6 +99,62 @@ namespace tr
     return;
   }
 
+  ///
+  void sqlw::select_rig(int x, int y, int z)
+  {
+    char buf[255];
+    sprintf(buf,
+      "SELECT `born`, `id_area`, `shift` FROM `rigs` "
+      "WHERE(`x`=%d AND `y`=%d AND `z`=%d);%c",
+      x, y, z, '\0');
+    request_get(buf);
+    return;
+  }
+
+  ///
+  void sqlw::select_snip(int id)
+  {
+    char buf[255];
+    sprintf(buf, "SELECT `snip` FROM `snips` WHERE `id_area`=%d;%c", id, '\0');
+    request_get(buf);
+    return;
+  }
+
+  /// Запись рига
+  void sqlw::insert_rig(int x, int y, int z, int t, int id, const float *rs, size_t s)
+  {
+    char buf[255];
+    sprintf(buf, "INSERT OR REPLACE "
+                 "INTO `rigs`(`x`,`y`,`z`,`born`,`id_area`, `shift`) "
+                 "VALUES(%d, %d, %d, %d, %d, ?);%c",
+                  x, y, z, t, id, '\0');
+    request_put(buf, rs, s);
+    return;
+  }
+
+  /// Запись снипа
+  void sqlw::insert_snip(int id, const float* data)
+  {
+    char buf[255];
+    sprintf(buf, "INSERT INTO `snips`(`id_area`, `snip`) VALUES(%d, ?);%c",
+            id, '\0');
+    request_put(buf, data, tr::digits_per_snip);
+    return;
+  }
+
+  /// Обновить номер группы в записи первого снипа
+  void sqlw::update_snip(int i, int j)
+  {
+    char buf[255];
+    sprintf(buf, "UPDATE `snips` SET `id_area`=%d WHERE `id`=%d;%c",
+            i, j, '\0');
+    request_put(buf); //TODO: может тут надо exec??
+    return;
+  }
+
+//////////////////////
+
+
   //## Прием данных, полученых в результате запроса
   void sqlw::save_row_data(void)
   {
@@ -107,7 +163,7 @@ namespace tr
 
     //if(col < 1) return; ???
 
-    int data_bytes = 0;
+    size_t data_bytes = 0;
 
     std::vector<std::any> Row;
     std::vector<char> Ch_ceil;
@@ -159,7 +215,7 @@ namespace tr
     ErrorsList.clear();
     if(!request) ErrorsList.emplace_front("query can't be empty.");
 
-    if(SQLITE_OK != sqlite3_prepare_v2(db, request, -1, &pStmt, NULL))
+    if(SQLITE_OK != sqlite3_prepare_v2(db, request, -1, &pStmt, nullptr))
     {
       ErrorsList.emplace_front("Prepare failed: " + std::string(sqlite3_errmsg(db)));
       complete = true;
@@ -264,7 +320,7 @@ namespace tr
     if((!request) || (!blob_data) || (0 == blob_size))
       ErrorsList.emplace_front("Query can't be empty.");
 
-    if(SQLITE_OK != sqlite3_prepare_v2(db, request, -1, &pStmt, NULL))
+    if(SQLITE_OK != sqlite3_prepare_v2(db, request, -1, &pStmt, nullptr))
       ErrorsList.emplace_front("Prepare failed: " + std::string(sqlite3_errmsg(db)));
 
     /// Пятым аргументом можно указать адрес функции деструктора бинарных данных.

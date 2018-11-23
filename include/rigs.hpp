@@ -77,6 +77,7 @@ namespace tr
       tr::rig* get(int x, int y, int z);
       tr::rig* get(const tr::i3d&);
       tr::i3d search_down(int, int, int);
+      tr::i3d search_down(double, double, double);
       tr::i3d search_down(float, float, float);
       tr::i3d search_down(const glm::vec3 &);
       tr::rig load_rig(int, int, int);

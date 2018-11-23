@@ -251,14 +251,12 @@ namespace tr
   //## Загрузка из БД данных указанного рига
   tr::rig rigs::load_rig(int x, int y, int z)
   {
-    char buf_query[255];
+    //char buf_query[255];
     std::vector<unsigned char> BufVector = {};
 
     tr::sqlw DB = {};
     DB.open(tr::cfg::get(DB_TPL_FNAME));
-
-    sprintf(buf_query, DB.tpl_select_rig, x, y, z, '\0');
-    DB.request_get(buf_query);                 // Получить данные рига
+    DB.select_rig(x, y, z);
 
     auto Row = DB.Rows.front();
     tr::rig Rig;
@@ -267,9 +265,7 @@ namespace tr
     BufVector.clear();
     BufVector = std::any_cast<std::vector<unsigned char>>(Row[2]);
     memcpy(Rig.shift, BufVector.data(), SHIFT_DIGITS * sizeof(float));
-
-    sprintf(buf_query, DB.tpl_select_snip, std::any_cast<int>(Row[1]), '\0');
-    DB.request_get(buf_query);                 // По id_area получить данные трика
+    DB.select_snip( std::any_cast<int>(Row[1]) );
 
     for(auto Row: DB.Rows)
     {
@@ -333,7 +329,7 @@ namespace tr
     DB.open(tr::cfg::get(DB_TPL_FNAME));
 
     int id_area = 0;
-    char query_buf[255];
+    //char query_buf[255];
 
     for(int x = From.x; x < To.x; x++)
       for(int y = From.y; y < To.y; y++)
@@ -345,21 +341,19 @@ namespace tr
             id_area = 0;
             for(auto & Snip: R->Trick)
             {
-              sprintf(query_buf, DB.tpl_insert_snip, id_area, '\0');
               // Запись снипа
-              DB.request_put(query_buf, Snip.data, tr::digits_per_snip);
+              DB.insert_snip(id_area, Snip.data);
 
               if(0 == id_area)
               {
                 id_area = DB.Result.rowid;
-                sprintf(query_buf, DB.tpl_update_snip, id_area, id_area, '\0');
+                DB.update_snip( id_area, id_area ); //TODO: !!!THE BUG???
                 // Обновить номер группы в записи первого снипа
-                DB.request_put(query_buf);
               }
             }
-            sprintf(query_buf, DB.tpl_insert_rig, x, y, z, R->born, id_area, '\0');
             // Запись рига
-            DB.request_put(query_buf, R->shift, SHIFT_DIGITS);
+            DB.insert_rig( x, y, z, R->born, id_area, R->shift, SHIFT_DIGITS);
+            //DB.request_put(query_buf, R->shift, SHIFT_DIGITS);
           }
         }
     DB.close();
@@ -374,6 +368,16 @@ namespace tr
 
   //## Поиск по координатам ближайшего блока снизу
   tr::i3d rigs::search_down(float x, float y, float z)
+  {
+    return search_down(
+          static_cast<double>(x),
+          static_cast<double>(y),
+          static_cast<double>(z)
+    );
+  }
+
+  //## Поиск по координатам ближайшего блока снизу
+  tr::i3d rigs::search_down(double x, double y, double z)
   {
     return search_down(
       static_cast<int>(floor(x)),

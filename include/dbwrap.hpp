@@ -55,16 +55,11 @@ class sqlw
     void request_get(const char *);
     void request_get(const std::string &);
 
-    const char *tpl_select_rig =
-      "SELECT `born`, `id_area`, `shift` FROM `rigs` WHERE(`x`=%d AND `y`=%d AND `z`=%d);%c";
-    const char *tpl_select_snip =
-      "SELECT `snip` FROM `snips` WHERE `id_area`=%d;%c";
-    const char *tpl_insert_rig =
-      "INSERT OR REPLACE INTO `rigs`(`x`,`y`,`z`,`born`,`id_area`, `shift`) VALUES(%d, %d, %d, %d, %d, ?);%c";
-    const char *tpl_insert_snip =
-      "INSERT INTO `snips`(`id_area`, `snip`) VALUES(%d, ?);%c";
-    const char *tpl_update_snip =
-      "UPDATE `snips` SET `id_area`=%d WHERE `id`=%d;%c";
+    void select_rig(int, int, int);
+    void select_snip(int);
+    void insert_rig(int, int, int, int, int, const float *, size_t);
+    void insert_snip(int, const float *);
+    void update_snip(int, int);
 
   private:
     static char empty;

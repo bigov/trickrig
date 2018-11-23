@@ -81,6 +81,7 @@ namespace tr {
     BTN_CONFIG,
     BTN_LOCATION,
     BTN_CREATE,
+    BTN_ENTER_NAME,
     NONE
   };
 

@@ -95,11 +95,13 @@ void gui::cover_create(void)
     AppWin.key_backspace = false;
   }
 
+  // строка ввода текста
   add_input_wstring(Font18n);
 
+  // две кнопки
   auto x = GuiImg.w_summ / 2 - static_cast<u_long>(AppWin.btn_w * 1.25);
   auto y = GuiImg.h_summ / 2;
-  add_button(BTN_OPEN, x, y, L"OK", AppWin.user_input.length() > 0);
+  add_button(BTN_ENTER_NAME, x, y, L"OK", AppWin.user_input.length() > 0);
 
   x += AppWin.btn_w * 1.5;  // X координата кнопки
   add_button(BTN_LOCATION, x, y, L"Отмена");
@@ -176,14 +178,14 @@ void gui::cover_location(void)
   screen_title(L"ВЫБОР РАЙОНА");
 
   // Курсор выбора
-  std::wstring title {L"новый район"};
+  std::wstring title { AppWin.user_input };
   px color = {0xF0, 0xF0, 0xF0, 0xFF};
-  auto cursor_width = Font18n.w_cell * title.length() * 2;
+  auto cursor_width = GuiImg.w_summ - Font18n.w_cell * 2;
   u_int cursor_height = Font18n.h_cell * 2;
   img Cursor{ cursor_width, cursor_height, color};
   // добавить текст
   auto x = (cursor_width - title.length() * Font18n.w_cell) / 2;
-  u_long y = (cursor_height - Font18n.h_cell)/2;
+  u_long y = (cursor_height - Font18n.h_cell) / 2;
   add_text(Font18n, title, Cursor, x, y);
   // скопировать на экран
   x = (GuiImg.w_summ - Cursor.w_summ) / 2;
@@ -192,7 +194,8 @@ void gui::cover_location(void)
 
   x = GuiImg.w_summ / 2 - static_cast<u_long>(AppWin.btn_w * 1.25);
   y = GuiImg.h_summ / 2;
-  add_button(BTN_OPEN, x, y, L"Старт", false);
+
+  add_button(BTN_OPEN, x, y, L"Старт", AppWin.user_input.length() > 0);
 
   x += AppWin.btn_w * 1.5;  // X координата кнопки
   add_button(BTN_CREATE, x, y, L"Создать");
@@ -223,7 +226,7 @@ void gui::draw(void)
 
   switch (AppWin.cover) {
     case COVER_OFF:
-      update();
+      refresh();
       break;
     case COVER_CONFIG:
       cover_config();
@@ -283,7 +286,7 @@ void gui::sub_img(const img &Image, GLint x, GLint y)
 ///
 /// \brief gui::update
 ///
-void gui::update(void)
+void gui::refresh(void)
 {
   if(AppWin.newsize) load_hud();
 
@@ -335,7 +338,7 @@ void gui::load_hud(void)
            0, GL_RGBA, GL_UNSIGNED_BYTE, GuiImg.uchar());
 
   // Панель инструментов для HUD в нижней части окна
-  u_int h = 48; // высота панели инструментов HUD
+  u_int h = 48;                            // высота панели инструментов HUD
   if(h > GuiImg.h_summ) h = GuiImg.h_summ; // не может быть выше GuiImg
   img HudPanel {GuiImg.w_summ, h, bg_hud};
   sub_img(HudPanel, 0,

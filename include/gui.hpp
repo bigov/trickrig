@@ -53,7 +53,7 @@ lmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклм
   public:
     gui(void);
     void draw(void);                  // формирование изображения GIU окна
-    void update(void);                // обновление кадра
+    void refresh(void);                // обновление кадра
 };
 
 } //tr
