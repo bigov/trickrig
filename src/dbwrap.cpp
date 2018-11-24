@@ -105,8 +105,8 @@ namespace tr
     char buf[255];
     sprintf(buf,
       "SELECT `born`, `id_area`, `shift` FROM `rigs` "
-      "WHERE(`x`=%d AND `y`=%d AND `z`=%d);%c",
-      x, y, z, '\0');
+      "WHERE(`x`=%d AND `y`=%d AND `z`=%d);",
+      x, y, z);
     request_get(buf);
     return;
   }
@@ -115,7 +115,7 @@ namespace tr
   void sqlw::select_snip(int id)
   {
     char buf[255];
-    sprintf(buf, "SELECT `snip` FROM `snips` WHERE `id_area`=%d;%c", id, '\0');
+    sprintf(buf, "SELECT `snip` FROM `snips` WHERE `id_area`=%d;", id);
     request_get(buf);
     return;
   }
@@ -126,8 +126,8 @@ namespace tr
     char buf[255];
     sprintf(buf, "INSERT OR REPLACE "
                  "INTO `rigs`(`x`,`y`,`z`,`born`,`id_area`, `shift`) "
-                 "VALUES(%d, %d, %d, %d, %d, ?);%c",
-                  x, y, z, t, id, '\0');
+                 "VALUES(%d, %d, %d, %d, %d, ?);",
+                  x, y, z, t, id);
     request_put(buf, rs, s);
     return;
   }
@@ -136,8 +136,8 @@ namespace tr
   void sqlw::insert_snip(int id, const float* data)
   {
     char buf[255];
-    sprintf(buf, "INSERT INTO `snips`(`id_area`, `snip`) VALUES(%d, ?);%c",
-            id, '\0');
+    sprintf(buf, "INSERT INTO `snips`(`id_area`, `snip`) VALUES(%d, ?);",
+            id);
     request_put(buf, data, tr::digits_per_snip);
     return;
   }
@@ -146,8 +146,8 @@ namespace tr
   void sqlw::update_snip(int i, int j)
   {
     char buf[255];
-    sprintf(buf, "UPDATE `snips` SET `id_area`=%d WHERE `id`=%d;%c",
-            i, j, '\0');
+    sprintf(buf, "UPDATE `snips` SET `id_area`=%d WHERE `id`=%d;",
+            i, j);
     request_put(buf); //TODO: может тут надо exec??
     return;
   }

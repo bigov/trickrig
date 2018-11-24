@@ -5,8 +5,8 @@
 // Элементы формирования пространства
 //
 //=============================================================================
-#ifndef __RIGS_HPP__
-#define __RIGS_HPP__
+#ifndef RDB_HPP
+#define RDB_HPP
 
 #include "main.hpp"
 #include "glsl.hpp"
@@ -41,8 +41,8 @@ namespace tr
       rig& operator= (const tr::rig &);     // копирующее присваивание
   };
 
-  //## Клас для управления данными поверхности одного уровня LOD
-  class rigs
+  //## Управление кэшем ригов с поверхности одного уровня LOD
+  class rdb
   {
     private:
       std::map<tr::i3d, tr::rig> RigsDb {};  // карта поверхности
@@ -66,14 +66,14 @@ namespace tr
       void _load_16x16_obj(void);
 
     public:
-      rigs(void);                          // конструктор
+      rdb(void);                          // конструктор
       void put_in_vbo(int, int, int);      // разместить трик в VBO буфере
       void remove_from_vbo(int, int, int); // убрать трик из рендера
       void draw(const glm::mat4 &);        // Рендерить кадр
       void clear_cashed_snips(void);       // очистка промежуточного кэша
 
       bool save(const tr::i3d &, const tr::i3d &);
-      void init(int);     // загрузка уровня
+      void init(int, i3d = {0,0,0});       // загрузка уровня
       tr::rig* get(int x, int y, int z);
       tr::rig* get(const tr::i3d&);
       tr::i3d search_down(int, int, int);

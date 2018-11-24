@@ -25,7 +25,7 @@ namespace tr
     allocated = al;
     glGenBuffers(1, &id);
     glBindBuffer(gl_buffer_type, id);
-    glBufferData(gl_buffer_type, allocated, 0, GL_STATIC_DRAW);
+    glBufferData(gl_buffer_type, allocated, nullptr, GL_STATIC_DRAW);
 
     #ifndef NDEBUG //--контроль создания буфера--------------------------------
     GLint d_size = 0;
@@ -38,7 +38,7 @@ namespace tr
     return;
   }
 
-  //## Cоздание и заполнение буфера данными
+  //## Cоздание графического буфера и заполнение его данными
   void vbo::allocate(GLsizeiptr al, const GLvoid* data)
   {
     if(0 != id) ERR("VBO::Allocate trying to re-init exist object.");

@@ -49,19 +49,19 @@ namespace tr
 
     RigsDb0.init(g0); // загрузка данных уровня LOD-0
 
-    MoveFrom = {
+    ViewFrom = {
       static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
       static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.y))) - 2,
       static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.z))),
     };
 
     int // границы уровня lod_0
-      xMin = MoveFrom.x - tr::lod_0,
-      yMin = MoveFrom.y - tr::lod_0,
-      zMin = MoveFrom.z - tr::lod_0,
-      xMax = MoveFrom.x + tr::lod_0,
-      yMax = MoveFrom.y + tr::lod_0,
-      zMax = MoveFrom.z + tr::lod_0;
+      xMin = ViewFrom.x - tr::lod_0,
+      yMin = ViewFrom.y - tr::lod_0,
+      zMin = ViewFrom.z - tr::lod_0,
+      xMax = ViewFrom.x + tr::lod_0,
+      yMax = ViewFrom.y + tr::lod_0,
+      zMax = ViewFrom.z + tr::lod_0;
 
     // Загрузить в графический буфер атрибуты элементов
     for(int x = xMin; x<= xMax; x += g0)
@@ -70,7 +70,7 @@ namespace tr
           RigsDb0.put_in_vbo(x, y, z);
 
     try {
-      MoveFrom = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
+      ViewFrom = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
     }
     catch(...)
     {
@@ -94,19 +94,19 @@ namespace tr
       vf_z = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.z))),
       clod_0 = tr::lod_0;
 
-    if(MoveFrom.x > vf_x) {
-      x_old = MoveFrom.x + clod_0;
+    if(ViewFrom.x > vf_x) {
+      x_old = ViewFrom.x + clod_0;
       x_new = vf_x - clod_0;
     } else {
-      x_old = MoveFrom.x - clod_0;
+      x_old = ViewFrom.x - clod_0;
       x_new = vf_x + clod_0;
     }
 
     int zMin, zMax;
 
     // Скрыть элементы с задней границы области
-    zMin = MoveFrom.z - clod_0;
-    zMax = MoveFrom.z + clod_0;
+    zMin = ViewFrom.z - clod_0;
+    zMax = ViewFrom.z + clod_0;
     for(int y = yMin; y <= yMax; y += g0)
       for(int z = zMin; z <= zMax; z += g0)
         RigsDb0.remove_from_vbo(x_old, y, z);
@@ -118,7 +118,7 @@ namespace tr
       for(int z = zMin; z <= zMax; z += g0)
         RigsDb0.put_in_vbo(x_new, y, z);
 
-    MoveFrom.x = vf_x;
+    ViewFrom.x = vf_x;
     return;
   }
 
@@ -133,19 +133,19 @@ namespace tr
       vf_x = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
       clod_0 = tr::lod_0;
 
-    if(MoveFrom.z > vf_z) {
-      z_old = MoveFrom.z + clod_0;
+    if(ViewFrom.z > vf_z) {
+      z_old = ViewFrom.z + clod_0;
       z_new = vf_z - clod_0;
     } else {
-      z_old = MoveFrom.z - clod_0;
+      z_old = ViewFrom.z - clod_0;
       z_new = vf_z + clod_0;
     }
 
     int xMin, xMax;
 
     // Скрыть элементы с задней границы области
-    xMin = MoveFrom.x - clod_0;
-    xMax = MoveFrom.x + clod_0;
+    xMin = ViewFrom.x - clod_0;
+    xMax = ViewFrom.x + clod_0;
     for(float y = yMin; y <= yMax; y += g0)
       for(float x = xMin; x <= xMax; x += g0)
         RigsDb0.remove_from_vbo(x, y, z_old);
@@ -157,7 +157,7 @@ namespace tr
       for(float x = xMin; x <= xMax; x += g0)
         RigsDb0.put_in_vbo(x, y, z_new);
 
-    MoveFrom.z = vf_z;
+    ViewFrom.z = vf_z;
     return;
   }
 
@@ -184,9 +184,9 @@ namespace tr
    * резких "маятниковых" перемещениях камеры туда-сюда.
    */
 
-    if(static_cast<int>(floor(tr::Eye.ViewFrom.x)) != MoveFrom.x) redraw_borders_x();
+    if(static_cast<int>(floor(tr::Eye.ViewFrom.x)) != ViewFrom.x) redraw_borders_x();
   //if(static_cast<int>(floor(tr::Eye.ViewFrom.y)) != MoveFrom.y) redraw_borders_y();
-    if(static_cast<int>(floor(tr::Eye.ViewFrom.z)) != MoveFrom.z) redraw_borders_z();
+    if(static_cast<int>(floor(tr::Eye.ViewFrom.z)) != ViewFrom.z) redraw_borders_z();
     return;
   }
 

@@ -26,11 +26,11 @@ int main()
 
   try
   {
-    tr::cfg::load();        // Загрузка конфигурации
-    tr::glfw_wr Win {}; // Настройка OpenGL окна
-    tr::scene Scene {};     // Сборка сцены
-    Win.show(Scene);        // Цикл рендера
-    tr::cfg::save();        // Сохранение конфигурации
+    tr::cfg::load();       // Загрузка конфигурации
+    tr::glfw_wr Win {};    // Настройка OpenGL окна
+    tr::scene Scene {};    // Сборка сцены
+    Win.show(Scene);       // Цикл рендера
+    tr::cfg::save();       // Сохранение конфигурации
   }
   catch(std::exception & e)
   {
@@ -64,7 +64,7 @@ void tr::init_config_db(const std::string & fname)
                    val TEXT);";
 
   char q[255];
-  const char *tpl = "INSERT INTO init (key, val) VALUES (%d, '%s');";
+  const char tpl[] = "INSERT INTO init (key, val) VALUES (%d, '%s');";
 
   sprintf(q, tpl, TTF_FONT,           "DejaVuSansMono.ttf"); Q += q;
 //sprintf(q, tpl, TTF_FONT,           "droid.ttf");          Q += q;

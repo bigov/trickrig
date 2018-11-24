@@ -5,7 +5,7 @@
 // Элементы формирования пространства
 //
 //============================================================================
-#include "rigs.hpp"
+#include "rdb.hpp"
 
 namespace tr
 {
@@ -35,13 +35,13 @@ namespace tr
   /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// ///
 
   //## КОНСТРУКТОР
-  rigs::rigs(void)
+  rdb::rdb(void)
   {
     Prog3d.attach_shaders(
       tr::cfg::get(SHADER_VERT_SCENE),
       tr::cfg::get(SHADER_FRAG_SCENE)
     );
-    Prog3d.use();
+    Prog3d.use();  // слинковать шейдерную рограмму
 
     // инициализация VAO
     glGenVertexArrays(1, &space_vao);
@@ -52,13 +52,17 @@ namespace tr
 
     // число байт для заполнения такого объема прямоугольниками:
     VBOdata.allocate(n * tr::bytes_per_snip);
+
     // настройка положения атрибутов
     VBOdata.attrib(Prog3d.attrib_location_get("position"),
       4, GL_FLOAT, GL_FALSE, tr::bytes_per_vertex, (void*)(0 * sizeof(GLfloat)));
+
     VBOdata.attrib(Prog3d.attrib_location_get("color"),
       4, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, (void*)(4 * sizeof(GLfloat)));
+
     VBOdata.attrib(Prog3d.attrib_location_get("normal"),
       4, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, (void*)(8 * sizeof(GLfloat)));
+
     VBOdata.attrib(Prog3d.attrib_location_get("fragment"),
       2, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, (void*)(12 * sizeof(GLfloat)));
 
@@ -75,8 +79,8 @@ namespace tr
       for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
       stride += 4;                                                 // по 4 вершины на снип
     }
-    tr::vbo VBOindex = {GL_ELEMENT_ARRAY_BUFFER};                  // Создать индексный буфер
-    VBOindex.allocate(idx_size, idx_data);                         // и заполнить данными.
+    tr::vbo VBOindex = { GL_ELEMENT_ARRAY_BUFFER };                // Создать индексный буфер
+    VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data);   // и заполнить данными.
     delete[] idx_data;                                             // Удалить исходный массив.
 
     glBindVertexArray(0);
@@ -87,7 +91,7 @@ namespace tr
   }
 
   //##  Рендер кадра
-  void rigs::draw(const glm::mat4 & MVP)
+  void rdb::draw(const glm::mat4 & MVP)
   {
     if (!CachedOffset.empty()) clear_cashed_snips();
 
@@ -106,10 +110,12 @@ namespace tr
     return;
   }
 
-  //## Размещение элементов в графическом буфере
-  void rigs::put_in_vbo(int x, int y, int z)
+  /// Размещение в графическом буфере данных, описывающих элементы
+  /// виртуального 3D пространства, расположенные в точке (x, y, z)
+  ///
+  void rdb::put_in_vbo(int x, int y, int z)
   {
-    tr::rig * Rig = get(x, y, z);
+    tr::rig *Rig = get(x, y, z);
     if(nullptr == Rig) return;
     if(Rig->in_vbo) return;
 
@@ -144,7 +150,7 @@ namespace tr
   }
 
   //## убрать риг из рендера
-  void rigs::remove_from_vbo(int x, int y, int z)
+  void rdb::remove_from_vbo(int x, int y, int z)
   {
   /// Индексы размещенных в VBO данных, которые при перемещении камеры вышли
   /// за границу отображения, запоминаются в кэше, чтобы на их место
@@ -164,7 +170,7 @@ namespace tr
   }
 
   //## Удаление элементов по адресам с кэше и сжатие данных в VBO
-  void rigs::clear_cashed_snips(void)
+  void rdb::clear_cashed_snips(void)
   {
   /// Если в кэше есть адрес блока из середины VBO, то в него переносим данные
   /// из конца VBO и сжимаем буфер на длину одного блока. Если адрес из кэша
@@ -249,7 +255,7 @@ namespace tr
   }
 
   //## Загрузка из БД данных указанного рига
-  tr::rig rigs::load_rig(int x, int y, int z)
+  tr::rig rdb::load_rig(int x, int y, int z)
   {
     //char buf_query[255];
     std::vector<unsigned char> BufVector = {};
@@ -279,25 +285,26 @@ namespace tr
     return Rig;
   }
 
-  //## загрузка шаблона пространства из БД
-  void rigs::init(int g)
+  ///
+  /// \brief Инициализация карты пространства
+  ///
+  /// \details  Формирование в оперативной памяти карты (std::map) ригов в
+  /// трехмерных координатах для выбраной области пространства. Из этой карты
+  /// берутся данные снипов, размещаемых в VBO для рендера сцены.
+  ///
+  void rdb::init(int g, i3d)
   {
-  /// Формирование в оперативной памяти приложения карты (std::map)
-  /// размещения ригов в трехмерных координатах для выбраной области
-  /// пространства. Из этого контейнера берутся данные снипов, размещаемых
-  /// в VBO для рендера сцены.
-
     lod = g; // TODO проверка масштаба на допустимость
     //_load_16x16_obj();
 
     int y = 0;
     int tpl_side = 16; // длина стороны шаблона
 
-    // Вначале из базы данных загружается шаблон поверхности 16x16
+    // загружаем шаблон поверхности 16x16
     for(int x = 0; x < tpl_side; x++) for(int z = 0; z < tpl_side; z++)
         TplRigs[tr::i3d{x, y, z}] = load_rig(x, y, z);
 
-    // После чего этот шаблон дублируется 8х8 раз
+    // этот шаблон дублируем 8х8 раз на xz плоскости
     int row_x = 0, row_z = 0;
     for (int zn = -4; zn < 4; zn++)
     {
@@ -315,7 +322,7 @@ namespace tr
   }
 
   //## сохранение блока ригов в базу данных
-  bool rigs::save(const tr::i3d & From, const tr::i3d & To)
+  bool rdb::save(const tr::i3d & From, const tr::i3d & To)
   {
   /// Вначале записываем в таблицу снипов данные области рига. При этом
   /// индекс области, который будет внесен в таблицу ригов, назначаем
@@ -361,13 +368,13 @@ namespace tr
   }
 
   //## Поиск по координатам ближайшего блока снизу
-  tr::i3d rigs::search_down(const glm::vec3& V)
+  tr::i3d rdb::search_down(const glm::vec3& V)
   {
     return search_down(V.x, V.y, V.z);
   }
 
   //## Поиск по координатам ближайшего блока снизу
-  tr::i3d rigs::search_down(float x, float y, float z)
+  tr::i3d rdb::search_down(float x, float y, float z)
   {
     return search_down(
           static_cast<double>(x),
@@ -377,7 +384,7 @@ namespace tr
   }
 
   //## Поиск по координатам ближайшего блока снизу
-  tr::i3d rigs::search_down(double x, double y, double z)
+  tr::i3d rdb::search_down(double x, double y, double z)
   {
     return search_down(
       static_cast<int>(floor(x)),
@@ -387,7 +394,7 @@ namespace tr
   }
 
   //## Поиск по координатам ближайшего блока снизу
-  tr::i3d rigs::search_down(int x, int y, int z)
+  tr::i3d rdb::search_down(int x, int y, int z)
   {
     if(y < yMin) ERR("Y downflow"); if(y > yMax) ERR("Y overflow");
     while(y > yMin)
@@ -403,13 +410,13 @@ namespace tr
   }
 
   //## Поиск элемента с указанными координатами
-  tr::rig* rigs::get(int x, int y, int z)
+  tr::rig* rdb::get(int x, int y, int z)
   {
     return get(tr::i3d{x, y, z});
   }
 
   //## Поиск элемента с указанными координатами
-  tr::rig* rigs::get(const i3d &P)
+  tr::rig* rdb::get(const i3d &P)
   {
     if(P.y < yMin) ERR("rigs::get -Y is overflow");
     if(P.y > yMax) ERR("rigs::get +Y is overflow");
