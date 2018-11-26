@@ -49,6 +49,10 @@
 
 namespace tr {
 
+  using u_char = unsigned char;
+  using u_int  = unsigned int;
+  using u_long = unsigned long;
+
   enum ENUM_INIT {
     TTF_FONT,
     PNG_TEXTURE0,
