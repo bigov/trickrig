@@ -215,26 +215,33 @@ namespace tr
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 0);
+
+    #ifndef NDEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
+    #endif
 
     // Начальные настройки камеры вида и размера окна
-    tr::Eye.ViewFrom.x = std::stof(tr::cfg::get(VIEW_FROM_X));
-    tr::Eye.ViewFrom.y = std::stof(tr::cfg::get(VIEW_FROM_Y));
-    tr::Eye.ViewFrom.z = std::stof(tr::cfg::get(VIEW_FROM_Z));
-    tr::AppWin.width = static_cast<u_int>(std::stoi(tr::cfg::get(WINDOW_WIDTH)));
-    tr::AppWin.height = static_cast<u_int>(std::stoi(tr::cfg::get(WINDOW_HEIGHT)));
-    tr::AppWin.top = static_cast<u_int>(std::stoi(tr::cfg::get(WINDOW_TOP)));
-    tr::AppWin.left = static_cast<u_int>(std::stoi(tr::cfg::get(WINDOW_LEFT)));
-    tr::AppWin.Cursor.x = static_cast<float>(tr::AppWin.width/2) + 0.5f;
-    tr::AppWin.Cursor.y = static_cast<float>(tr::AppWin.height/2) + 0.5f;
-    tr::AppWin.aspect = static_cast<float>(tr::AppWin.width)
-                     / static_cast<float>(tr::AppWin.height);
-    tr::MatProjection = glm::perspective(1.118f, tr::AppWin.aspect, 0.01f, 1000.0f);
+    Eye.ViewFrom.x = std::stof(cfg::get(VIEW_FROM_X));
+    Eye.ViewFrom.y = std::stof(cfg::get(VIEW_FROM_Y));
+    Eye.ViewFrom.z = std::stof(cfg::get(VIEW_FROM_Z));
+
+    Eye.look_a = std::stof(tr::cfg::get(LOOK_AZIM));
+    Eye.look_t = std::stof(tr::cfg::get(LOOK_TANG));
+
+    AppWin.width = static_cast<u_int>(std::stoi(cfg::get(WINDOW_WIDTH)));
+    AppWin.height = static_cast<u_int>(std::stoi(cfg::get(WINDOW_HEIGHT)));
+    AppWin.top = static_cast<u_int>(std::stoi(cfg::get(WINDOW_TOP)));
+    AppWin.left = static_cast<u_int>(std::stoi(cfg::get(WINDOW_LEFT)));
+    AppWin.Cursor.x = static_cast<float>(AppWin.width/2) + 0.5f;
+    AppWin.Cursor.y = static_cast<float>(AppWin.height/2) + 0.5f;
+    AppWin.aspect = static_cast<float>(AppWin.width)
+                     / static_cast<float>(AppWin.height);
+    MatProjection = glm::perspective(1.118f, AppWin.aspect, 0.01f, 1000.0f);
 
     //  Создание 3D окна
     glfwWindowHint(GLFW_VISIBLE, 0);
-    win_ptr = glfwCreateWindow(static_cast<int>(tr::AppWin.width),
-                               static_cast<int>(tr::AppWin.height),
+    win_ptr = glfwCreateWindow(static_cast<int>(AppWin.width),
+                               static_cast<int>(AppWin.height),
                          title.c_str(), nullptr, nullptr);
     if (nullptr == win_ptr) ERR("Creating Window fail.");
 

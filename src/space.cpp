@@ -24,9 +24,6 @@ namespace tr
 
     img ImgTex0 { tr::cfg::get(PNG_TEXTURE0) }; // Загрузка из файла текстуры
 
-    tr::Eye.look_a = std::stof(tr::cfg::get(LOOK_AZIM));
-    tr::Eye.look_t = std::stof(tr::cfg::get(LOOK_TANG));
-
     glGenTextures(1, &m_textureObj);
     glActiveTexture(GL_TEXTURE0); // можно загрузить не меньше 48
     glBindTexture(GL_TEXTURE_2D, m_textureObj);
@@ -47,7 +44,7 @@ namespace tr
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    RigsDb0.init(g0); // загрузка данных уровня LOD-0
+    RigsDb0.init(g0, Eye.ViewFrom); // начальная загрузка пространства
 
     ViewFrom = {
       static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
@@ -146,15 +143,15 @@ namespace tr
     // Скрыть элементы с задней границы области
     xMin = ViewFrom.x - clod_0;
     xMax = ViewFrom.x + clod_0;
-    for(float y = yMin; y <= yMax; y += g0)
-      for(float x = xMin; x <= xMax; x += g0)
+    for(int y = yMin; y <= yMax; y += g0)
+      for(int x = xMin; x <= xMax; x += g0)
         RigsDb0.remove_from_vbo(x, y, z_old);
 
     // Добавить линию элементов по направлению движения
     xMin = vf_x - clod_0;
     xMax = vf_x + clod_0;
-    for(float y = yMin; y <= yMax; y += g0)
-      for(float x = xMin; x <= xMax; x += g0)
+    for(int y = yMin; y <= yMax; y += g0)
+      for(int x = xMin; x <= xMax; x += g0)
         RigsDb0.put_in_vbo(x, y, z_new);
 
     ViewFrom.z = vf_z;

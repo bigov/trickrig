@@ -254,11 +254,11 @@ namespace tr
     return;
   }
 
-  //## Загрузка из БД данных указанного рига
-  tr::rig rdb::load_rig(int x, int y, int z)
+  //## Загрузка из БД шаблонного рига поверхности с указанными координатами
+  tr::rig rdb::load_tpl_rig(int x, int y, int z)
   {
     //char buf_query[255];
-    std::vector<unsigned char> BufVector = {};
+    std::vector<unsigned char> BufVector {};
 
     tr::sqlw DB = {};
     DB.open(tr::cfg::get(DB_TPL_FNAME));
@@ -292,20 +292,22 @@ namespace tr
   /// трехмерных координатах для выбраной области пространства. Из этой карты
   /// берутся данные снипов, размещаемых в VBO для рендера сцены.
   ///
-  void rdb::init(int g, i3d)
+  void rdb::init(int g, glm::vec3)
   {
     lod = g; // TODO проверка масштаба на допустимость
     //_load_16x16_obj();
 
     int y = 0;
-    int tpl_side = 16; // длина стороны шаблона
 
-    // загружаем шаблон поверхности 16x16
+    // загружаем шаблон фрагмента поверхности размером 16x16
+    int tpl_side = 16; // длина стороны шаблона
     for(int x = 0; x < tpl_side; x++) for(int z = 0; z < tpl_side; z++)
-        TplRigs[tr::i3d{x, y, z}] = load_rig(x, y, z);
+        TplRigs[tr::i3d{x, y, z}] = load_tpl_rig(x, y, z);
 
     // этот шаблон дублируем 8х8 раз на xz плоскости
-    int row_x = 0, row_z = 0;
+    int
+     row_x = 0,
+     row_z = 0;
     for (int zn = -4; zn < 4; zn++)
     {
       row_z = zn * tpl_side;
@@ -314,6 +316,10 @@ namespace tr
         row_x = xn * tpl_side;
         for(int x = 0; x < tpl_side; x++) for(int z = 0; z < tpl_side; z++)
         {
+        // TODO: тут следует делать запрос к базе данных активного района -
+        // если в нем по указанным координатам есть сохраненная поверхность,
+        // то загружаем ее данные. Если нет - данные шаблона.
+
           RigsDb[tr::i3d{row_x + x, y, row_z + z}] = TplRigs[tr::i3d{x, y, z}];
         }
       }
@@ -406,7 +412,7 @@ namespace tr
       } catch (...)
       { y -= lod; }
     }
-    ERR("Rigs::search_down() failure. You need try/catch in this case.");
+    ERR("Rigs::search_down() failure. We need to use try/catch in this case.");
   }
 
   //## Поиск элемента с указанными координатами

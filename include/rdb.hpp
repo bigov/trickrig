@@ -73,14 +73,14 @@ namespace tr
       void clear_cashed_snips(void);       // очистка промежуточного кэша
 
       bool save(const tr::i3d &, const tr::i3d &);
-      void init(int, i3d = {0,0,0});       // загрузка уровня
+      void init(int, glm::vec3 = {0,0,0});       // загрузка уровня
       tr::rig* get(int x, int y, int z);
       tr::rig* get(const tr::i3d&);
       tr::i3d search_down(int, int, int);
       tr::i3d search_down(double, double, double);
       tr::i3d search_down(float, float, float);
       tr::i3d search_down(const glm::vec3 &);
-      tr::rig load_rig(int, int, int);
+      tr::rig load_tpl_rig(int, int, int);
   };
 
 } //namespace tr
