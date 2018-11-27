@@ -223,35 +223,24 @@ namespace tr
     return;
   }
 
+  ///
   /// Расчет координат рига, на который направлен взгляд
   ///
-  //void space::calc_selected_area(glm::vec3 & s_dir)
-  void space::calc_selected_area(glm::vec3&)
+  void space::calc_selected_area(glm::vec3 & s_dir)
   {
-     return;
-
-   /*               ******** ! отключено ! ********
-
-    if(static_cast<int>(s_dir.x)) return;
-
-    Selected = ViewTo;
+    Selected = {ViewFrom.x, ViewFrom.y, ViewFrom.z};
     glm::vec3 check_step = { s_dir.x/8.f, s_dir.y/8.f, s_dir.z/8.f };
     for(int i = 0; i < 24; ++i)
     {
-      if(RigsDb0.exist(Selected.x, Selected.y, Selected.z))
-      {
-        Selected.x = floor(Selected.x);
-        Selected.y = floor(Selected.y);
-        Selected.z = floor(Selected.z);
+      if(RigsDb0.get(Selected.x, Selected.y, Selected.z) != nullptr)
         break;
-      }
       Selected += check_step;
     }
 
     return;
-    */
   }
 
+  ///
   /// Функция, вызываемая из цикла окна для рендера сцены
   ///
   void space::draw(const evInput & ev)
@@ -268,6 +257,8 @@ namespace tr
     }
     mod = 0;
     if (285 == ev.key_scancode) mod = 1;
+
+    RigsDb0.select(Selected);
 
     // Матрицу модели в расчетах не используем, так как
     // она единичная и на положение элементов влияние не оказывает

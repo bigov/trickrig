@@ -30,12 +30,12 @@ namespace tr
 
       float rl=0.f, ud=0.f, fb=0.f; // скорость движения по направлениям
 
-      tr::i3d ViewFrom = {0, 0, 0};
-      tr::i3d Selected = {0, 0, 0};
-      glm::mat4 MatView = {};
+      tr::i3d ViewFrom {0, 0, 0};
+      glm::mat4 MatView {};
       glm::vec3
-        ViewTo = {},
-        UpWard = {0.0, -1.0, 0.0}; // направление наверх
+        UpWard {0.0, -1.0, 0.0}, // направление наверх
+        ViewTo {},               // направление взгляда
+        Selected {};             // координаты рига, на который смотрим
 
       void calc_position(const tr::evInput &);
       void calc_selected_area(glm::vec3 & sight_direction);
