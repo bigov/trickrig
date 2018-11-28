@@ -9,6 +9,7 @@
 
 namespace tr
 {
+
   //## Сжатие границы размещения активных данных в буфере
   void vbo::shrink(GLsizeiptr delta)
   {

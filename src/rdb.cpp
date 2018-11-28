@@ -50,7 +50,7 @@ namespace tr
     // Число элементов в кубе с длиной стороны = "space_i0_length" элементов:
     unsigned n = pow((tr::lod_0 + tr::lod_0 + 1), 3);
 
-    // число байт для заполнения такого объема прямоугольниками:
+    // Размер данных VBO для размещения снипов:
     VBOdata.allocate(n * tr::bytes_per_snip);
 
     // настройка положения атрибутов
@@ -155,11 +155,21 @@ namespace tr
   ///
   /// Подсветка выделенного рига
   ///
-  void rdb::select(const glm::vec3 &)
+  void rdb::highlight(const glm::vec3 &)
   {
     // необходимо вычислить адрес расположения данных в GPU и заменить блок
     // цвета нужных точек на цвет выделения. Или нарисовать поверх выделеного
     // снипа полупрозрачное покрытие, чтобы было понятно, что он активирован.
+
+    // Инициализировать снип подсветки
+    tr::snip highlight {};
+    for(size_t n = 0; n < tr::vertices_per_snip; n++)
+    {
+      highlight.data[SNIP_ROW_DIGITS * n + SNIP_Y] += 0.5;
+    }
+
+    // отправить данные снипа подсветки в VBO
+    //VBOdata.data_append(tr::bytes_per_snip, highlight.data);
 
     return;
   }
@@ -339,6 +349,21 @@ namespace tr
         }
       }
     }
+
+    //TESTING --->
+    // Имитация рига со снипом подсветки
+    rig &R0 = RigsDb[{0, 0, 0}];
+    snip SHl{};
+    SHl.texture_set(0.0, -0.125 * 3);
+
+    for(size_t n = 0; n < tr::vertices_per_snip; n++)
+    {
+      SHl.data[SNIP_ROW_DIGITS * n + SNIP_Y] += 0.5;    // приподнять вверх
+      //SHl.data[SNIP_ROW_DIGITS * n + SNIP_A] = 0.2f;    // прозрачность
+    }
+    R0.Trick.push_front(SHl);
+    //TESTING ---<
+
     return;
   }
 

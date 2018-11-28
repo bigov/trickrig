@@ -226,10 +226,10 @@ namespace tr
   ///
   /// Расчет координат рига, на который направлен взгляд
   ///
-  void space::calc_selected_area(glm::vec3 & s_dir)
+  void space::calc_selected_area(glm::vec3 & LookDir)
   {
     Selected = {ViewFrom.x, ViewFrom.y, ViewFrom.z};
-    glm::vec3 check_step = { s_dir.x/8.f, s_dir.y/8.f, s_dir.z/8.f };
+    glm::vec3 check_step = { LookDir.x/8.f, LookDir.y/8.f, LookDir.z/8.f };
     for(int i = 0; i < 24; ++i)
     {
       if(RigsDb0.get(Selected.x, Selected.y, Selected.z) != nullptr)
@@ -258,7 +258,7 @@ namespace tr
     mod = 0;
     if (285 == ev.key_scancode) mod = 1;
 
-    RigsDb0.select(Selected);
+    RigsDb0.highlight(Selected);
 
     // Матрицу модели в расчетах не используем, так как
     // она единичная и на положение элементов влияние не оказывает

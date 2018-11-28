@@ -33,7 +33,7 @@ namespace tr
         0.f, 0.f, 0.f, // поворот по трем осям
         1.0f           // размер (масштабирование)
       };
-      std::forward_list<tr::snip> Trick {}; // список поверхностей
+      std::forward_list<tr::snip> Trick {}; // список поверхностей (снипов)
       bool in_vbo = false;                  // данные помещены в VBO
       // -------------------------------------
       rig(void): born(tr::get_msec()) {}    // конструктор по-умолчанию
@@ -74,7 +74,7 @@ namespace tr
 
       bool save(const tr::i3d &, const tr::i3d &);
       void init(int, glm::vec3 = {0,0,0});       // загрузка уровня
-      void select(const glm::vec3 &);
+      void highlight(const glm::vec3 &);
       tr::rig* get(int x, int y, int z);
       tr::rig* get(const tr::i3d&);
       tr::i3d search_down(int, int, int);

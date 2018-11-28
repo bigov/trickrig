@@ -17,11 +17,11 @@ class vbo {
   private:
     GLuint id = 0;            // индекс VBO
     GLsizeiptr allocated = 0; // (максимальный) выделяемый размер буфера
-    GLsizeiptr hem = 0;       // адрес размещения следующего блока в VBO
+    GLsizeiptr hem = 0; // адрес размещения в VBO очередного блока данных
     GLenum gl_buffer_type;
 
   public:
-    vbo(GLenum type): gl_buffer_type(type) {}
+    vbo(GLenum type): gl_buffer_type(type) {};
     ~vbo(void) {}
     void allocate(GLsizeiptr allocated);
     void allocate(GLsizeiptr allocated, const GLvoid* data);

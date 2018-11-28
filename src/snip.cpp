@@ -52,19 +52,21 @@ namespace tr
   /// адреса где в VBO были записаны данные
   ///
   /// Координаты вершин снипов в трике хранятся в нормализованом виде,
-  /// поэтому перед отправкой данных в VBO координаты вершин пересчитываются
-  /// в соответствии с координатами и данными(shift) связаного рига,
+  /// поэтому перед отправкой в VBO все данные снипа копируются во временный
+  /// кэш, где координаты вершин пересчитываются в соответствии с
+  /// координатами и данными(shift) связаного рига, после чего преобразованные
+  /// данные отправляются в VBO.
 
-    GLfloat vbo_data[tr::digits_per_snip] = {0.0f};
-    memcpy(vbo_data, data, tr::bytes_per_snip);
+    GLfloat cache[tr::digits_per_snip] = {0.0f};
+    memcpy(cache, data, tr::bytes_per_snip);
     for(size_t n = 0; n < tr::vertices_per_snip; n++)
     {
-      vbo_data[SNIP_ROW_DIGITS * n + SNIP_X] += Point.x;
-      vbo_data[SNIP_ROW_DIGITS * n + SNIP_Y] += Point.y;
-      vbo_data[SNIP_ROW_DIGITS * n + SNIP_Z] += Point.z;
+      cache[SNIP_ROW_DIGITS * n + SNIP_X] += Point.x;
+      cache[SNIP_ROW_DIGITS * n + SNIP_Y] += Point.y;
+      cache[SNIP_ROW_DIGITS * n + SNIP_Z] += Point.z;
     }
 
-    data_offset = VBOdata.data_append( tr::bytes_per_snip, vbo_data );
+    data_offset = VBOdata.data_append( tr::bytes_per_snip, cache );
     return;
   }
 
