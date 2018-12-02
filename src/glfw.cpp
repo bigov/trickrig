@@ -236,7 +236,6 @@ namespace tr
     AppWin.Cursor.y = static_cast<float>(AppWin.height/2) + 0.5f;
     AppWin.aspect = static_cast<float>(AppWin.width)
                      / static_cast<float>(AppWin.height);
-    MatProjection = glm::perspective(1.118f, AppWin.aspect, 0.01f, 1000.0f);
 
     //  Создание 3D окна
     glfwWindowHint(GLFW_VISIBLE, 0);

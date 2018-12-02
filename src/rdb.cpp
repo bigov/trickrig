@@ -32,7 +32,7 @@ namespace tr
     return *this;
   }
 
-  /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// ///
+  /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// ///
 
   //## КОНСТРУКТОР
   rdb::rdb(void)
@@ -87,7 +87,6 @@ namespace tr
     Prog3d.unuse();
 
     return;
-
   }
 
   ///
@@ -105,7 +104,11 @@ namespace tr
     glBindVertexArray(space_vao);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    glDrawElements(GL_TRIANGLES, render_points, GL_UNSIGNED_INT, nullptr);
+
+    // Количество индексов увеличено на +indices_per_snip для подсветки
+    glDrawElements(GL_TRIANGLES, render_points + tr::indices_per_snip,
+                   GL_UNSIGNED_INT, nullptr);
+
     glBindVertexArray(0);
     Prog3d.unuse(); // отключить шейдерную программу
 
@@ -113,23 +116,36 @@ namespace tr
   }
 
   ///
-  /// Размещение в графическом буфере данных, описывающих элементы
-  /// виртуального 3D пространства, расположенные в точке (x, y, z)
+  /// Добавление (!) в графический буфер элементов виртуального 3D пространства
+  /// расположенных в точке (x, y, z)
   ///
   void rdb::put_in_vbo(int x, int y, int z)
   {
     tr::rig *Rig = get(x, y, z);
-    if(nullptr == Rig) return;
-    if(Rig->in_vbo) return;
+    if(nullptr == Rig) return;   // TODO: тут можно подгружать или дебажить
+
+    tr::f3d Point = {
+      static_cast<float>(x) + Rig->shift[SHIFT_X],
+      static_cast<float>(y) + Rig->shift[SHIFT_Y],
+      static_cast<float>(z) + Rig->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
+    };
+
+    put_in_vbo(Rig, Point);
+
+    return;
+  }
+
+  ///
+  /// \brief rdb::put_in_vbo
+  /// \param Rig
+  /// \param Point
+  ///
+  void rdb::put_in_vbo(tr::rig *Rig, const tr::f3d &Point)
+  {
+    if(Rig->in_vbo) return;      // Если данные уже в VBO - ничего не делаем
 
     for(tr::snip &Snip: Rig->Trick)
     {
-      tr::f3d Point = {
-        static_cast<float>(x) + Rig->shift[SHIFT_X],
-        static_cast<float>(y) + Rig->shift[SHIFT_Y],
-        static_cast<float>(z) + Rig->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
-      };
-
       bool data_is_recieved = false;
       while (!data_is_recieved)
       {
@@ -155,23 +171,32 @@ namespace tr
   ///
   /// Подсветка выделенного рига
   ///
-  void rdb::highlight(const glm::vec3 &)
+  void rdb::highlight(const i3d& sel)
   {
-    // необходимо вычислить адрес расположения данных в GPU и заменить блок
-    // цвета нужных точек на цвет выделения. Или нарисовать поверх выделеного
-    // снипа полупрозрачное покрытие, чтобы было понятно, что он активирован.
+    // Вариант 1: изменить цвет снипа/рига чтобы было понятно, что он выделен.
+    //return;
 
-    // Инициализировать снип подсветки
-    tr::snip highlight {};
+    // Вариант 2: дорисовка прозрачной оболочки вокруг выделенного рига
+
+    rig* R = get(sel.x, sel.y, sel.z);
+    if(nullptr == R) return;
+
+    auto highlight = R->Trick.front();
+    highlight.texture_set(0, 0); // белая текстура
+
     for(size_t n = 0; n < tr::vertices_per_snip; n++)
     {
-      highlight.data[SNIP_ROW_DIGITS * n + SNIP_Y] += 0.5;
+      highlight.data[SNIP_ROW_DIGITS * n + SNIP_X] += sel.x;
+      highlight.data[SNIP_ROW_DIGITS * n + SNIP_Y] += sel.y + 0.1;
+      highlight.data[SNIP_ROW_DIGITS * n + SNIP_Z] += sel.z;
+      highlight.data[SNIP_ROW_DIGITS * n + SNIP_A] = 0.5f; // прозрачность
     }
 
-    // отправить данные снипа подсветки в VBO
-    //VBOdata.data_append(tr::bytes_per_snip, highlight.data);
+    // Записать данные снипа подсветки в конец буфера данных VBO
+    VBOdata.data_append_tmp(tr::bytes_per_snip, highlight.data);
 
     return;
+
   }
 
   //## убрать риг из рендера
@@ -349,20 +374,6 @@ namespace tr
         }
       }
     }
-
-    //TESTING --->
-    // Имитация рига со снипом подсветки
-    rig &R0 = RigsDb[{0, 0, 0}];
-    snip SHl{};
-    SHl.texture_set(0.0, -0.125 * 3);
-
-    for(size_t n = 0; n < tr::vertices_per_snip; n++)
-    {
-      SHl.data[SNIP_ROW_DIGITS * n + SNIP_Y] += 0.5;    // приподнять вверх
-      //SHl.data[SNIP_ROW_DIGITS * n + SNIP_A] = 0.2f;    // прозрачность
-    }
-    R0.Trick.push_front(SHl);
-    //TESTING ---<
 
     return;
   }

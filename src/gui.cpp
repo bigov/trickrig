@@ -290,6 +290,7 @@ void gui::refresh(void)
 {
   if(AppWin.newsize) load_hud();
 
+  // счетчик FPS
   px bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения
   u_int fps_length = 4;               // количество символов в надписи
   img Fps {fps_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
@@ -298,23 +299,14 @@ void gui::refresh(void)
   add_text(Font15n, line, Fps, 2, 1);
   sub_img(Fps, 2, static_cast<GLint>(AppWin.height - Fps.h_summ - 2));
 
-/*
-    TTF10.set_cursor(6, 14);
-    TTF10.write_wstring(Label, { L"win:" + std::to_wstring(WinGl.width) +
-                                 L"x" + std::to_wstring(WinGl.height) });
-
-    std::swprintf(line, sz, L"X: %+06.1f", Eye.ViewFrom.x);
-    TTF10.set_cursor(6, 26);
-    TTF10.write_wstring(Label, line);
-
-    std::swprintf(line, sz, L"Y: %+06.1f", Eye.ViewFrom.y);
-    TTF10.set_cursor(6, 38);
-    TTF10.write_wstring(Label, line);
-
-    std::swprintf(line, sz, L"Z: %+06.1f", Eye.ViewFrom.z);
-    TTF10.set_cursor(6, 50);
-    TTF10.write_wstring(Label, line);
-*/
+  // Координаты в пространстве
+  u_int c_length = 30;               // количество символов в надписи
+  img Coord {c_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
+  wchar_t ln[31]; // the expected string plus 1 null terminator
+  std::swprintf(ln, c_length, L"X:%+3.1f, Y:%+03.1f, Z:%+03.1f",
+                  Eye.ViewFrom.x, Eye.ViewFrom.y, Eye.ViewFrom.z);
+  add_text(Font15n, ln, Coord, 2, 1);
+  sub_img(Coord, 2, 2);
 
 
   return;

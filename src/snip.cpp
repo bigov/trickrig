@@ -34,29 +34,37 @@ namespace tr
     return;
   }
 
-  //## настройка текстуры
-  void snip::texture_set(GLfloat u, GLfloat v)
+  ///
+  /// \brief   настройка текстуры
+  /// \param u - номер по-горизонтали
+  /// \param v - номер по-вертикали
+  ///
+  void snip::texture_set(u_char u, u_char v)
   {
+    GLfloat u_size = 0.125f;
+    GLfloat v_size = 0.125f;
+
     for(size_t n = 0; n < tr::vertices_per_snip; n++)
     {
-      data[SNIP_ROW_DIGITS * n + SNIP_U] += u;
-      data[SNIP_ROW_DIGITS * n + SNIP_V] += v;
+      data[SNIP_ROW_DIGITS * n + SNIP_U] = u * u_size;
+      data[SNIP_ROW_DIGITS * n + SNIP_V] = v * v_size;
     }
     return;
   }
 
-  //## добавление данных в буферы VBO
+  ///
+  /// \brief
+  /// Добавляет свои данные в конец буфера данных VBO и запоминает свой адрес
+  /// смещения.
+  ///
+  /// \details
+  /// Координаты вершин снипов хранятся в нормализованом виде, поэтому перед
+  /// отправкой в VBO все данные снипа копируются во временный кэш, где
+  /// координаты вершин пересчитываются с учетом координат (TODO: сдвига и
+  /// поворота рига-контейнера) и преобразованные данные записываются в VBO.
+  ///
   void snip::vbo_append(const tr::f3d &Point, tr::vbo & VBOdata)
   {
-  /// Добавляет данные в конец VBO буфера данных и запоминает смещение
-  /// адреса где в VBO были записаны данные
-  ///
-  /// Координаты вершин снипов в трике хранятся в нормализованом виде,
-  /// поэтому перед отправкой в VBO все данные снипа копируются во временный
-  /// кэш, где координаты вершин пересчитываются в соответствии с
-  /// координатами и данными(shift) связаного рига, после чего преобразованные
-  /// данные отправляются в VBO.
-
     GLfloat cache[tr::digits_per_snip] = {0.0f};
     memcpy(cache, data, tr::bytes_per_snip);
     for(size_t n = 0; n < tr::vertices_per_snip; n++)

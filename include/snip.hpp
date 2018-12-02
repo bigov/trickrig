@@ -42,12 +42,12 @@ namespace tr
 
     snip& operator=(const snip &);      // оператор присваивания
     void copy_data(const snip &);       // копирование данных из другого снипа
-    void texture_set(GLfloat, GLfloat); // установка фрагмента текстуры
+    void texture_set(u_char, u_char);   // установка фрагмента текстуры
 
     // Функции управления данными снипа в буферах VBO данных и VBO индекса
     void vbo_append(const tr::f3d &, tr::vbo &);
     bool vbo_update(const tr::f3d &, tr::vbo &, GLsizeiptr);
-    void vbo_jam   (tr::vbo &, GLintptr);
+    void vbo_jam (tr::vbo &, GLintptr);
   };
 
 } //namespace tr

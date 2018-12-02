@@ -99,24 +99,49 @@ namespace tr
     return;
   }
 
-  //## Добавление данных в конец VBO (с контролем границы размера буфера)
-  GLsizeiptr vbo::data_append(GLsizeiptr d_size, const GLvoid* data)
-  {
+  ///
+  ///  Добавление данных в конец VBO (с контролем границы размера буфера)
+  ///
   /// вносит данные в буфер по указателю границы данных блока (hem),
   /// возвращает положение указателя по которому разместились данные и
   /// сдвигает границу указателя на размер внесенных данных для приема
   /// следующеего блока данных
-
+  ///
+  GLsizeiptr vbo::data_append(GLsizeiptr d_size, const GLvoid* data)
+  {
     #ifndef NDEBUG // проверка свободного места в буфере----------------------
     if((allocated - hem) < d_size) ERR("VBO::SubDataAppend got overflow buffer");
     #endif //------------------------------------------------------------------
 
-    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, id);
-    glBufferSubData(gl_buffer_type, hem, d_size, data);
-    if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
+    if(GL_ARRAY_BUFFER != gl_buffer_type) return 0;
+
+    glBindBuffer(GL_ARRAY_BUFFER, id);
+    glBufferSubData(GL_ARRAY_BUFFER, hem, d_size, data);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
     GLsizeiptr res = hem;
     hem += d_size;
+
     return res;
+  }
+
+  ///
+  /// Добавление данных в конец VBO (с контролем границы размера буфера)
+  ///
+  /// вносит данные в буфер по указателю границы данных блока (hem) без фиксации
+  /// положения добавленых данных. Используется для отображения полупрозрачной
+  /// области над выделенным снипом.
+  ///
+  void vbo::data_append_tmp(GLsizeiptr d_size, const GLvoid* data)
+  {
+    #ifndef NDEBUG // проверка свободного места в буфере----------------------
+    if((allocated - hem) < d_size) ERR("VBO::SubDataAppend got overflow buffer");
+    #endif //------------------------------------------------------------------
+
+    if(GL_ARRAY_BUFFER != gl_buffer_type) return;
+    glBindBuffer(GL_ARRAY_BUFFER, id);
+    glBufferSubData(GL_ARRAY_BUFFER, hem, d_size, data);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    return;
   }
 
   //## Замена блока данных в указанном месте (с контролем положения)
