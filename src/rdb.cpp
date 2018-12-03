@@ -105,9 +105,20 @@ namespace tr
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 
-    // Количество индексов увеличено на +indices_per_snip для подсветки
-    glDrawElements(GL_TRIANGLES, render_points + tr::indices_per_snip,
-                   GL_UNSIGNED_INT, nullptr);
+    // можно все нарисовать за один проход
+    glDrawElements(GL_TRIANGLES, render_points, GL_UNSIGNED_INT, nullptr);
+
+    // а можно, если потребуется, то пошагово по ячейкам -
+    //GLsizei max = (render_points / indices_per_snip) * vertices_per_snip;
+    //for (GLsizei i = 0; i < max; i += vertices_per_snip)
+    //{
+    //  glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT,
+    //      nullptr, i);
+    //}
+
+    // В конце массива добавлен снип подсветки - нарисуем его отдельно.
+    glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT,
+        nullptr, (render_points / indices_per_snip) * vertices_per_snip);
 
     glBindVertexArray(0);
     Prog3d.unuse(); // отключить шейдерную программу
@@ -176,7 +187,7 @@ namespace tr
     // Вариант 1: изменить цвет снипа/рига чтобы было понятно, что он выделен.
     //return;
 
-    // Вариант 2: дорисовка прозрачной оболочки вокруг выделенного рига
+    // Вариант 2: дорисовка прозрачной оболочки над(вокруг) выделенного рига
 
     rig* R = get(sel.x, sel.y, sel.z);
     if(nullptr == R) return;

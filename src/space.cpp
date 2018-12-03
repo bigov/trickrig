@@ -9,6 +9,61 @@
 
 namespace tr
 {
+
+#define EPSILON 0.000001
+#define CROSS(dest, v1, v2) \
+  dest[0] = v1[1]*v2[2]-v1[2]*v2[1];\
+  dest[1] = v1[2]*v2[0]-v1[0]*v2[2];\
+  dest[2] = v1[0]*v2[1]-v1[1]*v2[0];
+#define DOT(v1, v2) (v1[0]*v2[0]+v1[1]*v2[1]+v1[2]*v2[2])
+#define SUB(dest, v1, v2) \
+  dest[0] = v1[0] - v2[0]; \
+  dest[1] = v1[1] - v2[1]; \
+  dest[2] = v1[2] - v2[2];
+
+// Быстрый поиск пересечения луча и треугольника описан на странице -
+// http://masters.donntu.org/2015/frt/yablokov/library/transl.htm
+
+///
+/// находит пересечение луча и треугольника
+/// (исх. код: http://masters.donntu.org/2015/frt/yablokov/library/transl.htm)
+///
+int intersect_triangle(const glm::vec3 &vOrig, const glm::vec3 &vDir,
+                       double vert0[3], double vert1[3], double vert2[3])
+{
+  double
+      orig[3] = { vOrig.x, vOrig.y, vOrig.z },
+      dir[3] = { vDir.x, vDir.y, vDir.z },
+      edge1[3], edge2[3],
+      tvec[3], pvec[3], qvec[3],
+      det, u, v;
+
+  // найти векторы двух граней, содержащих vert0
+  SUB(edge1, vert1, vert0);
+  SUB(edge2, vert2, vert0);
+
+  // расчет определителя - также используется для расчета u
+  CROSS(pvec, dir, edge2);
+  det = DOT(edge1, pvec);
+
+  // если определитель близок к нулю, то луч лежит в плоскости треугольника
+  if(det < EPSILON) return 0;
+
+  // расчет расстояния от vert0 до начала луча
+  SUB(tvec, orig, vert0);
+
+  // расчет параметра U и проверка границы
+  u = DOT(tvec, pvec);
+  if(u < 0.0 || u > det) return 0;
+
+  // расчет V и проверка границы
+  CROSS(qvec, tvec, edge1);
+  v = DOT(dir, qvec);
+  if(v < 0.0 || u + v > det) return 0;
+
+  return 1;
+}
+
   //## Формирование 3D пространства
   space::space(void)
   {
@@ -229,12 +284,14 @@ namespace tr
   ///
   void space::calc_selected_area(glm::vec3 & LookDir)
   {
+    Selected = { 0, 0, 0 };
+
     auto search = Eye.ViewFrom;
-    glm::vec3 step = LookDir/50.f;
+    glm::vec3 step = LookDir/2.f;
 
     int x, y, z;
 
-    int i = 0, i_max = 150;
+    int i = 0, i_max = 6;
     while(i < i_max)
     {
       x = static_cast<int>(floor(search.x));
@@ -244,56 +301,44 @@ namespace tr
       search += step;
       ++i;
     }
-    if(i < i_max)
+    if(i == i_max) return;
+
+    auto R = RigsDb0.get(Selected);
+    auto S = R->Trick.front();      // верхний снип в найденном риге
+
+    // Если определен риг, в сторону которого направлен взгляд, то проверим -
+    // проходит ли через его снип "луч взгляда". Если не проходит - то
+    // нам нужен следущий по направлению взгляда.
+
+    //координаты вершин снипа
+    double A[3] { S.data[SNIP_ROW_DIGITS * 0 + SNIP_X] + x,
+                  S.data[SNIP_ROW_DIGITS * 0 + SNIP_Y] + y,
+                  S.data[SNIP_ROW_DIGITS * 0 + SNIP_Z] + z, };
+    double B[3] { S.data[SNIP_ROW_DIGITS * 1 + SNIP_X] + x,
+                  S.data[SNIP_ROW_DIGITS * 1 + SNIP_Y] + y,
+                  S.data[SNIP_ROW_DIGITS * 1 + SNIP_Z] + z, };
+    double C[3] { S.data[SNIP_ROW_DIGITS * 2 + SNIP_X] + x,
+                  S.data[SNIP_ROW_DIGITS * 2 + SNIP_Y] + y,
+                  S.data[SNIP_ROW_DIGITS * 2 + SNIP_Z] + z, };
+    double D[3] { S.data[SNIP_ROW_DIGITS * 3 + SNIP_X] + x,
+                  S.data[SNIP_ROW_DIGITS * 3 + SNIP_Y] + y,
+                  S.data[SNIP_ROW_DIGITS * 3 + SNIP_Z] + z, };
+
+    // Снип состоит из двух треугольников. Проверяем пересечение с одним из них:
+    if(intersect_triangle(Eye.ViewFrom, LookDir, A, B, C) ||
+       intersect_triangle(Eye.ViewFrom, LookDir, C, D, A) )
     {
-      Selected = { x, y, z };
-      auto R = RigsDb0.get(Selected);
-      auto S = R->Trick.front();      // верхний снип в найденном риге
-
-      //координаты вершин снипа
-      glm::vec3 A { S.data[SNIP_ROW_DIGITS * 0 + SNIP_X] + x,
-                    S.data[SNIP_ROW_DIGITS * 0 + SNIP_Y] + y,
-                    S.data[SNIP_ROW_DIGITS * 0 + SNIP_Z] + z,
-                  };
-
-      glm::vec3 B { S.data[SNIP_ROW_DIGITS * 1 + SNIP_X] + x,
-                    S.data[SNIP_ROW_DIGITS * 1 + SNIP_Y] + y,
-                    S.data[SNIP_ROW_DIGITS * 1 + SNIP_Z] + z,
-                  };
-
-      glm::vec3 C { S.data[SNIP_ROW_DIGITS * 2 + SNIP_X] + x,
-                    S.data[SNIP_ROW_DIGITS * 2 + SNIP_Y] + y,
-                    S.data[SNIP_ROW_DIGITS * 2 + SNIP_Z] + z,
-                  };
-
-      glm::vec3 D { S.data[SNIP_ROW_DIGITS * 3 + SNIP_X] + x,
-                    S.data[SNIP_ROW_DIGITS * 3 + SNIP_Y] + y,
-                    S.data[SNIP_ROW_DIGITS * 3 + SNIP_Z] + z,
-                  };
-
-     // Имеем
-     //
-     // - вектор "LookDir" из точки "search"
-     // - плоскость (ABCD)
-     //
-     // надо проверить пересекается ли вектор с этой плоскостью
-
-      double S_y = (A.y + B.y + C.y + D.y)/4; // средний Y найденого рига
-      double h_0 = Eye.ViewFrom.y - S_y;      // высота глаза над плоскостью
-      double L = h_0 * tan(Eye.look_t);       // горизонтальное расстояние до точки пересечения
-
-/*
-Быстрое нахождение пересечения луча и треугольника
-http://masters.donntu.org/2015/frt/yablokov/library/transl.htm
-*/
-
-
-      double h_1 = search.y - S_y;            // высота отметки плоскостью
-
-      // Eye.look_t = 0.0f;       // угол (0 - горизОнталь, пи/2 - вертикаль)
-
+       Selected = { x, y, z }; // Если есть пересечение, то поиск закончен
     }
-
+    else
+    { // Если луч взгляда не пересекает найденый снип, то берем следущий
+      // по направлению взгляда:
+      search += LookDir;
+      x = static_cast<int>(floor(search.x));
+      y = static_cast<int>(floor(search.y));
+      z = static_cast<int>(floor(search.z));
+      Selected = { x, y, z };
+    }
     return;
   }
 
