@@ -232,24 +232,67 @@ namespace tr
     auto search = Eye.ViewFrom;
     glm::vec3 step = LookDir/50.f;
 
+    int x, y, z;
+
     int i = 0, i_max = 150;
     while(i < i_max)
     {
-      if(RigsDb0.get(
-           static_cast<int>(floor(search.x)),
-           static_cast<int>(floor(search.y)),
-           static_cast<int>(floor(search.z))
-           ) != nullptr)
-        break;
+      x = static_cast<int>(floor(search.x));
+      y = static_cast<int>(floor(search.y));
+      z = static_cast<int>(floor(search.z));
+      if(RigsDb0.get(x,y,z) != nullptr) break;
       search += step;
       ++i;
     }
+    if(i < i_max)
+    {
+      Selected = { x, y, z };
+      auto R = RigsDb0.get(Selected);
+      auto S = R->Trick.front();      // верхний снип в найденном риге
 
-    if(i < i_max) Selected = {
-        static_cast<int>(floor(search.x)),
-        static_cast<int>(floor(search.y)),
-        static_cast<int>(floor(search.z))
-    };
+      //координаты вершин снипа
+      glm::vec3 A { S.data[SNIP_ROW_DIGITS * 0 + SNIP_X] + x,
+                    S.data[SNIP_ROW_DIGITS * 0 + SNIP_Y] + y,
+                    S.data[SNIP_ROW_DIGITS * 0 + SNIP_Z] + z,
+                  };
+
+      glm::vec3 B { S.data[SNIP_ROW_DIGITS * 1 + SNIP_X] + x,
+                    S.data[SNIP_ROW_DIGITS * 1 + SNIP_Y] + y,
+                    S.data[SNIP_ROW_DIGITS * 1 + SNIP_Z] + z,
+                  };
+
+      glm::vec3 C { S.data[SNIP_ROW_DIGITS * 2 + SNIP_X] + x,
+                    S.data[SNIP_ROW_DIGITS * 2 + SNIP_Y] + y,
+                    S.data[SNIP_ROW_DIGITS * 2 + SNIP_Z] + z,
+                  };
+
+      glm::vec3 D { S.data[SNIP_ROW_DIGITS * 3 + SNIP_X] + x,
+                    S.data[SNIP_ROW_DIGITS * 3 + SNIP_Y] + y,
+                    S.data[SNIP_ROW_DIGITS * 3 + SNIP_Z] + z,
+                  };
+
+     // Имеем
+     //
+     // - вектор "LookDir" из точки "search"
+     // - плоскость (ABCD)
+     //
+     // надо проверить пересекается ли вектор с этой плоскостью
+
+      double S_y = (A.y + B.y + C.y + D.y)/4; // средний Y найденого рига
+      double h_0 = Eye.ViewFrom.y - S_y;      // высота глаза над плоскостью
+      double L = h_0 * tan(Eye.look_t);       // горизонтальное расстояние до точки пересечения
+
+/*
+Быстрое нахождение пересечения луча и треугольника
+http://masters.donntu.org/2015/frt/yablokov/library/transl.htm
+*/
+
+
+      double h_1 = search.y - S_y;            // высота отметки плоскостью
+
+      // Eye.look_t = 0.0f;       // угол (0 - горизОнталь, пи/2 - вертикаль)
+
+    }
 
     return;
   }
