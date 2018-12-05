@@ -32,7 +32,7 @@ namespace tr
   scene::~scene(void)
   {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glDeleteFramebuffers(1, &Eye.frame_buf);
+    glDeleteFramebuffers(1, &Eye.framebuf);
     return;
   }
 
@@ -40,14 +40,14 @@ namespace tr
   //
   void scene::framebuffer_init(void)
   {
-    glGenFramebuffers(1, &Eye.frame_buf);
+    glGenFramebuffers(1, &Eye.framebuf);
     glActiveTexture(GL_TEXTURE1);
-    glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);
-
-    glGenTextures(1, &Eye.texco_buf);
-    glBindTexture(GL_TEXTURE_2D, Eye.texco_buf);
+    glBindFramebuffer(GL_FRAMEBUFFER, Eye.framebuf);
 
     GLint level_of_details = 0, frame = 0;
+
+    glGenTextures(1, &Eye.fb_text_0);
+    glBindTexture(GL_TEXTURE_2D, Eye.fb_text_0);
     glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
                  static_cast<GLsizei>(tr::AppWin.width),
                  static_cast<GLsizei>(tr::AppWin.height),
@@ -57,7 +57,25 @@ namespace tr
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                           GL_TEXTURE_2D, Eye.texco_buf, 0);
+                           GL_TEXTURE_2D, Eye.fb_text_0, 0);
+
+     /*
+    //=========
+    glGenTextures(1, &Eye.fb_text_1);
+    glBindTexture(GL_TEXTURE_2D, Eye.fb_text_1);
+    glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
+                 static_cast<GLsizei>(tr::AppWin.width),
+                 static_cast<GLsizei>(tr::AppWin.height),
+                 frame, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
+                           GL_TEXTURE_2D, Eye.fb_text_1, 0);
+
+    //===========
+    GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+    glDrawBuffers ( 2, buffers );
+
+    //=============
+    */
     
     //GLuint Eye.rendr_buf;
     glGenRenderbuffers(1, &Eye.rendr_buf);
@@ -95,14 +113,22 @@ namespace tr
 
     glViewport(0, 0, static_cast<GLsizei>(AppWin.width),
      static_cast<GLsizei>(AppWin.height));
-    glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);
+    glBindFramebuffer(GL_FRAMEBUFFER, Eye.framebuf);
 
-    // настройка размера текстуры
-    glBindTexture(GL_TEXTURE_2D, Eye.texco_buf);
+    // настройка размера текстур
+    glBindTexture(GL_TEXTURE_2D, Eye.fb_text_0);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                  static_cast<GLsizei>(tr::AppWin.width),
                  static_cast<GLsizei>(tr::AppWin.height),
                  0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+    /*
+    glBindTexture(GL_TEXTURE_2D, Eye.fb_text_1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                 static_cast<GLsizei>(tr::AppWin.width),
+                 static_cast<GLsizei>(tr::AppWin.height),
+                 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    */
 
     // настройка размера рендербуфера
     glBindRenderbuffer(GL_RENDERBUFFER, Eye.rendr_buf);
@@ -171,7 +197,7 @@ namespace tr
     if(AppWin.newsize) framebuffer_resize();
 
     // Первый проход рендера - во фреймбуфер
-    glBindFramebuffer(GL_FRAMEBUFFER, Eye.frame_buf);
+    glBindFramebuffer(GL_FRAMEBUFFER, Eye.framebuf);
     // TODO: генерировать фоновый рисунок для GUI разово и кэшировать -
     //if((AppWin.cover == COVER_OFF) and (!(AppWin.newsize)))
      Space.draw(ev);
