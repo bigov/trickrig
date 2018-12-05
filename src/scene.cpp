@@ -59,7 +59,7 @@ namespace tr
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                            GL_TEXTURE_2D, Eye.fb_text_0, 0);
 
-     /*
+
     //=========
     glGenTextures(1, &Eye.fb_text_1);
     glBindTexture(GL_TEXTURE_2D, Eye.fb_text_1);
@@ -75,9 +75,8 @@ namespace tr
     glDrawBuffers ( 2, buffers );
 
     //=============
-    */
-    
-    //GLuint Eye.rendr_buf;
+    glBindTexture(GL_TEXTURE_2D, Eye.fb_text_0);
+
     glGenRenderbuffers(1, &Eye.rendr_buf);
     glBindRenderbuffer(GL_RENDERBUFFER, Eye.rendr_buf);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
@@ -122,13 +121,13 @@ namespace tr
                  static_cast<GLsizei>(tr::AppWin.height),
                  0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-    /*
+
     glBindTexture(GL_TEXTURE_2D, Eye.fb_text_1);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                  static_cast<GLsizei>(tr::AppWin.width),
                  static_cast<GLsizei>(tr::AppWin.height),
                  0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    */
+
 
     // настройка размера рендербуфера
     glBindRenderbuffer(GL_RENDERBUFFER, Eye.rendr_buf);

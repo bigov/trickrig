@@ -287,7 +287,7 @@ int intersect_triangle(const glm::vec3 &vOrig, const glm::vec3 &vDir,
     // Расчет матрицы вида
     MatView = glm::lookAt(tr::Eye.ViewFrom, ViewTo, UpWard);
 
-    calc_selected_area(LookDir);
+    //calc_selected_area(LookDir);
     return;
   }
 
@@ -361,7 +361,7 @@ int intersect_triangle(const glm::vec3 &vOrig, const glm::vec3 &vDir,
   {
     calc_position(ev);
     recalc_borders();
-    RigsDb0.highlight(Selected); // Подсветка выделения
+    //RigsDb0.highlight(Selected); // Подсветка выделения
 
     // Запись в базу данных: Ctrl+S (285, 31).
     // Код отрабатывает последовательное нажатие клавиш Ctrl(285) и S(31)

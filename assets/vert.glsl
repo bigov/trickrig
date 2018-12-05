@@ -12,6 +12,7 @@ uniform vec4 light_bright;    // яркость источника
 out vec2 vFragment; // 2D коодината в текстурной карте
 out vec4 vColor;    // цвет пикселя
 out vec4 vDiff;     // диффузное освещение
+flat out int vId;        // индекс для определения выделенного фрагмента
 
 void main(void)
 {
@@ -19,4 +20,6 @@ void main(void)
   vColor = color;
   vDiff = light_bright * max(dot(normal, light_direction), 0.0f);
   gl_Position = mvp * position;
+
+  vId = gl_VertexID/6;
 }

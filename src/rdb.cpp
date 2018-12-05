@@ -116,9 +116,9 @@ namespace tr
     //      nullptr, i);
     //}
 
-    // В конце массива добавлен снип подсветки - нарисуем его отдельно.
-    glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT,
-        nullptr, (render_points / indices_per_snip) * vertices_per_snip);
+    // Если в конц массива добавлен снип подсветки - нарисуем его отдельно.
+    //glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT,
+    //    nullptr, (render_points / indices_per_snip) * vertices_per_snip);
 
     glBindVertexArray(0);
     Prog3d.unuse(); // отключить шейдерную программу
