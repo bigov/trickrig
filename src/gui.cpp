@@ -300,11 +300,11 @@ void gui::refresh(void)
   sub_img(Fps, 2, static_cast<GLint>(AppWin.height - Fps.h_summ - 2));
 
   // Координаты в пространстве
-  u_int c_length = 30;               // количество символов в надписи
+  u_int c_length = 60;               // количество символов в надписи
   img Coord {c_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
-  wchar_t ln[31]; // the expected string plus 1 null terminator
-  std::swprintf(ln, c_length, L"X:%+3.1f, Y:%+03.1f, Z:%+03.1f",
-                  Eye.ViewFrom.x, Eye.ViewFrom.y, Eye.ViewFrom.z);
+  wchar_t ln[60]; // the expected string plus 1 null terminator
+  std::swprintf(ln, c_length, L"X:%+3.1f, Y:%+03.1f, Z:%+03.1f, a:%+04.3f, t:%+04.3f",
+                  Eye.ViewFrom.x, Eye.ViewFrom.y, Eye.ViewFrom.z, Eye.look_a, Eye.look_t);
   add_text(Font15n, ln, Coord, 2, 1);
   sub_img(Coord, 2, 2);
 
