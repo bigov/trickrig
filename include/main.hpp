@@ -78,6 +78,7 @@ namespace tr {
   };
 
   extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
+  extern glm::mat4 MatMVP;        // Матрица преобразования
 
   enum BUTTON_ID { // Идентификаторы кнопок GIU
     BTN_OPEN,

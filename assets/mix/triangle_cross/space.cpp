@@ -2,7 +2,9 @@
 //
 // file: space.cpp
 //
-// Управление виртуальным 3D пространством
+// Архивная версия файла исходного кода, в которой используется функция
+// быстрого поиска пересечения луча и треугольника для нахождения ячейки, на
+// которую направлен взгляд из камеры для визульной "подсветки" этой ячейки.
 //
 //============================================================================
 #include "space.hpp"
@@ -10,10 +12,71 @@
 namespace tr
 {
 
-double
-  hPi = acos(0),  // половина константы "Пи"
-  Pi  = 2 * hPi,  // константа "Пи"
-  dPi = 2 * Pi;   // двойная "Пи
+#define EPSILON 0.000001
+
+inline double DOT(double v1[], double v2[])
+{
+  return (v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]);
+}
+
+inline void CROSS(double dest[], double v1[], double v2[])
+{
+  dest[0] = v1[1]*v2[2] - v1[2]*v2[1];
+  dest[1] = v1[2]*v2[0] - v1[0]*v2[2];
+  dest[2] = v1[0]*v2[1] - v1[1]*v2[0];
+  return;
+}
+
+inline void SUB(double dest[], double v1[], double v2[])
+{
+  dest[0] = v1[0] - v2[0];
+  dest[1] = v1[1] - v2[1];
+  dest[2] = v1[2] - v2[2];
+  return;
+}
+
+// Быстрый поиск пересечения луча и треугольника описан на странице -
+// http://masters.donntu.org/2015/frt/yablokov/library/transl.htm
+
+///
+/// находит пересечение луча и треугольника
+/// (исх. код: http://masters.donntu.org/2015/frt/yablokov/library/transl.htm)
+///
+int intersect_triangle(const glm::vec3 &vOrig, const glm::vec3 &vDir,
+                       double vert0[3], double vert1[3], double vert2[3])
+{
+  double
+      orig[3] = { vOrig.x, vOrig.y, vOrig.z },
+      dir[3] = { vDir.x, vDir.y, vDir.z },
+      edge1[3], edge2[3],
+      tvec[3], pvec[3], qvec[3],
+      det, u, v;
+
+  // найти векторы двух граней, содержащих vert0
+  SUB(edge1, vert1, vert0);
+  SUB(edge2, vert2, vert0);
+
+  // расчет определителя - также используется для расчета u
+  CROSS(pvec, dir, edge2);
+  det = DOT(edge1, pvec);
+
+  // если определитель близок к нулю, то луч лежит в плоскости треугольника
+  if(det < EPSILON) return 0;
+
+  // расчет расстояния от vert0 до начала луча
+  SUB(tvec, orig, vert0);
+
+  // расчет параметра U и проверка границы
+  u = DOT(tvec, pvec);
+  if(u < 0.0 || u > det) return 0;
+
+  // расчет V и проверка границы
+  CROSS(qvec, tvec, edge1);
+  v = DOT(dir, qvec);
+  if(v < 0.0 || u + v > det) return 0;
+
+  return 1;
+}
 
   //## Формирование 3D пространства
   space::space(void)
@@ -226,34 +289,8 @@ double
     // Расчет матрицы вида
     MatView = glm::lookAt(tr::Eye.ViewFrom, ViewTo, UpWard);
 
-    // Матрица преобразования
-    MatMVP =  MatProjection * MatView;
-
-    calc_selected_area(LookDir);
+    //calc_selected_area(LookDir);
     return;
-  }
-
-  ///
-  /// Вычисление углов направления от камеры до указанной вершины меша
-  ///
-  /// double Vert[3] - положение вершины (точки)
-  ///
-  std::pair<double, double> space::angles_calc(double V0, double V1, double V2)
-  {
-    double az, tg,
-      dX = Eye.ViewFrom.x - V0,
-      dY = Eye.ViewFrom.y - V1,
-      dZ = Eye.ViewFrom.z - V2;
-    if(0.0 == dX) dX -= 0.000001; // потому что
-    if(0.0 == dY) dY -= 0.000001; // нельзя
-    if(0.0 == dZ) dZ -= 0.000001; // делить на ноль
-
-    az = atan(dZ / dX);              // азимут от камеры на вершину
-    if(dX > 0) az -= Pi;
-    if(az < 0) az = dPi + az;
-
-    tg = atan( dY * cos(az) / dX );  // тангаж от камеры на вершину
-    return std::make_pair(az, tg);
   }
 
   ///
@@ -264,11 +301,11 @@ double
     Selected = { 0, 0, 0 };
 
     auto search = Eye.ViewFrom;
-    glm::vec3 step = LookDir/1.2f; // выбрать длину шага чуть меньше единицы
+    glm::vec3 step = LookDir/2.f;
 
     int x, y, z;
 
-    int i = 0, i_max = 4;
+    int i = 0, i_max = 6;
     while(i < i_max)
     {
       x = static_cast<int>(floor(search.x));
@@ -278,77 +315,34 @@ double
       search += step;
       ++i;
     }
-    if(i == i_max) return;          // пересечение не найдено
+    if(i == i_max) return;
 
     auto R = RigsDb0.get(Selected);
     auto S = R->Trick.front();      // верхний снип в найденном риге
 
     // Если определен риг, в сторону которого направлен взгляд, то проверим -
-    // проходит ли через его снип "луч взгляда".
-
-   /* debug */
-   glm::vec4 PtView = {Eye.ViewFrom.x, Eye.ViewFrom.y, Eye.ViewFrom.z, 1.0f };
-   glm::vec4 PtView_m = MatView * PtView;
-
-   glm::vec4 A = {
-      S.data[SNIP_ROW_DIGITS * 0 + SNIP_X] + x,
-      S.data[SNIP_ROW_DIGITS * 0 + SNIP_Y] + y,
-      S.data[SNIP_ROW_DIGITS * 0 + SNIP_Z] + z, 1.0f };
-   glm::vec4 A_m = MatView * A;
-
-   glm::vec4 B = {
-      S.data[SNIP_ROW_DIGITS * 1 + SNIP_X] + x,
-      S.data[SNIP_ROW_DIGITS * 1 + SNIP_Y] + y,
-      S.data[SNIP_ROW_DIGITS * 1 + SNIP_Z] + z, 1.0f };
-   glm::vec4 B_m = MatView * B;
-
-   glm::vec4 C = {
-      S.data[SNIP_ROW_DIGITS * 2 + SNIP_X] + x,
-      S.data[SNIP_ROW_DIGITS * 2 + SNIP_Y] + y,
-      S.data[SNIP_ROW_DIGITS * 2 + SNIP_Z] + z, 1.0f };
-   glm::vec4 C_m = MatView * C;
-
-   glm::vec4 D = {
-      S.data[SNIP_ROW_DIGITS * 3 + SNIP_X] + x,
-      S.data[SNIP_ROW_DIGITS * 3 + SNIP_Y] + y,
-      S.data[SNIP_ROW_DIGITS * 3 + SNIP_Z] + z, 1.0f };
-   glm::vec4 D_m = MatView * D;
-
-   if(A_m.y + B_m.y + C_m.y + D_m.y + PtView_m.y == 0.0f) return;
-   /* debug */
+    // проходит ли через его снип "луч взгляда". Если не проходит - то
+    // нам нужен следущий по направлению взгляда.
 
     //координаты вершин снипа
-    auto ang_A = angles_calc( S.data[SNIP_ROW_DIGITS * 0 + SNIP_X] + x,
-                              S.data[SNIP_ROW_DIGITS * 0 + SNIP_Y] + y,
-                              S.data[SNIP_ROW_DIGITS * 0 + SNIP_Z] + z );
+    double A[3] { S.data[SNIP_ROW_DIGITS * 0 + SNIP_X] + x,
+                  S.data[SNIP_ROW_DIGITS * 0 + SNIP_Y] + y,
+                  S.data[SNIP_ROW_DIGITS * 0 + SNIP_Z] + z, };
+    double B[3] { S.data[SNIP_ROW_DIGITS * 1 + SNIP_X] + x,
+                  S.data[SNIP_ROW_DIGITS * 1 + SNIP_Y] + y,
+                  S.data[SNIP_ROW_DIGITS * 1 + SNIP_Z] + z, };
+    double C[3] { S.data[SNIP_ROW_DIGITS * 2 + SNIP_X] + x,
+                  S.data[SNIP_ROW_DIGITS * 2 + SNIP_Y] + y,
+                  S.data[SNIP_ROW_DIGITS * 2 + SNIP_Z] + z, };
+    double D[3] { S.data[SNIP_ROW_DIGITS * 3 + SNIP_X] + x,
+                  S.data[SNIP_ROW_DIGITS * 3 + SNIP_Y] + y,
+                  S.data[SNIP_ROW_DIGITS * 3 + SNIP_Z] + z, };
 
-    auto ang_B = angles_calc( S.data[SNIP_ROW_DIGITS * 1 + SNIP_X] + x,
-                              S.data[SNIP_ROW_DIGITS * 1 + SNIP_Y] + y,
-                              S.data[SNIP_ROW_DIGITS * 1 + SNIP_Z] + z );
-
-    auto ang_C = angles_calc( S.data[SNIP_ROW_DIGITS * 2 + SNIP_X] + x,
-                              S.data[SNIP_ROW_DIGITS * 2 + SNIP_Y] + y,
-                              S.data[SNIP_ROW_DIGITS * 2 + SNIP_Z] + z );
-
-    auto ang_D = angles_calc( S.data[SNIP_ROW_DIGITS * 3 + SNIP_X] + x,
-                              S.data[SNIP_ROW_DIGITS * 3 + SNIP_Y] + y,
-                              S.data[SNIP_ROW_DIGITS * 3 + SNIP_Z] + z );
-
-    int cross_az = 0;
-    if(ang_A.first > Eye.look_a) ++cross_az;
-    if(ang_B.first > Eye.look_a) ++cross_az;
-    if(ang_C.first > Eye.look_a) ++cross_az;
-    if(ang_D.first > Eye.look_a) ++cross_az;
-
-    int cross_tg = 0;
-    if(ang_A.second > Eye.look_t) ++cross_tg;
-    if(ang_B.second > Eye.look_t) ++cross_tg;
-    if(ang_C.second > Eye.look_t) ++cross_tg;
-    if(ang_D.second > Eye.look_t) ++cross_tg;
-
-    if((0<cross_az && cross_az<4) && (0<cross_tg && cross_tg<4))
+    // Снип состоит из двух треугольников. Проверяем пересечение с одним из них:
+    if(intersect_triangle(Eye.ViewFrom, LookDir, A, B, C) ||
+       intersect_triangle(Eye.ViewFrom, LookDir, C, D, A) )
     {
-      Selected = { x, y, z };
+       Selected = { x, y, z }; // Если есть пересечение, то поиск закончен
     }
     else
     { // Если луч взгляда не пересекает найденый снип, то берем следущий
@@ -357,7 +351,7 @@ double
       x = static_cast<int>(floor(search.x));
       y = static_cast<int>(floor(search.y));
       z = static_cast<int>(floor(search.z));
-      if(RigsDb0.get(x,y,z) != nullptr) Selected = { x, y, z };
+      Selected = { x, y, z };
     }
     return;
   }
@@ -369,7 +363,7 @@ double
   {
     calc_position(ev);
     recalc_borders();
-    RigsDb0.highlight(Selected); // Подсветка выделения
+    //RigsDb0.highlight(Selected); // Подсветка выделения
 
     // Запись в базу данных: Ctrl+S (285, 31).
     // Код отрабатывает последовательное нажатие клавиш Ctrl(285) и S(31)
@@ -381,7 +375,10 @@ double
     mod = 0;
     if (285 == ev.key_scancode) mod = 1;
 
-    RigsDb0.draw();
+
+    // Матрицу модели в расчетах не используем, так как
+    // она единичная и на положение элементов влияние не оказывает
+    RigsDb0.draw( MatProjection * MatView );
     return;
   }
 

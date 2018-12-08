@@ -1,16 +1,3 @@
-#include <iostream>
-#include <cmath>
-
-int main(int, char**)
-{
-  double
-    Hpi = acos(0),
-    pi  = 2 * Hpi,
-    Dpi = 2 * pi;
-
-  // положение камеры
-  double P[] = { 0.0, 2.0, 0.0 };
-
 /*
   double a = 4.1;
   double b = 1.3;
@@ -23,32 +10,58 @@ int main(int, char**)
   double c = fabs(b) /cos(bc);      // длина с
 */
 
-  // точка на меше
-  double V[] = { 0.0, 0.0, 2.0001 };
+#include <iostream>
+#include <cmath>
 
+double
+  Hpi = acos(0),
+  pi  = 2 * Hpi,
+  Dpi = 2 * pi;
+
+// вычисляет углы направления от камеры до указанной вершины меша
+void angles_calc( double Vx, double Vy, double Vz )
+{
+  // положение камеры
+  double P[] = { 0.0, 2.0, 0.0 };
   double
-    dX = P[0] - V[0],
-    dY = P[1] - V[1],
-    dZ = P[2] - V[2],
+    dX = P[0] - Vx,
+    dY = P[1] - Vy,
+    dZ = P[2] - Vz,
     v_a, v_t;
+
   if(0.0 == dX) dX -= 0.000001; // потому что
   if(0.0 == dY) dY -= 0.000001; // нельзя
   if(0.0 == dZ) dZ -= 0.000001; // делить на ноль
 
   v_a = atan(dZ / dX);
-
   if(dX > 0) v_a -= pi;
-
   if(v_a < 0) v_a = Dpi + v_a;
 
-  //if(v_a < 0) v_a = Dpi - v_a;
-  //if(v_a > Dpi) v_a -= Dpi;
 
-  //v_t = atan( fabs(dY) * cos(v_a) / dX );
+  v_t = atan( dY * cos(v_a) / dX );
+
   char buf[80];
-  std::sprintf(buf, "\nv_a: %+5.4f rad/%+5.2f deg\n", v_a, v_a*180/pi);
-
+  std::sprintf(buf, "v_a: %+5.4f rad (%6.2f deg), v_t: %+5.4f rad (%6.2f deg)\n",
+    v_a, v_a*180/pi, v_t, v_t*180/pi);
   std::cout << buf;
+
+  return;
+}
+
+int main(int, char**)
+{
+std::cout << "\n";
+angles_calc(  0.0, 0.0,  0.0 );
+angles_calc(  2.0, 0.0,  0.0 );
+angles_calc(  2.0, 0.0,  2.0 );
+angles_calc(  0.0, 0.0,  2.0 );
+angles_calc( -2.0, 0.0,  2.0 );
+angles_calc( -2.0, 0.0,  0.0 );
+angles_calc( -2.0, 0.0, -2.0 );
+angles_calc(  0.0, 0.0, -2.0 );
+angles_calc(  2.0, 0.0, -2.0 );
+angles_calc(  2.0, 0.0, -0.00001 );
+
 
 /*
   std::cout

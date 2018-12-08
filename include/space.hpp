@@ -23,8 +23,8 @@ namespace tr
       space(const tr::space&);
       space operator=(const tr::space&);
 
-      tr::rdb RigsDb0 {};   // структура 3D пространства LOD-0
-      const int g0 = 1;      // масштаб элементов в RigsDb0
+      tr::rdb RigsDb0 {};  // структура 3D пространства LOD-0
+      const int g0 = 1;    // масштаб элементов в RigsDb0
 
       GLuint m_textureObj = 0;
 
@@ -33,12 +33,13 @@ namespace tr
       tr::i3d MoveFrom {0, 0, 0},  // координаты рига, на котором "стоим"
               Selected {0, 0, 0};  // координаты рига, на который смотрим
 
-      glm::mat4 MatView {};
+      glm::mat4 MatView {};        // матрица вида
       glm::vec3
         UpWard {0.0, -1.0, 0.0}, // направление наверх
         ViewTo {};               // направление взгляда
 
 
+      std::pair<double, double> angles_calc(double, double, double);
       void calc_position(const tr::evInput &);
       void calc_selected_area(glm::vec3 & sight_direction);
       void vbo_allocate_mem(void);

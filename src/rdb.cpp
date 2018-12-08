@@ -92,12 +92,12 @@ namespace tr
   ///
   /// Рендер кадра
   ///
-  void rdb::draw(const glm::mat4 & MVP)
+  void rdb::draw(void)
   {
     if (!CachedOffset.empty()) clear_cashed_snips();
 
     Prog3d.use();   // включить шейдерную программу
-    Prog3d.set_uniform("mvp", MVP);
+    Prog3d.set_uniform("mvp", MatMVP);
     Prog3d.set_uniform("light_direction", glm::vec4(0.2f, 0.9f, 0.5f, 0.0));
     Prog3d.set_uniform("light_bright", glm::vec4(0.5f, 0.5f, 0.5f, 0.0));
 
@@ -117,8 +117,8 @@ namespace tr
     //}
 
     // Если в конц массива добавлен снип подсветки - нарисуем его отдельно.
-    //glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT,
-    //    nullptr, (render_points / indices_per_snip) * vertices_per_snip);
+    glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT,
+        nullptr, (render_points / indices_per_snip) * vertices_per_snip);
 
     glBindVertexArray(0);
     Prog3d.unuse(); // отключить шейдерную программу

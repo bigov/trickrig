@@ -66,12 +66,12 @@ namespace tr
       void _load_16x16_obj(void);
 
     public:
-      rdb(void);                           // конструктор
+      rdb(void);                              // конструктор
       void put_in_vbo(int, int, int);         // разместить данные в VBO буфере
       void put_in_vbo(tr::rig*, const f3d&);  // разместить данные в VBO буфере
-      void remove_from_vbo(int, int, int); // убрать трик из рендера
-      void draw(const glm::mat4 &);        // Рендерить кадр
-      void clear_cashed_snips(void);       // очистка промежуточного кэша
+      void remove_from_vbo(int, int, int);    // убрать трик из рендера
+      void draw(void);                        // Рендер кадра
+      void clear_cashed_snips(void);          // очистка промежуточного кэша
 
       bool save(const tr::i3d &, const tr::i3d &);
       void init(int, glm::vec3 = {0,0,0});       // загрузка уровня

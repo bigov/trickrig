@@ -36,6 +36,7 @@ namespace tr
 {
   // Инициализация глобальных и статических членов
   glm::mat4 MatProjection {}; // матрица проекции 3D сцены
+  glm::mat4 MatMVP {};        // Матрица преобразования
   std::unordered_map<int, std::string> cfg::InitParams {};
   std::string cfg::AssetsDir = "../assets/";
   tr::sqlw cfg::SqlDb {};
