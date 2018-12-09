@@ -48,6 +48,7 @@ namespace tr
     void vbo_append(const tr::f3d &, tr::vbo &);
     bool vbo_update(const tr::f3d &, tr::vbo &, GLsizeiptr);
     void vbo_jam (tr::vbo &, GLintptr);
+    glm::vec4 vertex_coord(size_t);
   };
 
 } //namespace tr

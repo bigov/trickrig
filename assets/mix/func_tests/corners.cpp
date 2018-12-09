@@ -1,10 +1,9 @@
 /*
-  double a = 4.1;
-  double b = 1.3;
-  //  |\
-  // a| \ c
-  //  |__\       Угол между "b" и "с" от -90 (-Hpi) до 90 (Hpi)
-  //   b  (bc)
+     P
+    |\ c
+   a| \
+    |__\V
+    b  (bc) -  угол между "b" и "с" от -90 (-Hpi) до 90 (Hpi)
 
   double bc = atan(a/b);            // угол между b-c
   double c = fabs(b) /cos(bc);      // длина с

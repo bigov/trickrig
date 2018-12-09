@@ -9,11 +9,30 @@
 
 namespace tr
 {
+  const double
+    hPi = acos(0),                   // половина константы "Пи"
+    Pi  = 2 * hPi,                   // константа "Пи"
+    dPi = 2 * Pi;                    // двойная "Пи
+  const float up_max = hPi - 0.001f; // Максимальный угол вверх
+  const float down_max = -up_max;    // Максимальный угол вниз
 
-double
-  hPi = acos(0),  // половина константы "Пи"
-  Pi  = 2 * hPi,  // константа "Пи"
-  dPi = 2 * Pi;   // двойная "Пи
+  /// Вычисление расположения отрезка (a, b) относительно (слева или справа)
+  /// точки c нулевыми координатами на плоскости (x,y)
+  ///
+  inline bool dir(const glm::vec4 &a, const glm::vec4 &b)
+  {
+    return ((0.0 - b.x) * (a.y - b.y) - (a.x - b.x) * (0.0 - b.y)) > 0.0;
+  }
+
+  /// \brief Проверка размещения четырехугольника в центре плоскости камеры
+  /// \return
+  ///
+  /// Выбор вершин производится в направлении против часовой стрелки
+  ///
+  inline bool is_target(glm::vec4 &a, glm::vec4 &b, glm::vec4 &c, glm::vec4 &d)
+  {
+    return dir(a, b) && dir(b, c) && dir(c, d) && dir(d, a);
+  }
 
   //## Формирование 3D пространства
   space::space(void)
@@ -198,12 +217,12 @@ double
   void space::calc_position(const evInput & ev)
   {
     Eye.look_a -= ev.dx * Eye.look_speed;
-    if(Eye.look_a > two_pi) Eye.look_a -= two_pi;
-    if(Eye.look_a < 0) Eye.look_a += two_pi;
+    if(Eye.look_a > dPi) Eye.look_a -= dPi;
+    if(Eye.look_a < 0) Eye.look_a += dPi;
 
     Eye.look_t -= ev.dy * Eye.look_speed;
-    if(Eye.look_t > look_up) Eye.look_t = look_up;
-    if(Eye.look_t < look_down) Eye.look_t = look_down;
+    if(Eye.look_t > up_max) Eye.look_t = up_max;
+    if(Eye.look_t < down_max) Eye.look_t = down_max;
 
     float _k = Eye.speed / static_cast<float>(AppWin.fps); // корректировка по FPS
 
@@ -220,7 +239,7 @@ double
       _ct = static_cast<float>(cos(Eye.look_t));
 
     glm::vec3 LookDir {_ca*_ct, sin(Eye.look_t), _sa*_ct}; //Направление взгляда
-    tr::Eye.ViewFrom += glm::vec3(fb *_ca + rl*sin(Eye.look_a - pi), ud,  fb*_sa + rl*_ca);
+    tr::Eye.ViewFrom += glm::vec3(fb *_ca + rl*sin(Eye.look_a - Pi), ud,  fb*_sa + rl*_ca);
     ViewTo = tr::Eye.ViewFrom + LookDir;
 
     // Расчет матрицы вида
@@ -234,132 +253,47 @@ double
   }
 
   ///
-  /// Вычисление углов направления от камеры до указанной вершины меша
-  ///
-  /// double Vert[3] - положение вершины (точки)
-  ///
-  std::pair<double, double> space::angles_calc(double V0, double V1, double V2)
-  {
-    double az, tg,
-      dX = Eye.ViewFrom.x - V0,
-      dY = Eye.ViewFrom.y - V1,
-      dZ = Eye.ViewFrom.z - V2;
-    if(0.0 == dX) dX -= 0.000001; // потому что
-    if(0.0 == dY) dY -= 0.000001; // нельзя
-    if(0.0 == dZ) dZ -= 0.000001; // делить на ноль
-
-    az = atan(dZ / dX);              // азимут от камеры на вершину
-    if(dX > 0) az -= Pi;
-    if(az < 0) az = dPi + az;
-
-    tg = atan( dY * cos(az) / dX );  // тангаж от камеры на вершину
-    return std::make_pair(az, tg);
-  }
-
-  ///
   /// Расчет координат рига, на который направлен взгляд
   ///
   void space::calc_selected_area(glm::vec3 & LookDir)
   {
-    Selected = { 0, 0, 0 };
+    Selected = { 0, 0, 0 };                        // координаты выбранного рига
+    glm::vec3 step = glm::normalize(LookDir)/1.2f; // длина шага поиска
+    int i_max = 4;                                 // количество шагов проверки
 
-    auto search = Eye.ViewFrom;
-    glm::vec3 step = LookDir/1.2f; // выбрать длину шага чуть меньше единицы
-
-    int x, y, z;
-
-    int i = 0, i_max = 4;
-    while(i < i_max)
+    glm::vec3 search = Eye.ViewFrom;               // переменная поиска
+    tr::rig* R = nullptr;
+    for(int i = 0; i < i_max; ++i)
     {
-      x = static_cast<int>(floor(search.x));
-      y = static_cast<int>(floor(search.y));
-      z = static_cast<int>(floor(search.z));
-      if(RigsDb0.get(x,y,z) != nullptr) break;
+      R = RigsDb0.get(search);
+      if(nullptr != R) break;
       search += step;
-      ++i;
     }
-    if(i == i_max) return;          // пересечение не найдено
+    if(nullptr == R) return;          // если пересечение не найдено - выход
 
-    auto R = RigsDb0.get(Selected);
-    auto S = R->Trick.front();      // верхний снип в найденном риге
+    // Проверяем верхний снип в найденном риге
+    auto S = R->Trick.front();
+    glm::vec4 mv { R->Origin.x, R->Origin.y, R->Origin.z, 0 };
 
-    // Если определен риг, в сторону которого направлен взгляд, то проверим -
-    // проходит ли через его снип "луч взгляда".
+   // Проекции точек снипа на плоскость камеры
+   glm::vec4 A = MatView * (S.vertex_coord(0) + mv);
+   glm::vec4 B = MatView * (S.vertex_coord(1) + mv);
+   glm::vec4 C = MatView * (S.vertex_coord(2) + mv);
+   glm::vec4 D = MatView * (S.vertex_coord(3) + mv);
 
-   /* debug */
-   glm::vec4 PtView = {Eye.ViewFrom.x, Eye.ViewFrom.y, Eye.ViewFrom.z, 1.0f };
-   glm::vec4 PtView_m = MatView * PtView;
+   if(is_target(A, B, C, D))
+   {
+     Selected = R->Origin;
+   }
+   else
+   { // Если луч взгляда не пересекает найденый снип, то берем следущий
+     // по направлению взгляда:
+     search += step;
+     R = RigsDb0.get(search);
+     if(nullptr != R) Selected = R->Origin;
+   }
 
-   glm::vec4 A = {
-      S.data[SNIP_ROW_DIGITS * 0 + SNIP_X] + x,
-      S.data[SNIP_ROW_DIGITS * 0 + SNIP_Y] + y,
-      S.data[SNIP_ROW_DIGITS * 0 + SNIP_Z] + z, 1.0f };
-   glm::vec4 A_m = MatView * A;
-
-   glm::vec4 B = {
-      S.data[SNIP_ROW_DIGITS * 1 + SNIP_X] + x,
-      S.data[SNIP_ROW_DIGITS * 1 + SNIP_Y] + y,
-      S.data[SNIP_ROW_DIGITS * 1 + SNIP_Z] + z, 1.0f };
-   glm::vec4 B_m = MatView * B;
-
-   glm::vec4 C = {
-      S.data[SNIP_ROW_DIGITS * 2 + SNIP_X] + x,
-      S.data[SNIP_ROW_DIGITS * 2 + SNIP_Y] + y,
-      S.data[SNIP_ROW_DIGITS * 2 + SNIP_Z] + z, 1.0f };
-   glm::vec4 C_m = MatView * C;
-
-   glm::vec4 D = {
-      S.data[SNIP_ROW_DIGITS * 3 + SNIP_X] + x,
-      S.data[SNIP_ROW_DIGITS * 3 + SNIP_Y] + y,
-      S.data[SNIP_ROW_DIGITS * 3 + SNIP_Z] + z, 1.0f };
-   glm::vec4 D_m = MatView * D;
-
-   if(A_m.y + B_m.y + C_m.y + D_m.y + PtView_m.y == 0.0f) return;
-   /* debug */
-
-    //координаты вершин снипа
-    auto ang_A = angles_calc( S.data[SNIP_ROW_DIGITS * 0 + SNIP_X] + x,
-                              S.data[SNIP_ROW_DIGITS * 0 + SNIP_Y] + y,
-                              S.data[SNIP_ROW_DIGITS * 0 + SNIP_Z] + z );
-
-    auto ang_B = angles_calc( S.data[SNIP_ROW_DIGITS * 1 + SNIP_X] + x,
-                              S.data[SNIP_ROW_DIGITS * 1 + SNIP_Y] + y,
-                              S.data[SNIP_ROW_DIGITS * 1 + SNIP_Z] + z );
-
-    auto ang_C = angles_calc( S.data[SNIP_ROW_DIGITS * 2 + SNIP_X] + x,
-                              S.data[SNIP_ROW_DIGITS * 2 + SNIP_Y] + y,
-                              S.data[SNIP_ROW_DIGITS * 2 + SNIP_Z] + z );
-
-    auto ang_D = angles_calc( S.data[SNIP_ROW_DIGITS * 3 + SNIP_X] + x,
-                              S.data[SNIP_ROW_DIGITS * 3 + SNIP_Y] + y,
-                              S.data[SNIP_ROW_DIGITS * 3 + SNIP_Z] + z );
-
-    int cross_az = 0;
-    if(ang_A.first > Eye.look_a) ++cross_az;
-    if(ang_B.first > Eye.look_a) ++cross_az;
-    if(ang_C.first > Eye.look_a) ++cross_az;
-    if(ang_D.first > Eye.look_a) ++cross_az;
-
-    int cross_tg = 0;
-    if(ang_A.second > Eye.look_t) ++cross_tg;
-    if(ang_B.second > Eye.look_t) ++cross_tg;
-    if(ang_C.second > Eye.look_t) ++cross_tg;
-    if(ang_D.second > Eye.look_t) ++cross_tg;
-
-    if((0<cross_az && cross_az<4) && (0<cross_tg && cross_tg<4))
-    {
-      Selected = { x, y, z };
-    }
-    else
-    { // Если луч взгляда не пересекает найденый снип, то берем следущий
-      // по направлению взгляда:
-      search += LookDir;
-      x = static_cast<int>(floor(search.x));
-      y = static_cast<int>(floor(search.y));
-      z = static_cast<int>(floor(search.z));
-      if(RigsDb0.get(x,y,z) != nullptr) Selected = { x, y, z };
-    }
-    return;
+   return;
   }
 
   ///

@@ -82,7 +82,7 @@ namespace tr
 
   // структуры для оперирования с трехмерными координатами
 
-  struct i3d { int x = 0, y = 0, z = 0;};
+  struct i3d { int x=0, y=0, z=0; };
   extern bool operator< (i3d const& left, i3d const& right);
 
   struct f3d

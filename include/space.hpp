@@ -38,13 +38,10 @@ namespace tr
         UpWard {0.0, -1.0, 0.0}, // направление наверх
         ViewTo {};               // направление взгляда
 
-
-      std::pair<double, double> angles_calc(double, double, double);
       void calc_position(const tr::evInput &);
       void calc_selected_area(glm::vec3 & sight_direction);
       void vbo_allocate_mem(void);
       void recalc_borders(void);
-
       void redraw_borders_x(void);
       //void redraw_borders_y(void); // TODO
       void redraw_borders_z(void);

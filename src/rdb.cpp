@@ -19,7 +19,7 @@ namespace tr
     return;
   }
 
-  //## Оператор присваивания (это не конструктор)
+  //## Оператор присваивания
   tr::rig& rig::operator= (const tr::rig & Other)
   {
     if(this != &Other)
@@ -116,7 +116,7 @@ namespace tr
     //      nullptr, i);
     //}
 
-    // Если в конц массива добавлен снип подсветки - нарисуем его отдельно.
+    // в конец массива добавлен снип подсветки - нарисуем его отдельно
     glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT,
         nullptr, (render_points / indices_per_snip) * vertices_per_snip);
 
@@ -355,6 +355,7 @@ namespace tr
   ///
   void rdb::init(int g, glm::vec3)
   {
+    tr::rig R {};
     lod = g; // TODO проверка масштаба на допустимость
     //_load_16x16_obj();
 
@@ -377,11 +378,19 @@ namespace tr
         row_x = xn * tpl_side;
         for(int x = 0; x < tpl_side; x++) for(int z = 0; z < tpl_side; z++)
         {
-        // TODO: тут следует делать запрос к базе данных активного района -
-        // если в нем по указанным координатам есть сохраненная поверхность,
-        // то загружаем ее данные. Если нет - данные шаблона.
+          // TODO: тут следует делать запрос к базе данных активного района -
+          // если в нем по указанным координатам есть сохраненная поверхность,
+          // то загружаем ее данные. Если нет - данные шаблона.
 
-          RigsDb[tr::i3d{row_x + x, y, row_z + z}] = TplRigs[tr::i3d{x, y, z}];
+          tr::i3d dst {row_x + x, y, row_z + z};
+          RigsDb[dst] = TplRigs[tr::i3d{x, y, z}];
+
+          // Конструктор копирования рига не копирует время создания
+          // рига-источника и его Origin. Время конструктор автоматически
+          // переустанавливает на момент выполнения операции копирования, а
+          // значение координат Origin надо установить непосредственно в
+          // созданном объекте отдельной операцией -
+          RigsDb[dst].Origin = dst;
         }
       }
     }
@@ -404,7 +413,6 @@ namespace tr
     DB.open(tr::cfg::get(DB_TPL_FNAME));
 
     int id_area = 0;
-    //char query_buf[255];
 
     for(int x = From.x; x < To.x; x++)
       for(int y = From.y; y < To.y; y++)
@@ -475,6 +483,20 @@ namespace tr
       { y -= lod; }
     }
     ERR("Rigs::search_down() failure. We need to use try/catch in this case.");
+  }
+
+  ///
+  /// \brief rdb::get
+  /// \param P
+  /// \return
+  ///
+  tr::rig* rdb::get(const glm::vec3& P)
+  {
+    return get(
+      static_cast<int>(floor(P.x)),
+      static_cast<int>(floor(P.y)),
+      static_cast<int>(floor(P.z))
+    );
   }
 
   //## Поиск элемента с указанными координатами

@@ -53,6 +53,19 @@ namespace tr
   }
 
   ///
+  /// \brief snip::vertex_coord Возвращает координаты вершины № idx
+  /// \param idx
+  /// \return
+  ///
+  glm::vec4 snip::vertex_coord(size_t idx)
+  {
+    return glm::vec4 { data[SNIP_ROW_DIGITS * idx + SNIP_X],
+                       data[SNIP_ROW_DIGITS * idx + SNIP_Y],
+                       data[SNIP_ROW_DIGITS * idx + SNIP_Z],
+                       1.0 };
+  }
+
+  ///
   /// \brief
   /// Добавляет свои данные в конец буфера данных VBO и запоминает свой адрес
   /// смещения.

@@ -178,14 +178,6 @@ namespace tr {
     key_scancode, key_mods, mouse_mods;
   };
 
-  const float pi = glm::pi<glm::float_t>();
-  const float two_pi = glm::two_pi<glm::float_t>();
-  const float half_pi = glm::half_pi<glm::float_t>();
-  const float _half_pi = 0 - half_pi;
-  const float look_up = half_pi - 0.01f;
-  const float look_down = 0 - half_pi + 0.01f;
-  const float three_over_two_pi  = glm::three_over_two_pi<glm::float_t>();
-
   extern void init_config_db(const std::string &);
 }
 

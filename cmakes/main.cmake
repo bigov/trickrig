@@ -12,7 +12,6 @@ include( "${trCMAKES}/extlibs/libpng.cmake" )
 include( "${trCMAKES}/extlibs/glcore33.cmake" )
 include( "${trCMAKES}/extlibs/sqlite3.cmake" )
 include( "${trCMAKES}/extlibs/glfw.cmake" )
-include( "${trCMAKES}/extlibs/glm.cmake" )
 
 # где искать заголовки
 include_directories( ${trINCLUDE_DIRS} )
