@@ -40,7 +40,7 @@ if( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
     #SET( CMAKE_CXX_FLAGS "--static ${CMAKE_CXX_FLAGS} ${WIN_GUI}" )
     SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WIN_GUI}" )
   endif()
-  SET( trLIBS mingw32 png_static gdi32 )
+  SET( trLIBS mingw32 gdi32 )
   SET( BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE )
 endif( (${MINGW}) AND (${CMAKE_SYSTEM_NAME} MATCHES "Windows") )
 

@@ -2,10 +2,6 @@
 	path = .extlibs/glfw
 	url = https://github.com/glfw/glfw.git
 	branch = master
-[submodule ".extlibs/libpng"]
-	path = .extlibs/libpng
-	url = https://github.com/glennrp/libpng.git
-	branch = master
 [submodule ".extlibs/zlib"]
 	path = .extlibs/zlib
 	url = https://github.com/madler/zlib.git
