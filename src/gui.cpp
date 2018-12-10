@@ -227,37 +227,57 @@ void gui::draw(void)
 
   switch (AppWin.ButtonLMRelease) {
     case BTN_OPEN:
-      //scene_open(window);
-      AppWin.cover = COVER_OFF;
+      AppWin.set_mode(COVER_OFF);
       break;
     case BTN_CONFIG:
-      AppWin.cover = COVER_CONFIG;
+      AppWin.cover_mode = COVER_CONFIG;
       break;
     case BTN_LOCATION:
-      AppWin.cover = COVER_LOCATION;
+      AppWin.cover_mode = COVER_LOCATION;
       break;
     case BTN_CREATE:
       AppWin.user_input.clear();
-      AppWin.cover = COVER_CREATE;
+      AppWin.cover_mode = COVER_CREATE;
       break;
     case BTN_ENTER_NAME:
-      AppWin.cover = COVER_LOCATION;
+      AppWin.cover_mode = COVER_LOCATION;
       break;
     case BTN_CLOSE:
-      //glfwSetWindowShouldClose(window, true);
+      AppWin.run = false;
       break;
     case NONE:
       break;
   }
   AppWin.ButtonLMRelease = NONE;
 
+  if(AppWin.key_escape) {
 
+    switch (AppWin.cover_mode) {
+      case COVER_OFF:
+        AppWin.set_mode(COVER_LOCATION);
+        break;
+      case COVER_LOCATION:
+        AppWin.cover_mode = COVER_START;
+        break;
+      case COVER_CREATE:
+        AppWin.cover_mode = COVER_LOCATION;
+        break;
+      case COVER_CONFIG:
+        AppWin.cover_mode = COVER_START;
+        break;
+      case COVER_START:
+        AppWin.run = false;
+        break;
+    }
+
+    AppWin.key_escape = false;
+  }
 
   // По-умолчанию указываем, что активной кнопки нет, процедура построения
   // кнопки установит свой BUTTON_ID, если курсор находится над ней
   AppWin.ButtonOver = NONE;
 
-  switch (AppWin.cover) {
+  switch (AppWin.cover_mode) {
     case COVER_OFF:
       refresh();
       break;
@@ -277,7 +297,7 @@ void gui::draw(void)
 
   // Если COVER включен, то его элементы строятся в составе GuiImg, в этом
   // случае обновляем всю область окна каждый кадр -
-  if(AppWin.cover != COVER_OFF) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+  if(AppWin.cover_mode != COVER_OFF) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                                              static_cast<GLint>(AppWin.width),
                                              static_cast<GLint>(AppWin.height),
                                              0, GL_RGBA, GL_UNSIGNED_BYTE,

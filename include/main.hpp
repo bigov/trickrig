@@ -108,10 +108,11 @@ namespace tr {
     u_int btn_h = 36;               // высота кнопки GUI
     u_int minwidth = btn_w + 8;     // минимально допустимая ширина окна
     u_int minheight = btn_h * 4 + 8;// минимально допустимая высота окна
-    COVER_MODE cover = COVER_START; // режим окна приложения
+    COVER_MODE cover_mode = COVER_START; // режим окна приложения
     std::wstring user_input {};     // строка ввода пользователя
-    bool key_backspace = false;
-
+    bool key_backspace = false;     // [Backspace]
+    bool key_escape = false;        // [Esc]
+    bool run        = true;         // индикатор закрытия окна
     float aspect = 1.0f;  // соотношение размеров окна
     bool newsize = true;  // флаг наличия изменений параметров окна
     double xpos = 0.0;    // позиция указателя относительно левой границы
@@ -123,10 +124,22 @@ namespace tr {
     BUTTON_ID ButtonLMRelease = NONE; // Какая GIU кнопка отпущена (левый клик)
     bool mouse_lbutton_on = false;    // нажата левая кнопка мыши
 
-    void set_mode(COVER_MODE m) // Изменение режима окна 3d/2d
+    // индикатор смены режима курсора (GUI-мышь/3D-прицел) для класса wingl
+    char set_cursor = 0;
+
+    // Изменение режима окна 3d/2d
+    void set_mode(COVER_MODE m)
     {
-      cover = m;
-      Cursor[2] = ( COVER_OFF == m ? 4.0f : .0f );
+      cover_mode = m;
+      if(m == COVER_OFF)
+      {
+        Cursor[2] = 4.0f;
+        set_cursor = -1;
+      }
+      else {
+        Cursor[2] = 0.0f;
+        set_cursor = 1;
+      }
     }
   };
   extern main_window AppWin;

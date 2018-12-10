@@ -17,7 +17,7 @@ namespace tr
     public:
       space(void);
       ~space(void) {}
-      void draw(const evInput&);
+      void draw(evInput&);
 
     private:
       space(const tr::space&);
@@ -38,7 +38,7 @@ namespace tr
         UpWard {0.0, -1.0, 0.0}, // направление наверх
         ViewTo {};               // направление взгляда
 
-      void calc_position(const tr::evInput &);
+      void calc_position(evInput&);
       void calc_selected_area(glm::vec3 & sight_direction);
       void vbo_allocate_mem(void);
       void recalc_borders(void);

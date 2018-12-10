@@ -214,15 +214,17 @@ namespace tr
   }
 
   //## Расчет положения и направления движения камеры
-  void space::calc_position(const evInput & ev)
+  void space::calc_position(evInput & ev)
   {
     Eye.look_a -= ev.dx * Eye.look_speed;
     if(Eye.look_a > dPi) Eye.look_a -= dPi;
     if(Eye.look_a < 0) Eye.look_a += dPi;
+    ev.dx = 0.f;
 
     Eye.look_t -= ev.dy * Eye.look_speed;
     if(Eye.look_t > up_max) Eye.look_t = up_max;
     if(Eye.look_t < down_max) Eye.look_t = down_max;
+    ev.dy = 0.f;
 
     float _k = Eye.speed / static_cast<float>(AppWin.fps); // корректировка по FPS
 
@@ -299,7 +301,7 @@ namespace tr
   ///
   /// Функция, вызываемая из цикла окна для рендера сцены
   ///
-  void space::draw(const evInput & ev)
+  void space::draw(evInput & ev)
   {
     calc_position(ev);
     recalc_borders();

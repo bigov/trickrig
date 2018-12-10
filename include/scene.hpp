@@ -31,7 +31,7 @@ namespace tr
     public:
       scene(void);
       ~scene(void);
-      void draw(const evInput &);
+      void draw(evInput&);
   };
 
 } //namespace

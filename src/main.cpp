@@ -9,7 +9,7 @@
 #include "config.hpp"
 #include "io.hpp"
 #include "scene.hpp"
-#include "glfw.hpp"
+#include "wingl.hpp"
 #include "dbwrap.hpp"
 
 namespace tr {
@@ -27,7 +27,7 @@ int main()
   try
   {
     tr::cfg::load();       // Загрузка конфигурации
-    tr::glfw_wr Win {};    // Настройка OpenGL окна
+    tr::wingl Win {};    // Настройка OpenGL окна
     tr::scene Scene {};    // Сборка сцены
     Win.show(Scene);       // Цикл рендера
     tr::cfg::save();       // Сохранение конфигурации
