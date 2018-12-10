@@ -119,8 +119,9 @@ namespace tr {
     int fps = 120;        // частота кадров (для коррекции скорости движения)
     glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина прицела
 
-    BUTTON_ID OverButton = NONE;   // Над какой кнопкой курсор
-    bool mouse_lbutton_on = false; // нажата левая кнопка мыши
+    BUTTON_ID ButtonOver = NONE;      // Над какой GIU кнопкой курсор
+    BUTTON_ID ButtonLMRelease = NONE; // Какая GIU кнопка отпущена (левый клик)
+    bool mouse_lbutton_on = false;    // нажата левая кнопка мыши
 
     void set_mode(COVER_MODE m) // Изменение режима окна 3d/2d
     {

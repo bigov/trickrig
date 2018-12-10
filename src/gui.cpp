@@ -83,6 +83,10 @@ void gui::screen_title(const std::wstring &title)
 ///
 /// \brief Экран ввода названия для создания нового района
 ///
+/// \details Предлагается строка ввода названия. При нажатии кнопки
+/// BTN_ENTER_NAME введенный в строке текст будет использован для создания
+/// нового файла хранения данных 3D пространства района.
+///
 void gui::cover_create(void)
 {
   obscure_screen();
@@ -113,7 +117,8 @@ void gui::cover_create(void)
 /// \brief Нарисовать поле ввода текстовой строки
 /// \param _Fn - шрифт
 ///
-/// Рисует указанным шрифтом, в фиксированной позиции, на всю ширину экрана
+/// \details Рисует указанным шрифтом, в фиксированной позиции, на всю
+///  ширину экрана
 ///
 void gui::add_input_wstring(const img &_Fn)
 {
@@ -220,9 +225,37 @@ void gui::draw(void)
 {
   if(AppWin.newsize) GuiImg.resize(AppWin.width, AppWin.height);
 
+  switch (AppWin.ButtonLMRelease) {
+    case BTN_OPEN:
+      //scene_open(window);
+      AppWin.cover = COVER_OFF;
+      break;
+    case BTN_CONFIG:
+      AppWin.cover = COVER_CONFIG;
+      break;
+    case BTN_LOCATION:
+      AppWin.cover = COVER_LOCATION;
+      break;
+    case BTN_CREATE:
+      AppWin.user_input.clear();
+      AppWin.cover = COVER_CREATE;
+      break;
+    case BTN_ENTER_NAME:
+      AppWin.cover = COVER_LOCATION;
+      break;
+    case BTN_CLOSE:
+      //glfwSetWindowShouldClose(window, true);
+      break;
+    case NONE:
+      break;
+  }
+  AppWin.ButtonLMRelease = NONE;
+
+
+
   // По-умолчанию указываем, что активной кнопки нет, процедура построения
   // кнопки установит свой BUTTON_ID, если курсор находится над ней
-  AppWin.OverButton = NONE;
+  AppWin.ButtonOver = NONE;
 
   switch (AppWin.cover) {
     case COVER_OFF:
@@ -471,7 +504,7 @@ void gui::add_button(BUTTON_ID btn_id, u_long x, u_long y, const std::wstring &N
     if( AppWin.xpos >= x && AppWin.xpos <= x + AppWin.btn_w &&
         AppWin.ypos >= y && AppWin.ypos <= y + AppWin.btn_h)
     {
-      AppWin.OverButton = btn_id;
+      AppWin.ButtonOver = btn_id;
       if(AppWin.mouse_lbutton_on)
       {
         button_body(Btn, ST_PRESSED);

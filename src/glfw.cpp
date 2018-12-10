@@ -38,6 +38,9 @@ namespace tr
   /// \brief window_glfw::scene_open
   /// \param window
   ///
+  /// \details Вызывается при активизации 3D сцены - прячет курсор мыши и
+  /// перехватывает управление им
+  ///
   void glfw_wr::scene_open(GLFWwindow * window)
   {
     AppWin.set_mode(COVER_OFF);
@@ -53,8 +56,18 @@ namespace tr
   /// \brief window_glfw::cursor_free
   /// \param window
   ///
-  void glfw_wr::cursor_free(GLFWwindow * window)
+  /// \details Вызывается при закрытии сцены заставкой GIU интерфейса -
+  /// переключает курсор в нормальный режим и обнуляет переменные
+  /// навигации в 3D сцене
+  ///
+  void glfw_wr::scene_shut(GLFWwindow * window)
   {
+    keys.fb = 0;
+    keys.ud = 0;
+    keys.rl = 0;
+    keys.dx = 0;
+    keys.dy = 0;
+
     AppWin.set_mode(COVER_LOCATION);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     return;
@@ -68,7 +81,7 @@ namespace tr
   /// \param mods
   ///
   void glfw_wr::mouse_button_callback(
-    GLFWwindow* window, int button, int action, int mods)
+    GLFWwindow*, int button, int action, int mods)
   {
     if( AppWin.cover != COVER_OFF)
     {
@@ -77,7 +90,9 @@ namespace tr
 
       if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE )
       {
-        switch (AppWin.OverButton) {
+        AppWin.ButtonLMRelease = AppWin.ButtonOver;
+        /*
+        switch (AppWin.ButtonOver) {
           case BTN_OPEN:
             scene_open(window);
             break;
@@ -100,6 +115,7 @@ namespace tr
           case NONE:
             break;
         }
+        */
       }
     }
 
@@ -115,12 +131,7 @@ namespace tr
   {
     switch (AppWin.cover) {
       case COVER_OFF:
-        keys.fb = 0;
-        keys.ud = 0;
-        keys.rl = 0;
-        keys.dx = 0;
-        keys.dy = 0;
-        cursor_free(window);
+        scene_shut(window);
         break;
       case COVER_LOCATION:
         AppWin.cover = COVER_START;
@@ -143,7 +154,6 @@ namespace tr
   void glfw_wr::key_callback(GLFWwindow* window, int key, int scancode,
     int action, int mods)
   {
-
     keys.key_mods = mods;
     keys.key_scancode = scancode;
 
@@ -300,7 +310,7 @@ namespace tr
   }
 
   ///
-  /// Show content
+  /// \brief Main loop for the app-window show
   ///
   void glfw_wr::show(tr::scene & Scene)
   {

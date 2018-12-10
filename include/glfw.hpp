@@ -38,7 +38,7 @@ namespace tr
       glfw_wr(const tr::glfw_wr &);
       glfw_wr operator=(const tr::glfw_wr &);
       static void scene_open(GLFWwindow*);
-      static void cursor_free(GLFWwindow*);
+      static void scene_shut(GLFWwindow*);
 
       static void error_callback(int error_id, const char* description);
 
