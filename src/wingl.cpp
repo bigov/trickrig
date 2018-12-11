@@ -144,7 +144,7 @@ namespace tr
     AppWin.key    = key;
     AppWin.action = action;
 
-    if(AppWin.gui_mode != GUI_HUD3D) return;
+    if(AppWin.mode != GUI_HUD3D) return;
 
     keys.key_mods     = mods;
     keys.key_scancode = scancode;
@@ -197,7 +197,7 @@ namespace tr
   void wingl::cursor_position_callback(GLFWwindow* ptWin,
                                              double x, double y)
   {
-    if(AppWin.gui_mode == GUI_HUD3D)
+    if(AppWin.mode == GUI_HUD3D)
     {
       keys.dx += static_cast<float>(x - AppWin.xpos);
       keys.dy += static_cast<float>(y - AppWin.ypos);

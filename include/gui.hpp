@@ -22,6 +22,18 @@ class gui
     px bg_hud  {0x00, 0x88, 0x00, 0x40}; // фон панелей HUD (активного окна)
     img GuiImg { 0, 0 };                 // GUI/HUD текстура окна приложения
 
+    enum BUTTON_ID { // Идентификаторы кнопок GIU
+      BTN_OPEN,
+      BTN_CANCEL,
+      BTN_CONFIG,
+      BTN_LOCATION,
+      BTN_CREATE,
+      BTN_ENTER_NAME,
+      NONE
+    };
+
+    BUTTON_ID button_over = NONE;      // Над какой GIU кнопкой курсор
+
     const std::wstring FontMap { L"_`”~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghijk\
 lmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклмнопрстуфхцчш\
 щъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };
@@ -51,8 +63,8 @@ lmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклм
     void menu_location(void);
     void menu_start(void);
     void menu_config(void);
-    void button_click(void);
-    void key_Esc(void);
+    void button_click(BUTTON_ID);
+    void cancel(void);
 
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 

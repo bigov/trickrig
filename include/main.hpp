@@ -80,16 +80,6 @@ namespace tr {
   extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
   extern glm::mat4 MatMVP;        // Матрица преобразования
 
-  enum BUTTON_ID { // Идентификаторы кнопок GIU
-    BTN_OPEN,
-    BTN_CLOSE,
-    BTN_CONFIG,
-    BTN_LOCATION,
-    BTN_CREATE,
-    BTN_ENTER_NAME,
-    NONE
-  };
-
   enum GUI_MODE_ID {   // режимы окна
     GUI_HUD3D,         // основной режим - без шторки
     GUI_MENU_START,    // начальное меню
@@ -104,24 +94,23 @@ namespace tr {
   extern int MOUSE_BUTTON_RIGHT; // GLFW_MOUSE_BUTTON_RIGHT
   extern int PRESS;              // GLFW_PRESS
   extern int RELEASE;            // GLFW_RELEASE
-
   extern int KEY_ESCAPE;         // GLFW_KEY_ESCAPE
   extern int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
 
   // Параметры и режимы окна приложения
   struct main_window {
-    u_int width = 400;              // ширина окна
-    u_int height = 400;             // высота окна
-    u_int left = 0;                 // положение окна по горизонтали
-    u_int top = 0;                  // положение окна по вертикали
-    u_int btn_w = 120;              // ширина кнопки GUI
-    u_int btn_h = 36;               // высота кнопки GUI
-    u_int minwidth = btn_w + 8;     // минимально допустимая ширина окна
-    u_int minheight = btn_h * 4 + 8;// минимально допустимая высота окна
-    GUI_MODE_ID gui_mode = GUI_MENU_START; // режим окна приложения
-    std::wstring* input_buffer = nullptr;  // строка ввода пользователя
+    u_int width = 400;                    // ширина окна
+    u_int height = 400;                   // высота окна
+    u_int left = 0;                       // положение окна по горизонтали
+    u_int top = 0;                        // положение окна по вертикали
+    u_int btn_w = 120;                    // ширина кнопки GUI
+    u_int btn_h = 36;                     // высота кнопки GUI
+    u_int minwidth = btn_w * 3 + 36;      // минимально допустимая ширина окна
+    u_int minheight = btn_h * 4 + 8;      // минимально допустимая высота окна
+    GUI_MODE_ID mode = GUI_MENU_START;    // режим окна приложения
+    std::wstring* input_buffer = nullptr; // строка ввода пользователя
 
-    bool run        = true;         // индикатор закрытия окна
+    bool run     = true;  // индикатор закрытия окна
     float aspect = 1.0f;  // соотношение размеров окна
     bool resized = true;  // флаг наличия изменений параметров окна
     double xpos = 0.0;    // позиция указателя относительно левой границы
@@ -129,11 +118,9 @@ namespace tr {
     int fps = 120;        // частота кадров (для коррекции скорости движения)
     glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина прицела
 
-    BUTTON_ID ButtonOver = NONE;      // Над какой GIU кнопкой курсор
-
-    int key    = -1;
-    int mouse  = -1;
-    int action = -1;
+    int key    = -1;  // клавиша
+    int mouse  = -1;  // кнопка мыши
+    int action = -1;  // действие
 
     char set_mouse_ptr = 0;           // запрос смены типа курсора {-1, 0, 1}
   };

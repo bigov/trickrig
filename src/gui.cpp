@@ -59,7 +59,7 @@ void gui::menu_start(void)
   add_button(BTN_LOCATION, x, y, L"Играть");
 
   y += 3 * AppWin.btn_h;
-  add_button(BTN_CLOSE, x, y, L"Закрыть");
+  add_button(BTN_CANCEL, x, y, L"Закрыть");
 
   return;
 }
@@ -171,6 +171,10 @@ void gui::menu_config(void)
   obscure_screen();
   screen_title(L"НАСТРОЙКИ");
 
+  int x = GuiImg.w_summ / 2 - static_cast<u_long>(AppWin.btn_w/2);
+  int y = GuiImg.h_summ / 2;
+  add_button(BTN_CANCEL, x, y, L"Отмена");
+
   return;
 }
 
@@ -188,22 +192,23 @@ void gui::menu_location(void)
   auto cursor_width = GuiImg.w_summ - Font18n.w_cell * 2;
   u_int cursor_height = Font18n.h_cell * 2;
   img Cursor{ cursor_width, cursor_height, color};
+
   // добавить текст
   auto x = (cursor_width - title.length() * Font18n.w_cell) / 2;
   u_long y = (cursor_height - Font18n.h_cell) / 2;
   add_text(Font18n, title, Cursor, x, y);
+
   // скопировать на экран
   x = (GuiImg.w_summ - Cursor.w_summ) / 2;
   y = GuiImg.h_summ / 2 - 2 * AppWin.btn_h;
   Cursor.copy(0, 0, GuiImg, x, y);
 
-  x = GuiImg.w_summ / 2 - static_cast<u_long>(AppWin.btn_w * 1.25);
+  x = GuiImg.w_summ / 2 - static_cast<u_long>(AppWin.btn_w/2);
   y = GuiImg.h_summ / 2;
 
   add_button(BTN_OPEN, x, y, L"Старт", user_input.length() > 0);
-
-  x += AppWin.btn_w * 1.5;  // X координата кнопки
-  add_button(BTN_CREATE, x, y, L"Создать");
+  add_button(BTN_CREATE, x - AppWin.btn_w - 16, y, L"Создать");
+  add_button(BTN_CANCEL, x + AppWin.btn_w + 16, y, L"Отмена");
 
   return;
 }
@@ -211,67 +216,67 @@ void gui::menu_location(void)
 ///
 /// \brief gui::button_click - Обработчик нажатия клавиш GUI интерфейса
 ///
-void gui::button_click(void)
+void gui::button_click(BUTTON_ID id)
 {
   AppWin.input_buffer = nullptr; // Во всех режимах, кроме GUI_MENU_CREATE,
                                  // строка ввода отключена
 
-  if(AppWin.gui_mode == GUI_HUD3D) return;
+  if(AppWin.mode == GUI_HUD3D) return;
 
-  switch (AppWin.ButtonOver)
+  switch(id)
   {
     case BTN_OPEN:
-      AppWin.gui_mode = GUI_HUD3D;
+      AppWin.mode = GUI_HUD3D;
       AppWin.Cursor[2] = 4.0f;
       AppWin.set_mouse_ptr = -1;
       break;
     case BTN_CONFIG:
-      AppWin.gui_mode = GUI_MENU_CONFIG;
+      AppWin.mode = GUI_MENU_CONFIG;
       break;
     case BTN_LOCATION:
-      AppWin.gui_mode = GUI_MENU_LSELECT;
+      AppWin.mode = GUI_MENU_LSELECT;
       break;
     case BTN_CREATE:
       user_input.clear();
       AppWin.input_buffer = &user_input;       // Включить пользовательский ввод
-      AppWin.gui_mode = GUI_MENU_CREATE;
+      AppWin.mode = GUI_MENU_CREATE;
       break;
     case BTN_ENTER_NAME:
-      AppWin.gui_mode = GUI_MENU_LSELECT;
+      AppWin.mode = GUI_MENU_LSELECT;
       break;
-    case BTN_CLOSE:
-      AppWin.run = false;
+    case BTN_CANCEL:
+      cancel();
       break;
     case NONE:
       break;
   }
 
-  AppWin.mouse = -1;      // сбросить флаг кнопки
-  AppWin.action = -1;      // сбросить флаг действия
+  AppWin.mouse = -1;   // сбросить флаг кнопки
+  AppWin.action = -1;  // сбросить флаг действия
 
   return;
 }
 
 ///
-/// \brief gui::key_Esc Обработчик [Esc] для разных режимов
+/// \brief gui::cancel Отмена текущего режима
 ///
-void gui::key_Esc(void)
+void gui::cancel(void)
 {
-  switch (AppWin.gui_mode)
+  switch (AppWin.mode)
   {
     case GUI_HUD3D:
-      AppWin.gui_mode = GUI_MENU_LSELECT;
+      AppWin.mode = GUI_MENU_LSELECT;
       AppWin.Cursor[2] = 0.0f;  // Убрать прицел
       AppWin.set_mouse_ptr = 1; // Включить указатель мыши
       break;
     case GUI_MENU_LSELECT:
-      AppWin.gui_mode = GUI_MENU_START;
+      AppWin.mode = GUI_MENU_START;
       break;
     case GUI_MENU_CREATE:
-      AppWin.gui_mode = GUI_MENU_LSELECT;
+      AppWin.mode = GUI_MENU_LSELECT;
       break;
     case GUI_MENU_CONFIG:
-      AppWin.gui_mode = GUI_MENU_START;
+      AppWin.mode = GUI_MENU_START;
       break;
     case GUI_MENU_START:
       AppWin.run = false;
@@ -289,14 +294,14 @@ void gui::key_Esc(void)
 void gui::draw_gui_menu(void)
 {
   if((AppWin.mouse == MOUSE_BUTTON_LEFT) &&
-     (AppWin.action == RELEASE)) { button_click(); }
+     (AppWin.action == RELEASE)) { button_click(button_over); }
 
-  AppWin.ButtonOver = NONE;  // При каждом рисовании каждой кнопки учитываются
-                             // координаты указателя мыши. Если указатель
-                             // находится над кнопкой, то кнопка изображается
-                             // другим цветом и ее ID присваивается
-                             // переменной AppWin.ButtonOver
-  switch (AppWin.gui_mode)
+  // При каждом рисовании каждой кнопки проверяются координаты указателя мыши.
+  // Если указатель находится над кнопкой, то кнопка изображается другим цветом
+  // и ее ID присваивается переменной
+  button_over = NONE;
+
+  switch (AppWin.mode)
   {
     case GUI_MENU_CONFIG:
       menu_config();
@@ -340,9 +345,9 @@ void gui::draw(void)
     GuiImg.resize(AppWin.width, AppWin.height);
 
   if((AppWin.key == KEY_ESCAPE) && (AppWin.action == RELEASE))
-    key_Esc();
+    cancel();
 
-  if(AppWin.gui_mode == GUI_HUD3D)
+  if(AppWin.mode == GUI_HUD3D)
     refresh();
   else
     draw_gui_menu();
@@ -556,7 +561,6 @@ void gui::button_body(img &D, BUTTON_STATE s)
 /// Вначале формируется отдельное изображение кнопки, потом оно копируется
 /// в указанное координатами (x,y) место окна.
 ///
-///
 void gui::add_button(BUTTON_ID btn_id, u_long x, u_long y, const std::wstring &Name,
                  bool button_is_active)
 {
@@ -568,7 +572,9 @@ void gui::add_button(BUTTON_ID btn_id, u_long x, u_long y, const std::wstring &N
     if( AppWin.xpos >= x && AppWin.xpos <= x + AppWin.btn_w &&
         AppWin.ypos >= y && AppWin.ypos <= y + AppWin.btn_h)
     {
-      AppWin.ButtonOver = btn_id;
+      button_over = btn_id;
+
+      // и если кнопку "кликнули" указателем мыши
       if((AppWin.mouse == MOUSE_BUTTON_LEFT) &&
          (AppWin.action == PRESS))
       {
