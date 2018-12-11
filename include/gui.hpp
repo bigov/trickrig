@@ -33,6 +33,8 @@ lmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклм
     img Font18s { "../assets/font_10x18_sh.png", f_len }; //шрифт 10x18 (тень)
     img Font18l { "../assets/font_10x18_lt.png", f_len }; //шрифт 10x18 (светл)
 
+    std::wstring user_input {};  // строка ввода пользователя
+
     void load_hud(void);
     void obscure_screen(void);
     void add_button(BUTTON_ID id, u_long x, u_long y, const std::wstring &Name,
@@ -56,8 +58,8 @@ lmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклм
 
   public:
     gui(void);
-    void draw(void);                  // формирование изображения GIU окна
-    void refresh(void);                // обновление кадра
+    void draw(void);         // формирование изображения GIU окна
+    void refresh(void);      // обновление кадра
 };
 
 } //tr

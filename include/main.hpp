@@ -98,6 +98,16 @@ namespace tr {
     GUI_MENU_CONFIG,   // настройки
   };
 
+  // Настройка значений параметров для сравнения mouse_button и mouse_action
+  // будут выполнены в классе управления окном
+  extern int MOUSE_BUTTON_LEFT;  // GLFW_MOUSE_BUTTON_LEFT
+  extern int MOUSE_BUTTON_RIGHT; // GLFW_MOUSE_BUTTON_RIGHT
+  extern int PRESS;              // GLFW_PRESS
+  extern int RELEASE;            // GLFW_RELEASE
+
+  extern int KEY_ESCAPE;         // GLFW_KEY_ESCAPE
+  extern int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
+
   // Параметры и режимы окна приложения
   struct main_window {
     u_int width = 400;              // ширина окна
@@ -109,9 +119,8 @@ namespace tr {
     u_int minwidth = btn_w + 8;     // минимально допустимая ширина окна
     u_int minheight = btn_h * 4 + 8;// минимально допустимая высота окна
     GUI_MODE_ID gui_mode = GUI_MENU_START; // режим окна приложения
-    std::wstring user_input {};     // строка ввода пользователя
-    bool key_backspace = false;     // [Backspace]
-    bool key_escape = false;        // [Esc]
+    std::wstring* input_buffer = nullptr;  // строка ввода пользователя
+
     bool run        = true;         // индикатор закрытия окна
     float aspect = 1.0f;  // соотношение размеров окна
     bool resized = true;  // флаг наличия изменений параметров окна
@@ -121,26 +130,12 @@ namespace tr {
     glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина прицела
 
     BUTTON_ID ButtonOver = NONE;      // Над какой GIU кнопкой курсор
-    BUTTON_ID ButtonLMRelease = NONE; // Какая GIU кнопка отпущена (левый клик)
-    bool mouse_lbutton_on = false;    // нажата левая кнопка мыши
 
-    // индикатор запроса режима курсора (GUI-мышь/3D-прицел) для класса wingl
-    char set_mouse_ptr = 0;
+    int key    = -1;
+    int mouse  = -1;
+    int action = -1;
 
-    // Изменение режима окна 3d/2d
-    void set_mode(GUI_MODE_ID m)
-    {
-      gui_mode = m;
-      if(m == GUI_HUD3D)
-      {
-        Cursor[2] = 4.0f;
-        set_mouse_ptr = -1;
-      }
-      else {
-        Cursor[2] = 0.0f;
-        set_mouse_ptr = 1;
-      }
-    }
+    char set_mouse_ptr = 0;           // запрос смены типа курсора {-1, 0, 1}
   };
   extern main_window AppWin;
 

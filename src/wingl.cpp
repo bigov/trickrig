@@ -20,6 +20,13 @@ namespace tr
   int wingl::k_RIGHT = GLFW_KEY_D;
   int wingl::k_LEFT  = GLFW_KEY_A;
 
+  int MOUSE_BUTTON_LEFT  = GLFW_MOUSE_BUTTON_LEFT;
+  int MOUSE_BUTTON_RIGHT = GLFW_MOUSE_BUTTON_RIGHT;
+  int PRESS              = GLFW_PRESS;
+  int RELEASE            = GLFW_RELEASE;
+  int KEY_ESCAPE         = GLFW_KEY_ESCAPE;
+  int KEY_BACKSPACE      = GLFW_KEY_BACKSPACE;
+
   ///
   /// Создание нового окна с обработчиками ввода и настройка контекста
   /// отображения OpenGL
@@ -91,7 +98,9 @@ namespace tr
   {
     if(AppWin.set_mouse_ptr < 0 )
     {
+      // спрятать указатель мыши
       glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
       AppWin.xpos = AppWin.width/2;
       AppWin.ypos = AppWin.height/2;
       glfwSetCursorPos(win_ptr, AppWin.xpos, AppWin.ypos);
@@ -99,9 +108,11 @@ namespace tr
     }
     else
     {
+      // восстановить курсор мыши
+      glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
       keys.fb = 0; keys.ud = 0; keys.rl = 0;
       keys.dx = 0; keys.dy = 0;
-      glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
 
     AppWin.set_mouse_ptr = 0; // после обработки установить нейтральное значение
@@ -118,15 +129,9 @@ namespace tr
   void wingl::mouse_button_callback(
     GLFWwindow*, int button, int action, int mods)
   {
-    keys.mouse_mods = mods;
-    if( AppWin.gui_mode == GUI_HUD3D) return;
-
-    AppWin.mouse_lbutton_on = (button == GLFW_MOUSE_BUTTON_LEFT &&
-                               action == GLFW_PRESS);
-
-    if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE )
-        AppWin.ButtonLMRelease = AppWin.ButtonOver;
-
+    keys.mouse_mods     = mods;
+    AppWin.mouse = button;
+    AppWin.action = action;
     return;
   }
 
@@ -136,13 +141,13 @@ namespace tr
   void wingl::key_callback(GLFWwindow* window, int key, int scancode,
     int action, int mods)
   {
-    keys.key_mods = mods;
-    keys.key_scancode = scancode;
-    AppWin.key_escape = (key==GLFW_KEY_ESCAPE && action==GLFW_RELEASE);
-    AppWin.key_backspace = (key==GLFW_KEY_BACKSPACE && action==GLFW_PRESS);
+    AppWin.key    = key;
+    AppWin.action = action;
 
     if(AppWin.gui_mode != GUI_HUD3D) return;
 
+    keys.key_mods     = mods;
+    keys.key_scancode = scancode;
     keys.fb = glfwGetKey(window, k_FRONT) - glfwGetKey(window, k_BACK);
     keys.ud = glfwGetKey(window, k_DOWN)  - glfwGetKey(window, k_UP);
     keys.rl = glfwGetKey(window, k_LEFT) - glfwGetKey(window, k_RIGHT);
@@ -157,8 +162,8 @@ namespace tr
   ///
   void wingl::character_callback(GLFWwindow*, u_int ch)
   {
-    if(AppWin.gui_mode == GUI_MENU_CREATE)
-      AppWin.user_input += static_cast<wchar_t>(ch);
+    if(AppWin.input_buffer == nullptr) return;
+    *(AppWin.input_buffer) += static_cast<wchar_t>(ch);
     return;
   }
 
@@ -200,8 +205,6 @@ namespace tr
     }
     else
     {
-      // В режиме настройки перемещение указателя мыши вызывает
-      // изменения вида элементов управления и перерисовку окна
       AppWin.xpos = x;
       AppWin.ypos = y;
     }
