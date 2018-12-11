@@ -44,10 +44,14 @@ lmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклм
     void screen_title(const std::wstring &title);
     void add_input_wstring(const img &_Fn);
     void sub_img(const img &Image, GLint x, GLint y);
-    void cover_create(void);
-    void cover_location(void);
-    void cover_start(void);
-    void cover_config(void);
+    void draw_gui_menu(void);
+    void menu_create(void);
+    void menu_location(void);
+    void menu_start(void);
+    void menu_config(void);
+    void button_click(void);
+    void key_Esc(void);
+
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
   public:

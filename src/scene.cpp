@@ -193,7 +193,7 @@ namespace tr
   // после чего это изображение в виде текстуры накладывается на прямоугольник
   // окна. Курсор и дополнительные (HUD) элементы окна изображаются
   // как наложеные сверху дополнительные изображения
-    if(AppWin.newsize) framebuffer_resize();
+    if(AppWin.resized) framebuffer_resize();
 
     // Первый проход рендера - во фреймбуфер
     glBindFramebuffer(GL_FRAMEBUFFER, Eye.framebuf);

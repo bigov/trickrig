@@ -11,9 +11,6 @@ namespace tr
 {
   evInput wingl::keys = {0.0, 0.0, 0, 0, 0, 0, 0, 0};
   std::string wingl::title = "TrickRig: v.development";
-  //int glfw_wr::win_center_x = 0;
-  //int glfw_wr::win_center_y = 0;
-  //glm::vec3 ViewFrom = {};      // 3D координаты точка обзора
 
   // TODO: сделать привязку через конфиг
   int wingl::k_FRONT = GLFW_KEY_W;
@@ -22,126 +19,6 @@ namespace tr
   int wingl::k_DOWN  = GLFW_KEY_SPACE;
   int wingl::k_RIGHT = GLFW_KEY_D;
   int wingl::k_LEFT  = GLFW_KEY_A;
-
-  main_window AppWin = {};
-
-  ///
-  /// Errors callback
-  ///
-  void wingl::error_callback(int error, const char* description)
-  {
-    info("GLFW error " + std::to_string(error) + ": " + description);
-    return;
-  }
-
-  ///
-  /// \brief wingl::set_cursor Смена режима отображения сцены (GUI/3D)
-  ///
-  void wingl::set_cursor(void)
-  {
-    if(AppWin.set_cursor < 0 )
-    {
-      glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-      AppWin.xpos = AppWin.width/2;
-      AppWin.ypos = AppWin.height/2;
-      glfwSetCursorPos(win_ptr, AppWin.xpos, AppWin.ypos);
-      AppWin.newsize = true; // для обновления текстуры фреймбуфера
-    }
-    else
-    {
-      keys.fb = 0; keys.ud = 0; keys.rl = 0;
-      keys.dx = 0; keys.dy = 0;
-      glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    }
-
-    AppWin.set_cursor = 0; // после обработки установить нейтральное значение
-    return;
-  }
-
-  ///
-  /// \brief window_glfw::mouse_button_callback
-  /// \param window
-  /// \param button
-  /// \param action
-  /// \param mods
-  ///
-  void wingl::mouse_button_callback(
-    GLFWwindow*, int button, int action, int mods)
-  {
-    if( AppWin.cover_mode != COVER_OFF)
-    {
-      AppWin.mouse_lbutton_on = (button == GLFW_MOUSE_BUTTON_LEFT &&
-                                action == GLFW_PRESS);
-
-      if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE )
-        AppWin.ButtonLMRelease = AppWin.ButtonOver;
-    }
-
-    keys.mouse_mods = mods;
-    return;
-  }
-
-  ///
-  /// Keys events callback
-  ///
-  void wingl::key_callback(GLFWwindow* window, int key, int scancode,
-    int action, int mods)
-  {
-    keys.key_mods = mods;
-    keys.key_scancode = scancode;
-
-    if (AppWin.cover_mode == COVER_OFF)
-    {
-      keys.fb = glfwGetKey(window, k_FRONT) - glfwGetKey(window, k_BACK);
-      keys.ud = glfwGetKey(window, k_DOWN)  - glfwGetKey(window, k_UP);
-      keys.rl = glfwGetKey(window, k_LEFT) - glfwGetKey(window, k_RIGHT);
-    }
-    else
-    {
-      if(key == GLFW_KEY_BACKSPACE && action == GLFW_PRESS)
-        AppWin.key_backspace = true;
-    }
-
-    if(key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
-       AppWin.key_escape = true;
-
-    return;
-  }
-
-  ///
-  /// \brief glfw_wr::character_callback
-  /// \param window
-  /// \param key
-  ///
-  void wingl::character_callback(GLFWwindow*, u_int ch)
-  {
-    if(AppWin.cover_mode == COVER_CREATE)
-      AppWin.user_input += static_cast<wchar_t>(ch);
-    return;
-  }
-
-  ///
-  /// GLFW window moving callback
-  ///
-  void wingl::window_pos_callback(GLFWwindow*,
-    int left, int top)
-  {
-    AppWin.left = static_cast<u_int>(left);
-    AppWin.top = static_cast<u_int>(top);
-    return;
-  }
-
-  ///
-  /// GLFW framebuffer callback resize
-  ///
-  void wingl::framebuffer_size_callback(GLFWwindow*,
-    int width, int height)
-  {
-    AppWin.width  = static_cast<u_int>(width);
-    AppWin.height = static_cast<u_int>(height);
-    AppWin.newsize = true; // для пересчета фреймбуфера
-    return;
-  }
 
   ///
   /// Создание нового окна с обработчиками ввода и настройка контекста
@@ -160,23 +37,6 @@ namespace tr
     #ifndef NDEBUG
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
     #endif
-
-    // Начальные настройки камеры вида и размера окна
-    Eye.ViewFrom.x = std::stof(cfg::get(VIEW_FROM_X));
-    Eye.ViewFrom.y = std::stof(cfg::get(VIEW_FROM_Y));
-    Eye.ViewFrom.z = std::stof(cfg::get(VIEW_FROM_Z));
-
-    Eye.look_a = std::stof(tr::cfg::get(LOOK_AZIM));
-    Eye.look_t = std::stof(tr::cfg::get(LOOK_TANG));
-
-    AppWin.width = static_cast<u_int>(std::stoi(cfg::get(WINDOW_WIDTH)));
-    AppWin.height = static_cast<u_int>(std::stoi(cfg::get(WINDOW_HEIGHT)));
-    AppWin.top = static_cast<u_int>(std::stoi(cfg::get(WINDOW_TOP)));
-    AppWin.left = static_cast<u_int>(std::stoi(cfg::get(WINDOW_LEFT)));
-    AppWin.Cursor.x = static_cast<float>(AppWin.width/2) + 0.5f;
-    AppWin.Cursor.y = static_cast<float>(AppWin.height/2) + 0.5f;
-    AppWin.aspect = static_cast<float>(AppWin.width)
-                     / static_cast<float>(AppWin.height);
 
     //  Создание 3D окна
     glfwWindowHint(GLFW_VISIBLE, 0);
@@ -216,6 +76,114 @@ namespace tr
   }
 
   ///
+  /// Errors callback
+  ///
+  void wingl::error_callback(int error, const char* description)
+  {
+    info("GLFW error " + std::to_string(error) + ": " + description);
+    return;
+  }
+
+  ///
+  /// \brief wingl::set_cursor Смена режима отображения сцены (GUI/3D)
+  ///
+  void wingl::set_cursor(void)
+  {
+    if(AppWin.set_mouse_ptr < 0 )
+    {
+      glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+      AppWin.xpos = AppWin.width/2;
+      AppWin.ypos = AppWin.height/2;
+      glfwSetCursorPos(win_ptr, AppWin.xpos, AppWin.ypos);
+      AppWin.resized = true; // для обновления текстуры фреймбуфера
+    }
+    else
+    {
+      keys.fb = 0; keys.ud = 0; keys.rl = 0;
+      keys.dx = 0; keys.dy = 0;
+      glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+    }
+
+    AppWin.set_mouse_ptr = 0; // после обработки установить нейтральное значение
+    return;
+  }
+
+  ///
+  /// \brief window_glfw::mouse_button_callback
+  /// \param window
+  /// \param button
+  /// \param action
+  /// \param mods
+  ///
+  void wingl::mouse_button_callback(
+    GLFWwindow*, int button, int action, int mods)
+  {
+    keys.mouse_mods = mods;
+    if( AppWin.gui_mode == GUI_HUD3D) return;
+
+    AppWin.mouse_lbutton_on = (button == GLFW_MOUSE_BUTTON_LEFT &&
+                               action == GLFW_PRESS);
+
+    if(button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE )
+        AppWin.ButtonLMRelease = AppWin.ButtonOver;
+
+    return;
+  }
+
+  ///
+  /// Keys events callback
+  ///
+  void wingl::key_callback(GLFWwindow* window, int key, int scancode,
+    int action, int mods)
+  {
+    keys.key_mods = mods;
+    keys.key_scancode = scancode;
+    AppWin.key_escape = (key==GLFW_KEY_ESCAPE && action==GLFW_RELEASE);
+    AppWin.key_backspace = (key==GLFW_KEY_BACKSPACE && action==GLFW_PRESS);
+
+    if(AppWin.gui_mode != GUI_HUD3D) return;
+
+    keys.fb = glfwGetKey(window, k_FRONT) - glfwGetKey(window, k_BACK);
+    keys.ud = glfwGetKey(window, k_DOWN)  - glfwGetKey(window, k_UP);
+    keys.rl = glfwGetKey(window, k_LEFT) - glfwGetKey(window, k_RIGHT);
+
+    return;
+  }
+
+  ///
+  /// \brief glfw_wr::character_callback
+  /// \param window
+  /// \param key
+  ///
+  void wingl::character_callback(GLFWwindow*, u_int ch)
+  {
+    if(AppWin.gui_mode == GUI_MENU_CREATE)
+      AppWin.user_input += static_cast<wchar_t>(ch);
+    return;
+  }
+
+  ///
+  /// GLFW window moving callback
+  ///
+  void wingl::window_pos_callback(GLFWwindow*, int left, int top)
+  {
+    AppWin.left = static_cast<u_int>(left);
+    AppWin.top = static_cast<u_int>(top);
+    return;
+  }
+
+  ///
+  /// GLFW framebuffer callback resize
+  ///
+  void wingl::framebuffer_size_callback(GLFWwindow*, int width, int height)
+  {
+    AppWin.width  = static_cast<u_int>(width);
+    AppWin.height = static_cast<u_int>(height);
+    AppWin.resized = true; // для пересчета фреймбуфера
+    return;
+  }
+
+  ///
   /// Обработчик окна для перемещений курсора мыши
   /// \param ptWin - указатель окна
   /// \param xpos  - X координата курсора в окне
@@ -224,7 +192,7 @@ namespace tr
   void wingl::cursor_position_callback(GLFWwindow* ptWin,
                                              double x, double y)
   {
-    if(AppWin.cover_mode == COVER_OFF)
+    if(AppWin.gui_mode == GUI_HUD3D)
     {
       keys.dx += static_cast<float>(x - AppWin.xpos);
       keys.dy += static_cast<float>(y - AppWin.ypos);
@@ -262,7 +230,7 @@ namespace tr
         fps = 0;
       }
       Scene.draw(keys);
-      if(AppWin.set_cursor != 0) set_cursor();
+      if(AppWin.set_mouse_ptr != 0) set_cursor();
       glfwSwapBuffers(win_ptr);
       glfwPollEvents();
     }

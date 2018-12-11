@@ -12,12 +12,11 @@
 #include "wingl.hpp"
 #include "dbwrap.hpp"
 
-namespace tr {
-  tr::camera_3d Eye {};  // главная камера 3D вида
-}
-
-//##
-int main()
+///
+/// \brief main
+/// \return
+///
+int main(int, char**)
 {
 #ifndef NDEBUG
   assert(sizeof(GLfloat) == 4);

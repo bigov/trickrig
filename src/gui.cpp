@@ -46,7 +46,7 @@ void gui::add_text(const img &FontImg, const std::wstring& TextString,
 ///
 /// \brief Начальный экран приложения
 ///
-void gui::cover_start(void)
+void gui::menu_start(void)
 {
   obscure_screen();
   screen_title(L"Trick Rig");
@@ -87,7 +87,7 @@ void gui::screen_title(const std::wstring &title)
 /// BTN_ENTER_NAME введенный в строке текст будет использован для создания
 /// нового файла хранения данных 3D пространства района.
 ///
-void gui::cover_create(void)
+void gui::menu_create(void)
 {
   obscure_screen();
   screen_title(L"ВВЕДИТЕ НАЗВАНИЕ");
@@ -166,7 +166,7 @@ void gui::add_text_cursor(const img &_Fn, img &_Dst, size_t position)
 ///
 /// \brief gui::cover_config
 ///
-void gui::cover_config(void)
+void gui::menu_config(void)
 {
   obscure_screen();
   screen_title(L"НАСТРОЙКИ");
@@ -177,7 +177,7 @@ void gui::cover_config(void)
 ///
 /// \brief Окно выбора района
 ///
-void gui::cover_location(void)
+void gui::menu_location(void)
 {
   obscure_screen();
   screen_title(L"ВЫБОР РАЙОНА");
@@ -209,6 +209,102 @@ void gui::cover_location(void)
 }
 
 ///
+/// \brief gui::button_click - Обработчик нажатия клавиш GUI интерфейса
+///
+void gui::button_click(void)
+{
+  if(AppWin.gui_mode == GUI_HUD3D) return;
+
+  switch (AppWin.ButtonLMRelease)
+  {
+    case BTN_OPEN:
+      AppWin.set_mode(GUI_HUD3D);
+      break;
+    case BTN_CONFIG:
+      AppWin.gui_mode = GUI_MENU_CONFIG;
+      break;
+    case BTN_LOCATION:
+      AppWin.gui_mode = GUI_MENU_LSELECT;
+      break;
+    case BTN_CREATE:
+      AppWin.user_input.clear();
+      AppWin.gui_mode = GUI_MENU_CREATE;
+      break;
+    case BTN_ENTER_NAME:
+      AppWin.gui_mode = GUI_MENU_LSELECT;
+      break;
+    case BTN_CLOSE:
+      AppWin.run = false;
+      break;
+    case NONE:
+      break;
+  }
+  AppWin.ButtonLMRelease = NONE;
+
+  return;
+}
+
+///
+/// \brief gui::key_Esc Обработчик [Esc] для разных режимов
+///
+void gui::key_Esc(void)
+{
+  switch (AppWin.gui_mode)
+  {
+    case GUI_HUD3D:
+      AppWin.set_mode(GUI_MENU_LSELECT);
+      break;
+    case GUI_MENU_LSELECT:
+      AppWin.gui_mode = GUI_MENU_START;
+      break;
+    case GUI_MENU_CREATE:
+      AppWin.gui_mode = GUI_MENU_LSELECT;
+      break;
+    case GUI_MENU_CONFIG:
+      AppWin.gui_mode = GUI_MENU_START;
+      break;
+    case GUI_MENU_START:
+      AppWin.run = false;
+      break;
+  }
+  AppWin.key_escape = false;
+
+  return;
+}
+
+///
+/// \brief gui::draw_gui_menu
+///
+void gui::draw_gui_menu(void)
+{
+  AppWin.ButtonOver = NONE;
+
+  switch (AppWin.gui_mode)
+  {
+    case GUI_MENU_CONFIG:
+      menu_config();
+      break;
+    case GUI_MENU_CREATE:
+      menu_create();
+      break;
+    case GUI_MENU_LSELECT:
+      menu_location();
+      break;
+    case GUI_MENU_START:
+      menu_start();
+      break;
+    default: break;
+   }
+
+  // обновляем текстуру меню каждый кадр
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+               static_cast<GLint>(AppWin.width),
+               static_cast<GLint>(AppWin.height),
+               0, GL_RGBA, GL_UNSIGNED_BYTE, GuiImg.uchar());
+  return;
+}
+
+///
 /// \brief Создание элементов интерфейса окна
 ///
 /// \details Окно приложения может иметь два состояния - открытое, в котором
@@ -223,87 +319,14 @@ void gui::cover_location(void)
 ///
 void gui::draw(void)
 {
-  if(AppWin.newsize) GuiImg.resize(AppWin.width, AppWin.height);
+  if(AppWin.resized) GuiImg.resize(AppWin.width, AppWin.height);
+  if(AppWin.ButtonLMRelease != NONE) button_click();
+  if(AppWin.key_escape) key_Esc();
 
-  switch (AppWin.ButtonLMRelease) {
-    case BTN_OPEN:
-      AppWin.set_mode(COVER_OFF);
-      break;
-    case BTN_CONFIG:
-      AppWin.cover_mode = COVER_CONFIG;
-      break;
-    case BTN_LOCATION:
-      AppWin.cover_mode = COVER_LOCATION;
-      break;
-    case BTN_CREATE:
-      AppWin.user_input.clear();
-      AppWin.cover_mode = COVER_CREATE;
-      break;
-    case BTN_ENTER_NAME:
-      AppWin.cover_mode = COVER_LOCATION;
-      break;
-    case BTN_CLOSE:
-      AppWin.run = false;
-      break;
-    case NONE:
-      break;
-  }
-  AppWin.ButtonLMRelease = NONE;
+  if(AppWin.gui_mode == GUI_HUD3D) refresh();
+  else draw_gui_menu();
 
-  if(AppWin.key_escape) {
-
-    switch (AppWin.cover_mode) {
-      case COVER_OFF:
-        AppWin.set_mode(COVER_LOCATION);
-        break;
-      case COVER_LOCATION:
-        AppWin.cover_mode = COVER_START;
-        break;
-      case COVER_CREATE:
-        AppWin.cover_mode = COVER_LOCATION;
-        break;
-      case COVER_CONFIG:
-        AppWin.cover_mode = COVER_START;
-        break;
-      case COVER_START:
-        AppWin.run = false;
-        break;
-    }
-
-    AppWin.key_escape = false;
-  }
-
-  // По-умолчанию указываем, что активной кнопки нет, процедура построения
-  // кнопки установит свой BUTTON_ID, если курсор находится над ней
-  AppWin.ButtonOver = NONE;
-
-  switch (AppWin.cover_mode) {
-    case COVER_OFF:
-      refresh();
-      break;
-    case COVER_CONFIG:
-      cover_config();
-      break;
-    case COVER_CREATE:
-      cover_create();
-      break;
-    case COVER_LOCATION:
-      cover_location();
-      break;
-    case COVER_START:
-      cover_start();
-      break;
-   }
-
-  // Если COVER включен, то его элементы строятся в составе GuiImg, в этом
-  // случае обновляем всю область окна каждый кадр -
-  if(AppWin.cover_mode != COVER_OFF) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                                             static_cast<GLint>(AppWin.width),
-                                             static_cast<GLint>(AppWin.height),
-                                             0, GL_RGBA, GL_UNSIGNED_BYTE,
-                                             GuiImg.uchar());
-
-  AppWin.newsize = false;
+  AppWin.resized = false;
   return;
 }
 
@@ -341,7 +364,7 @@ void gui::sub_img(const img &Image, GLint x, GLint y)
 ///
 void gui::refresh(void)
 {
-  if(AppWin.newsize) load_hud();
+  if(AppWin.resized) load_hud();
 
   // счетчик FPS
   px bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения

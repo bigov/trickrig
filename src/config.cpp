@@ -39,10 +39,12 @@ namespace tr
   glm::mat4 MatMVP {};        // Матрица преобразования
   std::unordered_map<int, std::string> cfg::InitParams {};
   std::string cfg::AssetsDir = "../assets/";
-  tr::sqlw cfg::SqlDb {};
+  sqlw cfg::SqlDb {};
   std::string cfg::UserDir  = "";          // папка конфигов пользователя
   std::string cfg::DS       = "";          // символ разделителя папок
   std::string cfg::CfgFname = "config.db"; // конфиг пользователя
+  camera_3d Eye {};                        // главная камера 3D вида
+  main_window AppWin = {};                 // параметры окна приложения
 
   /// Загрузка конфигурации приложения
   /// производится отдельным вызовом из главного модуля
@@ -84,6 +86,23 @@ namespace tr
       if(usr.empty()) usr = val;
       InitParams[key] = usr;
     }
+
+    // Загрузка настроек камеры вида
+    Eye.ViewFrom.x = std::stof(cfg::get(VIEW_FROM_X));
+    Eye.ViewFrom.y = std::stof(cfg::get(VIEW_FROM_Y));
+    Eye.ViewFrom.z = std::stof(cfg::get(VIEW_FROM_Z));
+    Eye.look_a = std::stof(tr::cfg::get(LOOK_AZIM));
+    Eye.look_t = std::stof(tr::cfg::get(LOOK_TANG));
+
+    // Загрузка настроек окна приложения
+    AppWin.width = static_cast<u_int>(std::stoi(cfg::get(WINDOW_WIDTH)));
+    AppWin.height = static_cast<u_int>(std::stoi(cfg::get(WINDOW_HEIGHT)));
+    AppWin.top = static_cast<u_int>(std::stoi(cfg::get(WINDOW_TOP)));
+    AppWin.left = static_cast<u_int>(std::stoi(cfg::get(WINDOW_LEFT)));
+    AppWin.Cursor.x = static_cast<float>(AppWin.width/2) + 0.5f;
+    AppWin.Cursor.y = static_cast<float>(AppWin.height/2) + 0.5f;
+    AppWin.aspect = static_cast<float>(AppWin.width)
+                     / static_cast<float>(AppWin.height);
 
     return;
   }

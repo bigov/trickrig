@@ -90,12 +90,12 @@ namespace tr {
     NONE
   };
 
-  enum COVER_MODE {    // режимы окна
-    COVER_OFF,         // основной режим - без шторки
-    COVER_START,       // начальное меню
-    COVER_LOCATION,    // выбор игры
-    COVER_CREATE,      // создание нового района
-    COVER_CONFIG,      // настройки
+  enum GUI_MODE_ID {   // режимы окна
+    GUI_HUD3D,         // основной режим - без шторки
+    GUI_MENU_START,    // начальное меню
+    GUI_MENU_LSELECT,  // выбор игры
+    GUI_MENU_CREATE,   // создание нового района
+    GUI_MENU_CONFIG,   // настройки
   };
 
   // Параметры и режимы окна приложения
@@ -108,13 +108,13 @@ namespace tr {
     u_int btn_h = 36;               // высота кнопки GUI
     u_int minwidth = btn_w + 8;     // минимально допустимая ширина окна
     u_int minheight = btn_h * 4 + 8;// минимально допустимая высота окна
-    COVER_MODE cover_mode = COVER_START; // режим окна приложения
+    GUI_MODE_ID gui_mode = GUI_MENU_START; // режим окна приложения
     std::wstring user_input {};     // строка ввода пользователя
     bool key_backspace = false;     // [Backspace]
     bool key_escape = false;        // [Esc]
     bool run        = true;         // индикатор закрытия окна
     float aspect = 1.0f;  // соотношение размеров окна
-    bool newsize = true;  // флаг наличия изменений параметров окна
+    bool resized = true;  // флаг наличия изменений параметров окна
     double xpos = 0.0;    // позиция указателя относительно левой границы
     double ypos = 0.0;    // позиция указателя относительно верхней границы
     int fps = 120;        // частота кадров (для коррекции скорости движения)
@@ -124,21 +124,21 @@ namespace tr {
     BUTTON_ID ButtonLMRelease = NONE; // Какая GIU кнопка отпущена (левый клик)
     bool mouse_lbutton_on = false;    // нажата левая кнопка мыши
 
-    // индикатор смены режима курсора (GUI-мышь/3D-прицел) для класса wingl
-    char set_cursor = 0;
+    // индикатор запроса режима курсора (GUI-мышь/3D-прицел) для класса wingl
+    char set_mouse_ptr = 0;
 
     // Изменение режима окна 3d/2d
-    void set_mode(COVER_MODE m)
+    void set_mode(GUI_MODE_ID m)
     {
-      cover_mode = m;
-      if(m == COVER_OFF)
+      gui_mode = m;
+      if(m == GUI_HUD3D)
       {
         Cursor[2] = 4.0f;
-        set_cursor = -1;
+        set_mouse_ptr = -1;
       }
       else {
         Cursor[2] = 0.0f;
-        set_cursor = 1;
+        set_mouse_ptr = 1;
       }
     }
   };
