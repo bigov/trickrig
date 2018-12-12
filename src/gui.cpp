@@ -341,8 +341,7 @@ void gui::draw_gui_menu(void)
 ///
 void gui::draw(void)
 {
-  if(AppWin.resized)
-    GuiImg.resize(AppWin.width, AppWin.height);
+  if(AppWin.resized) GuiImg.resize(AppWin.width, AppWin.height);
 
   if((AppWin.key == KEY_ESCAPE) && (AppWin.action == RELEASE))
     cancel();
