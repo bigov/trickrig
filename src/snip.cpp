@@ -20,7 +20,6 @@ namespace tr
   snip::snip(const snip & Other)
   {
     copy_data(Other);
-    return;
   }
 
   //## Копирование данных из другого снипа
@@ -30,8 +29,6 @@ namespace tr
 
     for(size_t n = 0; n < tr::digits_per_snip; n++)
       data[n] = Other.data[n];
-
-    return;
   }
 
   ///
@@ -49,7 +46,6 @@ namespace tr
       data[SNIP_ROW_DIGITS * n + SNIP_U] = u * u_size;
       data[SNIP_ROW_DIGITS * n + SNIP_V] = v * v_size;
     }
-    return;
   }
 
   ///
@@ -88,7 +84,6 @@ namespace tr
     }
 
     data_offset = VBOdata.data_append( tr::bytes_per_snip, cache );
-    return;
   }
 
   //## обновление данных в VBO буфере
@@ -130,7 +125,6 @@ namespace tr
 
     VBOdata.jam_data(data_offset, dst, tr::bytes_per_snip);
     data_offset = dst;
-    return;
   }
 
 } //namespace

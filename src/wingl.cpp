@@ -68,8 +68,6 @@ namespace tr
     glfwSetFramebufferSizeCallback(win_ptr, framebuffer_size_callback);
     glfwSetWindowPosCallback(win_ptr, window_pos_callback);
     if(!ogl_LoadFunctions()) ERR("Can't load OpenGl finctions");
-
-    return;
   }
 
   ///
@@ -79,7 +77,6 @@ namespace tr
   {
     glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     glfwTerminate();
-    return;
   }
 
   ///
@@ -88,7 +85,6 @@ namespace tr
   void wingl::error_callback(int error, const char* description)
   {
     info("GLFW error " + std::to_string(error) + ": " + description);
-    return;
   }
 
   ///
@@ -116,7 +112,6 @@ namespace tr
     }
 
     AppWin.set_mouse_ptr = 0; // после обработки установить нейтральное значение
-    return;
   }
 
   ///
@@ -132,7 +127,6 @@ namespace tr
     keys.mouse_mods     = mods;
     AppWin.mouse = button;
     AppWin.action = action;
-    return;
   }
 
   ///
@@ -151,8 +145,6 @@ namespace tr
     keys.fb = glfwGetKey(window, k_FRONT) - glfwGetKey(window, k_BACK);
     keys.ud = glfwGetKey(window, k_DOWN)  - glfwGetKey(window, k_UP);
     keys.rl = glfwGetKey(window, k_LEFT) - glfwGetKey(window, k_RIGHT);
-
-    return;
   }
 
   ///
@@ -162,9 +154,8 @@ namespace tr
   ///
   void wingl::character_callback(GLFWwindow*, u_int ch)
   {
-    if(AppWin.input_buffer == nullptr) return;
-    *(AppWin.input_buffer) += static_cast<wchar_t>(ch);
-    return;
+    if(AppWin.input_buffer != nullptr)
+      *(AppWin.input_buffer) += static_cast<wchar_t>(ch);
   }
 
   ///
@@ -174,7 +165,6 @@ namespace tr
   {
     AppWin.left = static_cast<u_int>(left);
     AppWin.top = static_cast<u_int>(top);
-    return;
   }
 
   ///
@@ -185,7 +175,6 @@ namespace tr
     AppWin.width  = static_cast<u_int>(width);
     AppWin.height = static_cast<u_int>(height);
     AppWin.resized = true; // для пересчета фреймбуфера
-    return;
   }
 
   ///
@@ -208,7 +197,6 @@ namespace tr
       AppWin.xpos = x;
       AppWin.ypos = y;
     }
-    return;
   }
 
   ///
@@ -240,7 +228,6 @@ namespace tr
 
     if(!glfwWindowShouldClose(win_ptr)) glfwSetWindowShouldClose(win_ptr, true);
     glfwDestroyWindow(win_ptr);
-    return;
   }
 
 } //namespace tr

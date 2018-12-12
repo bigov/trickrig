@@ -30,7 +30,6 @@ obj_load::obj_load(const std::string &FName)
 
   Places.clear();
   Normals.clear();
-  return;
 }
 
 //## переводит строку вида "0/0/0" в числовой массив
@@ -60,8 +59,6 @@ void obj_load::decode_string(const std::string & f, int *a)
     a[1] = std::stoi(f.substr(cur), &sz) - 1; cur += sz + 1;
     a[2] = std::stoi(f.substr(cur)     ) - 1;
   }
-
-  return;
 }
 
 //## прием 4-х групп индексов, образующих прямоугольник
@@ -93,7 +90,6 @@ void obj_load::get_f(char *line)
   }
 
   Area.push_front(Snip);
-  return;
 }
 
 //## прием трех чисел в формате float в список нормалей
@@ -107,7 +103,6 @@ void obj_load::get_vn(char *line)
     token = std::strtok(NULL, " ");
   }
   Normals.push_back(normal);
-  return;
 }
 
 //## прием двух чисел в формате float в список UV текстуры
@@ -117,7 +112,6 @@ void obj_load::get_vt(char *line)
   UV[0] = std::stof(std::strtok(line, " "));
   UV[1] = std::stof(std::strtok(NULL, " "));
   UVs.push_back(UV);
-  return;
 }
 
 //## прием трех чисел в формате float в список вершин
@@ -131,7 +125,6 @@ void obj_load::get_v(char *line)
     token = std::strtok(NULL, " ");
   }
   Places.push_back(Place);
-  return;
 }
 
 //## Разбор типа переданой строки символов по ключу
@@ -142,7 +135,6 @@ void obj_load::parsing_line(char *line)
   else if(LineId == "vn") get_vn(&line[3]);
   else if(LineId == "vt") get_vt(&line[3]);
   else if(LineId == "f") get_f(&line[2]);
-  return;
 }
 
 } //namespace tr

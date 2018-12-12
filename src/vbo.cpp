@@ -16,7 +16,6 @@ namespace tr
     if(0 == delta) return;
     if(delta > hem) ERR("VBO::shrink got negative value of new size");
     hem -= delta;
-    return;
   }
 
   //## Cоздание нового буфера указанного в параметре размера
@@ -36,7 +35,6 @@ namespace tr
     
     if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
     hem = 0;
-    return;
   }
 
   //## Cоздание графического буфера и заполнение его данными
@@ -56,7 +54,6 @@ namespace tr
     
     if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
     hem = al;
-    return;
   }
 
   //## Настройка атрибутов для float
@@ -67,7 +64,6 @@ namespace tr
     glBindBuffer(gl_buffer_type, id);
     glVertexAttribPointer(index, d_size, type, normalized, stride, pointer);
     glBindBuffer(gl_buffer_type, 0);
-    return;
   }
 
   //## Настройка атрибутов для int
@@ -78,7 +74,6 @@ namespace tr
     glBindBuffer(gl_buffer_type, id);
     glVertexAttribIPointer(index, d_size, type, stride, pointer);
     glBindBuffer(gl_buffer_type, 0);
-    return;
   }
 
   //## Сжатие буфера атрибутов за счет перемещения блока данных из хвоста
@@ -96,7 +91,6 @@ namespace tr
     glCopyBufferSubData(gl_buffer_type, gl_buffer_type, src, dst, d_size);
     if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
     hem = src;
-    return;
   }
 
   ///
@@ -141,7 +135,6 @@ namespace tr
     glBindBuffer(GL_ARRAY_BUFFER, id);
     glBufferSubData(GL_ARRAY_BUFFER, hem, d_size, data);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    return;
   }
 
   //## Замена блока данных в указанном месте (с контролем положения)

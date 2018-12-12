@@ -9,7 +9,9 @@
 
 namespace tr
 {
-  //## Дублирующий конструктор
+  ///
+  /// Дублирующий конструктор
+  ///
   rig::rig(const tr::rig & Other)
   {
     born = Other.born;
@@ -19,7 +21,11 @@ namespace tr
     return;
   }
 
-  //## Оператор присваивания
+  ///
+  /// \brief rig::operator =
+  /// \param Other
+  /// \return
+  ///
   tr::rig& rig::operator= (const tr::rig & Other)
   {
     if(this != &Other)
@@ -85,8 +91,6 @@ namespace tr
 
     glBindVertexArray(0);
     Prog3d.unuse();
-
-    return;
   }
 
   ///
@@ -122,8 +126,6 @@ namespace tr
 
     glBindVertexArray(0);
     Prog3d.unuse(); // отключить шейдерную программу
-
-    return;
   }
 
   ///
@@ -142,8 +144,6 @@ namespace tr
     };
 
     put_in_vbo(Rig, Point);
-
-    return;
   }
 
   ///
@@ -355,7 +355,6 @@ namespace tr
   ///
   void rdb::init(int g, glm::vec3)
   {
-    tr::rig R {};
     lod = g; // TODO проверка масштаба на допустимость
     //_load_16x16_obj();
 
@@ -394,8 +393,6 @@ namespace tr
         }
       }
     }
-
-    return;
   }
 
   //## сохранение блока ригов в базу данных

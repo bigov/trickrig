@@ -96,13 +96,9 @@ namespace tr
     }
     catch(...)
     {
-      #ifndef NDEBUG
-      tr::info("Fail setup 3d coordinates for ViewFrom point.");
-      #endif
       //TODO: установить точку обзора над поверхностью
+      tr::info("Fail setup 3d coordinates for ViewFrom point.");
     }
-
-    return;
   }
 
   //## Построение границы области по оси X по ходу движения
@@ -141,7 +137,6 @@ namespace tr
         RigsDb0.put_in_vbo(x_new, y, z);
 
     MoveFrom.x = vf_x;
-    return;
   }
 
   //## Построение границы области по оси Z по ходу движения
@@ -180,7 +175,6 @@ namespace tr
         RigsDb0.put_in_vbo(x, y, z_new);
 
     MoveFrom.z = vf_z;
-    return;
   }
 
   //## Перестроение границ активной области при перемещении камеры
@@ -209,8 +203,6 @@ namespace tr
     if(static_cast<int>(floor(tr::Eye.ViewFrom.x)) != MoveFrom.x) redraw_borders_x();
   //if(static_cast<int>(floor(tr::Eye.ViewFrom.y)) != MoveFrom.y) redraw_borders_y();
     if(static_cast<int>(floor(tr::Eye.ViewFrom.z)) != MoveFrom.z) redraw_borders_z();
-
-    return;
   }
 
   //## Расчет положения и направления движения камеры
@@ -251,7 +243,6 @@ namespace tr
     MatMVP =  MatProjection * MatView;
 
     calc_selected_area(LookDir);
-    return;
   }
 
   ///
@@ -294,8 +285,6 @@ namespace tr
      R = RigsDb0.get(search);
      if(nullptr != R) Selected = R->Origin;
    }
-
-   return;
   }
 
   ///
@@ -318,7 +307,6 @@ namespace tr
     if (285 == ev.key_scancode) mod = 1;
 
     RigsDb0.draw();
-    return;
   }
 
 } // namespace tr

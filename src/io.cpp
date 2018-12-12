@@ -69,8 +69,6 @@ namespace tr
     _r = 1;      // число строк
     _wc = _w/_c; // ширина ячейки в пикселях
     _hc = _h/_r; // высота ячейки в пикселях
-
-    return;
   }
 
   ///
@@ -89,8 +87,6 @@ namespace tr
     _h = static_cast<u_int>(height); // высота изображения в пикселях
     _wc = _w/_c; // ширина ячейки в пикселях
     _hc = _h/_r; // высота ячейки в пикселях
-
-    return;
   }
 
   ///
@@ -106,7 +102,6 @@ namespace tr
     _c = cols;
     _r = rows;
     load(filename);
-    return;
   }
 
   ///
@@ -123,7 +118,6 @@ namespace tr
     _hc = _h/_r; // высота ячейки в пикселях
     Data.clear();
     Data.resize(_w * _h, {0x00, 0x00, 0x00, 0x00});
-    return;
   }
 
   ///
@@ -170,7 +164,6 @@ namespace tr
       png_image_free(&info);
       ERR(info.message);
     }
-    return;
   }
 
   ///
@@ -215,8 +208,6 @@ namespace tr
       dst_i += dst.w_summ; // переход на следующую строку приемника
       frag_i += w_summ;    // переход на следующую строку источника
     }
-
-    return;
   }
 
   //## Преобразователь типов
@@ -247,14 +238,12 @@ namespace tr
     file.seekg(0, std::ios::beg);
     file.read(Buffer.data(), size);
     file.close();
-    return;
   }
 
   //## Вывод текстовой информацияя информации
   void info(const std::string & info)
   {
     std::cout << info << std::endl;
-    return;
   }
 
 } //namespace tr

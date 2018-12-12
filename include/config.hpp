@@ -26,9 +26,10 @@ namespace tr
       static std::string DS;        // символ разделителя папок
       static std::string AssetsDir; // папка конфигов пользователя
       static std::unordered_map<int, std::string> InitParams;
-      static void user_dir(void);   // выбор пользовательской папки
+      static void check_user_dir(void);   // выбор пользовательской папки
 
     public:
+      static std::string RunName;  // имя папки данных выбранного района
       static std::string CfgFname; // конфиг пользователя
       static void load(void);
       static void save(void);

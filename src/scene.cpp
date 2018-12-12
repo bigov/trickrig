@@ -17,14 +17,12 @@ namespace tr
     framebuffer_init();
 
     // Настройки отображения HUD
-    glGenTextures(1, &tex_hud);
+    glGenTextures(1, &tex_hud_id);
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, tex_hud);
+    glBindTexture(GL_TEXTURE_2D, tex_hud_id);
     // Linear filtering usually looks best for text
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    return;
   }
 
   //## Деструктор
@@ -33,7 +31,6 @@ namespace tr
   {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glDeleteFramebuffers(1, &Eye.framebuf);
-    return;
   }
 
   //## Инициализация фрейм-буфера
@@ -86,14 +83,13 @@ namespace tr
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT,
       GL_RENDERBUFFER, Eye.rendr_buf);
 
-    #ifndef NDEBUG //--контроль создания буфера-------------------------------
+    #ifndef NDEBUG // контроль создания буфера
     assert(
-      glCheckFramebufferStatus( GL_FRAMEBUFFER ) == GL_FRAMEBUFFER_COMPLETE
+      glCheckFramebufferStatus( GL_FRAMEBUFFER ) ==
+          GL_FRAMEBUFFER_COMPLETE
     );
     #endif
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    return;
   }
 
   ///
@@ -136,14 +132,13 @@ namespace tr
                  static_cast<GLsizei>(tr::AppWin.height));
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    return;
   }
 
   //## Инициализация GLSL программы обработки текстуры из фреймбуфера.
   void scene::program2d_init(void)
   {
-    glGenVertexArrays(1, &vaoQuad);
-    glBindVertexArray(vaoQuad);
+    glGenVertexArrays(1, &vao_quad_id);
+    glBindVertexArray(vao_quad_id);
 
     screenShaderProgram.attach_shaders(
       tr::cfg::get(SHADER_VERT_SCREEN),
@@ -182,8 +177,6 @@ namespace tr
     screenShaderProgram.unuse();
 
     glBindVertexArray(0);
-
-    return;
   }
 
   //## Рендеринг
@@ -204,20 +197,18 @@ namespace tr
 
     // Поверх биндим текстуру GUI окна или HUD
     glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, tex_hud);
+    glBindTexture(GL_TEXTURE_2D, tex_hud_id);
     // и рисуем на ней необходимые элементы
     WinGui.draw();
 
     // Второй проход рендера - по текстуре из фреймбуфера
-    glBindVertexArray(vaoQuad);
+    glBindVertexArray(vao_quad_id);
     glDisable(GL_DEPTH_TEST);
     screenShaderProgram.use();
     // Прицел должен динамически изменять яркость, поэтому используем шейдер
     screenShaderProgram.set_uniform("Cursor", AppWin.Cursor);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     screenShaderProgram.unuse();
-
-    return;
   }
 
 } // namespace tr

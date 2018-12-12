@@ -51,7 +51,7 @@ namespace tr
   ///
   void cfg::load(void)
   {
-    user_dir();
+    check_user_dir();
 
     // При ошибке открытия конфигурации - иницировать новый файл
     if(!SqlDb.open(CfgFname)) init_config_db(CfgFname);
@@ -103,12 +103,10 @@ namespace tr
     AppWin.Cursor.y = static_cast<float>(AppWin.height/2) + 0.5f;
     AppWin.aspect = static_cast<float>(AppWin.width)
                      / static_cast<float>(AppWin.height);
-
-    return;
   }
 
   //## Поиск и настройка пользовательского каталога
-  void cfg::user_dir(void)
+  void cfg::check_user_dir(void)
   {
 #ifdef _WIN32_WINNT
     DS = "\\";
@@ -133,7 +131,6 @@ namespace tr
     if(!std::filesystem::exists(UserDir)) ERR("Can't create: " + UserDir);
 
     CfgFname = UserDir + DS + CfgFname;
-    return;
   }
 
   //## Сохрание настроек
@@ -181,8 +178,6 @@ namespace tr
     Query += q;
 
     SqlDb.request_put(Query);
-
-    return;
   }
 
   //## Передача клиенту значения параметра

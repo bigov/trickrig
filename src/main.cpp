@@ -25,11 +25,11 @@ int main(int, char**)
 
   try
   {
-    tr::cfg::load();       // Загрузка конфигурации
-    tr::wingl Win {};    // Настройка OpenGL окна
-    tr::scene Scene {};    // Сборка сцены
-    Win.show(Scene);       // Цикл рендера
-    tr::cfg::save();       // Сохранение конфигурации
+    tr::cfg::load();      // Загрузка конфигурации
+    tr::wingl Win {};     // Настройка OpenGL окна
+    tr::scene Scene {};   // Сборка сцены
+    Win.show(Scene);      // Цикл рендера
+    tr::cfg::save();      // Сохранение конфигурации
   }
   catch(std::exception & e)
   {
@@ -88,6 +88,5 @@ void tr::init_config_db(const std::string & fname)
   Db.exec(Q.c_str());
   for(auto &msg: Db.ErrorsList) tr::info(msg);
   Db.close();
-  return;
 }
 

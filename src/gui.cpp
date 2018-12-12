@@ -382,7 +382,6 @@ void gui::sub_img(const img &Image, GLint x, GLint y)
                 static_cast<GLsizei>(Image.h_summ),  // height
                 GL_RGBA, GL_UNSIGNED_BYTE,           // mode
                 Image.uchar());                      // data
-  return;
 }
 
 ///
@@ -409,9 +408,6 @@ void gui::refresh(void)
                   Eye.ViewFrom.x, Eye.ViewFrom.y, Eye.ViewFrom.z, Eye.look_a, Eye.look_t);
   add_text(Font15n, ln, Coord, 2, 1);
   sub_img(Coord, 2, 2);
-
-
-  return;
 }
 
 ///
@@ -438,8 +434,6 @@ void gui::load_hud(void)
   sub_img(HudPanel, 0,
           static_cast<GLint>(GuiImg.h_summ) -
           static_cast<GLint>(HudPanel.h_summ));
-
-  return;
 }
 
 ///
@@ -453,7 +447,6 @@ void gui::obscure_screen(void)
   {
     GuiImg.Data[i++] = bg;
   }
-  return;
 }
 
 ///
@@ -551,8 +544,6 @@ void gui::button_body(img &D, BUTTON_STATE s)
     i += D.w_summ - 2;
     D.Data[i++] = line_f;
   }
-
-  return;
 }
 
 ///
@@ -608,10 +599,7 @@ void gui::add_button(BUTTON_ID btn_id, u_long x, u_long y, const std::wstring &N
     add_text(Font18l, Name, Btn, AppWin.btn_w/2 - t_width/2,
            AppWin.btn_h/2 - t_height/2);
   }
-
   Btn.copy(0, 0, GuiImg, x, y);
-
-  return;
 }
 
 } //tr
