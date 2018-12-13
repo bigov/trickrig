@@ -46,6 +46,8 @@ lmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклм
     img Font18s { "../assets/font_10x18_sh.png", f_len }; //шрифт 10x18 (тень)
     img Font18l { "../assets/font_10x18_lt.png", f_len }; //шрифт 10x18 (светл)
 
+    img headband {"../assets/quad.png"}; // Текстура заставки
+
     std::wstring user_input {};  // строка ввода пользователя
 
     void load_hud(void);

@@ -24,8 +24,6 @@ namespace tr
       tr::space Space {};              // виртуальное пространство
       tr::glsl screenShaderProgram {}; // шейдерная программа
 
-      img headband {"../assets/quad.png"}; // Текстура заставки
-
       void framebuffer_init(void);
       void framebuffer_resize(void);
       void program2d_init(void);

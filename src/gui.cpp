@@ -326,9 +326,17 @@ void gui::draw_gui_menu(void)
   return;
 }
 
+///
+/// Загрузить в текстурный буфер стартовую заставку
+///
 void gui::draw_headband(void)
 {
+  GLint level_of_details = 0; GLint frame = 0;
 
+  glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
+               static_cast<GLsizei>(headband.w_summ),
+               static_cast<GLsizei>(headband.h_summ),
+               frame, GL_RGBA, GL_UNSIGNED_BYTE, headband.uchar());
 }
 
 ///

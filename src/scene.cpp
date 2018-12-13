@@ -56,23 +56,6 @@ namespace tr
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                            GL_TEXTURE_2D, Eye.fb_text_0, 0);
 
-    //=========
-    glGenTextures(1, &Eye.fb_text_1);
-    glBindTexture(GL_TEXTURE_2D, Eye.fb_text_1);
-    glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-                 static_cast<GLsizei>(tr::AppWin.width),
-                 static_cast<GLsizei>(tr::AppWin.height),
-                 frame, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1,
-                           GL_TEXTURE_2D, Eye.fb_text_1, 0);
-
-    //===========
-    GLenum buffers[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
-    glDrawBuffers ( 2, buffers );
-
-    //=============
-    glBindTexture(GL_TEXTURE_2D, Eye.fb_text_0);
-
     glGenRenderbuffers(1, &Eye.rendr_buf);
     glBindRenderbuffer(GL_RENDERBUFFER, Eye.rendr_buf);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8,
@@ -173,6 +156,7 @@ namespace tr
     glUniform1i(screenShaderProgram.uniform_location_get("texFramebuffer"), 1);
     // GL_TEXTURE2
     glUniform1i(screenShaderProgram.uniform_location_get("texHUD"), 2);
+
     screenShaderProgram.unuse();
 
     glBindVertexArray(0);
@@ -192,23 +176,18 @@ namespace tr
     if(AppWin.resized) framebuffer_resize();
 
     // первый проход рендера во фреймбуфер
-    if(AppWin.mode == GUI_HUD3D) // в режиме настройки 3D сцену не рендерим
+    if(AppWin.mode == GUI_HUD3D)
     {
       glBindFramebuffer(GL_FRAMEBUFFER, Eye.framebuf);
       Space.draw(ev);
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    } else {                     // а рендерим радужную заставку
-      glActiveTexture(GL_TEXTURE2);
+    } else
+    { // В режиме настройки рендерим не 3D сцену, а радужную заставку
       glBindTexture(GL_TEXTURE_2D, tex_hud_id);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-                   static_cast<GLint>(headband.w_summ),
-                   static_cast<GLint>(headband.h_summ),
-                   0, GL_RGBA, GL_UNSIGNED_BYTE, headband.uchar());
-
+      WinGui.draw_headband();
       glBindVertexArray(vao_quad_id);
       screenShaderProgram.use();
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-      screenShaderProgram.unuse();
     }
 
     // Поверх биндим текстуру GUI окна или HUD
@@ -228,7 +207,3 @@ namespace tr
   }
 
 } // namespace tr
-
-//Local Variables:
-//tab-width:2
-//End:
