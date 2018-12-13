@@ -1,24 +1,24 @@
 //============================================================================
 //
-// file win_glfw.cpp
+// file wglfw.cpp
 //
 // интерфейс к библиотеке GLFW
 //
 //============================================================================
-#include "wingl.hpp"
+#include "wglfw.hpp"
 
 namespace tr
 {
-  evInput wingl::keys = {0.0, 0.0, 0, 0, 0, 0, 0, 0};
-  std::string wingl::title = "TrickRig: v.development";
+  evInput wglfw::keys = {0.0, 0.0, 0, 0, 0, 0, 0, 0};
+  std::string wglfw::title = "TrickRig: v.development";
 
   // TODO: сделать привязку через конфиг
-  int wingl::k_FRONT = GLFW_KEY_W;
-  int wingl::k_BACK  = GLFW_KEY_S;
-  int wingl::k_UP    = GLFW_KEY_LEFT_SHIFT;
-  int wingl::k_DOWN  = GLFW_KEY_SPACE;
-  int wingl::k_RIGHT = GLFW_KEY_D;
-  int wingl::k_LEFT  = GLFW_KEY_A;
+  int wglfw::k_FRONT = GLFW_KEY_W;
+  int wglfw::k_BACK  = GLFW_KEY_S;
+  int wglfw::k_UP    = GLFW_KEY_LEFT_SHIFT;
+  int wglfw::k_DOWN  = GLFW_KEY_SPACE;
+  int wglfw::k_RIGHT = GLFW_KEY_D;
+  int wglfw::k_LEFT  = GLFW_KEY_A;
 
   int MOUSE_BUTTON_LEFT  = GLFW_MOUSE_BUTTON_LEFT;
   int MOUSE_BUTTON_RIGHT = GLFW_MOUSE_BUTTON_RIGHT;
@@ -31,7 +31,7 @@ namespace tr
   /// Создание нового окна с обработчиками ввода и настройка контекста
   /// отображения OpenGL
   ///
-  wingl::wingl(void)
+  wglfw::wglfw(void)
   {
     glfwSetErrorCallback(error_callback);
     if (!glfwInit()) ERR("Error init GLFW lib.");
@@ -73,7 +73,7 @@ namespace tr
   ///
   ///  Destructor
   ///
-  wingl::~wingl()
+  wglfw::~wglfw()
   {
     glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     glfwTerminate();
@@ -82,7 +82,7 @@ namespace tr
   ///
   /// Errors callback
   ///
-  void wingl::error_callback(int error, const char* description)
+  void wglfw::error_callback(int error, const char* description)
   {
     info("GLFW error " + std::to_string(error) + ": " + description);
   }
@@ -90,7 +90,7 @@ namespace tr
   ///
   /// \brief wingl::set_cursor Смена режима отображения сцены (GUI/3D)
   ///
-  void wingl::set_cursor(void)
+  void wglfw::set_cursor(void)
   {
     if(AppWin.set_mouse_ptr < 0 )
     {
@@ -121,7 +121,7 @@ namespace tr
   /// \param action
   /// \param mods
   ///
-  void wingl::mouse_button_callback(
+  void wglfw::mouse_button_callback(
     GLFWwindow*, int button, int action, int mods)
   {
     keys.mouse_mods     = mods;
@@ -132,7 +132,7 @@ namespace tr
   ///
   /// Keys events callback
   ///
-  void wingl::key_callback(GLFWwindow* window, int key, int scancode,
+  void wglfw::key_callback(GLFWwindow* window, int key, int scancode,
     int action, int mods)
   {
     AppWin.key    = key;
@@ -152,7 +152,7 @@ namespace tr
   /// \param window
   /// \param key
   ///
-  void wingl::character_callback(GLFWwindow*, u_int ch)
+  void wglfw::character_callback(GLFWwindow*, u_int ch)
   {
     if(AppWin.input_buffer != nullptr)
       *(AppWin.input_buffer) += static_cast<wchar_t>(ch);
@@ -161,7 +161,7 @@ namespace tr
   ///
   /// GLFW window moving callback
   ///
-  void wingl::window_pos_callback(GLFWwindow*, int left, int top)
+  void wglfw::window_pos_callback(GLFWwindow*, int left, int top)
   {
     AppWin.left = static_cast<u_int>(left);
     AppWin.top = static_cast<u_int>(top);
@@ -170,7 +170,7 @@ namespace tr
   ///
   /// GLFW framebuffer callback resize
   ///
-  void wingl::framebuffer_size_callback(GLFWwindow*, int width, int height)
+  void wglfw::framebuffer_size_callback(GLFWwindow*, int width, int height)
   {
     AppWin.width  = static_cast<u_int>(width);
     AppWin.height = static_cast<u_int>(height);
@@ -183,7 +183,7 @@ namespace tr
   /// \param xpos  - X координата курсора в окне
   /// \param ypos  - Y координата курсора в окне
   ///
-  void wingl::cursor_position_callback(GLFWwindow* ptWin,
+  void wglfw::cursor_position_callback(GLFWwindow* ptWin,
                                              double x, double y)
   {
     if(AppWin.mode == GUI_HUD3D)
@@ -202,7 +202,7 @@ namespace tr
   ///
   /// \brief Main loop for the app-window show
   ///
-  void wingl::show(tr::scene & Scene)
+  void wglfw::show(tr::scene & Scene)
   {
     glfwSetInputMode(win_ptr, GLFW_STICKY_KEYS, 0);
     int fps = 0;

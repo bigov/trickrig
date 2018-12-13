@@ -19,6 +19,7 @@ class gui
 
   private:
     px bg      {0xE0, 0xE0, 0xE0, 0xC0}; // фон заполнения неактивного окна
+    //px bg      {0x00, 0x00, 0x00, 0x00}; // фон заполнения неактивного окна
     px bg_hud  {0x00, 0x88, 0x00, 0x40}; // фон панелей HUD (активного окна)
     img GuiImg { 0, 0 };                 // GUI/HUD текстура окна приложения
 
@@ -71,6 +72,7 @@ lmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклм
   public:
     gui(void);
     void draw(void);         // формирование изображения GIU окна
+    void draw_headband(void);// заставка
     void refresh(void);      // обновление кадра
 };
 

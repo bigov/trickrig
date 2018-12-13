@@ -9,7 +9,7 @@
 #include "config.hpp"
 #include "io.hpp"
 #include "scene.hpp"
-#include "wingl.hpp"
+#include "wglfw.hpp"
 #include "dbwrap.hpp"
 
 ///
@@ -26,7 +26,7 @@ int main(int, char**)
   try
   {
     tr::cfg::load();      // Загрузка конфигурации
-    tr::wingl Win {};     // Настройка OpenGL окна
+    tr::wglfw Win {};     // Настройка OpenGL окна
     tr::scene Scene {};   // Сборка сцены
     Win.show(Scene);      // Цикл рендера
     tr::cfg::save();      // Сохранение конфигурации

@@ -326,6 +326,11 @@ void gui::draw_gui_menu(void)
   return;
 }
 
+void gui::draw_headband(void)
+{
+
+}
+
 ///
 /// \brief Создание элементов интерфейса окна
 ///

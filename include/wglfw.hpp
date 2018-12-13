@@ -9,14 +9,14 @@
 
 namespace tr
 {
-  class wingl
+  class wglfw
   {
     static evInput keys;
     static std::string title;
 
     public:
-      wingl(void);
-      ~wingl(void);
+      wglfw(void);
+      ~wglfw(void);
       void show(tr::scene&);
 
     private:
@@ -34,8 +34,8 @@ namespace tr
       static int k_RIGHT;
       static int k_LEFT;
 
-      wingl(const tr::wingl &);
-      wingl operator=(const tr::wingl &);
+      wglfw(const tr::wglfw &);
+      wglfw operator=(const tr::wglfw &);
 
       void set_cursor(void);
       static void error_callback(int error_id, const char* description);

@@ -23,6 +23,7 @@ namespace tr
     // Linear filtering usually looks best for text
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
   }
 
   //## Деструктор
@@ -42,20 +43,18 @@ namespace tr
     glBindFramebuffer(GL_FRAMEBUFFER, Eye.framebuf);
 
     GLint level_of_details = 0, frame = 0;
-
     glGenTextures(1, &Eye.fb_text_0);
     glBindTexture(GL_TEXTURE_2D, Eye.fb_text_0);
     glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-                 static_cast<GLsizei>(tr::AppWin.width),
-                 static_cast<GLsizei>(tr::AppWin.height),
-                 frame, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+                static_cast<GLsizei>(AppWin.width),
+                static_cast<GLsizei>(AppWin.height),
+                frame, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
                            GL_TEXTURE_2D, Eye.fb_text_0, 0);
-
 
     //=========
     glGenTextures(1, &Eye.fb_text_1);
@@ -179,21 +178,38 @@ namespace tr
     glBindVertexArray(0);
   }
 
-  //## Рендеринг
+  ///
+  /// \brief scene::draw
+  /// \param ev
+  ///
+  ///  \details  Кадр сцены рендерится в изображение на (2D) "холсте"
+  /// фреймбуфера, после чего это изображение в виде текстуры накладывается на
+  /// прямоугольник окна. Курсор и дополнительные (HUD) элементы окна
+  /// изображаются как наложеные сверху дополнительные текстуры
+  ///
   void scene::draw(evInput& ev)
   {
-  // Кадр сцены рендерится в изображение на (2D) "холсте" фреймбуфера,
-  // после чего это изображение в виде текстуры накладывается на прямоугольник
-  // окна. Курсор и дополнительные (HUD) элементы окна изображаются
-  // как наложеные сверху дополнительные изображения
     if(AppWin.resized) framebuffer_resize();
 
-    // Первый проход рендера - во фреймбуфер
-    glBindFramebuffer(GL_FRAMEBUFFER, Eye.framebuf);
-    // TODO: генерировать фоновый рисунок для GUI разово и кэшировать -
-    //if((AppWin.cover == COVER_OFF) and (!(AppWin.newsize)))
-     Space.draw(ev);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // первый проход рендера во фреймбуфер
+    if(AppWin.mode == GUI_HUD3D) // в режиме настройки 3D сцену не рендерим
+    {
+      glBindFramebuffer(GL_FRAMEBUFFER, Eye.framebuf);
+      Space.draw(ev);
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    } else {                     // а рендерим радужную заставку
+      glActiveTexture(GL_TEXTURE2);
+      glBindTexture(GL_TEXTURE_2D, tex_hud_id);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+                   static_cast<GLint>(headband.w_summ),
+                   static_cast<GLint>(headband.h_summ),
+                   0, GL_RGBA, GL_UNSIGNED_BYTE, headband.uchar());
+
+      glBindVertexArray(vao_quad_id);
+      screenShaderProgram.use();
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+      screenShaderProgram.unuse();
+    }
 
     // Поверх биндим текстуру GUI окна или HUD
     glActiveTexture(GL_TEXTURE2);
