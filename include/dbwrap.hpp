@@ -48,7 +48,7 @@ class sqlw
     void exec(const char *);
     void exec(const std::string &);
     void request_put(const char *);
-    void request_put(const char *, const char *, size_t);
+    void request_put(const char *, const void *, size_t);
     void request_put(const char *, const float *, size_t);
     void request_put(const std::string &);
 

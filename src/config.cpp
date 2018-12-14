@@ -44,7 +44,7 @@ namespace tr
   std::string cfg::DS       = "";          // символ разделителя папок
   std::string cfg::CfgFname = "config.db"; // конфиг пользователя
   camera_3d Eye {};                        // главная камера 3D вида
-  main_window AppWin = {};                 // параметры окна приложения
+  main_window AppWin {};                   // параметры окна приложения
 
   /// Загрузка конфигурации приложения
   /// производится отдельным вызовом из главного модуля
@@ -105,7 +105,9 @@ namespace tr
                      / static_cast<float>(AppWin.height);
   }
 
-  //## Поиск и настройка пользовательского каталога
+  ///
+  /// Поиск и настройка пользовательского каталога
+  ///
   void cfg::check_user_dir(void)
   {
 #ifdef _WIN32_WINNT
@@ -133,7 +135,51 @@ namespace tr
     CfgFname = UserDir + DS + CfgFname;
   }
 
-  //## Сохрание настроек
+
+  ///
+  /// \brief cfg::create_map
+  /// \param map_name
+  /// \details Создание в пользовательском каталоге новой карты
+  ///
+  void cfg::create_map(const std::string &)
+  {
+    // название папки = число секунд от начала эпохи
+    auto t = std::chrono::duration_cast<std::chrono::seconds>
+        (std::chrono::system_clock::now().time_since_epoch()).count();
+    std::string Ts = std::to_string(t);
+
+    auto DirPName = UserDir + DS + Ts;
+    if(!std::filesystem::exists(DirPName))
+      std::filesystem::create_directory(DirPName);
+    else ERR("Existed map name " + DirPName);
+
+    auto MapPName = DirPName + DS + "map.db";
+    auto CfgPName = DirPName + DS + "config.db";
+
+    std::filesystem::copy(get(DB_TPL_FNAME), MapPName); // база данных карты
+    init_config_db(CfgPName);                           // конфиг пользователя на карте
+
+    sqlw Db{CfgPName};
+    Db.open();
+
+#ifndef NDEBUG
+  for(auto &msg: Db.ErrorsList) tr::info(msg);
+#endif
+
+    std::string Query = "INSERT INTO init ("+ std::to_string(MAP_NAME) +", ?);";
+    //Db.request_put(Query.c_str(), map_name.c_str(), map_name.size());
+
+#ifndef NDEBUG
+  for(auto &msg: Db.ErrorsList) tr::info(msg);
+#endif
+
+    Db.close();
+  }
+
+
+  ///
+  /// Сохрание настроек текущей сессии при закрытии программы
+  ///
   void cfg::save(void)
   {
     char q [255]; // буфер для форматирования и передачи строки в запрос
@@ -180,7 +226,9 @@ namespace tr
     SqlDb.request_put(Query);
   }
 
-  //## Передача клиенту значения параметра
+  ///
+  /// Передача клиенту значения параметра
+  ///
   std::string cfg::get(tr::ENUM_INIT D)
   {
     #ifndef NDEBUG
@@ -191,6 +239,7 @@ namespace tr
     }
     #endif
 
+    // Имя файла в папке "assets"
     if(D < ASSETS_LIST_END) return AssetsDir + InitParams[D];
     else return InitParams[D];
   }

@@ -35,9 +35,13 @@ class gui
 
     BUTTON_ID button_over = NONE;      // Над какой GIU кнопкой курсор
 
-    const std::wstring FontMap { L"_`”~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghijk\
-lmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклмнопрстуфхцчш\
-щъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };
+    // "FontMap1" - однобайтовые символы
+    const std::string FontMap1 { u8"_`\"~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghi"
+                                 "jklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0"
+                                 "123456789 "};
+    // "FontMap2" - каждый символ занимает по два байта
+    const std::string FontMap2 { u8"абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗ"
+                                 "ИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };
 
     u_int f_len = 160; // количество символов в текстуре шрифта
     img Font12n { "../assets/font_07x12_nr.png", f_len }; //шрифт 07х12 (норм)
@@ -48,26 +52,27 @@ lmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0123456789 абвгдеёжзийклм
 
     img headband {"../assets/quad.png"}; // Текстура заставки
 
-    std::wstring user_input {};  // строка ввода пользователя
+    std::string user_input {};  // строка ввода пользователя
 
     void load_hud(void);
     void obscure_screen(void);
-    void add_button(BUTTON_ID id, u_long x, u_long y, const std::wstring &Name,
+    void add_button(BUTTON_ID id, u_long x, u_long y, const std::string& Name,
                 bool button_is_active = true );
     void button_body(img &Data, BUTTON_STATE);
-    void add_text(const img &FontImg, const std::wstring& TextString,
+    void add_text(const img &FontImg, const std::string& TextString,
                   img& Data, u_long x, u_long y);
     void add_text_cursor(const img &_Fn, img &_Dst, size_t position);
-    void screen_title(const std::wstring &title);
-    void add_input_wstring(const img &_Fn);
+    void screen_title(const std::string& title);
+    void add_input_string(const img &_Fn);
     void sub_img(const img &Image, GLint x, GLint y);
     void draw_gui_menu(void);
-    void menu_create(void);
-    void menu_location(void);
+    void menu_map_create(void);
+    void menu_map_select(void);
     void menu_start(void);
     void menu_config(void);
     void button_click(BUTTON_ID);
     void cancel(void);
+    void new_map_create(void);
 
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 

@@ -29,10 +29,10 @@ namespace tr
       static void check_user_dir(void);   // выбор пользовательской папки
 
     public:
-      static std::string RunName;  // имя папки данных выбранного района
       static std::string CfgFname; // конфиг пользователя
       static void load(void);
       static void save(void);
+      static void create_map(const std::string& map_name);
       static std::string get(tr::ENUM_INIT);
   };
 

@@ -55,17 +55,19 @@ void tr::init_config_db(const std::string & fname)
   tr::info("Init new database file.\n");
   tr::sqlw Db;
   Db.open(fname);
+#ifndef NDEBUG
   for(auto &msg: Db.ErrorsList) tr::info(msg);
+#endif
   std::string Q = "CREATE TABLE IF NOT EXISTS init ( \
                    rowid INTEGER PRIMARY KEY,        \
                    key INTEGER,                      \
-                   usr TEXT DEFAULT '',              \
+                   usr BLOB NULL,                    \
                    val TEXT);";
 
   char q[255];
   const char tpl[] = "INSERT INTO init (key, val) VALUES (%d, '%s');";
 
-  sprintf(q, tpl, TTF_FONT,           "DejaVuSansMono.ttf"); Q += q;
+//sprintf(q, tpl, TTF_FONT,           "DejaVuSansMono.ttf"); Q += q;
 //sprintf(q, tpl, TTF_FONT,           "droid.ttf");          Q += q;
   sprintf(q, tpl, PNG_TEXTURE0,       "tex0_512.png");       Q += q;
   sprintf(q, tpl, SHADER_VERT_SCENE,  "vert.glsl");          Q += q;

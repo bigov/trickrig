@@ -53,7 +53,7 @@ namespace tr {
   using u_int  = unsigned int;
   using u_long = unsigned long;
 
-  enum ENUM_INIT {
+  enum ENUM_INIT {      // вначале списка идут названия файлов
     TTF_FONT,
     PNG_TEXTURE0,
     PNG_HUD,
@@ -63,7 +63,7 @@ namespace tr {
     SHADER_VERT_SCREEN,
     SHADER_FRAG_SCREEN,
     DB_TPL_FNAME,
-    ASSETS_LIST_END,
+    ASSETS_LIST_END,      // конец списка файлов - далее только параметры
     WINDOW_SCREEN_FULL,
     WINDOW_WIDTH,
     WINDOW_HEIGHT,
@@ -75,6 +75,7 @@ namespace tr {
     VIEW_FROM_Z,
     LOOK_AZIM,
     LOOK_TANG,
+    MAP_NAME,              // имя карты, присвоеное при создании
   };
 
   extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
@@ -108,7 +109,7 @@ namespace tr {
     u_int minwidth = btn_w * 3 + 36;      // минимально допустимая ширина окна
     u_int minheight = btn_h * 4 + 8;      // минимально допустимая высота окна
     GUI_MODE_ID mode = GUI_MENU_START;    // режим окна приложения
-    std::wstring* input_buffer = nullptr; // строка ввода пользователя
+    std::string* pInputBuffer = nullptr;  // строка ввода пользователя
 
     bool run     = true;  // индикатор закрытия окна
     float aspect = 1.0f;  // соотношение размеров окна
