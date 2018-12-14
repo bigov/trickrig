@@ -407,7 +407,7 @@ void gui::refresh(void)
   px bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения
   u_int fps_length = 4;               // количество символов в надписи
   img Fps {fps_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
-  wchar_t line[5]; // the expected string plus 1 null terminator
+  wchar_t line[5];                   // the expected string plus 1 null terminator
   std::swprintf(line, 5, L"%.4i", AppWin.fps);
   add_text(Font15n, line, Fps, 2, 1);
   sub_img(Fps, 2, static_cast<GLint>(AppWin.height - Fps.h_summ - 2));
@@ -415,7 +415,7 @@ void gui::refresh(void)
   // Координаты в пространстве
   u_int c_length = 60;               // количество символов в надписи
   img Coord {c_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
-  wchar_t ln[60]; // the expected string plus 1 null terminator
+  wchar_t ln[60];                    // the expected string plus 1 null terminator
   std::swprintf(ln, c_length, L"X:%+3.1f, Y:%+03.1f, Z:%+03.1f, a:%+04.3f, t:%+04.3f",
                   Eye.ViewFrom.x, Eye.ViewFrom.y, Eye.ViewFrom.z, Eye.look_a, Eye.look_t);
   add_text(Font15n, ln, Coord, 2, 1);
