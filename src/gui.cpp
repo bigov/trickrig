@@ -7,6 +7,7 @@ namespace tr {
 
 gui::gui(void)
 {
+  FontMap1_len = FontMap1.length();
   TimeStart = std::chrono::system_clock::now();
   return;
 }
@@ -24,22 +25,34 @@ void gui::add_text(const img &FontImg, const std::string &TextString,
                    img& Dst, u_long x, u_long y)
 {
   #ifndef NDEBUG
-  if(x > Dst.w_summ - TextString.length() * FontImg.w_cell)
+  if(x > Dst.w_summ - utf8_size(TextString) * FontImg.w_cell)
     ERR ("gui::add_text - X overflow");
   if(y > Dst.h_summ - FontImg.h_cell)
     ERR ("gui::add_text - Y overflow");
   #endif
 
+  u_int row = 0;                        // номер строки в текстуре шрифта
+  u_int col = 0;                        // номер колонки в текстуре шрифта
+  u_int n = 0;                          // номер буквы в выводимой строке
+  size_t text_size = TextString.size(); // число байт в строке
 
-  u_int row = 0; // номер строки в текстуре шрифта
-  u_int i = 0;   // номер символа в выводимой строке
-  for (const char &ch: TextString)
+  for(size_t i = 0; i < text_size; ++i)
   {
-    u_int id = 0;
-    auto pos = FontMap.find(ch);
-    if(pos != std::string::npos ) id = static_cast<u_int>(pos);
-    FontImg.copy(id, row, Dst, x + (i++) * FontImg.w_cell, y);
+    switch (char_type(TextString[i]))
+    {
+      case SINGLE:
+        col = FontMap1.find(TextString[i]);
+        FontImg.copy(col, row, Dst, x + (n++) * FontImg.w_cell, y);
+        break;
+      case UTF8_FIRST:
+        col = FontMap1_len + FontMap2.find(TextString.substr(i,2))/2;
+        FontImg.copy(col, row, Dst, x + (n++) * FontImg.w_cell, y);
+        break;
+      default:
+        break;
+    }
   }
+
   return;
 }
 
@@ -56,7 +69,7 @@ void gui::menu_start(void)
   add_button(BTN_CONFIG, x, y, u8"Настроить");
 
   y -= 1.5 * AppWin.btn_h;
-  add_button(BTN_LOCATION, x, y, "Играть");
+  add_button(BTN_LOCATION, x, y, u8"Играть");
 
   y += 3 * AppWin.btn_h;
   add_button(BTN_CANCEL, x, y, u8"Закрыть");
@@ -73,7 +86,7 @@ void gui::screen_title(const std::string &title)
   px color {0xFF, 0xFF, 0xDD, 0xFF};
   img label{ GuiImg.w_summ - 4, Font18s.h_cell * 2 - 4, color};
 
-  auto x = GuiImg.w_summ/2 - title.length() * Font18s.w_cell / 2;
+  auto x = GuiImg.w_summ/2 - utf8_size(title) * Font18s.w_cell / 2;
   add_text(Font18s, title, label, x, Font18s.h_cell/2);
   label.copy(0, 0, GuiImg, 2, 2);
 
@@ -95,7 +108,10 @@ void gui::menu_map_create(void)
   // Ввод названия
   if((AppWin.key == KEY_BACKSPACE) && (AppWin.action == PRESS))
   {
-    if (user_input.length() > 0) user_input.pop_back();
+    if (user_input.length() == 0) return;
+    if(char_type(user_input[user_input.size()-1]) != SINGLE)
+    { user_input.pop_back(); } // если это UTF-8, то удаляем два байта
+    user_input.pop_back();
     AppWin.key = -1;
   }
 
@@ -131,7 +147,7 @@ void gui::add_input_string(const img &_Fn)
   u_int y = (row_height - _Fn.h_cell)/2;
   add_text(_Fn, user_input, RowInput, _Fn.w_cell, y);
 
-  add_text_cursor(_Fn, RowInput, user_input.length());
+  add_text_cursor(_Fn, RowInput, utf8_size(user_input));
 
   // скопировать на экран изображение поля ввода с добавленым текстом
   auto x = (GuiImg.w_summ - RowInput.w_summ) / 2;
@@ -573,8 +589,8 @@ void gui::button_body(img &D, BUTTON_STATE s)
 /// Вначале формируется отдельное изображение кнопки, потом оно копируется
 /// в указанное координатами (x,y) место окна.
 ///
-void gui::add_button(BUTTON_ID btn_id, u_long x, u_long y, const std::string &Name,
-                 bool button_is_active)
+void gui::add_button(BUTTON_ID btn_id, u_long x, u_long y,
+                     const std::string &Name, bool button_is_active)
 {
   img Btn { AppWin.btn_w, AppWin.btn_h };
 
@@ -607,7 +623,7 @@ void gui::add_button(BUTTON_ID btn_id, u_long x, u_long y, const std::string &Na
     button_body(Btn, ST_OFF);
   }
 
-  auto t_width = Font18s.w_cell * Name.length();
+  auto t_width = Font18s.w_cell * utf8_size(Name);
   auto t_height = Font18s.h_cell;
 
   if(button_is_active)

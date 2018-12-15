@@ -10,6 +10,71 @@
 
 namespace tr
 {
+  ///
+  /// \brief char_type
+  /// \param c
+  /// \return тип символа
+  ///
+  /// \details Определение типа байта - это часть многобайтового символа,
+  /// или это однобайтовый символ.
+  ///
+  CHAR_TYPE char_type(char c)
+  {
+    if (!(c&128))
+    {                     // Если не 1 в восьмом бите,
+      return SINGLE;      // то это не UTF8
+    }
+    else if(!(c&64))
+    {                     // Если 10xxxxxx,
+      return UTF8_SECOND; // то это второй бит UTF8
+    }
+    else if (!(c&32))
+    {                     // Если 110xxxxx,
+      return UTF8_FIRST;  // то это первый бит UTF8
+    }
+    return UTF8_ERR;      // трехбайтовое число
+  }
+
+
+  ///
+  /// \brief utf8_letters
+  /// \param Text
+  /// \return число букв в строке UTF-8
+  ///
+  size_t utf8_size(const std::string &Text)
+  {
+    size_t letters = 0;
+    size_t text_size = Text.size(); // число байт в строке
+    for(size_t i = 0; i < text_size; ++i)
+    {
+      switch (char_type(Text[i]))
+      {
+        case SINGLE:
+          ++letters;
+          break;
+        case UTF8_FIRST:
+          ++letters;
+          break;
+        default:
+          break;
+      }
+    }
+    return letters;
+  }
+
+
+  ///
+  /// \brief wstring2string
+  /// \param w std::wstring
+  /// \return std::string
+  ///
+  /// \details  Конвертер из std::wstring в std::string
+  std::string wstring2string(const std::wstring &w)
+  {
+    std::wstring_convert<std::codecvt_utf8<wchar_t>> conv;
+    return conv.to_bytes(w);
+  }
+
 
   //## Для обеспечения работы контейнера map c ключем i3d
   bool operator< (tr::i3d const& left, tr::i3d const& right)

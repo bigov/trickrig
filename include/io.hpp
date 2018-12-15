@@ -18,10 +18,18 @@ namespace tr
 {
   typedef std::vector<unsigned char> vec_uchar;
 
-  ///
-  /// \brief Вспомогательная функция для структуры "px"
-  ///
-  extern u_char int_to_uchar(int v);
+  enum CHAR_TYPE {
+    SINGLE,
+    UTF8_FIRST,
+    UTF8_SECOND,
+    UTF8_ERR
+  };
+
+  extern CHAR_TYPE char_type(char c);
+  extern size_t utf8_size(const std::string &Text);
+  extern std::string wstring2string(const std::wstring &w);
+
+  extern u_char int_to_uchar(int v); // Вспомогательная функция для структуры "px"
 
   struct px
   {

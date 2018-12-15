@@ -155,7 +155,12 @@ namespace tr
   void wglfw::character_callback(GLFWwindow*, u_int ch)
   {
     if(AppWin.pInputBuffer != nullptr)
-      *(AppWin.pInputBuffer) += ch;
+    {
+      if(ch < 128)
+        *(AppWin.pInputBuffer) += ch;
+      else
+        *(AppWin.pInputBuffer) += wstring2string({static_cast<wchar_t>(ch)});
+    }
   }
 
   ///

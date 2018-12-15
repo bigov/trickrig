@@ -42,6 +42,8 @@ class gui
     // "FontMap2" - каждый символ занимает по два байта
     const std::string FontMap2 { u8"абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗ"
                                  "ИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };
+    u_int FontMap1_len = 0;
+    //const std::string FontMap = FontMap1 + FontMap2;
 
     u_int f_len = 160; // количество символов в текстуре шрифта
     img Font12n { "../assets/font_07x12_nr.png", f_len }; //шрифт 07х12 (норм)
