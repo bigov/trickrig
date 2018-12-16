@@ -44,8 +44,8 @@ namespace tr
   rdb::rdb(void)
   {
     Prog3d.attach_shaders(
-      tr::cfg::get(SHADER_VERT_SCENE),
-      tr::cfg::get(SHADER_FRAG_SCENE)
+      tr::cfg::app(SHADER_VERT_SCENE),
+      tr::cfg::app(SHADER_FRAG_SCENE)
     );
     Prog3d.use();  // слинковать шейдерную рограмму
 
@@ -320,8 +320,8 @@ namespace tr
     //char buf_query[255];
     std::vector<unsigned char> BufVector {};
 
-    tr::sqlw DB = {};
-    DB.open(tr::cfg::get(DB_TPL_FNAME));
+    tr::wsql DB = {};
+    DB.open(tr::cfg::app(DB_TPL_FNAME));
     DB.select_rig(x, y, z);
 
     auto Row = DB.Rows.front();
@@ -405,8 +405,8 @@ namespace tr
   /// индекса созданой группы
   ///
 
-    tr::sqlw DB = {};
-    DB.open(tr::cfg::get(DB_TPL_FNAME));
+    tr::wsql DB = {};
+    DB.open(tr::cfg::app(DB_TPL_FNAME));
 
     int id_area = 0;
 

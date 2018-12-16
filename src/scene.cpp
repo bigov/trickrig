@@ -96,8 +96,8 @@ namespace tr
     glBindVertexArray(vao_quad_id);
 
     screenShaderProgram.attach_shaders(
-      tr::cfg::get(SHADER_VERT_SCREEN),
-      tr::cfg::get(SHADER_FRAG_SCREEN)
+      tr::cfg::app(SHADER_VERT_SCREEN),
+      tr::cfg::app(SHADER_FRAG_SCREEN)
     );
     screenShaderProgram.use();
 

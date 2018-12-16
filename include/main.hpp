@@ -48,45 +48,51 @@
 
 namespace tr {
 
-  using u_char = unsigned char;
-  using u_int  = unsigned int;
-  using u_long = unsigned long;
+namespace fs = std::filesystem;
 
-  enum ENUM_INIT {      // вначале списка идут названия файлов
-    TTF_FONT,
-    PNG_TEXTURE0,
-    PNG_HUD,
-    SHADER_VERT_SCENE,
-    SHADER_GEOM_SCENE,
-    SHADER_FRAG_SCENE,
-    SHADER_VERT_SCREEN,
-    SHADER_FRAG_SCREEN,
-    DB_TPL_FNAME,
-    ASSETS_LIST_END,      // конец списка файлов - далее только параметры
-    WINDOW_SCREEN_FULL,
-    WINDOW_WIDTH,
-    WINDOW_HEIGHT,
-    WINDOW_TOP,
-    WINDOW_LEFT,
-    INT_LIST_END,
-    VIEW_FROM_X,
-    VIEW_FROM_Y,
-    VIEW_FROM_Z,
-    LOOK_AZIM,
-    LOOK_TANG,
-    MAP_NAME,              // имя карты, присвоеное при создании
-  };
+using u_char = unsigned char;
+using u_int  = unsigned int;
+using u_long = unsigned long;
+using v_str  = std::vector<std::string>;
+using v_uch  = std::vector<unsigned char>;
 
-  extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
-  extern glm::mat4 MatMVP;        // Матрица преобразования
+enum APP_INIT {      // вначале списка идут названия файлов
+  PNG_TEXTURE0,
+  DB_TPL_FNAME,
+  SHADER_VERT_SCENE,
+  SHADER_GEOM_SCENE,
+  SHADER_FRAG_SCENE,
+  SHADER_VERT_SCREEN,
+  SHADER_FRAG_SCREEN,
+  ASSETS_LIST_END,      // конец списка файлов - далее только параметры
+  WINDOW_SCREEN_FULL,
+  WINDOW_WIDTH,
+  WINDOW_HEIGHT,
+  WINDOW_TOP,
+  WINDOW_LEFT,
+  APP_INIT_SIZE
+};
 
-  enum GUI_MODE_ID {   // режимы окна
-    GUI_HUD3D,         // основной режим - без шторки
-    GUI_MENU_START,    // начальное меню
-    GUI_MENU_LSELECT,  // выбор игры
-    GUI_MENU_CREATE,   // создание нового района
-    GUI_MENU_CONFIG,   // настройки
-  };
+enum MAP_INIT {      // вначале списка идут названия файлов
+  VIEW_FROM_X,
+  VIEW_FROM_Y,
+  VIEW_FROM_Z,
+  LOOK_AZIM,
+  LOOK_TANG,
+  MAP_NAME,              // имя карты, присвоеное при создании
+  MAP_INIT_SIZE
+};
+
+extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
+extern glm::mat4 MatMVP;        // Матрица преобразования
+
+enum GUI_MODE_ID {   // режимы окна
+  GUI_HUD3D,         // основной режим - без шторки
+  GUI_MENU_START,    // начальное меню
+  GUI_MENU_LSELECT,  // выбор игры
+  GUI_MENU_CREATE,   // создание нового района
+  GUI_MENU_CONFIG,   // настройки
+};
 
   // Настройка значений параметров для сравнения mouse_button и mouse_action
   // будут выполнены в классе управления окном
@@ -159,6 +165,9 @@ namespace tr {
   // число байт для записи данных одной вершины
   static const GLsizeiptr bytes_per_vertex = digits_per_vertex * sizeof(GLfloat);
 
+  static const char fname_cfg[] = "config.db";
+  static const char fname_map[] = "map.db";
+
   struct evInput
   {
     float dx, dy;   // смещение указателя мыши в активном окне
@@ -166,7 +175,6 @@ namespace tr {
     key_scancode, key_mods, mouse_mods;
   };
 
-  extern void init_config_db(const std::string &);
 }
 
 #endif

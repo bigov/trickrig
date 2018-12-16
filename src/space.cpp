@@ -47,7 +47,7 @@ namespace tr
     glEnable(GL_BLEND);      // поддержка прозрачности
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    img ImgTex0 { tr::cfg::get(PNG_TEXTURE0) }; // Загрузка из файла текстуры
+    img ImgTex0 { tr::cfg::app(PNG_TEXTURE0) }; // Загрузка из файла текстуры
 
     glGenTextures(1, &m_textureObj);
     glActiveTexture(GL_TEXTURE0); // можно загрузить не меньше 48

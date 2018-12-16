@@ -10,10 +10,10 @@ gui::gui(void)
   FontMap1_len = FontMap1.length();
   TimeStart = std::chrono::system_clock::now();
 
-  auto MapsDirs = dirs_list(cfg::UserDir); // список директорий с картами
-  //auto maps_count = MapsDirs.size();       // количество элементов в списке
+  auto MapsDirs = dirs_list(cfg::user_dir()); // список директорий с картами
+  //auto maps_count = MapsDirs.size();        // количество элементов в списке
 
-  sqlw DB {};
+  wsql DB {};
   for(std::string P: MapsDirs)
   {
     std::string DbFile = P + cfg::DS + "config.db";

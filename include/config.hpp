@@ -21,19 +21,25 @@ namespace tr
       cfg(const tr::cfg &)            = delete;
       cfg& operator=(const tr::cfg &) = delete;
 
-      static tr::sqlw SqlDb;
-      static std::string AssetsDir; // папка конфигов пользователя
-      static std::unordered_map<int, std::string> InitParams;
-      static void check_user_dir(void);   // выбор пользовательской папки
+      static db DataBase;
+      static std::string AssetsDir;   // папка служебных файлов приложения
+      static std::string UserDir;     // папка конфигов пользователя
+      static v_str AppParams;
+      static v_str MapParams;
+
+      static void set_user_dir(void); // выбор пользовательской папки
 
     public:
-      static std::string UserDir;   // папка конфигов пользователя
-      static std::string DS;        // символ разделителя папок
-      static std::string CfgFname; // конфиг пользователя
-      static void load(void);
+      static std::string DS;          // символ разделителя папок
+      static std::string CfgFname;    // конфиг текущей сесии
+
+      static void load_map(const std::string &name);
+      static void load_app_params(void);
       static void save(void);
       static void create_map(const std::string& map_name);
-      static std::string get(tr::ENUM_INIT);
+      static std::string app(APP_INIT);
+      static std::string map(MAP_INIT);
+      static std::string user_dir(void);
   };
 
 } //namespace

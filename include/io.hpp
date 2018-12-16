@@ -16,8 +16,6 @@
 
 namespace tr
 {
-  typedef std::vector<unsigned char> vec_uchar;
-
   enum CHAR_TYPE {
     SINGLE,
     UTF8_FIRST,

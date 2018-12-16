@@ -1,83 +1,40 @@
-//----------------------------------------------------------------------------
-//
-// file: db.hpp
-//
-// API к базе данных
-//
-//----------------------------------------------------------------------------
+/*
+ * file: db.hpp
+ *
+ * Заголовочный файл класса управления базой данных
+ *
+ */
+
 #ifndef DB_HPP
 #define DB_HPP
 
-#include "main.hpp"
-#include "io.hpp"
-#include "wsqlite.hpp"
+#include "wsql.hpp"
 
-namespace tr{
-  
-struct query_data {
-  int type;
-  std::string db_name;
-  std::string tbl_name;
-  sqlite3_int64 rowid;
-};
+namespace tr {
 
-class sqlw
+class db
 {
   public:
-    sqlw(void) { DbFileName.clear(); }
-    sqlw(const char *);
-    sqlw(const std::string &);
-    ~sqlw(void);
-
-    // Результат выполнения запроса "exec" записывается парами заголовок_поля:значение
-    static std::forward_list<
-           std::forward_list<std::pair<std::string, std::vector<char>>>> Table_rows;
-    static int num_rows; // число строк в результате запроса
-
-    // Результат выполнения запроса "request_get"
-    std::forward_list<std::vector<std::any>> Rows;
-
-    std::forward_list<std::string> ErrorsList = {};
-    static tr::query_data Result;
-
-    void set_db_name(const char *);
-    void set_db_name(const std::string &);
-    bool open(void);
-    bool open(const std::string &);
-    void close(void);
-    void exec(const char *);
-    void exec(const std::string &);
-    void request_put(const char *);
-    void request_put(const char *, const void *, size_t);
-    void request_put(const char *, const float *, size_t);
-    void request_put(const std::string &);
-
-    void request_get(const char *);
-    void request_get(const std::string &);
-
-    void select_rig(int, int, int);
-    void select_snip(int);
-    void insert_rig(int, int, int, int, int, const float *, size_t);
-    void insert_snip(int, const float *);
-    void update_snip(int, int);
+    db(void) {}
+   ~db(void) {}
+    v_str open_map(const std::string &); // загрузка данных карты
+    v_str open_app(const std::string &); // загрузка данных приложения
+    static void save_map_name(const std::string &);
+    static void save(const tr::camera_3d &Eye);
+    static void save(const tr::main_window &AppWin);
 
   private:
-    static char empty;
+    static std::string MapDir;
+    static std::string MapPFName;
+    static std::string CfgMapPFName;
+    static std::string CfgAppPFName;
+    static wsql SqlDb;
 
-    sqlw(const sqlw &) = delete;
-    sqlw& operator=(const sqlw &) = delete;
+    void init_map_config(const std::string &);
+    void init_app_config(const std::string &);
+    v_str load_config(size_t params_count, const std::string &file_name);
+};
 
-    sqlite3 *db = nullptr;
-    sqlite3_stmt *pStmt = nullptr;
+} //tr
+#endif
 
-    bool is_open = false;
-    std::string DbFileName = "";
-
-    void save_row_data(void);
-    static int callback(void*, int, char**, char**);
-    static void update_callback(void*, int, const char*, const char*,
-      sqlite3_int64);
-
-};     // class sqlw
-}      // ns tr::
-#endif // __DBW_HPP__
