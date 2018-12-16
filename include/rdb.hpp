@@ -12,7 +12,7 @@
 #include "glsl.hpp"
 #include "snip.hpp"
 #include "objl.hpp"
-#include "dbwrap.hpp"
+#include "db.hpp"
 
 namespace tr
 {

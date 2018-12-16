@@ -10,7 +10,7 @@
 
 #include "main.hpp"
 #include "io.hpp"
-#include "dbwrap.hpp"
+#include "db.hpp"
 
 namespace tr
 {
@@ -22,13 +22,13 @@ namespace tr
       cfg& operator=(const tr::cfg &) = delete;
 
       static tr::sqlw SqlDb;
-      static std::string UserDir;   // папка конфигов пользователя
-      static std::string DS;        // символ разделителя папок
       static std::string AssetsDir; // папка конфигов пользователя
       static std::unordered_map<int, std::string> InitParams;
       static void check_user_dir(void);   // выбор пользовательской папки
 
     public:
+      static std::string UserDir;   // папка конфигов пользователя
+      static std::string DS;        // символ разделителя папок
       static std::string CfgFname; // конфиг пользователя
       static void load(void);
       static void save(void);

@@ -157,9 +157,16 @@ namespace tr
     if(AppWin.pInputBuffer != nullptr)
     {
       if(ch < 128)
+      {
         *(AppWin.pInputBuffer) += ch;
+      }
       else
-        *(AppWin.pInputBuffer) += wstring2string({static_cast<wchar_t>(ch)});
+      {
+        auto str = wstring2string({static_cast<wchar_t>(ch)});
+        if(str == u8"№") str = "N";     // № трехбайтный, поэтому заменим на N
+        if(str.size() > 2) str = "_";   // блокировка 3-х байтных символов
+        *(AppWin.pInputBuffer) += str;
+      }
     }
   }
 

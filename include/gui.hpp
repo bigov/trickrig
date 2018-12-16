@@ -16,12 +16,13 @@ enum BUTTON_STATE {
 
 class gui
 {
-
   private:
     px bg      {0xE0, 0xE0, 0xE0, 0xC0}; // фон заполнения неактивного окна
-    //px bg      {0x00, 0x00, 0x00, 0x00}; // фон заполнения неактивного окна
     px bg_hud  {0x00, 0x88, 0x00, 0x40}; // фон панелей HUD (активного окна)
     img GuiImg { 0, 0 };                 // GUI/HUD текстура окна приложения
+
+    struct Map{ std::string Name{}; };
+    std::vector<Map> Maps{};    // список карт
 
     enum BUTTON_ID { // Идентификаторы кнопок GIU
       BTN_OPEN,
@@ -36,14 +37,13 @@ class gui
     BUTTON_ID button_over = NONE;      // Над какой GIU кнопкой курсор
 
     // "FontMap1" - однобайтовые символы
-    const std::string FontMap1 { u8"_`\"~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghi"
+    const std::string FontMap1 { u8"_'\"~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghi"
                                  "jklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0"
                                  "123456789 "};
     // "FontMap2" - каждый символ занимает по два байта
     const std::string FontMap2 { u8"абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗ"
                                  "ИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };
-    u_int FontMap1_len = 0;
-    //const std::string FontMap = FontMap1 + FontMap2;
+    u_int FontMap1_len = 0; // значение будет присвоено в конструкторе класса
 
     u_int f_len = 160; // количество символов в текстуре шрифта
     img Font12n { "../assets/font_07x12_nr.png", f_len }; //шрифт 07х12 (норм)

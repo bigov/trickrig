@@ -1,16 +1,16 @@
 //----------------------------------------------------------------------------
 //
-// file: dbw.hpp
+// file: db.hpp
 //
-// Обертка для работы с Sqlite3
+// API к базе данных
 //
 //----------------------------------------------------------------------------
-#ifndef __DBW_HPP__
-#define __DBW_HPP__
+#ifndef DB_HPP
+#define DB_HPP
 
 #include "main.hpp"
 #include "io.hpp"
-#include "sqlite3.h"
+#include "wsqlite.hpp"
 
 namespace tr{
   

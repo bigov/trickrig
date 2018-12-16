@@ -87,6 +87,7 @@ namespace tr
   extern int get_msec(void);   // число миллисекунд от начала суток.
   extern int random_int(void);
   extern short random_short(void);
+  extern std::list<std::string> dirs_list(const std::string &path);
 
   // структуры для оперирования с трехмерными координатами
 

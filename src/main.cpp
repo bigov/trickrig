@@ -10,7 +10,7 @@
 #include "io.hpp"
 #include "scene.hpp"
 #include "wglfw.hpp"
-#include "dbwrap.hpp"
+#include "db.hpp"
 
 ///
 /// \brief main

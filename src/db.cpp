@@ -5,7 +5,7 @@
 // Обертка для работы с Sqlite3
 //
 //----------------------------------------------------------------------------
-#include "dbwrap.hpp"
+#include "db.hpp"
 
 namespace tr
 {
@@ -81,7 +81,12 @@ namespace tr
     else return 0;
   }
 
-  //## Обработчик запросов на получение данных
+
+  ///
+  /// \brief sqlw::request_get
+  /// \param Query
+  /// \details Обработчик запросов на получение данных
+  ///
   void sqlw::request_get(const std::string & Query)
   {
     ErrorsList.clear();
@@ -100,6 +105,11 @@ namespace tr
   }
 
   ///
+  /// \brief sqlw::select_rig
+  /// \param x
+  /// \param y
+  /// \param z
+  ///
   void sqlw::select_rig(int x, int y, int z)
   {
     char buf[255];
@@ -111,6 +121,9 @@ namespace tr
     return;
   }
 
+  ///
+  /// \brief sqlw::select_snip
+  /// \param id
   ///
   void sqlw::select_snip(int id)
   {
@@ -155,7 +168,10 @@ namespace tr
 //////////////////////
 
 
-  //## Прием данных, полученых в результате запроса
+  ///
+  /// \brief sqlw::save_row_data
+  /// \details Прием данных, полученых в результате запроса
+  ///
   void sqlw::save_row_data(void)
   {
     //int col = sqlite3_column_count(pStmt); // Число колонок в результирующем наборе
@@ -206,7 +222,12 @@ namespace tr
     return;
   }
 
-  //## Обработчик запросов на получение данных
+
+  ///
+  /// \brief sqlw::request_get
+  /// \param request
+  /// \details Обработчик запросов на получение данных
+  ///
   void sqlw::request_get(const char *request)
   {
     bool complete = false;

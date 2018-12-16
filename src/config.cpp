@@ -141,23 +141,26 @@ namespace tr
   /// \param map_name
   /// \details Создание в пользовательском каталоге новой карты
   ///
-  void cfg::create_map(const std::string &)
+  void cfg::create_map(const std::string &N)
   {
-    // название папки = число секунд от начала эпохи
     auto t = std::chrono::duration_cast<std::chrono::seconds>
         (std::chrono::system_clock::now().time_since_epoch()).count();
-    std::string Ts = std::to_string(t);
+    std::string Ts = std::to_string(t);        // число секунд от начала эпохи
 
-    auto DirPName = UserDir + DS + Ts;
+    auto DirPName = UserDir + DS + Ts;         // название папки
     if(!std::filesystem::exists(DirPName))
       std::filesystem::create_directory(DirPName);
-    else ERR("Existed map name " + DirPName);
+    else ERR("Err: double map names " + DirPName);
 
-    auto MapPName = DirPName + DS + "map.db";
-    auto CfgPName = DirPName + DS + "config.db";
+    std::string MapSrc {cfg::get(DB_TPL_FNAME)};  // шаблон карты
+    auto MapPName = DirPName + DS + "map.db";     // путь к новой карте
 
-    std::filesystem::copy(get(DB_TPL_FNAME), MapPName); // база данных карты
-    init_config_db(CfgPName);                           // конфиг пользователя на карте
+    std::ifstream src(MapSrc, std::ios::binary);  // TODO: контроль чтения
+    std::ofstream dst(MapPName, std::ios::binary);
+    dst << src.rdbuf();                           // скопировать шаблон карты
+
+    auto CfgPName = DirPName + DS + "config.db";  // путь к файлу конфига
+    init_config_db(CfgPName);                     // создать новый конфиг
 
     sqlw Db{CfgPName};
     Db.open();
@@ -166,8 +169,10 @@ namespace tr
   for(auto &msg: Db.ErrorsList) tr::info(msg);
 #endif
 
-    std::string Query = "INSERT INTO init ("+ std::to_string(MAP_NAME) +", ?);";
-    //Db.request_put(Query.c_str(), map_name.c_str(), map_name.size());
+    // Записать в конфиг имя карты, введенное пользователем
+    std::string Query = "INSERT INTO init (key, val) VALUES ("+
+        std::to_string(MAP_NAME) +", \""+ N.c_str() +"\");";
+    Db.exec(Query.c_str());
 
 #ifndef NDEBUG
   for(auto &msg: Db.ErrorsList) tr::info(msg);

@@ -10,6 +10,25 @@
 
 namespace tr
 {
+
+///
+/// \brief dir_list
+/// \param path
+/// \return
+///
+/// \details Возвращает список папок в указанном месте
+///
+std::list<std::string> dirs_list(const std::string &path)
+{
+  std::list<std::string> D {};
+
+  for(auto& it: std::filesystem::directory_iterator(path))
+    if (std::filesystem::is_directory(it))  D.push_back(it.path().string());
+
+  return std::move(D);
+}
+
+
   ///
   /// \brief char_type
   /// \param c

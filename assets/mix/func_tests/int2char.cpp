@@ -12,5 +12,6 @@ int main(int, char**)
 
   std::cout << "r + g * 255 + b * 255 * 255 = "
             << (r + g * 255 + b * 255 * 255) << "\n";
+
   return 0;
 }

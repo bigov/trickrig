@@ -9,8 +9,20 @@ gui::gui(void)
 {
   FontMap1_len = FontMap1.length();
   TimeStart = std::chrono::system_clock::now();
-  return;
+
+  auto MapsDirs = dirs_list(cfg::UserDir); // список директорий с картами
+  //auto maps_count = MapsDirs.size();       // количество элементов в списке
+
+  sqlw DB {};
+  for(std::string P: MapsDirs)
+  {
+    std::string DbFile = P + cfg::DS + "config.db";
+    DB.open(DbFile);
+    // TODO: заполнить список баз "Maps"
+    DB.close();
+  }
 }
+
 
 ///
 /// \brief Добавление текста из текстурного атласа
@@ -32,29 +44,29 @@ void gui::add_text(const img &FontImg, const std::string &TextString,
   #endif
 
   u_int row = 0;                        // номер строки в текстуре шрифта
-  u_int col = 0;                        // номер колонки в текстуре шрифта
+  size_t col = 0;                       // номер колонки в текстуре шрифта
   u_int n = 0;                          // номер буквы в выводимой строке
   size_t text_size = TextString.size(); // число байт в строке
 
   for(size_t i = 0; i < text_size; ++i)
   {
-    switch (char_type(TextString[i]))
+    auto t = char_type(TextString[i]);
+    if(t == SINGLE)
     {
-      case SINGLE:
-        col = FontMap1.find(TextString[i]);
-        FontImg.copy(col, row, Dst, x + (n++) * FontImg.w_cell, y);
-        break;
-      case UTF8_FIRST:
-        col = FontMap1_len + FontMap2.find(TextString.substr(i,2))/2;
-        FontImg.copy(col, row, Dst, x + (n++) * FontImg.w_cell, y);
-        break;
-      default:
-        break;
+      col = FontMap1.find(TextString[i]);
+      if(col == std::string::npos) col = 0;
+      FontImg.copy(col, row, Dst, x + (n++) * FontImg.w_cell, y);
+    }
+    else if(t == UTF8_FIRST)
+    {
+      col = FontMap2.find(TextString.substr(i,2));
+      if(col == std::string::npos) col = 0;
+      else col = FontMap1_len + col/2;
+      FontImg.copy(col, row, Dst, x + (n++) * FontImg.w_cell, y);
     }
   }
-
-  return;
 }
+
 
 ///
 /// \brief Начальный экран приложения
@@ -73,9 +85,8 @@ void gui::menu_start(void)
 
   y += 3 * AppWin.btn_h;
   add_button(BTN_CANCEL, x, y, u8"Закрыть");
-
-  return;
 }
+
 
 ///
 /// \brief Создание заголовка экрана
@@ -136,18 +147,18 @@ void gui::menu_map_create(void)
 /// \details Рисует указанным шрифтом, в фиксированной позиции, на всю
 ///  ширину экрана
 ///
-void gui::add_input_string(const img &_Fn)
+void gui::add_input_string(const img &Font)
 {
   px color = {0xF0, 0xF0, 0xF0, 0xFF};
-  u_int row_width = GuiImg.w_summ - _Fn.w_cell * 2;
-  u_int row_height = _Fn.h_cell * 2;
+  u_int row_width = GuiImg.w_summ - Font.w_cell * 2;
+  u_int row_height = Font.h_cell * 2;
   img RowInput{ row_width, row_height, color };
 
   // добавить текст, введенный пользователем
-  u_int y = (row_height - _Fn.h_cell)/2;
-  add_text(_Fn, user_input, RowInput, _Fn.w_cell, y);
+  u_int y = (row_height - Font.h_cell)/2;
+  add_text(Font, user_input, RowInput, Font.w_cell, y);
 
-  add_text_cursor(_Fn, RowInput, utf8_size(user_input));
+  add_text_cursor(Font, RowInput, utf8_size(user_input));
 
   // скопировать на экран изображение поля ввода с добавленым текстом
   auto x = (GuiImg.w_summ - RowInput.w_summ) / 2;
@@ -202,6 +213,8 @@ void gui::menu_map_select(void)
   obscure_screen();
   screen_title(u8"ВЫБОР КАРТЫ");
 
+  for(auto p: Maps) { }
+
   // Курсор выбора
   std::string title { user_input };
   px color = {0xF0, 0xF0, 0xF0, 0xFF};
@@ -233,11 +246,7 @@ void gui::menu_map_select(void)
 void gui::new_map_create(void)
 {
   // Каталог пользователя
-  //cfg::create_map(user_input);
-
-  // файл шаблона
-
-
+  cfg::create_map(user_input);
 }
 
 ///
