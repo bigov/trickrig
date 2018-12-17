@@ -18,29 +18,6 @@ namespace tr {
   tr::query_data wsql::Result = {0, "", "", 0};
 
 
-  //## устанавливает имя файла базы данных Sqlite3
-  void wsql::set_db_name(const std::string & fname)
-  {
-    set_db_name(fname.c_str());
-    return;
-  }
-
-  //## устанавливает имя файла базы данных Sqlite3
-  void wsql::set_db_name(const char * fname)
-  {
-    if(nullptr == fname)
-    {
-      ErrorsList.emplace_front("Sqlw: no specified DB to open.");
-      return;
-    }
-
-    DbFileName = std::string(fname);
-    if(0 == DbFileName.length())
-      ErrorsList.emplace_front("Sqlw: no specified DB to open.");
-
-    return;
-  }
-
   //## Обработчик результатов запроса sql3_exec()
   int wsql::callback(void *x, int count, char **value, char **name)
   {
@@ -161,16 +138,16 @@ namespace tr {
   ///
   void wsql::save_row_data(void)
   {
+    size_t data_bytes = 0;
+    std::vector<std::any> Row {};
+    std::vector<char> Ch_ceil {};
+    std::vector<unsigned char> Uch_ceil {};
+
     //int col = sqlite3_column_count(pStmt); // Число колонок в результирующем наборе
     int col = sqlite3_data_count(pStmt);     // Число колонок в строке результата
 
-    //if(col < 1) return; ???
+    if(col < 1) return;
 
-    size_t data_bytes = 0;
-
-    std::vector<std::any> Row;
-    std::vector<char> Ch_ceil;
-    std::vector<unsigned char> Uch_ceil;
 
     for (int i = 0; i < col; i++)
     {
@@ -217,6 +194,15 @@ namespace tr {
   ///
   void wsql::request_get(const char *request)
   {
+    if(!is_open)
+    {
+#ifndef NDEBUG
+      ErrorsList.emplace_front("Not present opened db.");
+      for(auto &msg: ErrorsList) tr::info(msg);
+#endif
+      return;
+    }
+
     bool complete = false;
 
     Rows.clear();
@@ -399,33 +385,33 @@ namespace tr {
     return;
   }
 
-  //## Подключиться к DB
-  bool wsql::open(const std::string & fname)
-  {
-    if(is_open) close(); // закрыть, если был открыт, текущий файл
-    DbFileName = fname;
-    return open();
-  }
 
-  //## Подключиться к DB
-  bool wsql::open(void)
+  ///
+  /// \brief wsql::open ## Подключиться к DB
+  /// \param fname
+  /// \return
+  ///
+  bool wsql::open(const std::string & FileName)
   {
-    if(DbFileName.empty())
+    ErrorsList.clear();
+
+    if(is_open) close(); // закрыть, если был открыт файл
+
+    if(FileName.empty())
     {
       ErrorsList.emplace_front("Sqlw: no specified DB to open.");
       return false;
     }
 
-    ErrorsList.clear();
-
-    int rc = sqlite3_open_v2(DbFileName.c_str(), &db,
+    int rc = sqlite3_open_v2(FileName.c_str(), &db,
       SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
     if (rc != SQLITE_OK)
     {
       ErrorsList.emplace_front(std::string(sqlite3_errmsg(db))
-        + std::string("\nCan't open database ") + DbFileName);
+        + std::string("\nCan't open database ") + FileName);
       close();
-    } else
+    }
+    else
     {
       is_open = true;
       sqlite3_update_hook(db, update_callback, &empty);
@@ -436,10 +422,9 @@ namespace tr {
   ///
   /// Выполнение запроса
   ///
-  void wsql::exec(const std::string &query)
+  void wsql::exec(const std::string &Query)
   {
-    exec(query.c_str());
-    return;
+    exec(Query.c_str());
   }
 
   ///
@@ -450,7 +435,7 @@ namespace tr {
   ///
   void wsql::exec(const char *query)
   {
-    if(is_open || open())
+    if(is_open)
     {
       char* err_msg = nullptr;
       ErrorsList.clear();
@@ -469,27 +454,28 @@ namespace tr {
         }
       }
     }
+    else
+    {
+      ErrorsList.emplace_front("sqlw::exec: is not opened db-file");
+    }
 
     #ifndef NDEBUG
     for(auto &msg: ErrorsList) tr::info(msg);
     #endif
-
-    return;
   }
 
   //## Закрывает соединение с файлом базы данных
   void wsql::close(void)
   {
+    if(!is_open) return;
     sqlite3_finalize(pStmt);
     sqlite3_close(db);
     is_open = false;
-    return;
   }
 
   //## Деструктор
   wsql::~wsql(void)
   {
     if(is_open) close();
-    return;
   }
 }

@@ -12,16 +12,21 @@
 #include "wglfw.hpp"
 #include "wsql.hpp"
 
+std::string tr::AppPathDir {};
+
 ///
 /// \brief main
 /// \return
 ///
-int main(int, char**)
+int main(int, char* argv[])
 {
 #ifndef NDEBUG
   assert(sizeof(GLfloat) == 4);
   tr::info("\n -- Enable debug mode --\n");
 #endif
+
+  fs::path p = argv[0];
+  tr::AppPathDir = fs::absolute(p).remove_filename().u8string();
 
   try
   {

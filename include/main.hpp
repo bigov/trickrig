@@ -45,10 +45,11 @@
 #include "glm/gtc/type_ptr.hpp"
 
 #define ERR throw std::runtime_error
+namespace fs = std::filesystem;
 
 namespace tr {
 
-namespace fs = std::filesystem;
+extern std::string AppPathDir; // путь размещения программы
 
 using u_char = unsigned char;
 using u_int  = unsigned int;

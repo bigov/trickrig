@@ -65,8 +65,8 @@ v_str db::load_config(size_t n, const std::string &Pname)
   }
 
   // Данные из таблицы результата переносим в массив ConfigParams
-  int key;
-  std::string val;
+  int key = 0;
+  std::string val {};
 
   for(auto &row: SqlDb.Table_rows)
   {
@@ -81,9 +81,10 @@ v_str db::load_config(size_t n, const std::string &Pname)
   return ConfigParams;
 }
 
+
 ///
 /// \brief db::open
-/// \param PathName - путь к директории данных карты пользователя
+/// \param PathName - путь к директории данных карты пользователя (cо слэшем в конце)
 ///
 v_str db::open_map(const std::string &DirPathName)
 {
@@ -97,7 +98,7 @@ v_str db::open_map(const std::string &DirPathName)
 
 ///
 /// \brief db::open
-/// \param PathName - путь к директории данных приложения
+/// \param PathName - путь к директории данных приложения (cо слэшем в конце)
 ///
 v_str db::open_app(const std::string &DirPathName)
 {
@@ -116,7 +117,9 @@ void db::save_map_name(const std::string &MapName)
   // Записать в конфиг имя карты, введенное пользователем
   std::string Query = "INSERT INTO init (key, val) VALUES ("+
       std::to_string(MAP_NAME) +", \""+ MapName.c_str() +"\");";
+  SqlDb.open(CfgMapPFName);
   SqlDb.exec(Query.c_str());
+  SqlDb.close();
 }
 
 
@@ -151,9 +154,11 @@ void db::save(const tr::camera_3d &Eye)
   sprintf(q, tpl, p.c_str(), LOOK_TANG);
   Query += q;
 
-  SqlDb.open(CfgMapPFName);
-  SqlDb.request_put(Query);
-  SqlDb.close();
+  if(SqlDb.open(CfgMapPFName))
+  {
+    SqlDb.request_put(Query);
+    SqlDb.close();
+  }
 }
 
 
@@ -184,7 +189,7 @@ void db::save(const tr::main_window &AppWin)
   sprintf(q, tpl, p.c_str(), WINDOW_HEIGHT);
   Query += q;
 
-  SqlDb.open(CfgAppPFName);
+  if(!SqlDb.open(CfgAppPFName)) ERR("Fail: not found app config.");
   SqlDb.request_put(Query);
   SqlDb.close();
 }
@@ -195,12 +200,11 @@ void db::save(const tr::main_window &AppWin)
 /// \param fname
 /// \details Установка значений по-умолчанию параметров пользователя
 ///
-void db::init_map_config(const std::string &ConfigPname)
+void db::init_map_config(const std::string &FilePName)
 {
 #ifndef NDEBUG
   info("Init new database file.\n");
 #endif
-
 
   std::string Q = "CREATE TABLE IF NOT EXISTS init ( "
                   "rowid INTEGER PRIMARY KEY, "
@@ -213,7 +217,7 @@ void db::init_map_config(const std::string &ConfigPname)
   sprintf(q, tpl, LOOK_AZIM,          "0.0");                Q += q;
   sprintf(q, tpl, LOOK_TANG,          "0.0");                Q += q;
 
-  if(!SqlDb.open(ConfigPname)) ERR("Can't create dbfile: " + ConfigPname);
+  if(!SqlDb.open(FilePName)) ERR("Can't create dbfile: " + FilePName);
   SqlDb.exec(Q.c_str());
 #ifndef NDEBUG
   for(auto &msg: SqlDb.ErrorsList) info(msg);
@@ -227,7 +231,7 @@ void db::init_map_config(const std::string &ConfigPname)
 /// \param fname
 /// \details Установка значений по-умолчанию параметров приложения
 ///
-void db::init_app_config(const std::string &ConfigPname)
+void db::init_app_config(const std::string &FilePName)
 {
 #ifndef NDEBUG
   info("Init new database file.\n");
@@ -251,7 +255,7 @@ void db::init_app_config(const std::string &ConfigPname)
   sprintf(q, tpl, WINDOW_TOP,         "50");                 Q += q;
   sprintf(q, tpl, WINDOW_LEFT,        "100");                Q += q;
 
-  if(!SqlDb.open(ConfigPname)) ERR("Can't create dbfile: " + ConfigPname);
+  if(!SqlDb.open(FilePName)) ERR("Can't create dbfile: " + FilePName);
   SqlDb.exec(Q.c_str());
 #ifndef NDEBUG
   for(auto &msg: SqlDb.ErrorsList) info(msg);

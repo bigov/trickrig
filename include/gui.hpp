@@ -22,7 +22,7 @@ class gui
     img GuiImg { 0, 0 };                 // GUI/HUD текстура окна приложения
 
     struct Map{ std::string Name{}; };
-    std::vector<Map> Maps{};    // список карт
+    std::vector<Map> Maps{};             // список карт
 
     enum BUTTON_ID { // Идентификаторы кнопок GIU
       BTN_OPEN,
@@ -75,6 +75,7 @@ class gui
     void button_click(BUTTON_ID);
     void cancel(void);
     void new_map_create(void);
+    void refresh(void);      // обновление кадра
 
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
@@ -82,7 +83,6 @@ class gui
     gui(void);
     void draw(void);         // формирование изображения GIU окна
     void draw_headband(void);// заставка
-    void refresh(void);      // обновление кадра
 };
 
 } //tr

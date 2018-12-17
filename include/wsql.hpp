@@ -38,9 +38,6 @@ class wsql
     std::forward_list<std::string> ErrorsList = {};
     static tr::query_data Result;
 
-    void set_db_name(const char *);
-    void set_db_name(const std::string &);
-    bool open(void);
     bool open(const std::string &);
     void close(void);
     void exec(const char *);
@@ -69,8 +66,8 @@ class wsql
     sqlite3_stmt *pStmt = nullptr;
 
     bool is_open = false;
-    std::string DbFileName {};
 
+    bool _open(void);
     void save_row_data(void);
     static int callback(void*, int, char**, char**);
     static void update_callback(void*, int, const char*, const char*,
