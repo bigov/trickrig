@@ -33,13 +33,14 @@ namespace tr
       static std::string DS;          // символ разделителя папок
       static std::string CfgFname;    // конфиг текущей сесии
 
-      static void load_map(const std::string &name);
+      static void load_map(const std::string &DirName);
       static void load_app_params(void);
       static void save(void);
-      static void create_map(const std::string& map_name);
+      static void create_map(const std::string &MapName);
       static std::string app(APP_INIT);
       static std::string map(MAP_INIT);
       static std::string user_dir(void);
+      static std::string map_name(const std::string &FolderName);
   };
 
 } //namespace

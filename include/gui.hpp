@@ -21,10 +21,15 @@ class gui
     px bg_hud  {0x00, 0x88, 0x00, 0x40}; // фон панелей HUD (активного окна)
     img GuiImg { 0, 0 };                 // GUI/HUD текстура окна приложения
 
-    struct Map{ std::string Name{}; };
-    std::vector<Map> Maps{};             // список карт
+    struct map{
+        map(const std::string &f, const std::string &n): Folder(f), Name(n){}
+        std::string Folder;
+        std::string Name;
+    };
 
-    enum BUTTON_ID { // Идентификаторы кнопок GIU
+    std::vector<map> Maps {};             // список карт
+
+    enum BUTTON_ID {                      // Идентификаторы кнопок GIU
       BTN_OPEN,
       BTN_CANCEL,
       BTN_CONFIG,

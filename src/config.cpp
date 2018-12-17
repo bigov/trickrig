@@ -66,6 +66,19 @@ void cfg::load_map(const std::string &DirName)
 
 
 ///
+/// \brief cfg::map_name
+/// \param FolderName
+/// \return
+/// \details Читает имя карты из указанной папки
+std::string cfg::map_name(const std::string &FolderName)
+{
+  auto config = FolderName + DS + fname_cfg;
+  v_ch Name = DataBase.get_map_name(config);
+  return std::string(Name.data());
+}
+
+
+///
 /// Загрузка параметров приложения
 ///
 void cfg::load_app_params(void)

@@ -83,6 +83,24 @@ v_str db::load_config(size_t n, const std::string &Pname)
 
 
 ///
+/// \brief db::get_map_name
+/// \param dbFile
+/// \return
+/// \details Возвращает значение имени карты из конфига
+///
+v_ch db::get_map_name(const std::string & dbFile)
+{
+  SqlDb.open(dbFile);
+  std::string Query =
+      "SELECT val from init WHERE key="+std::to_string(MAP_NAME)+";";
+  SqlDb.exec(Query.c_str());
+  auto result = SqlDb.Table_rows.front().front().second;
+  SqlDb.close();
+  return result;
+}
+
+
+///
 /// \brief db::open
 /// \param PathName - путь к директории данных карты пользователя (cо слэшем в конце)
 ///

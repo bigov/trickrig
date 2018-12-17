@@ -55,6 +55,7 @@ using u_char = unsigned char;
 using u_int  = unsigned int;
 using u_long = unsigned long;
 using v_str  = std::vector<std::string>;
+using v_ch   = std::vector<char>;
 using v_uch  = std::vector<unsigned char>;
 
 enum APP_INIT {      // вначале списка идут названия файлов

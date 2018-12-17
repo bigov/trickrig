@@ -22,6 +22,7 @@ class db
     static void save_map_name(const std::string &);
     static void save(const tr::camera_3d &Eye);
     static void save(const tr::main_window &AppWin);
+    v_ch get_map_name(const std::string & dbFile);
 
   private:
     static std::string MapDir;

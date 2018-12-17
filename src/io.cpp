@@ -16,7 +16,7 @@ namespace tr
 /// \param path
 /// \return
 ///
-/// \details Возвращает список папок в указанном месте
+/// \details Возвращает список директорий в формате полного пути в каталоге
 ///
 std::list<std::string> dirs_list(const std::string &path)
 {

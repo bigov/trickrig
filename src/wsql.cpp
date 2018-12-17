@@ -18,7 +18,15 @@ namespace tr {
   tr::query_data wsql::Result = {0, "", "", 0};
 
 
-  //## Обработчик результатов запроса sql3_exec()
+  ///
+  /// \brief wsql::callback
+  /// \param x
+  /// \param count
+  /// \param value
+  /// \param name
+  /// \return
+  /// \details Обработчик результатов запроса sql3_exec()
+  ///
   int wsql::callback(void *x, int count, char **value, char **name)
   {
     std::vector<char> col_value = {};
@@ -261,6 +269,15 @@ namespace tr {
   {
   /// Может обрабатывать строки, составленые из нескольких запросов,
   /// разделеных стандартным символом (;)
+  ///
+    if(!is_open)
+    {
+#ifndef NDEBUG
+      ErrorsList.emplace_front("Not present opened db.");
+      for(auto &msg: ErrorsList) tr::info(msg);
+#endif
+      return;
+    }
 
     ErrorsList.clear();
 
@@ -296,8 +313,6 @@ namespace tr {
     #ifndef NDEBUG
     for(auto &msg: ErrorsList) tr::info(msg);
     #endif
-
-    return;
   }
 
   ///
@@ -311,6 +326,14 @@ namespace tr {
   ///
   void wsql::request_put(const char* request, const void* blob_data, size_t blob_size)
   {
+    if(!is_open)
+    {
+#ifndef NDEBUG
+      ErrorsList.emplace_front("Not present opened db.");
+      for(auto &msg: ErrorsList) tr::info(msg);
+#endif
+      return;
+    }
 
     ErrorsList.clear();
 
@@ -341,7 +364,6 @@ namespace tr {
     for(auto &msg: ErrorsList) tr::info(msg);
     #endif
 
-    return;
   }
 
   //## Запись бинарных данных переданых в виде массива float и его размера
@@ -394,7 +416,6 @@ namespace tr {
   bool wsql::open(const std::string & FileName)
   {
     ErrorsList.clear();
-
     if(is_open) close(); // закрыть, если был открыт файл
 
     if(FileName.empty())

@@ -10,17 +10,9 @@ gui::gui(void)
   FontMap1_len = FontMap1.length();
   TimeStart = std::chrono::system_clock::now();
 
+  // Составить список карт в каталоге пользователя
   auto MapsDirs = dirs_list(cfg::user_dir()); // список директорий с картами
-  //auto maps_count = MapsDirs.size();        // количество элементов в списке
-
-  wsql DB {};
-  for(std::string P: MapsDirs)
-  {
-    std::string DbFile = P + cfg::DS + "config.db";
-    DB.open(DbFile);
-    // TODO: заполнить список баз "Maps"
-    DB.close();
-  }
+  for(auto &P: MapsDirs) { Maps.push_back(map(P, cfg::map_name(P))); }
 }
 
 
@@ -187,8 +179,8 @@ void gui::add_text_cursor(const img &_Fn, img &_Dst, size_t position)
   img Cursor {3, _Fn.h_cell, c};
   Cursor.copy(0, 0, _Dst, _Fn.w_cell * (position + 1) + 1,
               (_Dst.h_cell - _Fn.h_cell) / 2 );
-  return;
 }
+
 
 ///
 /// \brief gui::cover_config
@@ -201,9 +193,8 @@ void gui::menu_config(void)
   int x = GuiImg.w_summ / 2 - static_cast<u_long>(AppWin.btn_w/2);
   int y = GuiImg.h_summ / 2;
   add_button(BTN_CANCEL, x, y, u8"Отмена");
-
-  return;
 }
+
 
 ///
 /// \brief Окно выбора района
@@ -213,7 +204,12 @@ void gui::menu_map_select(void)
   obscure_screen();
   screen_title(u8"ВЫБОР КАРТЫ");
 
-  for(auto p: Maps) { }
+  static bool pr = true;
+  for(auto p: Maps)
+  {
+    //p.Name - назначенное имя карты
+  }
+
 
   // Курсор выбора
   std::string title { user_input };
@@ -240,6 +236,7 @@ void gui::menu_map_select(void)
   add_button(BTN_CANCEL, x + AppWin.btn_w + 16, y, u8"Отмена");
 }
 
+
 ///
 /// \brief gui::new_map_create
 ///
@@ -248,6 +245,7 @@ void gui::new_map_create(void)
   // Каталог пользователя
   cfg::create_map(user_input);
 }
+
 
 ///
 /// \brief gui::button_click - Обработчик нажатия клавиш GUI интерфейса
