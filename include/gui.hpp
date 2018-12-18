@@ -41,6 +41,7 @@ class gui
     };
 
     BUTTON_ID button_over = NONE;      // Над какой GIU кнопкой курсор
+    size_t row_ower       = 0;         // над какой строкой курсор мыши
 
     // "FontMap1" - однобайтовые символы
     const std::string FontMap1 { u8"_'\"~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghi"
@@ -72,7 +73,8 @@ class gui
     void draw_text_cursor(const img &_Fn, img &_Dst, size_t position);
     void draw_title(const std::string& title);
     void draw_input(const img &_Fn);
-    void draw_list_select(const v_str &, u_int x, u_int y, u_int w, u_int h);
+    void draw_text_row(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &);
+    void draw_list_select(const v_str &, u_int x, u_int y, u_int w, u_int h, size_t i = 0);
     void sub_img(const img &Image, GLint x, GLint y);
     void draw_gui_menu(void);
     void menu_map_create(void);

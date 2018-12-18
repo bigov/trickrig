@@ -124,7 +124,7 @@ void gui::menu_map_create(void)
   // две кнопки
   auto x = WinGui.w_summ / 2 - static_cast<u_long>(AppWin.btn_w * 1.25);
   auto y = WinGui.h_summ / 2;
-  draw_button(BTN_ENTER_NAME, x, y, "OK", user_input.length() > 0);
+  draw_button(BTN_ENTER_NAME, x, y, u8"OK", user_input.length() > 0);
 
   x += AppWin.btn_w * 1.5;  // X координата кнопки
   draw_button(BTN_LOCATION, x, y, u8"Отмена");
@@ -195,23 +195,61 @@ void gui::menu_config(void)
 
 
 ///
+/// \brief gui::draw_text_row
+/// \param id
+/// \param x
+/// \param y
+/// \param text
+/// \details Отобажение тестовой строки, реагирующей на указатель мыши
+///
+void gui::draw_text_row(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &text)
+{
+  px bg_color {0x90, 0xF0, 0x90, 0xFF};
+
+  // Если указатель находится над строкой
+  if(AppWin.xpos >= x && AppWin.xpos <= x+w && AppWin.ypos >= y && AppWin.ypos <= y+h)
+  {
+     row_ower = id;
+     // и если кнопку "кликнули" указателем мыши
+     if((AppWin.mouse == MOUSE_BUTTON_LEFT) && (AppWin.action == PRESS))
+     {
+       bg_color = {}; // press
+     }
+     else
+     {
+       bg_color = {}; // over
+     }
+  }
+  else
+  {
+    bg_color = {}; // normal
+  }
+
+  img Row { w, h, bg_color };
+  add_text(Font18s, text, Row, 2, h - 2);
+  Row.copy(0, 0, WinGui, x, y);
+}
+
+
+///
 /// \brief gui::draw_list_select
 /// \details Отображение списка выбора
 ///
-void gui::draw_list_select(const v_str &Rows, u_int x, u_int y, u_int w, u_int h)
+void gui::draw_list_select(const v_str &Rows, u_int lx, u_int ly, u_int lw, u_int lh, size_t i)
 {
-  img ListImg {w, h, color_title};
-  ListImg.copy(0, 0, WinGui, x, y);
+  img ListImg {lw, lh, color_title};             // изображение списка
+
+  if(i >= Rows.size()) i = 0;
 
   // Курсор выбора
-  std::string title { Rows[0] };
-  px color = {0xF0, 0xF0, 0xF0, 0xFF};
+  std::string title { Rows[i] };
+  px color = {0x90, 0xF0, 0x90, 0xFF};
   u_int cursor_height = Font18s.h_cell * 2;
-  img Cursor{ w, cursor_height, color};
+  img Cursor{ lw, cursor_height, color};
 
   // добавить текст
-  x = (w - title.length() * Font18n.w_cell) / 2;
-  y = (cursor_height - Font18n.h_cell) / 2;
+  u_int x = (lw - title.length() * Font18n.w_cell) / 2;
+  u_int y = (cursor_height - Font18n.h_cell) / 2;
   add_text(Font18n, title, Cursor, x, y);
 
   // скопировать на экран
@@ -219,8 +257,8 @@ void gui::draw_list_select(const v_str &Rows, u_int x, u_int y, u_int w, u_int h
   y = WinGui.h_summ / 2 - 2 * AppWin.btn_h;
   Cursor.copy(0, 0, WinGui, x, y);
 
+  ListImg.copy(0, 0, WinGui, lx, ly);
 
-  return;
 }
 
 

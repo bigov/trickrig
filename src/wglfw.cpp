@@ -27,6 +27,7 @@ namespace tr
   int KEY_ESCAPE         = GLFW_KEY_ESCAPE;
   int KEY_BACKSPACE      = GLFW_KEY_BACKSPACE;
 
+
   ///
   /// Создание нового окна с обработчиками ввода и настройка контекста
   /// отображения OpenGL
@@ -72,6 +73,7 @@ namespace tr
     if(!ogl_LoadFunctions()) ERR("Can't load OpenGl finctions");
   }
 
+
   ///
   ///  Destructor
   ///
@@ -81,6 +83,7 @@ namespace tr
     glfwTerminate();
   }
 
+
   ///
   /// Errors callback
   ///
@@ -88,6 +91,7 @@ namespace tr
   {
     info("GLFW error " + std::to_string(error) + ": " + description);
   }
+
 
   ///
   /// \brief wingl::set_cursor Смена режима отображения сцены (GUI/3D)
@@ -116,6 +120,7 @@ namespace tr
     AppWin.set_mouse_ptr = 0; // после обработки установить нейтральное значение
   }
 
+
   ///
   /// \brief window_glfw::mouse_button_callback
   /// \param window
@@ -130,6 +135,7 @@ namespace tr
     AppWin.mouse = button;
     AppWin.action = action;
   }
+
 
   ///
   /// Keys events callback
@@ -148,6 +154,7 @@ namespace tr
     keys.ud = glfwGetKey(window, k_DOWN)  - glfwGetKey(window, k_UP);
     keys.rl = glfwGetKey(window, k_LEFT) - glfwGetKey(window, k_RIGHT);
   }
+
 
   ///
   /// \brief glfw_wr::character_callback
@@ -172,6 +179,7 @@ namespace tr
     }
   }
 
+
   ///
   /// GLFW window moving callback
   ///
@@ -180,6 +188,7 @@ namespace tr
     AppWin.left = static_cast<u_int>(left);
     AppWin.top = static_cast<u_int>(top);
   }
+
 
   ///
   /// GLFW framebuffer callback resize
@@ -190,6 +199,7 @@ namespace tr
     AppWin.height = static_cast<u_int>(height);
     AppWin.resized = true; // для пересчета фреймбуфера
   }
+
 
   ///
   /// Обработчик окна для перемещений курсора мыши
@@ -212,6 +222,7 @@ namespace tr
       AppWin.ypos = y;
     }
   }
+
 
   ///
   /// \brief Main loop for the app-window show
