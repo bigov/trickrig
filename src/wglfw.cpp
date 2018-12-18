@@ -23,10 +23,10 @@ namespace tr
   int MOUSE_BUTTON_LEFT  = GLFW_MOUSE_BUTTON_LEFT;
   int MOUSE_BUTTON_RIGHT = GLFW_MOUSE_BUTTON_RIGHT;
   int PRESS              = GLFW_PRESS;
+  int REPEAT             = GLFW_REPEAT;
   int RELEASE            = GLFW_RELEASE;
   int KEY_ESCAPE         = GLFW_KEY_ESCAPE;
   int KEY_BACKSPACE      = GLFW_KEY_BACKSPACE;
-
 
   ///
   /// Создание нового окна с обработчиками ввода и настройка контекста

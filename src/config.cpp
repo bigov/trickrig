@@ -50,7 +50,7 @@ std::string cfg::user_dir(void)
 
 
 ///
-/// Загрузка конфигурации карты
+/// Загрузка карты
 ///
 void cfg::load_map(const std::string &DirName)
 {

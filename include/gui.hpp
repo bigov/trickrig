@@ -41,7 +41,7 @@ class gui
     };
 
     BUTTON_ID button_over = NONE;      // Над какой GIU кнопкой курсор
-    size_t row_ower       = 0;         // над какой строкой курсор мыши
+    size_t row_selected   = 0;         // какая строка выбрана
 
     // "FontMap1" - однобайтовые символы
     const std::string FontMap1 { u8"_'\"~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghi"

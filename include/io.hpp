@@ -41,6 +41,8 @@ namespace tr
       a(int_to_uchar(A)) {};
   };
 
+  extern bool operator== (const px &A, const px &B);
+
   // Служебный класс для хранения в памяти текстур
   class img
   {

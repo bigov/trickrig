@@ -101,6 +101,7 @@ enum GUI_MODE_ID {   // режимы окна
   extern int MOUSE_BUTTON_LEFT;  // GLFW_MOUSE_BUTTON_LEFT
   extern int MOUSE_BUTTON_RIGHT; // GLFW_MOUSE_BUTTON_RIGHT
   extern int PRESS;              // GLFW_PRESS
+  extern int REPEAT;             // GLFW_REPEAT
   extern int RELEASE;            // GLFW_RELEASE
   extern int KEY_ESCAPE;         // GLFW_KEY_ESCAPE
   extern int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE

@@ -197,36 +197,57 @@ void gui::menu_config(void)
 ///
 /// \brief gui::draw_text_row
 /// \param id
-/// \param x
-/// \param y
+/// \param x - координата относительно окна приложения
+/// \param y - координата относительно окна приложения
+/// \param w
+/// \param h
 /// \param text
 /// \details Отобажение тестовой строки, реагирующей на указатель мыши
 ///
 void gui::draw_text_row(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &text)
 {
-  px bg_color {0x90, 0xF0, 0x90, 0xFF};
+  static bool repeated = false;
+  px
+    bg_color {},
+    normal = color_title,
+    over = { 0xFF, 0xFF, 0xFF, 0xFF },
+    selected = { 0xDD, 0xFF, 0xDD, 0xFF };
+
+  if (row_selected == id)
+  {
+    normal = selected;
+    over = selected;
+  }
 
   // Если указатель находится над строкой
   if(AppWin.xpos >= x && AppWin.xpos <= x+w && AppWin.ypos >= y && AppWin.ypos <= y+h)
   {
-     row_ower = id;
      // и если кнопку "кликнули" указателем мыши
      if((AppWin.mouse == MOUSE_BUTTON_LEFT) && (AppWin.action == PRESS))
      {
-       bg_color = {}; // press
+       bg_color = selected; // selected
+       if(id == row_selected && repeated)
+       {
+         repeated = false;
+         button_click(BTN_OPEN);
+       }
+       repeated = false;
+       row_selected = id;
      }
      else
      {
-       bg_color = {}; // over
+       bg_color = over; // over
+       x -= 2; y -= 1;
+       if(over == selected) repeated = true;
      }
   }
   else
   {
-    bg_color = {}; // normal
+    bg_color = normal; // normal
   }
 
   img Row { w, h, bg_color };
-  add_text(Font18s, text, Row, 2, h - 2);
+  add_text(Font18n, text, Row, Font18n.w_cell/2, 2);
   Row.copy(0, 0, WinGui, x, y);
 }
 
@@ -237,27 +258,21 @@ void gui::draw_text_row(size_t id, u_int x, u_int y, u_int w, u_int h, const std
 ///
 void gui::draw_list_select(const v_str &Rows, u_int lx, u_int ly, u_int lw, u_int lh, size_t i)
 {
-  img ListImg {lw, lh, color_title};             // изображение списка
+  img ListImg {lw, lh, {0xDD, 0xDD, 0xDD, 0xFF}};             // изображение списка
+  ListImg.copy(0, 0, WinGui, lx, ly);
 
   if(i >= Rows.size()) i = 0;
 
-  // Курсор выбора
-  std::string title { Rows[i] };
-  px color = {0x90, 0xF0, 0x90, 0xFF};
-  u_int cursor_height = Font18s.h_cell * 2;
-  img Cursor{ lw, cursor_height, color};
+  u_int rh = Font18n.h_cell * 1.5f;     // высота строки
+  u_int rw = lw - 4;                    // ширина строки
+  u_int max_rows = (lh - 4) / (rh + 2); // число строк, которое может поместиться в списке
 
-  // добавить текст
-  u_int x = (lw - title.length() * Font18n.w_cell) / 2;
-  u_int y = (cursor_height - Font18n.h_cell) / 2;
-  add_text(Font18n, title, Cursor, x, y);
-
-  // скопировать на экран
-  x = (WinGui.w_summ - Cursor.w_summ) / 2;
-  y = WinGui.h_summ / 2 - 2 * AppWin.btn_h;
-  Cursor.copy(0, 0, WinGui, x, y);
-
-  ListImg.copy(0, 0, WinGui, lx, ly);
+  u_int id = 0;
+  for(auto &text: Rows)
+  {
+    draw_text_row(id + 1, lx + 2, ly + id * (rh + 2) + 2, rw, rh, text);
+    if(++id > max_rows) break;
+  }
 
 }
 
@@ -285,7 +300,7 @@ void gui::menu_map_select(void)
   x = WinGui.w_summ / 2 - static_cast<u_long>(AppWin.btn_w/2);
   y = y + list_h + AppWin.btn_h/2;
 
-  draw_button(BTN_OPEN, x, y, u8"Старт", user_input.length() > 0);
+  draw_button(BTN_OPEN, x, y, u8"Старт", row_selected > 0);
   draw_button(BTN_CREATE, x - AppWin.btn_w - 16, y, u8"Создать");
   draw_button(BTN_CANCEL, x + AppWin.btn_w + 16, y, u8"Отмена");
 }
@@ -314,6 +329,7 @@ void gui::button_click(BUTTON_ID id)
   switch(id)
   {
     case BTN_OPEN:
+      cfg::load_map(Maps[row_selected - 1].Folder);
       AppWin.mode = GUI_HUD3D;
       AppWin.Cursor[2] = 4.0f;
       AppWin.set_mouse_ptr = -1;
@@ -352,6 +368,7 @@ void gui::cancel(void)
   switch (AppWin.mode)
   {
     case GUI_HUD3D:
+      cfg::save();
       AppWin.mode = GUI_MENU_LSELECT;
       AppWin.Cursor[2] = 0.0f;  // Убрать прицел
       AppWin.set_mouse_ptr = 1; // Включить указатель мыши

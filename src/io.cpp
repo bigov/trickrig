@@ -28,6 +28,10 @@ std::list<std::string> dirs_list(const std::string &path)
   return std::move(D);
 }
 
+bool operator== (const px &A, const px &B)
+{
+  return ((A.r == B.r) && (A.g==B.g) && (A.b==B.b) && (A.a==B.a));
+}
 
   ///
   /// \brief char_type
