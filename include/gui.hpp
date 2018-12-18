@@ -19,7 +19,8 @@ class gui
   private:
     px bg      {0xE0, 0xE0, 0xE0, 0xC0}; // фон заполнения неактивного окна
     px bg_hud  {0x00, 0x88, 0x00, 0x40}; // фон панелей HUD (активного окна)
-    img GuiImg { 0, 0 };                 // GUI/HUD текстура окна приложения
+    img WinGui { 0, 0 };                 // GUI/HUD текстура окна приложения
+    px color_title {0xFF, 0xFF, 0xDD, 0xFF}; // фон заголовка
 
     struct map{
         map(const std::string &f, const std::string &n): Folder(f), Name(n){}
@@ -63,14 +64,15 @@ class gui
 
     void load_hud(void);
     void obscure_screen(void);
-    void add_button(BUTTON_ID id, u_long x, u_long y, const std::string& Name,
+    void draw_button(BUTTON_ID id, u_long x, u_long y, const std::string& Name,
                 bool button_is_active = true );
     void button_body(img &Data, BUTTON_STATE);
     void add_text(const img &FontImg, const std::string& TextString,
                   img& Data, u_long x, u_long y);
-    void add_text_cursor(const img &_Fn, img &_Dst, size_t position);
-    void screen_title(const std::string& title);
-    void add_input_string(const img &_Fn);
+    void draw_text_cursor(const img &_Fn, img &_Dst, size_t position);
+    void draw_title(const std::string& title);
+    void draw_input(const img &_Fn);
+    void draw_list_select(const v_str &, u_int x, u_int y, u_int w, u_int h);
     void sub_img(const img &Image, GLint x, GLint y);
     void draw_gui_menu(void);
     void menu_map_create(void);

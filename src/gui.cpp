@@ -66,17 +66,17 @@ void gui::add_text(const img &FontImg, const std::string &TextString,
 void gui::menu_start(void)
 {
   obscure_screen();
-  screen_title("Trick Rig");
+  draw_title("Trick Rig");
 
   u_int x = AppWin.width/2 - AppWin.btn_w/2;   // X координата кнопки
   u_int y = AppWin.height/2 - AppWin.btn_h/2;  // Y координата кнопки
-  add_button(BTN_CONFIG, x, y, u8"Настроить");
+  draw_button(BTN_CONFIG, x, y, u8"Настроить");
 
   y -= 1.5 * AppWin.btn_h;
-  add_button(BTN_LOCATION, x, y, u8"Играть");
+  draw_button(BTN_LOCATION, x, y, u8"Играть");
 
   y += 3 * AppWin.btn_h;
-  add_button(BTN_CANCEL, x, y, u8"Закрыть");
+  draw_button(BTN_CANCEL, x, y, u8"Закрыть");
 }
 
 
@@ -84,17 +84,17 @@ void gui::menu_start(void)
 /// \brief Создание заголовка экрана
 /// \param title
 ///
-void gui::screen_title(const std::string &title)
+void gui::draw_title(const std::string &title)
 {
-  px color {0xFF, 0xFF, 0xDD, 0xFF};
-  img label{ GuiImg.w_summ - 4, Font18s.h_cell * 2 - 4, color};
+  img label{ WinGui.w_summ - 4, Font18s.h_cell * 2 - 4, color_title};
 
-  auto x = GuiImg.w_summ/2 - utf8_size(title) * Font18s.w_cell / 2;
+  auto x = WinGui.w_summ/2 - utf8_size(title) * Font18s.w_cell / 2;
   add_text(Font18s, title, label, x, Font18s.h_cell/2);
-  label.copy(0, 0, GuiImg, 2, 2);
+  label.copy(0, 0, WinGui, 2, 2);
 
   return;
 }
+
 
 ///
 /// \brief Экран ввода названия для создания новой карты
@@ -106,7 +106,7 @@ void gui::screen_title(const std::string &title)
 void gui::menu_map_create(void)
 {
   obscure_screen();
-  screen_title(u8"ВВЕДИТЕ НАЗВАНИЕ");
+  draw_title(u8"ВВЕДИТЕ НАЗВАНИЕ");
 
   // Ввод названия
   if((AppWin.key == KEY_BACKSPACE) && (AppWin.action == PRESS))
@@ -119,18 +119,17 @@ void gui::menu_map_create(void)
   }
 
   // строка ввода текста
-  add_input_string(Font18n);
+  draw_input(Font18n);
 
   // две кнопки
-  auto x = GuiImg.w_summ / 2 - static_cast<u_long>(AppWin.btn_w * 1.25);
-  auto y = GuiImg.h_summ / 2;
-  add_button(BTN_ENTER_NAME, x, y, "OK", user_input.length() > 0);
+  auto x = WinGui.w_summ / 2 - static_cast<u_long>(AppWin.btn_w * 1.25);
+  auto y = WinGui.h_summ / 2;
+  draw_button(BTN_ENTER_NAME, x, y, "OK", user_input.length() > 0);
 
   x += AppWin.btn_w * 1.5;  // X координата кнопки
-  add_button(BTN_LOCATION, x, y, u8"Отмена");
-
-  return;
+  draw_button(BTN_LOCATION, x, y, u8"Отмена");
 }
+
 
 ///
 /// \brief Нарисовать поле ввода текстовой строки
@@ -139,10 +138,10 @@ void gui::menu_map_create(void)
 /// \details Рисует указанным шрифтом, в фиксированной позиции, на всю
 ///  ширину экрана
 ///
-void gui::add_input_string(const img &Font)
+void gui::draw_input(const img &Font)
 {
   px color = {0xF0, 0xF0, 0xF0, 0xFF};
-  u_int row_width = GuiImg.w_summ - Font.w_cell * 2;
+  u_int row_width = WinGui.w_summ - Font.w_cell * 2;
   u_int row_height = Font.h_cell * 2;
   img RowInput{ row_width, row_height, color };
 
@@ -150,15 +149,14 @@ void gui::add_input_string(const img &Font)
   u_int y = (row_height - Font.h_cell)/2;
   add_text(Font, user_input, RowInput, Font.w_cell, y);
 
-  add_text_cursor(Font, RowInput, utf8_size(user_input));
+  draw_text_cursor(Font, RowInput, utf8_size(user_input));
 
   // скопировать на экран изображение поля ввода с добавленым текстом
-  auto x = (GuiImg.w_summ - RowInput.w_summ) / 2;
-  y = GuiImg.h_summ / 2 - 2 * AppWin.btn_h;
-  RowInput.copy(0, 0, GuiImg, x, y);
-
-  return;
+  auto x = (WinGui.w_summ - RowInput.w_summ) / 2;
+  y = WinGui.h_summ / 2 - 2 * AppWin.btn_h;
+  RowInput.copy(0, 0, WinGui, x, y);
 }
+
 
 ///
 /// \brief gui::add_text_cursor
@@ -166,7 +164,7 @@ void gui::add_input_string(const img &Font)
 /// \param _Dst      строка ввода
 /// \param position  номер позиции курсора в строке ввода
 ///
-void gui::add_text_cursor(const img &_Fn, img &_Dst, size_t position)
+void gui::draw_text_cursor(const img &_Fn, img &_Dst, size_t position)
 {
   px c = {0x11, 0xDD, 0x00, 0xFF};
   auto tm = std::chrono::duration_cast<std::chrono::milliseconds>
@@ -188,11 +186,41 @@ void gui::add_text_cursor(const img &_Fn, img &_Dst, size_t position)
 void gui::menu_config(void)
 {
   obscure_screen();
-  screen_title(u8"НАСТРОЙКИ");
+  draw_title(u8"НАСТРОЙКИ");
 
-  int x = GuiImg.w_summ / 2 - static_cast<u_long>(AppWin.btn_w/2);
-  int y = GuiImg.h_summ / 2;
-  add_button(BTN_CANCEL, x, y, u8"Отмена");
+  int x = WinGui.w_summ / 2 - static_cast<u_long>(AppWin.btn_w/2);
+  int y = WinGui.h_summ / 2;
+  draw_button(BTN_CANCEL, x, y, u8"Отмена");
+}
+
+
+///
+/// \brief gui::draw_list_select
+/// \details Отображение списка выбора
+///
+void gui::draw_list_select(const v_str &Rows, u_int x, u_int y, u_int w, u_int h)
+{
+  img ListImg {w, h, color_title};
+  ListImg.copy(0, 0, WinGui, x, y);
+
+  // Курсор выбора
+  std::string title { Rows[0] };
+  px color = {0xF0, 0xF0, 0xF0, 0xFF};
+  u_int cursor_height = Font18s.h_cell * 2;
+  img Cursor{ w, cursor_height, color};
+
+  // добавить текст
+  x = (w - title.length() * Font18n.w_cell) / 2;
+  y = (cursor_height - Font18n.h_cell) / 2;
+  add_text(Font18n, title, Cursor, x, y);
+
+  // скопировать на экран
+  x = (WinGui.w_summ - Cursor.w_summ) / 2;
+  y = WinGui.h_summ / 2 - 2 * AppWin.btn_h;
+  Cursor.copy(0, 0, WinGui, x, y);
+
+
+  return;
 }
 
 
@@ -202,38 +230,26 @@ void gui::menu_config(void)
 void gui::menu_map_select(void)
 {
   obscure_screen();
-  screen_title(u8"ВЫБОР КАРТЫ");
+  draw_title(u8"ВЫБОР КАРТЫ");
 
-  static bool pr = true;
-  for(auto p: Maps)
-  {
-    //p.Name - назначенное имя карты
-  }
+  // Список фиксированой ширины и один ряд кнопок размещается в центре окна на
+  // расстоянии 1/8 высоты окна сверху и снизу, и 1/8 ширины окна по бокам.
+  // Расстояние между списком и кнопками равно половине высоты кнопки.
 
+  u_int y = AppWin.height/8; // отступ сверху (и снизу)
+  u_int x = AppWin.width/8;  // отступ слева (и справа)
+  u_int list_h = AppWin.height - y * 2 - AppWin.btn_h * 1.5f;
+  u_int list_w = AppWin.width - x * 2;
+  v_str List {};
+  for(auto p: Maps) List.push_back(p.Name);
+  draw_list_select(List, x, y, list_w, list_h);
 
-  // Курсор выбора
-  std::string title { user_input };
-  px color = {0xF0, 0xF0, 0xF0, 0xFF};
-  auto cursor_width = GuiImg.w_summ - Font18n.w_cell * 2;
-  u_int cursor_height = Font18n.h_cell * 2;
-  img Cursor{ cursor_width, cursor_height, color};
+  x = WinGui.w_summ / 2 - static_cast<u_long>(AppWin.btn_w/2);
+  y = y + list_h + AppWin.btn_h/2;
 
-  // добавить текст
-  auto x = (cursor_width - title.length() * Font18n.w_cell) / 2;
-  u_long y = (cursor_height - Font18n.h_cell) / 2;
-  add_text(Font18n, title, Cursor, x, y);
-
-  // скопировать на экран
-  x = (GuiImg.w_summ - Cursor.w_summ) / 2;
-  y = GuiImg.h_summ / 2 - 2 * AppWin.btn_h;
-  Cursor.copy(0, 0, GuiImg, x, y);
-
-  x = GuiImg.w_summ / 2 - static_cast<u_long>(AppWin.btn_w/2);
-  y = GuiImg.h_summ / 2;
-
-  add_button(BTN_OPEN, x, y, u8"Старт", user_input.length() > 0);
-  add_button(BTN_CREATE, x - AppWin.btn_w - 16, y, u8"Создать");
-  add_button(BTN_CANCEL, x + AppWin.btn_w + 16, y, u8"Отмена");
+  draw_button(BTN_OPEN, x, y, u8"Старт", user_input.length() > 0);
+  draw_button(BTN_CREATE, x - AppWin.btn_w - 16, y, u8"Создать");
+  draw_button(BTN_CANCEL, x + AppWin.btn_w + 16, y, u8"Отмена");
 }
 
 
@@ -285,10 +301,10 @@ void gui::button_click(BUTTON_ID id)
     case NONE:
       break;
   }
-
   AppWin.mouse = -1;   // сбросить флаг кнопки
   AppWin.action = -1;  // сбросить флаг действия
 }
+
 
 ///
 /// \brief gui::cancel Отмена текущего режима
@@ -315,10 +331,10 @@ void gui::cancel(void)
       AppWin.run = false;
       break;
   }
-
   AppWin.key    = -1;
   AppWin.action = -1;
 }
+
 
 ///
 /// \brief gui::draw_gui_menu
@@ -354,9 +370,9 @@ void gui::draw_gui_menu(void)
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                static_cast<GLint>(AppWin.width),
                static_cast<GLint>(AppWin.height),
-               0, GL_RGBA, GL_UNSIGNED_BYTE, GuiImg.uchar());
-  return;
+               0, GL_RGBA, GL_UNSIGNED_BYTE, WinGui.uchar());
 }
+
 
 ///
 /// Загрузить в текстурный буфер стартовую заставку
@@ -386,7 +402,7 @@ void gui::draw_headband(void)
 ///
 void gui::draw(void)
 {
-  if(AppWin.resized) GuiImg.resize(AppWin.width, AppWin.height);
+  if(AppWin.resized) WinGui.resize(AppWin.width, AppWin.height);
 
   if((AppWin.key == KEY_ESCAPE) && (AppWin.action == RELEASE))
     cancel();
@@ -397,8 +413,8 @@ void gui::draw(void)
     draw_gui_menu();
 
   AppWin.resized = false;
-  return;
 }
+
 
 ///
 /// \brief Перенос данных в указанную область графической памяти
@@ -415,9 +431,9 @@ void gui::draw(void)
 void gui::sub_img(const img &Image, GLint x, GLint y)
 {
 #ifndef NDEBUG
-  if(x > static_cast<int>(GuiImg.w_summ) - static_cast<int>(Image.w_summ))
+  if(x > static_cast<int>(WinGui.w_summ) - static_cast<int>(Image.w_summ))
     ERR ("giu::sub_img - overload X");
-  if(y > static_cast<int>(GuiImg.h_summ) - static_cast<int>(Image.h_summ))
+  if(y > static_cast<int>(WinGui.h_summ) - static_cast<int>(Image.h_summ))
     ERR ("giu::sub_img - overload Y");
 #endif
 
@@ -427,6 +443,7 @@ void gui::sub_img(const img &Image, GLint x, GLint y)
                 GL_RGBA, GL_UNSIGNED_BYTE,           // mode
                 Image.uchar());                      // data
 }
+
 
 ///
 /// \brief gui::update
@@ -454,6 +471,7 @@ void gui::refresh(void)
   sub_img(Coord, 2, 2);
 }
 
+
 ///
 /// \brief загрузка HUD в GPU
 ///
@@ -469,16 +487,17 @@ void gui::load_hud(void)
 {
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
            static_cast<GLint>(AppWin.width), static_cast<GLint>(AppWin.height),
-           0, GL_RGBA, GL_UNSIGNED_BYTE, GuiImg.uchar());
+           0, GL_RGBA, GL_UNSIGNED_BYTE, WinGui.uchar());
 
   // Панель инструментов для HUD в нижней части окна
   u_int h = 48;                            // высота панели инструментов HUD
-  if(h > GuiImg.h_summ) h = GuiImg.h_summ; // не может быть выше GuiImg
-  img HudPanel {GuiImg.w_summ, h, bg_hud};
+  if(h > WinGui.h_summ) h = WinGui.h_summ; // не может быть выше GuiImg
+  img HudPanel {WinGui.w_summ, h, bg_hud};
   sub_img(HudPanel, 0,
-          static_cast<GLint>(GuiImg.h_summ) -
+          static_cast<GLint>(WinGui.h_summ) -
           static_cast<GLint>(HudPanel.h_summ));
 }
+
 
 ///
 /// \brief Затенить текстуру GIU
@@ -486,12 +505,13 @@ void gui::load_hud(void)
 void gui::obscure_screen(void)
 {
   size_t i = 0;
-  size_t max = GuiImg.Data.size();
+  size_t max = WinGui.Data.size();
   while(i < max)
   {
-    GuiImg.Data[i++] = bg;
+    WinGui.Data[i++] = bg;
   }
 }
+
 
 ///
 /// \brief Построение картинки кнопки
@@ -590,13 +610,14 @@ void gui::button_body(img &D, BUTTON_STATE s)
   }
 }
 
+
 ///
 /// \brief Формирование кнопки
 ///
 /// Вначале формируется отдельное изображение кнопки, потом оно копируется
 /// в указанное координатами (x,y) место окна.
 ///
-void gui::add_button(BUTTON_ID btn_id, u_long x, u_long y,
+void gui::draw_button(BUTTON_ID btn_id, u_long x, u_long y,
                      const std::string &Name, bool button_is_active)
 {
   img Btn { AppWin.btn_w, AppWin.btn_h };
@@ -643,7 +664,7 @@ void gui::add_button(BUTTON_ID btn_id, u_long x, u_long y,
     add_text(Font18l, Name, Btn, AppWin.btn_w/2 - t_width/2,
            AppWin.btn_h/2 - t_height/2);
   }
-  Btn.copy(0, 0, GuiImg, x, y);
+  Btn.copy(0, 0, WinGui, x, y);
 }
 
 } //tr
