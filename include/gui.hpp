@@ -17,9 +17,9 @@ enum BUTTON_STATE {
 class gui
 {
   private:
-    px bg      {0xE0, 0xE0, 0xE0, 0xC0}; // фон заполнения неактивного окна
-    px bg_hud  {0x00, 0x88, 0x00, 0x40}; // фон панелей HUD (активного окна)
-    img WinGui { 0, 0 };                 // GUI/HUD текстура окна приложения
+    px bg      {0xE0, 0xE0, 0xE0, 0xC0};     // фон заполнения неактивного окна
+    px bg_hud  {0x00, 0x88, 0x00, 0x40};     // фон панелей HUD (активного окна)
+    img WinGui { 0, 0 };                     // GUI/HUD текстура окна приложения
     px color_title {0xFF, 0xFF, 0xDD, 0xFF}; // фон заголовка
 
     struct map{
@@ -30,18 +30,20 @@ class gui
 
     std::vector<map> Maps {};             // список карт
 
-    enum BUTTON_ID {                      // Идентификаторы кнопок GIU
+    enum ELEMENT_ID {                      // Идентификаторы кнопок GIU
       BTN_OPEN,
       BTN_CANCEL,
       BTN_CONFIG,
       BTN_LOCATION,
+      BTN_MAP_DELETE,
       BTN_CREATE,
       BTN_ENTER_NAME,
+      ROW_MAP_NAME,
       NONE
     };
 
-    BUTTON_ID button_over = NONE;      // Над какой GIU кнопкой курсор
-    size_t row_selected   = 0;         // какая строка выбрана
+    ELEMENT_ID element_over = NONE;  // Над какой GIU кнопкой курсор
+    size_t row_selected = 0;         // какая строка выбрана
 
     // "FontMap1" - однобайтовые символы
     const std::string FontMap1 { u8"_'\"~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghi"
@@ -59,39 +61,40 @@ class gui
     img Font18s { "../assets/font_10x18_sh.png", f_len }; //шрифт 10x18 (тень)
     img Font18l { "../assets/font_10x18_lt.png", f_len }; //шрифт 10x18 (светл)
 
-    img headband {"../assets/quad.png"}; // Текстура заставки
+    img BgImage {"../assets/quad.png"}; // Текстура заставки
 
     std::string user_input {};  // строка ввода пользователя
 
-    void load_hud(void);
+    void hud_load(void);
     void obscure_screen(void);
-    void draw_button(BUTTON_ID id, u_long x, u_long y, const std::string& Name,
+    void button(ELEMENT_ID id, u_long x, u_long y, const std::string& Name,
                 bool button_is_active = true );
-    void button_body(img &Data, BUTTON_STATE);
-    void add_text(const img &FontImg, const std::string& TextString,
+    void button_make_body(img &Data, BUTTON_STATE);
+    void textstring_place(const img &FontImg, const std::string& TextString,
                   img& Data, u_long x, u_long y);
-    void draw_text_cursor(const img &_Fn, img &_Dst, size_t position);
-    void draw_title(const std::string& title);
-    void draw_input(const img &_Fn);
-    void draw_text_row(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &);
-    void draw_list_select(const v_str &, u_int x, u_int y, u_int w, u_int h, size_t i = 0);
+    void cursor_text_row(const img &_Fn, img &_Dst, size_t position);
+    void title(const std::string& title);
+    void input_text_line(const img &_Fn);
+    void row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &);
+    void select_list(const v_str &, u_int x, u_int y, u_int w, u_int h, size_t i = 0);
     void sub_img(const img &Image, GLint x, GLint y);
-    void draw_gui_menu(void);
+    void menu_selector(void);
     void menu_map_create(void);
     void menu_map_select(void);
     void menu_start(void);
     void menu_config(void);
-    void button_click(BUTTON_ID);
+    void button_click(ELEMENT_ID);
     void cancel(void);
-    void new_map_create(void);
     void refresh(void);      // обновление кадра
+    void create_map(void);
+    void remove_map(void);
 
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
   public:
     gui(void);
     void draw(void);         // формирование изображения GIU окна
-    void draw_headband(void);// заставка
+    void headband(void);// заставка
 };
 
 } //tr

@@ -114,7 +114,7 @@ enum GUI_MODE_ID {   // режимы окна
     u_int top = 0;                        // положение окна по вертикали
     u_int btn_w = 120;                    // ширина кнопки GUI
     u_int btn_h = 36;                     // высота кнопки GUI
-    u_int minwidth = btn_w * 3 + 36;      // минимально допустимая ширина окна
+    u_int minwidth = (btn_w + 16) * 4;    // минимально допустимая ширина окна
     u_int minheight = btn_h * 4 + 8;      // минимально допустимая высота окна
     GUI_MODE_ID mode = GUI_MENU_START;    // режим окна приложения
     std::string* pInputBuffer = nullptr;  // строка ввода пользователя

@@ -17,6 +17,34 @@ gui::gui(void)
 
 
 ///
+/// Загрузка в текстурный буфер начальной заставки
+///
+void gui::headband(void)
+{
+  GLint level_of_details = 0; GLint frame = 0;
+
+  glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
+               static_cast<GLsizei>(BgImage.w_summ),
+               static_cast<GLsizei>(BgImage.h_summ),
+               frame, GL_RGBA, GL_UNSIGNED_BYTE, BgImage.uchar());
+}
+
+
+///
+/// \brief Создание заголовка экрана
+/// \param title
+///
+void gui::title(const std::string &title)
+{
+  img label{ WinGui.w_summ - 4, Font18s.h_cell * 2 - 4, color_title};
+
+  auto x = WinGui.w_summ/2 - utf8_size(title) * Font18s.w_cell / 2;
+  textstring_place(Font18s, title, label, x, Font18s.h_cell/2);
+  label.copy(0, 0, WinGui, 2, 2);
+}
+
+
+///
 /// \brief Добавление текста из текстурного атласа
 ///
 /// \param текстура шрифта
@@ -25,7 +53,7 @@ gui::gui(void)
 /// \param х - координата
 /// \param y - координата
 ///
-void gui::add_text(const img &FontImg, const std::string &TextString,
+void gui::textstring_place(const img &FontImg, const std::string &TextString,
                    img& Dst, u_long x, u_long y)
 {
   #ifndef NDEBUG
@@ -61,84 +89,13 @@ void gui::add_text(const img &FontImg, const std::string &TextString,
 
 
 ///
-/// \brief Начальный экран приложения
-///
-void gui::menu_start(void)
-{
-  obscure_screen();
-  draw_title("Trick Rig");
-
-  u_int x = AppWin.width/2 - AppWin.btn_w/2;   // X координата кнопки
-  u_int y = AppWin.height/2 - AppWin.btn_h/2;  // Y координата кнопки
-  draw_button(BTN_CONFIG, x, y, u8"Настроить");
-
-  y -= 1.5 * AppWin.btn_h;
-  draw_button(BTN_LOCATION, x, y, u8"Играть");
-
-  y += 3 * AppWin.btn_h;
-  draw_button(BTN_CANCEL, x, y, u8"Закрыть");
-}
-
-
-///
-/// \brief Создание заголовка экрана
-/// \param title
-///
-void gui::draw_title(const std::string &title)
-{
-  img label{ WinGui.w_summ - 4, Font18s.h_cell * 2 - 4, color_title};
-
-  auto x = WinGui.w_summ/2 - utf8_size(title) * Font18s.w_cell / 2;
-  add_text(Font18s, title, label, x, Font18s.h_cell/2);
-  label.copy(0, 0, WinGui, 2, 2);
-
-  return;
-}
-
-
-///
-/// \brief Экран ввода названия для создания новой карты
-///
-/// \details Предлагается строка ввода названия. При нажатии кнопки
-/// BTN_ENTER_NAME введенный в строке текст будет использован для создания
-/// нового файла хранения данных 3D пространства района.
-///
-void gui::menu_map_create(void)
-{
-  obscure_screen();
-  draw_title(u8"ВВЕДИТЕ НАЗВАНИЕ");
-
-  // Ввод названия
-  if((AppWin.key == KEY_BACKSPACE) && (AppWin.action == PRESS))
-  {
-    if (user_input.length() == 0) return;
-    if(char_type(user_input[user_input.size()-1]) != SINGLE)
-    { user_input.pop_back(); } // если это UTF-8, то удаляем два байта
-    user_input.pop_back();
-    AppWin.key = -1;
-  }
-
-  // строка ввода текста
-  draw_input(Font18n);
-
-  // две кнопки
-  auto x = WinGui.w_summ / 2 - static_cast<u_long>(AppWin.btn_w * 1.25);
-  auto y = WinGui.h_summ / 2;
-  draw_button(BTN_ENTER_NAME, x, y, u8"OK", user_input.length() > 0);
-
-  x += AppWin.btn_w * 1.5;  // X координата кнопки
-  draw_button(BTN_LOCATION, x, y, u8"Отмена");
-}
-
-
-///
 /// \brief Нарисовать поле ввода текстовой строки
 /// \param _Fn - шрифт
 ///
 /// \details Рисует указанным шрифтом, в фиксированной позиции, на всю
 ///  ширину экрана
 ///
-void gui::draw_input(const img &Font)
+void gui::input_text_line(const img &Font)
 {
   px color = {0xF0, 0xF0, 0xF0, 0xFF};
   u_int row_width = WinGui.w_summ - Font.w_cell * 2;
@@ -147,9 +104,9 @@ void gui::draw_input(const img &Font)
 
   // добавить текст, введенный пользователем
   u_int y = (row_height - Font.h_cell)/2;
-  add_text(Font, user_input, RowInput, Font.w_cell, y);
+  textstring_place(Font, user_input, RowInput, Font.w_cell, y);
 
-  draw_text_cursor(Font, RowInput, utf8_size(user_input));
+  cursor_text_row(Font, RowInput, utf8_size(user_input));
 
   // скопировать на экран изображение поля ввода с добавленым текстом
   auto x = (WinGui.w_summ - RowInput.w_summ) / 2;
@@ -164,7 +121,7 @@ void gui::draw_input(const img &Font)
 /// \param _Dst      строка ввода
 /// \param position  номер позиции курсора в строке ввода
 ///
-void gui::draw_text_cursor(const img &_Fn, img &_Dst, size_t position)
+void gui::cursor_text_row(const img &_Fn, img &_Dst, size_t position)
 {
   px c = {0x11, 0xDD, 0x00, 0xFF};
   auto tm = std::chrono::duration_cast<std::chrono::milliseconds>
@@ -181,20 +138,6 @@ void gui::draw_text_cursor(const img &_Fn, img &_Dst, size_t position)
 
 
 ///
-/// \brief gui::cover_config
-///
-void gui::menu_config(void)
-{
-  obscure_screen();
-  draw_title(u8"НАСТРОЙКИ");
-
-  int x = WinGui.w_summ / 2 - static_cast<u_long>(AppWin.btn_w/2);
-  int y = WinGui.h_summ / 2;
-  draw_button(BTN_CANCEL, x, y, u8"Отмена");
-}
-
-
-///
 /// \brief gui::draw_text_row
 /// \param id
 /// \param x - координата относительно окна приложения
@@ -204,50 +147,38 @@ void gui::menu_config(void)
 /// \param text
 /// \details Отобажение тестовой строки, реагирующей на указатель мыши
 ///
-void gui::draw_text_row(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &text)
+void gui::row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &text)
 {
-  static bool repeated = false;
   px
-    bg_color {},
-    normal = color_title,
-    over = { 0xFF, 0xFF, 0xFF, 0xFF },
-    selected = { 0xDD, 0xFF, 0xDD, 0xFF };
+    normal = color_title,                   // обычный цвет
+    over = { 0xFF, 0xFF, 0xFF, 0xFF },      // цвет строки когда курсор над строкой
+    selected = { 0xDD, 0xFF, 0xDD, 0xFF };  // цвет выбранной строки
 
-  if (row_selected == id)
-  {
+  if(row_selected == id) // если строка уже выбрана, то ее цвет всегда "selected"
+  {                       // не зависимо от положения на экране указателя мыши
     normal = selected;
     over = selected;
   }
+  px bg_color = normal;
 
   // Если указатель находится над строкой
   if(AppWin.xpos >= x && AppWin.xpos <= x+w && AppWin.ypos >= y && AppWin.ypos <= y+h)
   {
-     // и если кнопку "кликнули" указателем мыши
-     if((AppWin.mouse == MOUSE_BUTTON_LEFT) && (AppWin.action == PRESS))
-     {
-       bg_color = selected; // selected
-       if(id == row_selected && repeated)
-       {
-         repeated = false;
-         button_click(BTN_OPEN);
-       }
-       repeated = false;
-       row_selected = id;
-     }
-     else
-     {
-       bg_color = over; // over
-       x -= 2; y -= 1;
-       if(over == selected) repeated = true;
-     }
-  }
-  else
-  {
-    bg_color = normal; // normal
+    element_over = ROW_MAP_NAME; // для обработки в "menu_selector"
+    bg_color = over;
+
+    if((AppWin.mouse == MOUSE_BUTTON_LEFT) && (AppWin.action == PRESS))
+    {
+      row_selected = id;
+      x += 1; y += 1;
+    }
+    else {
+      x -= 1; y -= 1;
+    }
   }
 
   img Row { w, h, bg_color };
-  add_text(Font18n, text, Row, Font18n.w_cell/2, 2);
+  textstring_place(Font18n, text, Row, Font18n.w_cell/2, 6);
   Row.copy(0, 0, WinGui, x, y);
 }
 
@@ -256,7 +187,7 @@ void gui::draw_text_row(size_t id, u_int x, u_int y, u_int w, u_int h, const std
 /// \brief gui::draw_list_select
 /// \details Отображение списка выбора
 ///
-void gui::draw_list_select(const v_str &Rows, u_int lx, u_int ly, u_int lw, u_int lh, size_t i)
+void gui::select_list(const v_str &Rows, u_int lx, u_int ly, u_int lw, u_int lh, size_t i)
 {
   img ListImg {lw, lh, {0xDD, 0xDD, 0xDD, 0xFF}};             // изображение списка
   ListImg.copy(0, 0, WinGui, lx, ly);
@@ -270,93 +201,10 @@ void gui::draw_list_select(const v_str &Rows, u_int lx, u_int ly, u_int lw, u_in
   u_int id = 0;
   for(auto &text: Rows)
   {
-    draw_text_row(id + 1, lx + 2, ly + id * (rh + 2) + 2, rw, rh, text);
+    row_text(id + 1, lx + 2, ly + id * (rh + 2) + 2, rw, rh, text);
     if(++id > max_rows) break;
   }
 
-}
-
-
-///
-/// \brief Окно выбора района
-///
-void gui::menu_map_select(void)
-{
-  obscure_screen();
-  draw_title(u8"ВЫБОР КАРТЫ");
-
-  // Список фиксированой ширины и один ряд кнопок размещается в центре окна на
-  // расстоянии 1/8 высоты окна сверху и снизу, и 1/8 ширины окна по бокам.
-  // Расстояние между списком и кнопками равно половине высоты кнопки.
-
-  u_int y = AppWin.height/8; // отступ сверху (и снизу)
-  u_int x = AppWin.width/8;  // отступ слева (и справа)
-  u_int list_h = AppWin.height - y * 2 - AppWin.btn_h * 1.5f;
-  u_int list_w = AppWin.width - x * 2;
-  v_str List {};
-  for(auto p: Maps) List.push_back(p.Name);
-  draw_list_select(List, x, y, list_w, list_h);
-
-  x = WinGui.w_summ / 2 - static_cast<u_long>(AppWin.btn_w/2);
-  y = y + list_h + AppWin.btn_h/2;
-
-  draw_button(BTN_OPEN, x, y, u8"Старт", row_selected > 0);
-  draw_button(BTN_CREATE, x - AppWin.btn_w - 16, y, u8"Создать");
-  draw_button(BTN_CANCEL, x + AppWin.btn_w + 16, y, u8"Отмена");
-}
-
-
-///
-/// \brief gui::new_map_create
-///
-void gui::new_map_create(void)
-{
-  // Каталог пользователя
-  cfg::create_map(user_input);
-}
-
-
-///
-/// \brief gui::button_click - Обработчик нажатия клавиш GUI интерфейса
-///
-void gui::button_click(BUTTON_ID id)
-{
-  AppWin.pInputBuffer = nullptr; // Во всех режимах, кроме GUI_MENU_CREATE,
-                                 // строка ввода отключена
-
-  if(AppWin.mode == GUI_HUD3D) return;
-
-  switch(id)
-  {
-    case BTN_OPEN:
-      cfg::load_map(Maps[row_selected - 1].Folder);
-      AppWin.mode = GUI_HUD3D;
-      AppWin.Cursor[2] = 4.0f;
-      AppWin.set_mouse_ptr = -1;
-      break;
-    case BTN_CONFIG:
-      AppWin.mode = GUI_MENU_CONFIG;
-      break;
-    case BTN_LOCATION:
-      AppWin.mode = GUI_MENU_LSELECT;
-      break;
-    case BTN_CREATE:
-      user_input.clear();
-      AppWin.pInputBuffer = &user_input;       // Включить пользовательский ввод
-      AppWin.mode = GUI_MENU_CREATE;
-      break;
-    case BTN_ENTER_NAME:
-      AppWin.mode = GUI_MENU_LSELECT;
-      new_map_create();
-      break;
-    case BTN_CANCEL:
-      cancel();
-      break;
-    case NONE:
-      break;
-  }
-  AppWin.mouse = -1;   // сбросить флаг кнопки
-  AppWin.action = -1;  // сбросить флаг действия
 }
 
 
@@ -388,86 +236,6 @@ void gui::cancel(void)
   }
   AppWin.key    = -1;
   AppWin.action = -1;
-}
-
-
-///
-/// \brief gui::draw_gui_menu
-///
-void gui::draw_gui_menu(void)
-{
-  if((AppWin.mouse == MOUSE_BUTTON_LEFT) &&
-     (AppWin.action == RELEASE)) { button_click(button_over); }
-
-  // При каждом рисовании каждой кнопки проверяются координаты указателя мыши.
-  // Если указатель находится над кнопкой, то кнопка изображается другим цветом
-  // и ее ID присваивается переменной "button_over"
-  button_over = NONE;
-
-  switch (AppWin.mode)
-  {
-    case GUI_MENU_CONFIG:
-      menu_config();
-      break;
-    case GUI_MENU_CREATE:
-      menu_map_create();
-      break;
-    case GUI_MENU_LSELECT:
-      menu_map_select();
-      break;
-    case GUI_MENU_START:
-      menu_start();
-      break;
-    default: break;
-   }
-
-  // обновляем картинку меню в виде текстуры каждый кадр
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-               static_cast<GLint>(AppWin.width),
-               static_cast<GLint>(AppWin.height),
-               0, GL_RGBA, GL_UNSIGNED_BYTE, WinGui.uchar());
-}
-
-
-///
-/// Загрузить в текстурный буфер стартовую заставку
-///
-void gui::draw_headband(void)
-{
-  GLint level_of_details = 0; GLint frame = 0;
-
-  glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-               static_cast<GLsizei>(headband.w_summ),
-               static_cast<GLsizei>(headband.h_summ),
-               frame, GL_RGBA, GL_UNSIGNED_BYTE, headband.uchar());
-}
-
-///
-/// \brief Создание элементов интерфейса окна
-///
-/// \details Окно приложения может иметь два состояния: HUD-3D, в котором
-/// происходит основной процесс, и режим настройка/управление (menu). В
-/// обоих режимах поверх основного изображения OpenGL сцены накладываются
-/// изображения дополнительных элементов. В первом случае это HUD и
-/// контрольные элементы взаимодействия с контентом сцены, во втором -
-/// это GIU элементы меню.
-///
-/// Из всех необходимых элементов собирается общее графическое изображение в
-/// виде текстурного массива и передается для рендера в OpenGL
-///
-void gui::draw(void)
-{
-  if(AppWin.resized) WinGui.resize(AppWin.width, AppWin.height);
-
-  if((AppWin.key == KEY_ESCAPE) && (AppWin.action == RELEASE))
-    cancel();
-
-  if(AppWin.mode == GUI_HUD3D)
-    refresh();
-  else
-    draw_gui_menu();
-
-  AppWin.resized = false;
 }
 
 
@@ -505,7 +273,7 @@ void gui::sub_img(const img &Image, GLint x, GLint y)
 ///
 void gui::refresh(void)
 {
-  if(AppWin.resized) load_hud();
+  if(AppWin.resized) hud_load();
 
   // счетчик FPS
   px bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения
@@ -513,7 +281,7 @@ void gui::refresh(void)
   img Fps {fps_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
   char line[5];                   // the expected string plus 1 null terminator
   std::sprintf(line, "%.4i", AppWin.fps);
-  add_text(Font15n, line, Fps, 2, 1);
+  textstring_place(Font15n, line, Fps, 2, 1);
   sub_img(Fps, 2, static_cast<GLint>(AppWin.height - Fps.h_summ - 2));
 
   // Координаты в пространстве
@@ -522,7 +290,7 @@ void gui::refresh(void)
   char ln[60];                    // the expected string plus 1 null terminator
   std::sprintf(ln, "X:%+3.1f, Y:%+03.1f, Z:%+03.1f, a:%+04.3f, t:%+04.3f",
                   Eye.ViewFrom.x, Eye.ViewFrom.y, Eye.ViewFrom.z, Eye.look_a, Eye.look_t);
-  add_text(Font15n, ln, Coord, 2, 1);
+  textstring_place(Font15n, ln, Coord, 2, 1);
   sub_img(Coord, 2, 2);
 }
 
@@ -538,7 +306,7 @@ void gui::refresh(void)
 /// в памяти. Небольшие локальные фрагменты (вроде FPS-счетчика) обновляются
 /// напрямую через память GPU.
 ///
-void gui::load_hud(void)
+void gui::hud_load(void)
 {
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
            static_cast<GLint>(AppWin.width), static_cast<GLint>(AppWin.height),
@@ -569,6 +337,106 @@ void gui::obscure_screen(void)
 
 
 ///
+/// \brief gui::create_map
+/// \details создается новая карта и сразу открывается
+///
+void gui::create_map(void)
+{
+  cfg::create_map(user_input);
+  auto MapsDirs = dirs_list(cfg::user_dir()); // список директорий с картами
+
+  // обновить список карт
+  Maps.clear();
+  for(auto &P: MapsDirs)
+  {
+    auto MapName = cfg::map_name(P);
+    Maps.push_back(map(P, MapName));
+    if(MapName == user_input)
+    {
+      cfg::load_map(P);           // загрузить новую карту
+      row_selected = Maps.size(); // запомнить ее номер
+    }
+  }
+  AppWin.mode = GUI_HUD3D;        // открыть 3D сцену
+  AppWin.Cursor[2] = 4.0f;
+  AppWin.set_mouse_ptr = -1;
+}
+
+
+///
+/// \brief gui::remove_map
+///
+void gui::remove_map(void)
+{
+  fs::remove_all(Maps[row_selected -1].Folder);
+  row_selected = 0;
+
+  // обновить список карт
+  Maps.clear();
+  auto MapsDirs = dirs_list(cfg::user_dir());
+  for(auto &P: MapsDirs)
+  {
+    auto MapName = cfg::map_name(P);
+    Maps.push_back(map(P, MapName));
+  }
+}
+
+
+///
+/// \brief gui::button_click - Обработчик нажатия клавиш GUI интерфейса
+///
+void gui::button_click(ELEMENT_ID id)
+{
+  static ELEMENT_ID double_id = NONE;
+  static size_t row_id = 0;
+
+  AppWin.pInputBuffer = nullptr; // Во всех режимах, кроме GUI_MENU_CREATE,
+                                 // строка ввода отключена
+
+  if(AppWin.mode == GUI_HUD3D) return;
+
+  if(id == ROW_MAP_NAME)
+  { // В списке карт первый клик выбирает карту, второй открывает.
+    if(double_id == id && row_id == row_selected) id = BTN_OPEN;
+    row_id = row_selected;
+    double_id = id;
+  }
+
+  switch(id)
+  {
+    case BTN_OPEN:
+      cfg::load_map(Maps[row_selected - 1].Folder);
+      AppWin.mode = GUI_HUD3D;
+      AppWin.Cursor[2] = 4.0f;
+      AppWin.set_mouse_ptr = -1;
+      break;
+    case BTN_CONFIG:
+      AppWin.mode = GUI_MENU_CONFIG;
+      break;
+    case BTN_LOCATION:
+      AppWin.mode = GUI_MENU_LSELECT;
+      break;
+    case BTN_CREATE:
+      user_input.clear();
+      AppWin.pInputBuffer = &user_input;       // Включить пользовательский ввод
+      AppWin.mode = GUI_MENU_CREATE;
+      break;
+    case BTN_ENTER_NAME:
+      create_map();
+      break;
+    case BTN_CANCEL:
+      cancel();
+      break;
+    case BTN_MAP_DELETE:
+      remove_map();
+      break;
+    default: break;
+  }
+
+}
+
+
+///
 /// \brief Построение картинки кнопки
 /// \param w
 /// \param h
@@ -585,7 +453,7 @@ void gui::obscure_screen(void)
 ///   FFFFFF
 ///   от F6F6F6 -> 24 градации цвета темнее
 ///
-void gui::button_body(img &D, BUTTON_STATE s)
+void gui::button_make_body(img &D, BUTTON_STATE s)
 {
   double step = static_cast<double>(D.h_summ-3) / 256.0 * 7.0; // градации цвета
 
@@ -672,7 +540,7 @@ void gui::button_body(img &D, BUTTON_STATE s)
 /// Вначале формируется отдельное изображение кнопки, потом оно копируется
 /// в указанное координатами (x,y) место окна.
 ///
-void gui::draw_button(BUTTON_ID btn_id, u_long x, u_long y,
+void gui::button(ELEMENT_ID btn_id, u_long x, u_long y,
                      const std::string &Name, bool button_is_active)
 {
   img Btn { AppWin.btn_w, AppWin.btn_h };
@@ -683,27 +551,27 @@ void gui::draw_button(BUTTON_ID btn_id, u_long x, u_long y,
     if( AppWin.xpos >= x && AppWin.xpos <= x + AppWin.btn_w &&
         AppWin.ypos >= y && AppWin.ypos <= y + AppWin.btn_h)
     {
-      button_over = btn_id;
+      element_over = btn_id;
 
       // и если кнопку "кликнули" указателем мыши
       if((AppWin.mouse == MOUSE_BUTTON_LEFT) &&
          (AppWin.action == PRESS))
       {
-        button_body(Btn, ST_PRESSED);
+        button_make_body(Btn, ST_PRESSED);
       }
       else
       {
-        button_body(Btn, ST_OVER);
+        button_make_body(Btn, ST_OVER);
       }
     }
     else
     {
-      button_body(Btn, ST_NORMAL);
+      button_make_body(Btn, ST_NORMAL);
     }
   }
   else
   {
-    button_body(Btn, ST_OFF);
+    button_make_body(Btn, ST_OFF);
   }
 
   auto t_width = Font18s.w_cell * utf8_size(Name);
@@ -711,15 +579,194 @@ void gui::draw_button(BUTTON_ID btn_id, u_long x, u_long y,
 
   if(button_is_active)
   {
-    add_text(Font18s, Name, Btn, AppWin.btn_w/2 - t_width/2,
+    textstring_place(Font18s, Name, Btn, AppWin.btn_w/2 - t_width/2,
            AppWin.btn_h/2 - t_height/2);
   }
   else
   {
-    add_text(Font18l, Name, Btn, AppWin.btn_w/2 - t_width/2,
+    textstring_place(Font18l, Name, Btn, AppWin.btn_w/2 - t_width/2,
            AppWin.btn_h/2 - t_height/2);
   }
   Btn.copy(0, 0, WinGui, x, y);
+}
+
+
+///
+/// \brief Начальный экран приложения
+///
+void gui::menu_start(void)
+{
+  obscure_screen();
+  title("Trick Rig");
+
+  u_int x = AppWin.width/2 - AppWin.btn_w/2;   // X координата кнопки
+  u_int y = AppWin.height/2 - AppWin.btn_h/2;  // Y координата кнопки
+  button(BTN_CONFIG, x, y, u8"Настроить");
+
+  y -= 1.5 * AppWin.btn_h;
+  button(BTN_LOCATION, x, y, u8"Играть");
+
+  y += 3 * AppWin.btn_h;
+  button(BTN_CANCEL, x, y, u8"Закрыть");
+}
+
+
+///
+/// \brief Окно выбора района
+///
+void gui::menu_map_select(void)
+{
+  obscure_screen();
+  title(u8"ВЫБОР КАРТЫ");
+
+  // Список фиксированой ширины и один ряд кнопок размещается в центре окна на
+  // расстоянии 1/8 высоты окна сверху и снизу, и 1/8 ширины окна по бокам.
+  // Расстояние между списком и кнопками равно половине высоты кнопки.
+
+  u_int y = AppWin.height/8; // отступ сверху (и снизу)
+  u_int list_h = AppWin.height - y * 2 - AppWin.btn_h * 1.5f;
+  u_int list_w = AppWin.minwidth - 4;
+  u_int x = (AppWin.width - list_w)/2;  // отступ слева (и справа)
+  v_str List {};
+  for(auto p: Maps) List.push_back(p.Name);
+  select_list(List, x, y, list_w, list_h);
+
+  x = WinGui.w_summ / 2 + 8;
+  y = y + list_h + AppWin.btn_h/2;
+
+  button(BTN_CANCEL, x, y, u8"Отмена");
+  button(BTN_MAP_DELETE, x + AppWin.btn_w + 16, y, u8"Удалить", row_selected > 0);
+  button(BTN_OPEN, x - (AppWin.btn_w + 16), y, u8"Старт", row_selected > 0);
+  button(BTN_CREATE, x - (AppWin.btn_w + 16)*2, y, u8"Создать");
+
+}
+
+
+///
+/// \brief Экран ввода названия для создания новой карты
+///
+/// \details Предлагается строка ввода названия. При нажатии кнопки
+/// BTN_ENTER_NAME введенный в строке текст будет использован для создания
+/// нового файла хранения данных 3D пространства района.
+///
+void gui::menu_map_create(void)
+{
+  obscure_screen();
+  title(u8"ВВЕДИТЕ НАЗВАНИЕ");
+
+  if((AppWin.key == KEY_BACKSPACE) && // Удаление введенных символов
+    ((AppWin.action == PRESS)||(AppWin.action == REPEAT)))
+  {
+    if (user_input.length() == 0) return;
+    if(char_type(user_input[user_input.size()-1]) != SINGLE)
+    { user_input.pop_back(); } // если это UTF-8, то удаляем два байта
+    user_input.pop_back();
+    std::this_thread::sleep_for(std::chrono::milliseconds(75));
+  }
+
+  // строка ввода текста
+  input_text_line(Font18n);
+
+  // две кнопки
+  auto x = WinGui.w_summ / 2 - static_cast<u_long>(AppWin.btn_w * 1.25);
+  auto y = WinGui.h_summ / 2;
+  button(BTN_ENTER_NAME, x, y, u8"OK", user_input.length() > 0);
+
+  x += AppWin.btn_w * 1.5;  // X координата кнопки
+  button(BTN_LOCATION, x, y, u8"Отмена");
+}
+
+
+///
+/// \brief gui::menu_config
+///
+void gui::menu_config(void)
+{
+  obscure_screen();
+  title(u8"НАСТРОЙКИ");
+
+  int x = WinGui.w_summ / 2 - static_cast<u_long>(AppWin.btn_w/2);
+  int y = WinGui.h_summ / 2;
+  button(BTN_CANCEL, x, y, u8"Отмена");
+}
+
+
+///
+/// \brief gui::draw_gui_menu
+///
+void gui::menu_selector(void)
+{
+  if((AppWin.mouse == MOUSE_BUTTON_LEFT) &&
+     (AppWin.action == RELEASE) &&
+     (element_over != NONE))
+  {
+    button_click(element_over);
+    AppWin.mouse = -1;   // сбросить флаг кнопки
+    AppWin.action = -1;  // сбросить флаг действия
+  }
+
+  if(element_over == NONE)
+  {
+    AppWin.mouse = -1;   // сбросить флаг кнопки
+    //AppWin.action = -1; // флаг действия потребуется при вводе названия карты
+  }
+
+  // При каждом рисовании каждой кнопки проверяются координаты указателя мыши.
+  // Если указатель находится над кнопкой, то кнопка изображается другим цветом
+  // и ее ID присваивается переменной "button_over"
+  element_over = NONE;
+
+  switch (AppWin.mode)
+  {
+    case GUI_MENU_CONFIG:
+      menu_config();
+      break;
+    case GUI_MENU_CREATE:
+      menu_map_create();
+      break;
+    case GUI_MENU_LSELECT:
+      menu_map_select();
+      break;
+    case GUI_MENU_START:
+      menu_start();
+      break;
+    default: break;
+   }
+
+  // обновляем картинку меню в виде текстуры каждый кадр
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+               static_cast<GLint>(AppWin.width),
+               static_cast<GLint>(AppWin.height),
+               0, GL_RGBA, GL_UNSIGNED_BYTE, WinGui.uchar());
+}
+
+
+///
+/// \brief Создание элементов интерфейса окна
+///
+/// \details Окно приложения может иметь два состояния: HUD-3D, в котором
+/// происходит основной процесс, и режим настройка/управление (menu). В
+/// обоих режимах поверх основного изображения OpenGL сцены накладываются
+/// изображения дополнительных элементов. В первом случае это HUD и
+/// контрольные элементы взаимодействия с контентом сцены, во втором -
+/// это GIU элементы меню.
+///
+/// Из всех необходимых элементов собирается общее графическое изображение в
+/// виде текстурного массива и передается для рендера в OpenGL
+///
+void gui::draw(void)
+{
+  if(AppWin.resized) WinGui.resize(AppWin.width, AppWin.height);
+
+  if((AppWin.key == KEY_ESCAPE) && (AppWin.action == RELEASE))
+    cancel();
+
+  if(AppWin.mode == GUI_HUD3D)
+    refresh();
+  else
+    menu_selector();
+
+  AppWin.resized = false;
 }
 
 } //tr

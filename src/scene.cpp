@@ -157,7 +157,7 @@ namespace tr
     }
     else // В режиме настройки 3D, сцену не рендерим, только заставку
     {
-      WinGui.draw_headband();
+      WinGui.headband();
       glBindVertexArray(vao_quad_id);
       glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     }
