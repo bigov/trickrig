@@ -6,11 +6,10 @@
 //
 //=============================================================================
 
-#ifndef __SNIP_HPP__
-#define __SNIP_HPP__
+#ifndef SNIP_HPP
+#define SNIP_HPP
 
 #include "vbo.hpp"
-#include "main.hpp"
 
 namespace tr
 {
@@ -45,9 +44,9 @@ namespace tr
     void texture_set(u_char, u_char);   // установка фрагмента текстуры
 
     // Функции управления данными снипа в буферах VBO данных и VBO индекса
-    void vbo_append(const tr::f3d &, tr::vbo &);
-    bool vbo_update(const tr::f3d &, tr::vbo &, GLsizeiptr);
-    void vbo_jam (tr::vbo &, GLintptr);
+    void vbo_append(const f3d &, vbo &);
+    bool vbo_update(const f3d &, vbo &, GLsizeiptr);
+    void vbo_jam (vbo &, GLintptr);
     glm::vec4 vertex_coord(size_t);
   };
 

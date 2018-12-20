@@ -9,17 +9,17 @@
 #define CONFIG_HPP
 
 #include "main.hpp"
-#include "io.hpp"
 #include "db.hpp"
+//#include "rig.hpp"
 
 namespace tr
 {
   class cfg
   {
     private:
-      cfg(void)                       = delete;
-      cfg(const tr::cfg &)            = delete;
-      cfg& operator=(const tr::cfg &) = delete;
+      cfg(void)                   = delete;
+      cfg(const cfg &)            = delete;
+      cfg& operator=(const cfg &) = delete;
 
       static db DataBase;
       static std::string AssetsDir;   // папка служебных файлов приложения
@@ -37,8 +37,8 @@ namespace tr
       static void load_app_params(void);
       static void save(void);
       static void create_map(const std::string &MapName);
-      static std::string app(APP_INIT);
-      static std::string map(MAP_INIT);
+      static std::string app_key(APP_INIT);
+      static std::string map_key(MAP_INIT);
       static std::string user_dir(void);
       static std::string map_name(const std::string &FolderName);
   };

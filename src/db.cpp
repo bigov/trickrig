@@ -42,6 +42,41 @@ std::string db::CfgAppPFName {}; // файл глобальных настрое
 
 
 ///
+/// \brief db::load_rig
+/// \param P
+/// \param file_name
+/// \return
+///
+rig db::load_rig(const i3d &P, const std::string& file_name)
+{
+
+  std::vector<unsigned char> BufVector {};
+  SqlDb.open(file_name);
+  SqlDb.select_rig(P.x, P.y, P.z);
+
+  auto Row = SqlDb.Rows.front();
+  rig Rig {};
+  Rig.born = std::any_cast<int>(Row[0]);
+
+  BufVector.clear();
+  BufVector = std::any_cast<std::vector<unsigned char>>(Row[2]);
+  memcpy(Rig.shift, BufVector.data(), SHIFT_DIGITS * sizeof(float));
+  SqlDb.select_snip( std::any_cast<int>(Row[1]) );
+
+  for(auto Row: SqlDb.Rows)
+  {
+    snip Snip {};
+    BufVector.clear();
+    BufVector = std::any_cast<std::vector<unsigned char>>(Row[0]);
+    memcpy(Snip.data, BufVector.data(), tr::bytes_per_snip);
+    Rig.Trick.push_front(Snip);
+  }
+  SqlDb.close();
+  return Rig;
+}
+
+
+///
 /// \brief db::load_config
 /// \param n
 /// \param Pname

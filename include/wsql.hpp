@@ -9,7 +9,6 @@
 #define WSQL_HPP
 
 #include "main.hpp"
-#include "io.hpp"
 #include "sqlite3.h"
 
 namespace tr{
@@ -70,9 +69,10 @@ class wsql
     bool _open(void);
     void save_row_data(void);
     static int callback(void*, int, char**, char**);
-    static void update_callback(void*, int, const char*, const char*,
-      sqlite3_int64);
+    static void update_callback(void*, int, const char*, const char*, sqlite3_int64);
 
 };     // class sqlw
 }      // ns tr::
-#endif // __DBW_HPP__
+
+#endif //WSQL_HPP
+

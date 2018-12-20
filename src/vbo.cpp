@@ -10,15 +10,23 @@
 namespace tr
 {
 
-  //## Сжатие границы размещения активных данных в буфере
-  void vbo::shrink(GLsizeiptr delta)
-  {
-    if(0 == delta) return;
-    if(delta > hem) ERR("VBO::shrink got negative value of new size");
-    hem -= delta;
-  }
+///
+/// \brief vbo::shrink
+/// \param delta
+/// \details Сжатие границы размещения активных данных в буфере
+///
+void vbo::shrink(GLsizeiptr delta)
+{
+  if(0 == delta) return;
+  if(delta > hem) ERR("VBO::shrink got negative value of new size");
+  hem -= delta;
+}
 
-  //## Cоздание нового буфера указанного в параметре размера
+  ///
+  /// \brief vbo::allocate
+  /// \param al
+  /// \details Cоздание нового буфера указанного в параметре размера
+  ///
   void vbo::allocate(GLsizeiptr al)
   {
     if(0 != id) ERR("VBO::Allocate trying to re-init exist object.");
@@ -37,7 +45,13 @@ namespace tr
     hem = 0;
   }
 
-  //## Cоздание графического буфера и заполнение его данными
+
+  ///
+  /// \brief vbo::allocate
+  /// \param al
+  /// \param data
+  /// \details Cоздание графического буфера и заполнение его данными
+  ///
   void vbo::allocate(GLsizeiptr al, const GLvoid* data)
   {
     if(0 != id) ERR("VBO::Allocate trying to re-init exist object.");
@@ -93,6 +107,7 @@ namespace tr
     hem = src;
   }
 
+
   ///
   ///  Добавление данных в конец VBO (с контролем границы размера буфера)
   ///
@@ -118,6 +133,7 @@ namespace tr
     return res;
   }
 
+
   ///
   /// Добавление данных в конец VBO (с контролем границы размера буфера)
   ///
@@ -137,7 +153,15 @@ namespace tr
     glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
 
-  //## Замена блока данных в указанном месте (с контролем положения)
+
+  ///
+  /// \brief vbo::data_update
+  /// \param d_size
+  /// \param data
+  /// \param dst
+  /// \return
+  /// \details Замена блока данных в указанном месте (с контролем положения)
+  ///
   bool vbo::data_update(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr dst)
   {
     if(dst > (hem - d_size)) return false; // протухший адрес из кэша

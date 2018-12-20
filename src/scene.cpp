@@ -9,83 +9,85 @@
 
 namespace tr
 {
-  //## Конструктор
-  //
-  scene::scene()
-  {
-    program2d_init();
-    framebuffer_init();
-  }
+///
+/// \brief scene::scene
+///
+scene::scene()
+{
+  program2d_init();
+  framebuffer_init();
+}
 
-  //## Деструктор
-  //
-  scene::~scene(void)
-  {
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glDeleteFramebuffers(1, &fbuf_id);
-  }
 
-  ///
-  /// Начальная настройка фрейм-буфера
-  ///
-  void scene::framebuffer_init(void)
-  {
-    glGenFramebuffers(1, &fbuf_id);
-    glGenRenderbuffers(1, &rbuf_id);
-    glGenTextures(1, &text_fbuf_id);
-    glGenTextures(1, &tex_hud_id);
+///
+/// \brief scene::~scene
+///
+scene::~scene(void)
+{
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glDeleteFramebuffers(1, &fbuf_id);
+}
 
-    glBindFramebuffer(GL_FRAMEBUFFER, fbuf_id);
 
-    // Настройка параметров текстуры фреймбуфера
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, text_fbuf_id);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, text_fbuf_id, 0);
+///
+/// Начальная настройка фрейм-буфера
+///
+void scene::framebuffer_init(void)
+{
+  glGenFramebuffers(1, &fbuf_id);
+  glGenRenderbuffers(1, &rbuf_id);
+  glGenTextures(1, &text_fbuf_id);
+  glGenTextures(1, &tex_hud_id);
+  glBindFramebuffer(GL_FRAMEBUFFER, fbuf_id);
 
-    // Настройка параметров текстуры HUD
-    glActiveTexture(GL_TEXTURE2);
-    glBindTexture(GL_TEXTURE_2D, tex_hud_id);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  // Настройка параметров текстуры фреймбуфера
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D, text_fbuf_id);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, text_fbuf_id, 0);
 
-    glBindRenderbuffer(GL_RENDERBUFFER, rbuf_id);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbuf_id);
+  // Настройка параметров текстуры HUD
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_2D, tex_hud_id);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  }
+  glBindRenderbuffer(GL_RENDERBUFFER, rbuf_id);
+  glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbuf_id);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
 
-  ///
-  /// \brief Перестрока размера фреймбуфера и связанных с ним текстур
-  ///
-  void scene::framebuffer_resize(void)
-  {
-    GLint l_o_d = 0, frame = 0;
+///
+/// \brief Перестрока размера фреймбуфера и связанных с ним текстур
+///
+void scene::framebuffer_resize(void)
+{
+  GLint l_o_d = 0, frame = 0;
 
-    // пересчет координат прицела
-    tr::AppWin.Cursor.x = static_cast<float>(tr::AppWin.width/2) + 0.5f;
-    tr::AppWin.Cursor.y = static_cast<float>(tr::AppWin.height/2) + 0.5f;
+  // пересчет координат прицела
+  tr::AppWin.Cursor.x = static_cast<float>(tr::AppWin.width/2) + 0.5f;
+  tr::AppWin.Cursor.y = static_cast<float>(tr::AppWin.height/2) + 0.5f;
 
-    // пересчет матрицы проекции
-    tr::AppWin.aspect = static_cast<float>(tr::AppWin.width) / static_cast<float>(tr::AppWin.height);
-    tr::MatProjection = glm::perspective(1.118f, tr::AppWin.aspect, 0.01f, 1000.0f);
+  // пересчет матрицы проекции
+  tr::AppWin.aspect = static_cast<float>(tr::AppWin.width) / static_cast<float>(tr::AppWin.height);
+  tr::MatProjection = glm::perspective(1.118f, tr::AppWin.aspect, 0.01f, 1000.0f);
 
-    GLsizei
-        w = static_cast<GLsizei>(AppWin.width),
-        h = static_cast<GLsizei>(AppWin.height);
+  GLsizei
+      w = static_cast<GLsizei>(AppWin.width),
+      h = static_cast<GLsizei>(AppWin.height);
 
-    // пересчет Viewport
-    glViewport(0, 0, w, h);
+  // пересчет Viewport
+  glViewport(0, 0, w, h);
 
-    // настройка размера текстуры фреймбуфера
-    glBindTexture(GL_TEXTURE_2D, text_fbuf_id);
-    glTexImage2D(GL_TEXTURE_2D, l_o_d, GL_RGBA, w, h, frame, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+  // настройка размера текстуры фреймбуфера
+  glBindTexture(GL_TEXTURE_2D, text_fbuf_id);
+  glTexImage2D(GL_TEXTURE_2D, l_o_d, GL_RGBA, w, h, frame, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-    // настройка размера рендербуфера
-    glBindRenderbuffer(GL_RENDERBUFFER, rbuf_id);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
-  }
+  // настройка размера рендербуфера
+  glBindRenderbuffer(GL_RENDERBUFFER, rbuf_id);
+  glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
+}
 
   ///
   /// Инициализация GLSL программы обработки текстуры из фреймбуфера.
@@ -96,8 +98,8 @@ namespace tr
     glBindVertexArray(vao_quad_id);
 
     screenShaderProgram.attach_shaders(
-      tr::cfg::app(SHADER_VERT_SCREEN),
-      tr::cfg::app(SHADER_FRAG_SCREEN)
+      tr::cfg::app_key(SHADER_VERT_SCREEN),
+      tr::cfg::app_key(SHADER_FRAG_SCREEN)
     );
     screenShaderProgram.use();
 

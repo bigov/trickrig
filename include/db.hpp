@@ -9,6 +9,7 @@
 #define DB_HPP
 
 #include "wsql.hpp"
+#include "rig.hpp"
 
 namespace tr {
 
@@ -20,8 +21,9 @@ class db
     v_str open_map(const std::string &); // загрузка данных карты
     v_str open_app(const std::string &); // загрузка данных приложения
     static void save_map_name(const std::string &);
-    static void save(const tr::camera_3d &Eye);
-    static void save(const tr::main_window &AppWin);
+    static void save(const camera_3d &Eye);
+    static void save(const main_window &AppWin);
+    rig load_rig(const i3d &,  const std::string &file_name);
     v_ch get_map_name(const std::string & dbFile);
 
   private:
@@ -38,4 +40,3 @@ class db
 
 } //tr
 #endif
-

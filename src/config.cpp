@@ -7,6 +7,7 @@
  */
 
 #include "config.hpp"
+//#include "io.hpp"
 
 namespace tr{
 
@@ -174,7 +175,7 @@ void cfg::save(void)
 ///
 /// Передача клиенту значения параметра
 ///
-std::string cfg::map(MAP_INIT D)
+std::string cfg::map_key(MAP_INIT D)
 {
 #ifndef NDEBUG
   if(MapParams[D].empty())
@@ -190,7 +191,7 @@ std::string cfg::map(MAP_INIT D)
 ///
 /// Передача клиенту значения параметра
 ///
-std::string cfg::app(APP_INIT D)
+std::string cfg::app_key(APP_INIT D)
 {
 #ifndef NDEBUG
   if(AppParams[D].empty())

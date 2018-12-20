@@ -89,29 +89,6 @@ namespace tr
   extern short random_short(void);
   extern std::list<std::string> dirs_list(const std::string &path);
 
-  // структуры для оперирования с трехмерными координатами
-
-  struct i3d { int x=0, y=0, z=0; };
-  extern bool operator< (i3d const& left, i3d const& right);
-
-  struct f3d
-  {
-    float x = 0.f, y = 0.f, z = 0.f;
-
-    // конструкторы для обеспечения инициализации разными типами данных
-    f3d(float x, float y, float z): x(x), y(y), z(z) {}
-
-    f3d(double x, double y, double z): x(static_cast<float>(x)),
-                                       y(static_cast<float>(y)),
-                                       z(static_cast<float>(z)) {}
-
-    f3d(int x, int y, int z): x(static_cast<float>(x)),
-                              y(static_cast<float>(y)),
-                              z(static_cast<float>(z)) {}
-
-    f3d(glm::vec3 v): x(v[0]), y(v[1]), z(v[2]) {}
-  };
-
 }
 
 #endif //IO_HPP

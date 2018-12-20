@@ -5,8 +5,8 @@
 // GLSL shaders program class header
 //
 //============================================================================
-#ifndef __GLSL_HPP__
-#define __GLSL_HPP__
+#ifndef GLSL_HPP
+#define GLSL_HPP
 
 #include "main.hpp"
 #include "io.hpp"

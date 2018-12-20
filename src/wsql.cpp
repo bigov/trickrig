@@ -6,6 +6,7 @@
  */
 
 #include "wsql.hpp"
+#include "io.hpp"
 
 namespace tr {
 
@@ -76,6 +77,7 @@ namespace tr {
     return;
   }
 
+
   ///
   /// \brief sqlw::select_rig
   /// \param x
@@ -93,6 +95,7 @@ namespace tr {
     return;
   }
 
+
   ///
   /// \brief sqlw::select_snip
   /// \param id
@@ -105,6 +108,7 @@ namespace tr {
     return;
   }
 
+
   /// Запись рига
   void wsql::insert_rig(int x, int y, int z, int t, int id, const float *rs, size_t s)
   {
@@ -116,6 +120,7 @@ namespace tr {
     request_put(buf, rs, s);
     return;
   }
+
 
   /// Запись снипа
   void wsql::insert_snip(int id, const float* data)

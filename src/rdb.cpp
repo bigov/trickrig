@@ -1,51 +1,27 @@
-//============================================================================
-//
-// file: rigs.cpp
-//
-// Элементы формирования пространства
-//
-//============================================================================
+/*
+ *
+ * file: rdb.cpp
+ *
+ * Управление элементами 3D пространства
+ *
+ */
+
 #include "rdb.hpp"
+#include "wsql.hpp"
+#include "config.hpp"
 
 namespace tr
 {
-  ///
-  /// Дублирующий конструктор
-  ///
-  rig::rig(const tr::rig & Other)
-  {
-    born = Other.born;
-    for(int i = 0; i < SHIFT_DIGITS; i++) shift[i] = Other.shift[i];
-    Trick.clear();
-    for(tr::snip Snip: Other.Trick) Trick.push_front(Snip);
-    return;
-  }
 
   ///
-  /// \brief rig::operator =
-  /// \param Other
-  /// \return
+  /// \brief rdb::rdb
+  /// \details КОНСТРУКТОР
   ///
-  tr::rig& rig::operator= (const tr::rig & Other)
-  {
-    if(this != &Other)
-    {
-      born = get_msec();
-      for(int i = 0; i < SHIFT_DIGITS; i++) shift[i] = Other.shift[i];
-      Trick.clear();
-      for(tr::snip Snip: Other.Trick) Trick.push_front(Snip);
-    }
-    return *this;
-  }
-
-  /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// /// ///
-
-  //## КОНСТРУКТОР
   rdb::rdb(void)
   {
     Prog3d.attach_shaders(
-      tr::cfg::app(SHADER_VERT_SCENE),
-      tr::cfg::app(SHADER_FRAG_SCENE)
+      cfg::app_key(SHADER_VERT_SCENE),
+      cfg::app_key(SHADER_FRAG_SCENE)
     );
     Prog3d.use();  // слинковать шейдерную рограмму
 
@@ -93,6 +69,7 @@ namespace tr
     Prog3d.unuse();
   }
 
+
   ///
   /// Рендер кадра
   ///
@@ -128,15 +105,16 @@ namespace tr
     Prog3d.unuse(); // отключить шейдерную программу
   }
 
+
   ///
   /// Добавление в графический буфер элементов, расположенных в точке (x, y, z)
   ///
   void rdb::put_in_vbo(int x, int y, int z)
   {
-    tr::rig *Rig = get(x, y, z);
+    rig *Rig = get(x, y, z);
     if(nullptr == Rig) return;   // TODO: тут можно подгружать или дебажить
 
-    tr::f3d Point = {
+    f3d Point = {
       static_cast<float>(x) + Rig->shift[SHIFT_X],
       static_cast<float>(y) + Rig->shift[SHIFT_Y],
       static_cast<float>(z) + Rig->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
@@ -145,16 +123,17 @@ namespace tr
     put_in_vbo(Rig, Point);
   }
 
+
   ///
   /// \brief rdb::put_in_vbo
   /// \param Rig
   /// \param Point
   ///
-  void rdb::put_in_vbo(tr::rig *Rig, const tr::f3d &Point)
+  void rdb::put_in_vbo(rig *Rig, const f3d &Point)
   {
     if(Rig->in_vbo) return;      // Если данные уже в VBO - ничего не делаем
 
-    for(tr::snip &Snip: Rig->Trick)
+    for(snip &Snip: Rig->Trick)
     {
       bool data_is_recieved = false;
       while (!data_is_recieved)
@@ -175,8 +154,8 @@ namespace tr
       }
     }
     Rig->in_vbo = true;
-    return;
   }
+
 
   ///
   /// Подсветка выделенного рига
@@ -204,12 +183,16 @@ namespace tr
 
     // Записать данные снипа подсветки в конец буфера данных VBO
     VBOdata.data_append_tmp(tr::bytes_per_snip, highlight.data);
-
-    return;
-
   }
 
-  //## убрать риг из рендера
+
+  ///
+  /// \brief rdb::remove_from_vbo
+  /// \param x
+  /// \param y
+  /// \param z
+  /// \details убрать риг из рендера
+  ///
   void rdb::remove_from_vbo(int x, int y, int z)
   {
   /// Индексы размещенных в VBO данных, которые при перемещении камеры вышли
@@ -226,18 +209,22 @@ namespace tr
       CachedOffset.push_front(Snip.data_offset);
     }
     Rig->in_vbo = false;
-    return;
   }
 
-  //## Удаление элементов по адресам с кэше и сжатие данных в VBO
-  void rdb::clear_cashed_snips(void)
-  {
+
+  ///
+  /// \brief rdb::clear_cashed_snips
+  /// \details Удаление элементов по адресам с кэше и сжатие данных в VBO
+  ///
   /// Если в кэше есть адрес блока из середины VBO, то в него переносим данные
   /// из конца VBO и сжимаем буфер на длину одного блока. Если адрес из кэша
   /// указывает на крайний блок в конце VBO, то сжимаем буфер сдвигая границу
   /// на длину одного блока.
   ///
   /// Не забываем уменьшить число элементов в рендере.
+  ///
+  void rdb::clear_cashed_snips(void)
+  {
 
     // Выбрать самый крайний элемент VBO на границе блока данных
     GLsizeiptr data_src = VBOdata.get_hem();
@@ -301,7 +288,7 @@ namespace tr
 
     // Самый частый и самый сложный вариант
     try { // Если есть отображаемый data_src и меньший data_dst из кэша, то
-      tr::snip *Snip = VisibleSnips.at(data_src);  // найти перемещаемый снип,
+      snip *Snip = VisibleSnips.at(data_src);  // найти перемещаемый снип,
       VisibleSnips.erase(data_src);                // удалить его из карты
       Snip->vbo_jam(VBOdata, data_dst);            // переместить данные в VBO
       VisibleSnips[data_dst] = Snip;               // внести ссылку в карту
@@ -311,63 +298,35 @@ namespace tr
     } catch(...) {
       ERR("rigs::clear_cashed_snips got error VisibleSnips[data_src]");
     }
-    return;
   }
 
-  //## Загрузка из БД шаблонного рига поверхности с указанными координатами
-  tr::rig rdb::load_tpl_rig(int x, int y, int z)
-  {
-    //char buf_query[255];
-    std::vector<unsigned char> BufVector {};
-
-    tr::wsql DB = {};
-    DB.open(tr::cfg::app(DB_TPL_FNAME));
-    DB.select_rig(x, y, z);
-
-    auto Row = DB.Rows.front();
-    tr::rig Rig;
-    Rig.born = std::any_cast<int>(Row[0]);
-
-    BufVector.clear();
-    BufVector = std::any_cast<std::vector<unsigned char>>(Row[2]);
-    memcpy(Rig.shift, BufVector.data(), SHIFT_DIGITS * sizeof(float));
-    DB.select_snip( std::any_cast<int>(Row[1]) );
-
-    for(auto Row: DB.Rows)
-    {
-      tr::snip Snip = {};
-      BufVector.clear();
-      BufVector = std::any_cast<std::vector<unsigned char>>(Row[0]);
-      memcpy(Snip.data, BufVector.data(), tr::bytes_per_snip);
-      Rig.Trick.push_front(Snip);
-    }
-    DB.close();
-    return Rig;
-  }
 
   ///
   /// \brief Инициализация карты пространства
   ///
-  /// \details  Формирование в оперативной памяти карты (std::map) ригов в
-  /// трехмерных координатах для выбраной области пространства. Из этой карты
-  /// берутся данные снипов, размещаемых в VBO для рендера сцены.
+  /// \details  Формирование в оперативной памяти карты ригов (std::map) для
+  /// выбраной области пространства. Из этой карты берутся данные снипов,
+  /// размещаемых в VBO для рендера сцены.
   ///
   void rdb::init(int g, glm::vec3)
   {
+    db DB {};
     lod = g; // TODO проверка масштаба на допустимость
     //_load_16x16_obj();
 
+    // загрузка шаблонного фрагмента поверхности размером (tpl_side X tpl_side)
+    i3d P {0, 0, 0};
+    int tpl_side = 16;                                  // длина стороны шаблона
+    for(P.x = 0; P.x < tpl_side; P.x++)
+      for(P.z = 0; P.z < tpl_side; P.z++)
+        TplRigs[P] = DB.load_rig(P, cfg::app_key(DB_TPL_FNAME));
+
     int y = 0;
-
-    // загружаем шаблон фрагмента поверхности размером 16x16
-    int tpl_side = 16; // длина стороны шаблона
-    for(int x = 0; x < tpl_side; x++) for(int z = 0; z < tpl_side; z++)
-        TplRigs[tr::i3d{x, y, z}] = load_tpl_rig(x, y, z);
-
-    // этот шаблон дублируем 8х8 раз на xz плоскости
+    // Загрузка фрагмента карты 8х8х(16x16) раз на xz плоскости
     int
      row_x = 0,
      row_z = 0;
+
     for (int zn = -4; zn < 4; zn++)
     {
       row_z = zn * tpl_side;
@@ -380,23 +339,28 @@ namespace tr
           // если в нем по указанным координатам есть сохраненная поверхность,
           // то загружаем ее данные. Если нет - данные шаблона.
 
-          tr::i3d dst {row_x + x, y, row_z + z};
-          RigsDb[dst] = TplRigs[tr::i3d{x, y, z}];
+          i3d dst {row_x + x, y, row_z + z};
+          MapRigs[dst] = TplRigs[i3d{x, y, z}];
 
           // Конструктор копирования рига не копирует время создания
           // рига-источника и его Origin. Время конструктор автоматически
           // переустанавливает на момент выполнения операции копирования, а
           // значение координат Origin надо установить непосредственно в
           // созданном объекте отдельной операцией -
-          RigsDb[dst].Origin = dst;
+          MapRigs[dst].Origin = dst;
         }
       }
     }
   }
 
-  //## сохранение блока ригов в базу данных
-  bool rdb::save(const tr::i3d & From, const tr::i3d & To)
-  {
+
+  ///
+  /// \brief rdb::save
+  /// \param From
+  /// \param To
+  /// \return
+  /// \details сохранение блока ригов в базу данных
+  ///
   /// Вначале записываем в таблицу снипов данные области рига. При этом
   /// индекс области, который будет внесен в таблицу ригов, назначаем
   /// по номеру записи первого снипа группы области.
@@ -404,9 +368,11 @@ namespace tr
   /// После этого обновляем/вставляем запись в таблицу ригов с указанием
   /// индекса созданой группы
   ///
+  bool rdb::save(const i3d &From, const i3d &To)
+  {
 
-    tr::wsql DB = {};
-    DB.open(tr::cfg::app(DB_TPL_FNAME));
+    wsql DB = {};
+    DB.open(cfg::app_key(DB_TPL_FNAME));
 
     int id_area = 0;
 
@@ -414,7 +380,7 @@ namespace tr
       for(int y = From.y; y < To.y; y++)
         for(int z = From.z; z < To.z; z++)
         {
-          tr::rig *R = get(x, y, z);
+          rig *R = get(x, y, z);
           if(nullptr != R)
           {
             id_area = 0;
@@ -439,14 +405,28 @@ namespace tr
     return true;
   }
 
-  //## Поиск по координатам ближайшего блока снизу
-  tr::i3d rdb::search_down(const glm::vec3& V)
+
+  ///
+  /// \brief rdb::search_down
+  /// \param V
+  /// \return
+  /// \details Поиск по координатам ближайшего блока снизу
+  ///
+  i3d rdb::search_down(const glm::vec3& V)
   {
     return search_down(V.x, V.y, V.z);
   }
 
-  //## Поиск по координатам ближайшего блока снизу
-  tr::i3d rdb::search_down(float x, float y, float z)
+
+  ///
+  /// \brief rdb::search_down
+  /// \param x
+  /// \param y
+  /// \param z
+  /// \return
+  /// \details Поиск по координатам ближайшего блока снизу
+  ///
+  i3d rdb::search_down(float x, float y, float z)
   {
     return search_down(
           static_cast<double>(x),
@@ -455,8 +435,16 @@ namespace tr
     );
   }
 
-  //## Поиск по координатам ближайшего блока снизу
-  tr::i3d rdb::search_down(double x, double y, double z)
+
+  ///
+  /// \brief rdb::search_down
+  /// \param x
+  /// \param y
+  /// \param z
+  /// \return
+  /// \details Поиск по координатам ближайшего блока снизу
+  ///
+  i3d rdb::search_down(double x, double y, double z)
   {
     return search_down(
       static_cast<int>(floor(x)),
@@ -465,28 +453,37 @@ namespace tr
     );
   }
 
-  //## Поиск по координатам ближайшего блока снизу
-  tr::i3d rdb::search_down(int x, int y, int z)
+
+  ///
+  /// \brief rdb::search_down
+  /// \param x
+  /// \param y
+  /// \param z
+  /// \return
+  /// \default Поиск по координатам ближайшего блока снизу
+  ///
+  i3d rdb::search_down(int x, int y, int z)
   {
     if(y < yMin) ERR("Y downflow"); if(y > yMax) ERR("Y overflow");
     while(y > yMin)
     {
       try
       { 
-        RigsDb.at(tr::i3d {x, y, z});
-        return tr::i3d {x, y, z};
+        MapRigs.at(i3d {x, y, z});
+        return i3d {x, y, z};
       } catch (...)
       { y -= lod; }
     }
     ERR("Rigs::search_down() failure. We need to use try/catch in this case.");
   }
 
+
   ///
   /// \brief rdb::get
   /// \param P
   /// \return
   ///
-  tr::rig* rdb::get(const glm::vec3& P)
+  rig* rdb::get(const glm::vec3& P)
   {
     return get(
       static_cast<int>(floor(P.x)),
@@ -495,19 +492,33 @@ namespace tr
     );
   }
 
-  //## Поиск элемента с указанными координатами
-  tr::rig* rdb::get(int x, int y, int z)
+
+  ///
+  /// \brief rdb::get
+  /// \param x
+  /// \param y
+  /// \param z
+  /// \return
+  /// \details Поиск элемента с указанными координатами
+  ///
+  rig* rdb::get(int x, int y, int z)
   {
-    return get(tr::i3d{x, y, z});
+    return get(i3d{x, y, z});
   }
 
-  //## Поиск элемента с указанными координатами
-  tr::rig* rdb::get(const i3d &P)
+
+  ///
+  /// \brief rdb::get
+  /// \param P
+  /// \return
+  /// \details  Поиск элемента с указанными координатами
+  ///
+  rig* rdb::get(const i3d &P)
   {
     if(P.y < yMin) ERR("rigs::get -Y is overflow");
     if(P.y > yMax) ERR("rigs::get +Y is overflow");
 
-    try { return &RigsDb.at(P); }
+    try { return &MapRigs.at(P); }
     catch (...) { return nullptr; }
   }
 

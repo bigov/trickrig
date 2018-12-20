@@ -10,7 +10,7 @@
 
 namespace tr
 {
-  tr::snip& snip::operator= (const snip & Other)
+  snip& snip::operator= (const snip &Other)
   {
     if(this != &Other) copy_data(Other);
     return *this;
@@ -72,7 +72,7 @@ namespace tr
   /// координаты вершин пересчитываются с учетом координат (TODO: сдвига и
   /// поворота рига-контейнера) и преобразованные данные записываются в VBO.
   ///
-  void snip::vbo_append(const tr::f3d &Point, tr::vbo & VBOdata)
+  void snip::vbo_append(const f3d &Point, vbo & VBOdata)
   {
     GLfloat cache[tr::digits_per_snip] = {0.0f};
     memcpy(cache, data, tr::bytes_per_snip);
@@ -87,7 +87,7 @@ namespace tr
   }
 
   //## обновление данных в VBO буфере
-  bool snip::vbo_update(const tr::f3d &Point, tr::vbo & VBOdata, GLsizeiptr dst)
+  bool snip::vbo_update(const f3d &Point, vbo & VBOdata, GLsizeiptr dst)
   {
   /// Целевой адрес для перемещения блока данных в VBO (параметр "offset")
   /// берется обычно из кэша. При этом может возникнуть ситуация, когда в кэше
@@ -116,7 +116,7 @@ namespace tr
   }
 
   //## Перемещение блока данных из конца ближе к началу VBO буфера
-  void snip::vbo_jam(tr::vbo & VBOdata, GLintptr dst)
+  void snip::vbo_jam(vbo &VBOdata, GLintptr dst)
   {
   /// Эта функция используется только для крайних блоков данных, расположеных
   /// в конце VBO. Данные перемещаются на указанное место (dst) ближе к началу

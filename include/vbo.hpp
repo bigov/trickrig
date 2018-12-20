@@ -5,11 +5,10 @@
 // Header of the GLSL VBOs control class
 //
 //============================================================================
-#ifndef __VBO_HPP__
-#define __VBO_HPP__
+#ifndef VBO_HPP
+#define VBO_HPP
 
 #include "main.hpp"
-#include "config.hpp"
 
 namespace tr {
 

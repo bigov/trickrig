@@ -1,5 +1,5 @@
-#ifndef WINGL_HPP
-#define WINGL_HPP
+#ifndef WGLFW_HPP
+#define WGLFW_HPP
 
 #include "config.hpp"
 #include "main.hpp"
@@ -56,4 +56,4 @@ namespace tr
   };
 } //namespace tr
 
-#endif // WINGL_HPP
+#endif //WGLFW_HPP
