@@ -10,6 +10,7 @@
 
 #include "wsql.hpp"
 #include "rig.hpp"
+#include "rdb.hpp"
 
 namespace tr {
 
@@ -23,7 +24,9 @@ class db
     static void save_map_name(const std::string &);
     static void save(const camera_3d &Eye);
     static void save(const main_window &AppWin);
-    rig load_rig(const i3d &,  const std::string &file_name);
+    rig load_rig(const i3d &, const std::string &file_name);
+    void save_rig(const i3d &, const rig *);
+    void save_rigs_block(const i3d &, const i3d &, rdb &);
     v_ch get_map_name(const std::string & dbFile);
 
   private:

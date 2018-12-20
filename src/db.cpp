@@ -50,12 +50,13 @@ std::string db::CfgAppPFName {}; // файл глобальных настрое
 rig db::load_rig(const i3d &P, const std::string& file_name)
 {
 
+  rig Rig {};
   std::vector<unsigned char> BufVector {};
+
   SqlDb.open(file_name);
   SqlDb.select_rig(P.x, P.y, P.z);
 
   auto Row = SqlDb.Rows.front();
-  rig Rig {};
   Rig.born = std::any_cast<int>(Row[0]);
 
   BufVector.clear();
@@ -73,6 +74,91 @@ rig db::load_rig(const i3d &P, const std::string& file_name)
   }
   SqlDb.close();
   return Rig;
+}
+
+
+///
+/// \brief db::save_rig
+/// \param P
+/// \param R
+/// \details сохранение в базу данных рига
+///
+/// Вначале записываем в таблицу снипов данные области рига. При этом
+/// индекс области, который будет внесен в таблицу ригов, назначаем
+/// по номеру записи первого снипа группы области.
+///
+/// После этого обновляем/вставляем запись в таблицу ригов с указанием
+/// индекса созданой группы
+///
+void db::save_rig(const i3d &P, const rig *R)
+{
+  int id_area = 0;
+  SqlDb.open(MapPFName);
+
+  for(auto & Snip: R->Trick)
+  {
+    // Запись снипа
+    SqlDb.insert_snip(id_area, Snip.data);
+
+    if(0 == id_area)
+    {
+      id_area = SqlDb.Result.rowid;
+      SqlDb.update_snip( id_area, id_area ); //TODO: !!!THE BUG???
+      // Обновить номер группы в записи первого снипа
+    }
+  }
+  // Запись рига
+  SqlDb.insert_rig( P.x, P.y, P.z, R->born, id_area, R->shift, SHIFT_DIGITS);
+  //DB.request_put(query_buf, R->shift, SHIFT_DIGITS);
+
+  SqlDb.close();
+}
+
+
+///
+/// \brief db::save_rigs_block
+/// \param From
+/// \param To
+/// \param RDb
+/// \details сохранение в базу данных блока ригов
+///
+/// Вначале записываем в таблицу снипов данные области рига. При этом
+/// индекс области, который будет внесен в таблицу ригов, назначаем
+/// по номеру записи первого снипа группы области.
+///
+/// После этого обновляем/вставляем запись в таблицу ригов с указанием
+/// индекса созданой группы
+///
+void db::save_rigs_block(const i3d &From, const i3d &To, rdb &RDB )
+{
+  int id_area = 0;
+  SqlDb.open(MapPFName);
+
+  for(int x = From.x; x < To.x; x++)
+    for(int y = From.y; y < To.y; y++)
+      for(int z = From.z; z < To.z; z++)
+      {
+        rig *R = RDB.get(x, y, z);
+        if(nullptr != R)
+        {
+          id_area = 0;
+          for(auto & Snip: R->Trick)
+          {
+            // Запись снипа
+            SqlDb.insert_snip(id_area, Snip.data);
+
+            if(0 == id_area)
+            {
+              id_area = SqlDb.Result.rowid;
+              SqlDb.update_snip( id_area, id_area ); //TODO: !!!THE BUG???
+              // Обновить номер группы в записи первого снипа
+            }
+          }
+          // Записать риг
+          SqlDb.insert_rig( x, y, z, R->born, id_area, R->shift, SHIFT_DIGITS);
+        }
+      }
+  SqlDb.close();
 }
 
 

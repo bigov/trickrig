@@ -303,7 +303,8 @@ namespace tr
     static int mod = 0;
     if((31 == ev.key_scancode) && (1 == mod))
     {
-      RigsDb0.save({0, 0, 0}, {16, 1, 16});
+      cfg::DataBase.save_rigs_block({0, 0, 0}, {16, 1, 16}, RigsDb0);
+      //RigsDb0.save({0, 0, 0}, {16, 1, 16});
     }
     mod = 0;
     if (285 == ev.key_scancode) mod = 1;

@@ -21,7 +21,6 @@ namespace tr
       cfg(const cfg &)            = delete;
       cfg& operator=(const cfg &) = delete;
 
-      static db DataBase;
       static std::string AssetsDir;   // папка служебных файлов приложения
       static std::string UserDir;     // папка конфигов пользователя
       static v_str AppParams;
@@ -30,6 +29,7 @@ namespace tr
       static void set_user_dir(void); // выбор пользовательской папки
 
     public:
+      static db DataBase;
       static std::string DS;          // символ разделителя папок
       static std::string CfgFname;    // конфиг текущей сесии
 

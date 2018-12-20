@@ -10,7 +10,6 @@
 #include "io.hpp"
 #include "scene.hpp"
 #include "wglfw.hpp"
-#include "wsql.hpp"
 
 std::string tr::AppPathDir {};
 

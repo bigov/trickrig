@@ -49,7 +49,7 @@ namespace tr
       void draw(void);                        // Рендер кадра
       void clear_cashed_snips(void);          // очистка промежуточного кэша
 
-      bool save(const i3d &, const i3d &);
+      //bool save(const i3d &, const i3d &);
       void init(int, glm::vec3 = {0,0,0});       // загрузка уровня
       void highlight(const i3d &);
 

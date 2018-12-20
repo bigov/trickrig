@@ -7,7 +7,6 @@
  */
 
 #include "rdb.hpp"
-#include "wsql.hpp"
 #include "config.hpp"
 
 namespace tr
@@ -310,7 +309,7 @@ namespace tr
   ///
   void rdb::init(int g, glm::vec3)
   {
-    db DB {};
+    //db DB {};
     lod = g; // TODO проверка масштаба на допустимость
     //_load_16x16_obj();
 
@@ -319,7 +318,7 @@ namespace tr
     int tpl_side = 16;                                  // длина стороны шаблона
     for(P.x = 0; P.x < tpl_side; P.x++)
       for(P.z = 0; P.z < tpl_side; P.z++)
-        TplRigs[P] = DB.load_rig(P, cfg::app_key(DB_TPL_FNAME));
+        TplRigs[P] = cfg::DataBase.load_rig(P, cfg::app_key(DB_TPL_FNAME));
 
     int y = 0;
     // Загрузка фрагмента карты 8х8х(16x16) раз на xz плоскости
@@ -351,58 +350,6 @@ namespace tr
         }
       }
     }
-  }
-
-
-  ///
-  /// \brief rdb::save
-  /// \param From
-  /// \param To
-  /// \return
-  /// \details сохранение блока ригов в базу данных
-  ///
-  /// Вначале записываем в таблицу снипов данные области рига. При этом
-  /// индекс области, который будет внесен в таблицу ригов, назначаем
-  /// по номеру записи первого снипа группы области.
-  ///
-  /// После этого обновляем/вставляем запись в таблицу ригов с указанием
-  /// индекса созданой группы
-  ///
-  bool rdb::save(const i3d &From, const i3d &To)
-  {
-
-    wsql DB = {};
-    DB.open(cfg::app_key(DB_TPL_FNAME));
-
-    int id_area = 0;
-
-    for(int x = From.x; x < To.x; x++)
-      for(int y = From.y; y < To.y; y++)
-        for(int z = From.z; z < To.z; z++)
-        {
-          rig *R = get(x, y, z);
-          if(nullptr != R)
-          {
-            id_area = 0;
-            for(auto & Snip: R->Trick)
-            {
-              // Запись снипа
-              DB.insert_snip(id_area, Snip.data);
-
-              if(0 == id_area)
-              {
-                id_area = DB.Result.rowid;
-                DB.update_snip( id_area, id_area ); //TODO: !!!THE BUG???
-                // Обновить номер группы в записи первого снипа
-              }
-            }
-            // Запись рига
-            DB.insert_rig( x, y, z, R->born, id_area, R->shift, SHIFT_DIGITS);
-            //DB.request_put(query_buf, R->shift, SHIFT_DIGITS);
-          }
-        }
-    DB.close();
-    return true;
   }
 
 
