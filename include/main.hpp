@@ -151,7 +151,7 @@ enum GUI_MODE_ID {   // режимы окна
    * - при значении 0.0f < lod_0 <= 1.0f рисуется площадка из 9 блоков
    * - координаты блока (нулевая точка) вычилсяется через floor(), граница - через ceil()
    */
-  static const int lod_0 = 25;
+  static const int lod0_size = 25;
 
   // число вершин в одном снипе
   static const size_t vertices_per_snip = 4;
@@ -178,9 +178,15 @@ enum GUI_MODE_ID {   // режимы окна
     key_scancode, key_mods, mouse_mods;
   };
 
-  // структуры для оперирования с трехмерными координатами
-
-  struct i3d { int x=0, y=0, z=0; };
+  // структуры для оперирования опорными точками в пространстве трехмерных координат
+  struct i3d
+  {
+    int x, y, z;
+    i3d(void) = delete;
+    i3d(int X, int Y, int Z): x(X), y(Y), z(Z) {}
+    i3d(const glm::vec3 &v): x(static_cast<int>(floor(v.x))),
+      y(static_cast<int>(floor(v.y))), z(static_cast<int>(floor(v.z))) {}
+  };
   extern bool operator< (i3d const& left, i3d const& right);
 
   struct f3d

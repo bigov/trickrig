@@ -11,13 +11,17 @@
 
 namespace tr
 {
-
   ///
   /// \brief rdb::rdb
   /// \details КОНСТРУКТОР
   ///
   rdb::rdb(void)
   {
+    load_space_template(1); // загрузка шаблона пространства
+    // предположительно, тут должна быть загрузка шаблонов
+    // для всех L-O-D:
+    // load_space_template(10); load_space_template(100); ...
+
     Prog3d.attach_shaders(
       cfg::app_key(SHADER_VERT_SCENE),
       cfg::app_key(SHADER_FRAG_SCENE)
@@ -29,7 +33,7 @@ namespace tr
     glBindVertexArray(space_vao);
 
     // Число элементов в кубе с длиной стороны = "space_i0_length" элементов:
-    unsigned n = pow((tr::lod_0 + tr::lod_0 + 1), 3);
+    unsigned n = pow((tr::lod0_size + tr::lod0_size + 1), 3);
 
     // Размер данных VBO для размещения снипов:
     VBOdata.allocate(n * tr::bytes_per_snip);
@@ -70,6 +74,22 @@ namespace tr
 
 
   ///
+  /// \brief rdb::load_space_template
+  /// \param level
+  /// \details загрузка шаблонного фрагмента поверхности размером (tpl_side X tpl_side)
+  /// для указанного уровня LOD.
+  ///
+  void rdb::load_space_template(int level)
+  {
+    if (level != 1) ERR ("rdb::load_space_template need to comple the work");
+
+    i3d P{ 0,0,0 };
+    for(P.x = 0; P.x < tpl_1_side; P.x++)
+      for(P.z = 0; P.z < tpl_1_side; P.z++)
+        TplRigs_1[P] = cfg::DataBase.load_rig(P, cfg::app_key(DB_TPL_FNAME));
+  }
+
+  ///
   /// Рендер кадра
   ///
   void rdb::draw(void)
@@ -108,7 +128,7 @@ namespace tr
   ///
   /// Добавление в графический буфер элементов, расположенных в точке (x, y, z)
   ///
-  void rdb::put_in_vbo(int x, int y, int z)
+  void rdb::place(int x, int y, int z)
   {
     rig *Rig = get(x, y, z);
     if(nullptr == Rig) return;   // TODO: тут можно подгружать или дебажить
@@ -192,7 +212,7 @@ namespace tr
   /// \param z
   /// \details убрать риг из рендера
   ///
-  void rdb::remove_from_vbo(int x, int y, int z)
+  void rdb::remove(int x, int y, int z)
   {
   /// Индексы размещенных в VBO данных, которые при перемещении камеры вышли
   /// за границу отображения, запоминаются в кэше, чтобы на их место
@@ -301,24 +321,16 @@ namespace tr
 
 
   ///
-  /// \brief Инициализация карты пространства
+  /// \brief Загрузка из базы данных в оперативную память блока пространства
   ///
   /// \details  Формирование в оперативной памяти карты ригов (std::map) для
   /// выбраной области пространства. Из этой карты берутся данные снипов,
   /// размещаемых в VBO для рендера сцены.
   ///
-  void rdb::init(int g, glm::vec3)
+  void rdb::load_space(int g, const glm::vec3& Position)
   {
-    //db DB {};
+    i3d P{ Position };
     lod = g; // TODO проверка масштаба на допустимость
-    //_load_16x16_obj();
-
-    // загрузка шаблонного фрагмента поверхности размером (tpl_side X tpl_side)
-    i3d P {0, 0, 0};
-    int tpl_side = 16;                                  // длина стороны шаблона
-    for(P.x = 0; P.x < tpl_side; P.x++)
-      for(P.z = 0; P.z < tpl_side; P.z++)
-        TplRigs[P] = cfg::DataBase.load_rig(P, cfg::app_key(DB_TPL_FNAME));
 
     int y = 0;
     // Загрузка фрагмента карты 8х8х(16x16) раз на xz плоскости
@@ -328,18 +340,18 @@ namespace tr
 
     for (int zn = -4; zn < 4; zn++)
     {
-      row_z = zn * tpl_side;
+      row_z = zn * tpl_1_side;
       for (int xn = -4; xn < 4; xn++)
       {
-        row_x = xn * tpl_side;
-        for(int x = 0; x < tpl_side; x++) for(int z = 0; z < tpl_side; z++)
+        row_x = xn * tpl_1_side;
+        for(int x = 0; x < tpl_1_side; x++) for(int z = 0; z < tpl_1_side; z++)
         {
           // TODO: тут следует делать запрос к базе данных активного района -
           // если в нем по указанным координатам есть сохраненная поверхность,
           // то загружаем ее данные. Если нет - данные шаблона.
 
           i3d dst {row_x + x, y, row_z + z};
-          MapRigs[dst] = TplRigs[i3d{x, y, z}];
+          MapRigs[dst] = TplRigs_1[i3d{x, y, z}];
 
           // Конструктор копирования рига не копирует время создания
           // рига-источника и его Origin. Время конструктор автоматически

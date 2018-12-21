@@ -71,7 +71,8 @@ namespace tr
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    RigsDb0.init(g0, Eye.ViewFrom); // начальная загрузка пространства
+    // начальная загрузка пространства масштаба g0, в точке Eye.ViewFrom
+    RigsDb0.load_space(g0, Eye.ViewFrom);
 
     MoveFrom = {
       static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
@@ -80,18 +81,18 @@ namespace tr
     };
 
     int // границы уровня lod_0
-      xMin = MoveFrom.x - tr::lod_0,
-      yMin = MoveFrom.y - tr::lod_0,
-      zMin = MoveFrom.z - tr::lod_0,
-      xMax = MoveFrom.x + tr::lod_0,
-      yMax = MoveFrom.y + tr::lod_0,
-      zMax = MoveFrom.z + tr::lod_0;
+      xMin = MoveFrom.x - tr::lod0_size,
+      yMin = MoveFrom.y - tr::lod0_size,
+      zMin = MoveFrom.z - tr::lod0_size,
+      xMax = MoveFrom.x + tr::lod0_size,
+      yMax = MoveFrom.y + tr::lod0_size,
+      zMax = MoveFrom.z + tr::lod0_size;
 
     // Загрузить в графический буфер атрибуты элементов
     for(int x = xMin; x<= xMax; x += g0)
       for(int y = yMin; y<= yMax; y += g0)
         for(int z = zMin; z<= zMax; z += g0)
-          RigsDb0.put_in_vbo(x, y, z);
+          RigsDb0.place(x, y, z);
 
     try {
       MoveFrom = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
@@ -112,7 +113,7 @@ namespace tr
       x_old, x_new,  // координаты линий удаления/вставки новых фрагментов
       vf_x = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
       vf_z = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.z))),
-      clod_0 = tr::lod_0;
+      clod_0 = tr::lod0_size;
 
     if(MoveFrom.x > vf_x) {
       x_old = MoveFrom.x + clod_0;
@@ -129,14 +130,14 @@ namespace tr
     zMax = MoveFrom.z + clod_0;
     for(int y = yMin; y <= yMax; y += g0)
       for(int z = zMin; z <= zMax; z += g0)
-        RigsDb0.remove_from_vbo(x_old, y, z);
+        RigsDb0.remove(x_old, y, z);
 
     // Добавить линию элементов по направлению движения
     zMin = vf_z - clod_0;
     zMax = vf_z + clod_0;
     for(int y = yMin; y <= yMax; y += g0)
       for(int z = zMin; z <= zMax; z += g0)
-        RigsDb0.put_in_vbo(x_new, y, z);
+        RigsDb0.place(x_new, y, z);
 
     MoveFrom.x = vf_x;
   }
@@ -150,7 +151,7 @@ namespace tr
       z_old, z_new,  // координаты линий удаления/вставки новых фрагментов
       vf_z = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.z))),
       vf_x = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
-      clod_0 = tr::lod_0;
+      clod_0 = tr::lod0_size;
 
     if(MoveFrom.z > vf_z) {
       z_old = MoveFrom.z + clod_0;
@@ -167,14 +168,14 @@ namespace tr
     xMax = MoveFrom.x + clod_0;
     for(int y = yMin; y <= yMax; y += g0)
       for(int x = xMin; x <= xMax; x += g0)
-        RigsDb0.remove_from_vbo(x, y, z_old);
+        RigsDb0.remove(x, y, z_old);
 
     // Добавить линию элементов по направлению движения
     xMin = vf_x - clod_0;
     xMax = vf_x + clod_0;
     for(int y = yMin; y <= yMax; y += g0)
       for(int x = xMin; x <= xMax; x += g0)
-        RigsDb0.put_in_vbo(x, y, z_new);
+        RigsDb0.place(x, y, z_new);
 
     MoveFrom.z = vf_z;
   }
