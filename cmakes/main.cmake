@@ -8,7 +8,6 @@ include( "${trCMAKES}/params.cmake" )
 
 # подключение исходных файлов библиотек
 include( "${trCMAKES}/extlibs/glcore33.cmake" )
-#include( "${trCMAKES}/extlibs/sqlite3.cmake" )
 
 # где искать заголовки
 include_directories( ${trINCLUDE_DIRS} )
@@ -24,4 +23,3 @@ SET( trLIBS ${trLIBS} ${GLFW_LIBRARIES} ${PNG_LIBRARIES} ${SQLITE_LIBRARIES}
 
 add_executable( ${EXEC_NAME} ${trSRC} )
 target_link_libraries( ${EXEC_NAME} ${trLIBS} )
-
