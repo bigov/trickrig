@@ -327,14 +327,15 @@ v_str db::open_app(const std::string &DirPathName)
 
 ///
 /// \brief db::save_map_name
-/// \param MapName
+/// \param Dir      имя папки со слешем на конце
+/// \param MapName  имя карты
 ///
-void db::map_name_save(const std::string &MapName)
+void db::map_name_save(const std::string &Dir, const std::string &MapName)
 {
   // Записать в конфиг имя карты, введенное пользователем
   std::string Query = "INSERT INTO init (key, val) VALUES ("+
       std::to_string(MAP_NAME) +", \""+ MapName.c_str() +"\");";
-  SqlDb.open(CfgMapPFName);
+  SqlDb.open(Dir + fname_cfg);
   SqlDb.exec(Query.c_str());
   SqlDb.close();
 }

@@ -445,6 +445,7 @@ namespace tr {
     return is_open;
   }
 
+
   ///
   /// Выполнение запроса
   ///
@@ -486,20 +487,43 @@ namespace tr {
     }
 
     #ifndef NDEBUG
-    for(auto &msg: ErrorsList) tr::info(msg);
+    for(auto &msg: ErrorsList) info(msg);
     #endif
   }
 
-  //## Закрывает соединение с файлом базы данных
+
+  ///
+  /// \brief wsql::close
+  /// \details Закрывает соединение с файлом базы данных
+  ///
   void wsql::close(void)
   {
     if(!is_open) return;
     sqlite3_finalize(pStmt);
+
     sqlite3_close(db);
+
+/*
+    int rc = sqlite3_close(db);
+    if(rc == SQLITE_BUSY)
+    {
+      sqlite3_stmt * stmt;
+      while ((stmt = sqlite3_next_stmt(db, NULL)) != NULL) { sqlite3_finalize(stmt); }
+      rc = sqlite3_close(db);
+#ifndef NDEBUG
+      if (rc != SQLITE_OK) info("Abnormal sqlite3 close");
+#endif
+    }
+*/
+
+    db = nullptr;
     is_open = false;
   }
 
-  //## Деструктор
+
+  ///
+  /// \brief wsql::~wsql
+  ///
   wsql::~wsql(void)
   {
     if(is_open) close();

@@ -342,25 +342,10 @@ void gui::obscure_screen(void)
 ///
 void gui::create_map(void)
 {
-  cfg::create_map(user_input);
-  auto MapsDirs = dirs_list(cfg::user_dir()); // список директорий с картами
-
-  // обновить список карт
-  Maps.clear();
-  for(auto &P: MapsDirs)
-  {
-    auto MapName = cfg::map_name(P);
-    Maps.push_back(map(P, MapName));
-    if(MapName == user_input)
-    {
-      cfg::load_map(P);           // загрузить новую карту
-      row_selected = Maps.size(); // запомнить ее номер
-    }
-  }
-  AppWin.mode = GUI_HUD3D;        // открыть 3D сцену
-  AppWin.Cursor[2] = 4.0f;
-  AppWin.set_mouse_ptr = -1;
-  Space.init();
+  auto MapDir = cfg::create_map(user_input);
+  Maps.push_back(map(MapDir, user_input));
+  row_selected = Maps.size();     // выбрать номер карты
+  button_click(BTN_OPEN);         // открыть
 }
 
 
@@ -369,7 +354,22 @@ void gui::create_map(void)
 ///
 void gui::remove_map(void)
 {
-  fs::remove_all(Maps[row_selected -1].Folder);
+  auto map_dir = Maps[row_selected -1].Folder;
+  if(fs::exists(map_dir))
+  {
+    fs::current_path(cfg::user_dir());
+    dirs_list(cfg::user_dir());
+    try
+    {
+      fs::remove_all(map_dir);
+    }
+    catch(...)
+    {
+#ifndef NDEBUG
+      info("Can't remove the map: " + map_dir + "\n" );
+#endif
+    }
+  }
   row_selected = 0;
 
   // обновить список карт

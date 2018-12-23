@@ -35,7 +35,7 @@ namespace tr
       static void load_map(const std::string &DirName);
       static void load_app_params(void);
       static void save(void);
-      static void create_map(const std::string &MapName);
+      static std::string create_map(const std::string &MapName);
       static std::string app_key(APP_INIT);
       static std::string map_key(MAP_INIT);
       static std::string user_dir(void);

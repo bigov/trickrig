@@ -315,6 +315,7 @@ namespace tr
     i3d From {P.x - 64, 0, P.z - 64};
     i3d To {P.x + 64, 1, P.z + 64};
 
+    MapRigs.clear();
     cfg::DataBase.rigs_loader(MapRigs, From, To);
   }
 

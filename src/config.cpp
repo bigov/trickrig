@@ -140,7 +140,7 @@ void cfg::set_user_dir(void)
 /// \param map_name
 /// \details Создание в пользовательском каталоге новой карты
 ///
-void cfg::create_map(const std::string &MapName)
+std::string cfg::create_map(const std::string &MapName)
 {
   // число секунд от начала эпохи
   auto t = std::chrono::duration_cast<std::chrono::seconds>
@@ -157,8 +157,9 @@ void cfg::create_map(const std::string &MapName)
   std::ofstream dst(MapPathName, std::ios::binary);
   dst << src.rdbuf();                            // скопировать шаблон карты
 
-  load_map(DirPName);
-  DataBase.map_name_save(MapName);
+  DataBase.init_map_config(DirPName + DS + fname_cfg);
+  DataBase.map_name_save(DirPName + DS, MapName); // записать название пользователя
+  return DirPName;
 }
 
 
