@@ -56,11 +56,10 @@ class wsql
     void update_snip(int, int);
 
   private:
-    static char empty;
-
     wsql(const wsql &) = delete;
     wsql& operator=(const wsql &) = delete;
 
+    static char empty;
     sqlite3 *db = nullptr;
     sqlite3_stmt *pStmt = nullptr;
 

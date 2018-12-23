@@ -34,15 +34,6 @@ CREATE UNIQUE INDEX `c3d` ON `rigs` ( `x`, `y`, `z` );
 
 namespace tr {
 
-wsql db::SqlDb {};
-
-std::string db::MapDir {};       // директория текущей карты (со слэшем в конце)
-std::string db::MapPFName {};    // имя файла карты
-std::string db::CfgMapPFName {}; // файл конфигурации карты/вида
-std::string db::CfgAppPFName {}; // файл глобальных настроек приложения
-
-std::map<i3d, rig> db::TplRigs_1 {};
-
 
 ///
 /// \brief db::db

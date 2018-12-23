@@ -48,7 +48,7 @@ namespace tr {
       Row.emplace_front(std::make_pair(col_name, col_value));
     }
     Table_rows.push_front(Row);
-    num_rows++; // у контейнера forward_list нет счетчика элементов
+    num_rows += 1;
 
     if(nullptr != x) return 1; // В этой реализации значение x всегда равно 0
     else return 0;
@@ -500,7 +500,6 @@ namespace tr {
   {
     if(!is_open) return;
     sqlite3_finalize(pStmt);
-
     sqlite3_close(db);
 
 /*
