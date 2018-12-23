@@ -71,8 +71,17 @@ namespace tr
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
+    //init();
+}
+
+
+  ///
+  /// \brief space::init
+  ///
+  void space::init(void)
+  {
     // начальная загрузка пространства масштаба g0, в точке Eye.ViewFrom
-    RigsDb0.load_space(g0, Eye.ViewFrom);
+    RigsDb0.load_space(g1, Eye.ViewFrom);
 
     MoveFrom = {
       static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
@@ -89,9 +98,9 @@ namespace tr
       zMax = MoveFrom.z + tr::lod0_size;
 
     // Загрузить в графический буфер атрибуты элементов
-    for(int x = xMin; x<= xMax; x += g0)
-      for(int y = yMin; y<= yMax; y += g0)
-        for(int z = zMin; z<= zMax; z += g0)
+    for(int x = xMin; x<= xMax; x += g1)
+      for(int y = yMin; y<= yMax; y += g1)
+        for(int z = zMin; z<= zMax; z += g1)
           RigsDb0.place(x, y, z);
 
     try {
@@ -103,6 +112,7 @@ namespace tr
       tr::info("Fail setup 3d coordinates for ViewFrom point.");
     }
   }
+
 
   //## Построение границы области по оси X по ходу движения
   // TODO: ВНИМАНИЕ! проверяется только 10 слоев по Y
@@ -128,15 +138,15 @@ namespace tr
     // Скрыть элементы с задней границы области
     zMin = MoveFrom.z - clod_0;
     zMax = MoveFrom.z + clod_0;
-    for(int y = yMin; y <= yMax; y += g0)
-      for(int z = zMin; z <= zMax; z += g0)
+    for(int y = yMin; y <= yMax; y += g1)
+      for(int z = zMin; z <= zMax; z += g1)
         RigsDb0.remove(x_old, y, z);
 
     // Добавить линию элементов по направлению движения
     zMin = vf_z - clod_0;
     zMax = vf_z + clod_0;
-    for(int y = yMin; y <= yMax; y += g0)
-      for(int z = zMin; z <= zMax; z += g0)
+    for(int y = yMin; y <= yMax; y += g1)
+      for(int z = zMin; z <= zMax; z += g1)
         RigsDb0.place(x_new, y, z);
 
     MoveFrom.x = vf_x;
@@ -166,15 +176,15 @@ namespace tr
     // Скрыть элементы с задней границы области
     xMin = MoveFrom.x - clod_0;
     xMax = MoveFrom.x + clod_0;
-    for(int y = yMin; y <= yMax; y += g0)
-      for(int x = xMin; x <= xMax; x += g0)
+    for(int y = yMin; y <= yMax; y += g1)
+      for(int x = xMin; x <= xMax; x += g1)
         RigsDb0.remove(x, y, z_old);
 
     // Добавить линию элементов по направлению движения
     xMin = vf_x - clod_0;
     xMax = vf_x + clod_0;
-    for(int y = yMin; y <= yMax; y += g0)
-      for(int x = xMin; x <= xMax; x += g0)
+    for(int y = yMin; y <= yMax; y += g1)
+      for(int x = xMin; x <= xMax; x += g1)
         RigsDb0.place(x, y, z_new);
 
     MoveFrom.z = vf_z;

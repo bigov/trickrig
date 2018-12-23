@@ -9,6 +9,7 @@
 
 namespace tr
 {
+
 ///
 /// \brief scene::scene
 ///
@@ -146,7 +147,7 @@ void scene::framebuffer_resize(void)
   /// прямоугольник окна. Курсор и дополнительные (HUD) элементы окна
   /// изображаются как наложеные сверху дополнительные текстуры
   ///
-  void scene::draw(evInput& ev)
+  void scene::draw(evInput &ev)
   {
     if(AppWin.resized) framebuffer_resize();
 
@@ -154,7 +155,7 @@ void scene::framebuffer_resize(void)
     if(AppWin.mode == GUI_HUD3D)
     {
       glBindFramebuffer(GL_FRAMEBUFFER, fbuf_id);
-      Space.draw(ev);
+      WinGui.Space.draw(ev);
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
     else // В режиме настройки 3D, сцену не рендерим, только заставку

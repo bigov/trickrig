@@ -30,13 +30,13 @@ main_window AppWin      {}; // параметры окна приложения
 
 // Инициализация статических членов
 db cfg::DataBase {};
+
 v_str cfg::AppParams {}; // параметры конфигурации приложения
 v_str cfg::MapParams {}; // параметры когфигурации карты
 std::string cfg::AssetsDir {}; // папка служебных файлов
 std::string cfg::UserDir   {}; // папка конфигов пользователя
 std::string cfg::DS        {}; // символ разделителя папок
 std::string cfg::CfgFname  {}; // конфиг, выбранный пользователем
-
 
 ///
 /// \brief cfg::user_dir
@@ -51,7 +51,7 @@ std::string cfg::user_dir(void)
 
 
 ///
-/// Загрузка карты
+/// Загрузка параметров сессии карты
 ///
 void cfg::load_map(const std::string &DirName)
 {
@@ -74,7 +74,7 @@ void cfg::load_map(const std::string &DirName)
 std::string cfg::map_name(const std::string &FolderName)
 {
   auto config = FolderName + DS + fname_cfg;
-  v_ch Name = DataBase.get_map_name(config);
+  v_ch Name = DataBase.map_name_read(config);
   return std::string(Name.data());
 }
 
@@ -158,7 +158,7 @@ void cfg::create_map(const std::string &MapName)
   dst << src.rdbuf();                            // скопировать шаблон карты
 
   load_map(DirPName);
-  DataBase.save_map_name(MapName);
+  DataBase.map_name_save(MapName);
 }
 
 

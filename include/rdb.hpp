@@ -28,8 +28,6 @@ namespace tr
 
       // --Level--Of--Details--
       int lod = 1; // размер стороны элементов в LOD = 1
-      int tpl_1_side = 16; // длина стороны шаблона
-      std::map<i3d, rig> TplRigs_1 {}; // шаблон карты поверхности
 
       // Кэш адресов блоков данных в VBO, вышедших за границу рендера
       std::forward_list<GLsizeiptr> CachedOffset {};
@@ -45,7 +43,6 @@ namespace tr
 
       void _load_16x16_obj(void);
       void put_in_vbo(rig*, const f3d&);     // разместить данные в VBO буфере
-      void load_space_template(int level);   // загрузка шаблона поверхности
 
     public:
       rdb(void);                             // конструктор

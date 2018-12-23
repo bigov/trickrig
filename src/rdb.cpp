@@ -17,11 +17,6 @@ namespace tr
   ///
   rdb::rdb(void)
   {
-    load_space_template(1); // загрузка шаблона пространства
-    // предположительно, тут должна быть загрузка шаблонов
-    // для всех L-O-D:
-    // load_space_template(10); load_space_template(100); ...
-
     Prog3d.attach_shaders(
       cfg::app_key(SHADER_VERT_SCENE),
       cfg::app_key(SHADER_FRAG_SCENE)
@@ -72,22 +67,6 @@ namespace tr
     Prog3d.unuse();
   }
 
-
-  ///
-  /// \brief rdb::load_space_template
-  /// \param level
-  /// \details загрузка шаблонного фрагмента поверхности размером (tpl_side X tpl_side)
-  /// для указанного уровня LOD.
-  ///
-  void rdb::load_space_template(int level)
-  {
-    if (level != 1) ERR ("rdb::load_space_template need to comple the work");
-
-    i3d P{ 0,0,0 };
-    for(P.x = 0; P.x < tpl_1_side; P.x++)
-      for(P.z = 0; P.z < tpl_1_side; P.z++)
-        TplRigs_1[P] = cfg::DataBase.load_rig(P, cfg::app_key(DB_TPL_FNAME));
-  }
 
   ///
   /// Рендер кадра
@@ -332,36 +311,11 @@ namespace tr
     i3d P{ Position };
     lod = g; // TODO проверка масштаба на допустимость
 
-    int y = 0;
     // Загрузка фрагмента карты 8х8х(16x16) раз на xz плоскости
-    int
-     row_x = 0,
-     row_z = 0;
+    i3d From {P.x - 64, 0, P.z - 64};
+    i3d To {P.x + 64, 1, P.z + 64};
 
-    for (int zn = -4; zn < 4; zn++)
-    {
-      row_z = zn * tpl_1_side;
-      for (int xn = -4; xn < 4; xn++)
-      {
-        row_x = xn * tpl_1_side;
-        for(int x = 0; x < tpl_1_side; x++) for(int z = 0; z < tpl_1_side; z++)
-        {
-          // TODO: тут следует делать запрос к базе данных активного района -
-          // если в нем по указанным координатам есть сохраненная поверхность,
-          // то загружаем ее данные. Если нет - данные шаблона.
-
-          i3d dst {row_x + x, y, row_z + z};
-          MapRigs[dst] = TplRigs_1[i3d{x, y, z}];
-
-          // Конструктор копирования рига не копирует время создания
-          // рига-источника и его Origin. Время конструктор автоматически
-          // переустанавливает на момент выполнения операции копирования, а
-          // значение координат Origin надо установить непосредственно в
-          // созданном объекте отдельной операцией -
-          MapRigs[dst].Origin = dst;
-        }
-      }
-    }
+    cfg::DataBase.rigs_loader(MapRigs, From, To);
   }
 
 

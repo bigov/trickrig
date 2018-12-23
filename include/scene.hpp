@@ -3,15 +3,16 @@
  * Управление объектами сцены
  *
  */
+
 #ifndef SCENE_HPP
 #define SCENE_HPP
 
 #include "gui.hpp"
 #include "config.hpp"
-#include "space.hpp"
 
 namespace tr
 {
+
   class scene
   {
     private:
@@ -23,9 +24,8 @@ namespace tr
       GLuint text_fbuf_id = 0;         // id основной тектуры фрейм-буфера
       GLuint tex_hud_id   = 0;         // id тектуры HUD
       GLuint vao_quad_id  = 0;
-      tr::gui WinGui {};               // Интерфейс окна
-      tr::space Space {};              // виртуальное пространство
-      tr::glsl screenShaderProgram {}; // шейдерная программа обработки текстуры рендера
+      gui WinGui {};               // Интерфейс окна
+      glsl screenShaderProgram {}; // шейдерная программа обработки текстуры рендера
 
       void framebuffer_init(void);
       void framebuffer_resize(void);

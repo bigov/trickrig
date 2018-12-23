@@ -5,6 +5,7 @@
 // Запуск TrickRig
 //
 //===========================================================================
+
 #include "main.hpp"
 #include "config.hpp"
 #include "io.hpp"
@@ -44,5 +45,6 @@ int main(int, char* argv[])
     tr::info("FAILURE: undefined exception.");
     return EXIT_FAILURE;
   }
+
   return EXIT_SUCCESS;
 }

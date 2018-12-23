@@ -35,10 +35,77 @@ CREATE UNIQUE INDEX `c3d` ON `rigs` ( `x`, `y`, `z` );
 namespace tr {
 
 wsql db::SqlDb {};
-std::string db::MapDir {};    // директория текущей карты
-std::string db::MapPFName {}; // имя файла карты
+
+std::string db::MapDir {};       // директория текущей карты (со слэшем в конце)
+std::string db::MapPFName {};    // имя файла карты
 std::string db::CfgMapPFName {}; // файл конфигурации карты/вида
 std::string db::CfgAppPFName {}; // файл глобальных настроек приложения
+
+std::map<i3d, rig> db::TplRigs_1 {};
+
+
+///
+/// \brief db::db
+///
+db::db(void)
+{
+  load_template(1);
+}
+
+
+///
+/// \brief db::rigs_loader
+/// \param Map
+/// \param Start
+/// \param End
+///
+/// \details Загружает блок ригов [P;End] в переданный по ссылке массив.
+///
+void db::rigs_loader(std::map<i3d, rig> &Map, i3d &Start, i3d &End)
+{
+  std::string StreamReading = "";
+
+  SqlDb.open(MapPFName);
+  i3d P {0,0,0};
+  for( P.x = Start.x; P.x < End.x; P.x++ )
+    for( P.y = Start.y; P.y < End.y; P.y++ )
+      for( P.z = Start.z; P.z < End.z; P.z++)
+      {
+        Map[P] = load_rig(P, StreamReading);
+        Map[P].Origin = P; // .Origin в базе данных не хранится
+      }
+  SqlDb.close();
+}
+
+
+///
+/// \brief rdb::load_template
+/// \param level
+/// \details загрузка шаблонного фрагмента поверхности размером (tpl_side X tpl_side)
+/// для указанного уровня LOD.
+///
+/// TODO: вобще-то, тут должно быть что-то типа генератора пространства
+///
+void db::load_template(int level)
+{
+  if (level != 1) ERR ("rdb::load_space_template need to comple the work");
+  SqlDb.open("../assets/surf_tpl.db");
+
+  std::string StreamReading = "";
+
+  i3d P{ 0, 0, 0 };
+  for( P.x = 0; P.x < tpl_1_side; P.x++ )
+    for( P.z = 0; P.z < tpl_1_side; P.z++ )
+    {
+      auto R = load_rig(P, StreamReading);
+      TplRigs_1[  P                                        ] = R;
+      TplRigs_1[ {P.x - tpl_1_side, P.y, P.z             } ] = R;
+      TplRigs_1[ {P.x,              P.y, P.z - tpl_1_side} ] = R;
+      TplRigs_1[ {P.x - tpl_1_side, P.y, P.z - tpl_1_side} ] = R;
+    }
+
+  SqlDb.close();
+}
 
 
 ///
@@ -46,21 +113,31 @@ std::string db::CfgAppPFName {}; // файл глобальных настрое
 /// \param P
 /// \param file_name
 /// \return
+/// \details Загрузка данных. Если указано имя файла, то производится его автоматическое
+/// открытие перед обращениием, и закрытие - после получения данных. Если имя файла не
+/// передано, то открытие/закрытие файла данных должно производится во внешней процедуре.
+/// Это используется для ускорения чтения серии записей, чтобы при обращении к каждой
+/// отдельной записи не открывать/закрывать каждый раз файл базы данных
 ///
 rig db::load_rig(const i3d &P, const std::string& file_name)
 {
-
   rig Rig {};
-  std::vector<unsigned char> BufVector {};
 
-  SqlDb.open(file_name);
+  if(!file_name.empty()) SqlDb.open(file_name);
+
   SqlDb.select_rig(P.x, P.y, P.z);
+
+  if(SqlDb.Rows.empty()) // если в базе данных нет, то вернуть Rig из шаблона
+  {
+    Rig = TplRigs_1[ { P.x % tpl_1_side,  P.y % tpl_1_side,  P.z % tpl_1_side } ];
+    Rig.born = get_msec();
+    return Rig;
+  }
 
   auto Row = SqlDb.Rows.front();
   Rig.born = std::any_cast<int>(Row[0]);
 
-  BufVector.clear();
-  BufVector = std::any_cast<std::vector<unsigned char>>(Row[2]);
+  std::vector<unsigned char> BufVector { std::any_cast<std::vector<unsigned char>>(Row[2]) };
   memcpy(Rig.shift, BufVector.data(), SHIFT_DIGITS * sizeof(float));
   SqlDb.select_snip( std::any_cast<int>(Row[1]) );
 
@@ -72,7 +149,8 @@ rig db::load_rig(const i3d &P, const std::string& file_name)
     memcpy(Snip.data, BufVector.data(), tr::bytes_per_snip);
     Rig.Trick.push_front(Snip);
   }
-  SqlDb.close();
+
+  if(!file_name.empty()) SqlDb.close();
   return Rig;
 }
 
@@ -209,7 +287,7 @@ v_str db::load_config(size_t n, const std::string &Pname)
 /// \return
 /// \details Возвращает значение имени карты из конфига
 ///
-v_ch db::get_map_name(const std::string & dbFile)
+v_ch db::map_name_read(const std::string & dbFile)
 {
   SqlDb.open(dbFile);
   std::string Query =
@@ -251,7 +329,7 @@ v_str db::open_app(const std::string &DirPathName)
 /// \brief db::save_map_name
 /// \param MapName
 ///
-void db::save_map_name(const std::string &MapName)
+void db::map_name_save(const std::string &MapName)
 {
   // Записать в конфиг имя карты, введенное пользователем
   std::string Query = "INSERT INTO init (key, val) VALUES ("+

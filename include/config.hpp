@@ -10,7 +10,6 @@
 
 #include "main.hpp"
 #include "db.hpp"
-//#include "rig.hpp"
 
 namespace tr
 {
@@ -23,8 +22,8 @@ namespace tr
 
       static std::string AssetsDir;   // папка служебных файлов приложения
       static std::string UserDir;     // папка конфигов пользователя
-      static v_str AppParams;
-      static v_str MapParams;
+      static v_str AppParams;         // общие настройки приложения
+      static v_str MapParams;         // параметры сессии
 
       static void set_user_dir(void); // выбор пользовательской папки
 

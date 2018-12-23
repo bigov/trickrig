@@ -3,6 +3,7 @@
 
 #include "main.hpp"
 #include "config.hpp"
+#include "space.hpp"
 
 namespace tr {
 
@@ -93,8 +94,11 @@ class gui
 
   public:
     gui(void);
-    void draw(void);         // формирование изображения GIU окна
-    void headband(void);// заставка
+    void draw(void);      // формирование изображения GIU окна
+    void headband(void);  // заставка
+
+    space Space {};
+
 };
 
 } //tr
