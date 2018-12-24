@@ -171,7 +171,7 @@ void db::save_rig(const i3d &P, const rig *R)
 
     if(0 == id_area)
     {
-      id_area = SqlDb.Result.rowid;
+      id_area = static_cast<int>(SqlDb.Result.rowid);
       SqlDb.update_snip( id_area, id_area ); //TODO: !!!THE BUG???
       // Обновить номер группы в записи первого снипа
     }
@@ -218,7 +218,7 @@ void db::save_rigs_block(const i3d &From, const i3d &To, rdb &RDB )
 
             if(0 == id_area)
             {
-              id_area = SqlDb.Result.rowid;
+              id_area = static_cast<int>(SqlDb.Result.rowid);
               SqlDb.update_snip( id_area, id_area ); //TODO: !!!THE BUG???
               // Обновить номер группы в записи первого снипа
             }
@@ -255,14 +255,14 @@ v_str db::load_config(size_t n, const std::string &Pname)
   }
 
   // Данные из таблицы результата переносим в массив ConfigParams
-  int key = 0;
+  size_t key = 0;
   std::string val {};
 
   for(auto &row: SqlDb.Table_rows)
   {
     for(auto &p: row)
     {
-      if(0 == p.first.find("key")) key = std::stoi(p.second.data());
+      if(0 == p.first.find("key")) key = static_cast<size_t>(std::stoi(p.second.data()));
       if(0 == p.first.find("val")) val = std::string(p.second.data());
     }
     ConfigParams[key] = val;
@@ -339,7 +339,7 @@ void db::map_name_save(const std::string &Dir, const std::string &MapName)
 void db::save(const tr::camera_3d &Eye)
 {
   char q [255]; // буфер для форматирования и передачи строки в запрос
-  const char *tpl = "UPDATE init SET val='%s' WHERE key=%d;";
+  const char tpl[] = "UPDATE init SET val='%s' WHERE key=%d;";
   std::string p = "";
   std::string Query = "";
 
@@ -378,7 +378,7 @@ void db::save(const tr::camera_3d &Eye)
 void db::save(const tr::main_window &AppWin)
 {
   char q [255]; // буфер для форматирования и передачи строки в запрос
-  const char *tpl = "UPDATE init SET val='%s' WHERE key=%d;";
+  const char tpl[] = "UPDATE init SET val='%s' WHERE key=%d;";
   std::string p = "";
   std::string Query = "";
 

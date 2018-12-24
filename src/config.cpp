@@ -127,6 +127,8 @@ void cfg::set_user_dir(void)
   UserDir = std::string(env_p);
 #endif
 
+  //info("user dir:" + UserDir);
+
   UserDir += DS +".config";
    if(!fs::exists(UserDir)) fs::create_directory(UserDir);
   UserDir += DS + "TrickRig";
