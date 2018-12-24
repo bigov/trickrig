@@ -252,7 +252,7 @@ namespace tr {
           break;
       }
     }
-    while ((pStmt = sqlite3_next_stmt(db, NULL)) != NULL) { sqlite3_finalize(pStmt); }
+    while ((pStmt = sqlite3_next_stmt(db, nullptr)) != nullptr) { sqlite3_finalize(pStmt); }
 
     #ifndef NDEBUG
     for(auto &msg: ErrorsList) tr::info(msg);
@@ -262,7 +262,12 @@ namespace tr {
   }
 
 
-  //## Обработчик запросов на сохранение или изменение данных и настроек
+  ///
+  /// \brief wsql::request_put
+  /// \param Query
+  ///
+  /// \details Обработчик запросов на сохранение или изменение данных и настроек
+  ///
   void wsql::request_put(const std::string & Query)
   {
     request_put(Query.c_str());
@@ -320,6 +325,7 @@ namespace tr {
     for(auto &msg: ErrorsList) tr::info(msg);
     #endif
   }
+
 
   ///
   /// \brief Запись бинарных данных, переданых в виде массива и его размера
@@ -511,9 +517,9 @@ namespace tr {
     int rc = sqlite3_close(db);
 
 //DEBUG---------------------------------------------------------------------
-    if (rc == SQLITE_BUSY) info("Can't close SQLite");
+    if (rc == SQLITE_BUSY) info("SQLite.close: fail");
     else {
-      info ("SQLite is closed");
+      info ("SQLite.close: OK");
     }
     if(!ErrorsList.empty()) for(auto &msg: ErrorsList) info(msg);
 //DEBUG---------------------------------------------------------------------

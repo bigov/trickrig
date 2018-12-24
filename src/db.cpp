@@ -272,11 +272,15 @@ v_str db::load_config(size_t n, const std::string &Pname)
 ///
 v_ch db::map_name_read(const std::string & dbFile)
 {
+  v_ch result {}; result.clear();
+
   SqlDb.open(dbFile);
   std::string Query =
       "SELECT val from init WHERE key="+std::to_string(MAP_NAME)+";";
+
   SqlDb.exec(Query.c_str());
-  auto result = SqlDb.Table_rows.front().front().second;
+  if(!SqlDb.Table_rows.empty()) result = SqlDb.Table_rows.front().front().second;
+
   SqlDb.close();
   return result;
 }

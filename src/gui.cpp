@@ -7,7 +7,7 @@ namespace tr {
 
 gui::gui(void)
 {
-  FontMap1_len = FontMap1.length();
+  FontMap1_len = static_cast<u_int>(FontMap1.length());
   TimeStart = std::chrono::system_clock::now();
 
   // Составить список карт в каталоге пользователя
@@ -218,7 +218,7 @@ void gui::cancel(void)
   switch (AppWin.mode)
   {
     case GUI_HUD3D:
-      cfg::save_map();
+      cfg::save_map_view();
       AppWin.mode = GUI_MENU_LSELECT;
       AppWin.Cursor[2] = 0.0f;  // Убрать прицел
       AppWin.set_mouse_ptr = 1; // Включить указатель мыши

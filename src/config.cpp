@@ -75,7 +75,8 @@ std::string cfg::map_name(const std::string &FolderName)
 {
   auto config = FolderName + DS + fname_cfg;
   v_ch Name = DataBase.map_name_read(config);
-  return std::string(Name.data());
+  if(Name.size() < 1) return "no name";
+  else return std::string(Name.data());
 }
 
 
@@ -182,7 +183,7 @@ void cfg::save_app(void)
 ///
 /// Сохрание настроек положения камеры при закрытии карты
 ///
-void cfg::save_map(void)
+void cfg::save_map_view(void)
 {
   DataBase.save(Eye);
 }
