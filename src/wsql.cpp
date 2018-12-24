@@ -146,7 +146,7 @@ namespace tr {
 
 
   ///
-  /// \brief sqlw::save_row_data
+  /// \brief wsql::save_row_data
   /// \details Прием данных, полученых в результате запроса
   ///
   void wsql::save_row_data(void)
@@ -252,6 +252,7 @@ namespace tr {
           break;
       }
     }
+    while ((pStmt = sqlite3_next_stmt(db, NULL)) != NULL) { sqlite3_finalize(pStmt); }
 
     #ifndef NDEBUG
     for(auto &msg: ErrorsList) tr::info(msg);
@@ -420,6 +421,10 @@ namespace tr {
   ///
   bool wsql::open(const std::string & FileName)
   {
+//DEBUG----------------------------------------------------------------
+    info(FileName);
+//DEBUG----------------------------------------------------------------
+
     ErrorsList.clear();
     if(is_open) close(); // закрыть, если был открыт файл
 
@@ -434,14 +439,16 @@ namespace tr {
     if (rc != SQLITE_OK)
     {
       ErrorsList.emplace_front(std::string(sqlite3_errmsg(db))
-        + std::string("\nCan't open database ") + FileName);
+        + std::string("\nCan't open file: ") + FileName);
       close();
+      return false;
     }
     else
     {
       is_open = true;
       sqlite3_update_hook(db, update_callback, &empty);
     }
+
     return is_open;
   }
 
@@ -453,6 +460,7 @@ namespace tr {
   {
     exec(Query.c_str());
   }
+
 
   ///
   /// \brief sqlw::exec
@@ -499,8 +507,17 @@ namespace tr {
   void wsql::close(void)
   {
     if(!is_open) return;
-    sqlite3_finalize(pStmt);
-    sqlite3_close(db);
+    //sqlite3_finalize(pStmt);
+    int rc = sqlite3_close(db);
+
+//DEBUG---------------------------------------------------------------------
+    if (rc == SQLITE_BUSY) info("Can't close SQLite");
+    else {
+      info ("SQLite is closed");
+    }
+    if(!ErrorsList.empty()) for(auto &msg: ErrorsList) info(msg);
+//DEBUG---------------------------------------------------------------------
+
 
 /*
     int rc = sqlite3_close(db);

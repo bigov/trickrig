@@ -34,7 +34,7 @@ namespace tr
   ///
   wglfw::wglfw(void)
   {
-    cfg::load_app_params();
+    cfg::load_app_cfg();
 
     glfwSetErrorCallback(error_callback);
     if (!glfwInit()) ERR("Error init GLFW lib.");

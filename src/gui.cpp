@@ -13,6 +13,8 @@ gui::gui(void)
   // Составить список карт в каталоге пользователя
   auto MapsDirs = dirs_list(cfg::user_dir()); // список директорий с картами
   for(auto &P: MapsDirs) { Maps.push_back(map(P, cfg::map_name(P))); }
+
+  //cfg::DataBase.load_template();
 }
 
 
@@ -216,7 +218,7 @@ void gui::cancel(void)
   switch (AppWin.mode)
   {
     case GUI_HUD3D:
-      cfg::save();
+      cfg::save_map();
       AppWin.mode = GUI_MENU_LSELECT;
       AppWin.Cursor[2] = 0.0f;  // Убрать прицел
       AppWin.set_mouse_ptr = 1; // Включить указатель мыши
@@ -406,7 +408,7 @@ void gui::button_click(ELEMENT_ID id)
   switch(id)
   {
     case BTN_OPEN:
-      cfg::load_map(Maps[row_selected - 1].Folder);
+      cfg::load_map_cfg(Maps[row_selected - 1].Folder);
       AppWin.mode = GUI_HUD3D;
       AppWin.Cursor[2] = 4.0f;
       AppWin.set_mouse_ptr = -1;

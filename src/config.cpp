@@ -53,7 +53,7 @@ std::string cfg::user_dir(void)
 ///
 /// Загрузка параметров сессии карты
 ///
-void cfg::load_map(const std::string &DirName)
+void cfg::load_map_cfg(const std::string &DirName)
 {
   MapParams = DataBase.open_map(DirName + DS);
 
@@ -82,11 +82,16 @@ std::string cfg::map_name(const std::string &FolderName)
 ///
 /// Загрузка параметров приложения
 ///
-void cfg::load_app_params(void)
+void cfg::load_app_cfg(void)
 {
   set_user_dir();
   AssetsDir = ".." + DS + "assets";
   AppParams = DataBase.open_app(UserDir + DS);
+
+  // Загрузка шаблона поверхности
+  auto Tpls = AssetsDir + DS + "surf_tpl.db";
+  if(!fs::exists(Tpls)) ERR("Miss file: " + Tpls);
+  DataBase.load_template(1, Tpls);
 
   // Загрузка настроек окна приложения
   AppWin.width = static_cast<u_int>(std::stoi(AppParams[WINDOW_WIDTH]));
@@ -168,10 +173,18 @@ std::string cfg::create_map(const std::string &MapName)
 ///
 /// Сохрание настроек текущей сессии при закрытии программы
 ///
-void cfg::save(void)
+void cfg::save_app(void)
+{
+  DataBase.save(AppWin);
+}
+
+
+///
+/// Сохрание настроек положения камеры при закрытии карты
+///
+void cfg::save_map(void)
 {
   DataBase.save(Eye);
-  DataBase.save(AppWin);
 }
 
 

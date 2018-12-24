@@ -36,15 +36,6 @@ namespace tr {
 
 
 ///
-/// \brief db::db
-///
-db::db(void)
-{
-  load_template(1);
-}
-
-
-///
 /// \brief db::rigs_loader
 /// \param Map
 /// \param Start
@@ -77,10 +68,10 @@ void db::rigs_loader(std::map<i3d, rig> &Map, i3d &Start, i3d &End)
 ///
 /// TODO: вобще-то, тут должно быть что-то типа генератора пространства
 ///
-void db::load_template(int level)
+void db::load_template(int level, const std::string& fname)
 {
-  if (level != 1) ERR ("rdb::load_space_template need to comple the work");
-  SqlDb.open("../assets/surf_tpl.db");
+  if (level != 1) ERR ("rdb::load_template work only on level = 1");
+  if(!SqlDb.open(fname)) ERR ("rdb::load_template: can't open: " + fname);
 
   std::string StreamReading = "";
 
@@ -268,6 +259,7 @@ v_str db::load_config(size_t n, const std::string &Pname)
     ConfigParams[key] = val;
   }
   SqlDb.close();
+
   return ConfigParams;
 }
 

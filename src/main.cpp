@@ -14,26 +14,29 @@
 
 std::string tr::AppPathDir {};
 
+
 ///
 /// \brief main
 /// \return
 ///
 int main(int, char* argv[])
 {
+  fs::path p = argv[0];
+  // Путь к папке исполняемого файла (со слэшем в конце)
+  tr::AppPathDir = fs::absolute(p).remove_filename().u8string();
+
 #ifndef NDEBUG
   assert(sizeof(GLfloat) == 4);
-  tr::info("\n -- Enable debug mode --\n");
+  tr::info("\nDebug mode: ON");
+  tr::info("Exec path: " + tr::AppPathDir);
 #endif
-
-  fs::path p = argv[0];
-  tr::AppPathDir = fs::absolute(p).remove_filename().u8string();
 
   try
   {
     tr::wglfw Win {};     // Настройка OpenGL окна
     tr::scene Scene {};   // Сборка сцены
     Win.show(Scene);      // Цикл рендера
-    tr::cfg::save();      // Сохранение конфигурации
+    tr::cfg::save_app();  // Сохранение конфигурации
   }
   catch(std::exception & e)
   {
