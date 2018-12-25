@@ -40,14 +40,10 @@ class wsql
     bool open(const std::string &);
     void close(void);
     void exec(const char *);
-    void exec(const std::string &);
-    void request_put(const char *);
+    void write(const char *);
     void request_put(const char *, const void *, size_t);
     void request_put(const char *, const float *, size_t);
-    void request_put(const std::string &);
-
     void request_get(const char *);
-    void request_get(const std::string &);
 
     void select_rig(int, int, int);
     void select_snip(int);

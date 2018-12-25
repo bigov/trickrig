@@ -361,7 +361,7 @@ void db::save(const tr::camera_3d &Eye)
 
   if(SqlDb.open(CfgMapPFName))
   {
-    SqlDb.request_put(Query);
+    SqlDb.write(Query.c_str());
     SqlDb.close();
   }
 }
@@ -395,7 +395,7 @@ void db::save(const tr::main_window &AppWin)
   Query += q;
 
   if(!SqlDb.open(CfgAppPFName)) ERR("Fail: not found app config.");
-  SqlDb.request_put(Query);
+  SqlDb.write(Query.c_str());
   SqlDb.close();
 }
 

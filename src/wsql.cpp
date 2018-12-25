@@ -56,29 +56,6 @@ namespace tr {
 
 
   ///
-  /// \brief sqlw::request_get
-  /// \param Query
-  /// \details Обработчик запросов на получение данных
-  ///
-  void wsql::request_get(const std::string & Query)
-  {
-    ErrorsList.clear();
-
-    if(Query.empty())
-    {
-      ErrorsList.emplace_front("Query can't be empty.");
-      #ifndef NDEBUG
-      for(auto &msg: ErrorsList) tr::info(msg);
-      #endif
-      return;
-    }
-
-    request_get(Query.c_str());
-    return;
-  }
-
-
-  ///
   /// \brief sqlw::select_rig
   /// \param x
   /// \param y
@@ -138,7 +115,7 @@ namespace tr {
     char buf[255];
     sprintf(buf, "UPDATE `snips` SET `id_area`=%d WHERE `id`=%d;",
             i, j);
-    request_put(buf); //TODO: может тут надо exec??
+    write(buf); //TODO: может тут надо exec??
     return;
   }
 
@@ -207,14 +184,7 @@ namespace tr {
   ///
   void wsql::request_get(const char *request)
   {
-    if(!is_open)
-    {
-#ifndef NDEBUG
-      ErrorsList.emplace_front("Not present opened db.");
-      for(auto &msg: ErrorsList) tr::info(msg);
-#endif
-      return;
-    }
+    assert(is_open);
 
     bool complete = false;
 
@@ -264,31 +234,22 @@ namespace tr {
 
   ///
   /// \brief wsql::request_put
-  /// \param Query
+  /// \param pzTail
   ///
   /// \details Обработчик запросов на сохранение или изменение данных и настроек
   ///
-  void wsql::request_put(const std::string & Query)
-  {
-    request_put(Query.c_str());
-    return;
-  }
-
-
-  //## Обработчик запросов на сохранение или изменение данных и настроек
-  void wsql::request_put(const char *pzTail)
-  {
   /// Может обрабатывать строки, составленые из нескольких запросов,
   /// разделеных стандартным символом (;)
   ///
-    if(!is_open)
-    {
-#ifndef NDEBUG
-      ErrorsList.emplace_front("Not present opened db.");
-      for(auto &msg: ErrorsList) tr::info(msg);
-#endif
-      return;
-    }
+  /// Функция sqlite3_prepare_v2 обрабатывает текст (составного) запроса только до
+  /// разделителя (;) и возвращает в переменной 'pzTail' адрес начала не обработаной
+  /// части полученого текста запроса. Поэтому здесь выполняется цикл до тех пор,
+  /// пока все части составного запроса не будут выполнены, а в переменной 'pzTail'
+  /// не окажется символ конца строки (empty = '\0').
+  ///
+  void wsql::write(const char *pzTail)
+  {
+    assert(is_open);
 
     ErrorsList.clear();
 
@@ -297,11 +258,6 @@ namespace tr {
       ErrorsList.emplace_front("Query can't be empty.");
       return;
     }
-    /// Функция sqlite3_prepare_v2 обрабатывает текст (составного) запроса только до
-    /// разделителя (;) и возвращает в переменной 'pzTail' адрес начала не обработаной
-    /// части полученого текста запроса. Поэтому здесь выполняется цикл до тех пор,
-    /// пока все части составного запроса не будут выполнены, а в переменной 'pzTail'
-    /// не окажется символ конца строки (empty = '\0').
 
     const char * request = nullptr;
     while (*pzTail != empty)
@@ -321,8 +277,10 @@ namespace tr {
       }
     }
 
+    while ((pStmt = sqlite3_next_stmt(db, nullptr)) != nullptr) { sqlite3_finalize(pStmt); }
+
     #ifndef NDEBUG
-    for(auto &msg: ErrorsList) tr::info(msg);
+    for(auto &msg: ErrorsList) info(msg);
     #endif
   }
 
@@ -338,14 +296,7 @@ namespace tr {
   ///
   void wsql::request_put(const char* request, const void* blob_data, size_t blob_size)
   {
-    if(!is_open)
-    {
-#ifndef NDEBUG
-      ErrorsList.emplace_front("Not present opened db.");
-      for(auto &msg: ErrorsList) tr::info(msg);
-#endif
-      return;
-    }
+    assert(is_open);
 
     ErrorsList.clear();
 
@@ -378,11 +329,18 @@ namespace tr {
 
   }
 
-  //## Запись бинарных данных переданых в виде массива float и его размера
+
+  ///
+  /// \brief wsql::request_put
+  /// \param request
+  /// \param fl
+  /// \param fl_size
+  /// \details Запись бинарных данных переданых в виде массива float и его размера
+  ///
   void wsql::request_put(const char * request, const float * fl, size_t fl_size)
   {
     size_t data_chars_size = fl_size * sizeof(float);
-    std::unique_ptr<char[]> data{new char[data_chars_size]};
+    std::unique_ptr<char[]> data {new char[data_chars_size]};
     memcpy(data.get(), fl, data_chars_size);
     request_put(request, data.get(), data_chars_size);
     return;
@@ -431,8 +389,8 @@ namespace tr {
     info(FileName);
 //DEBUG----------------------------------------------------------------
 
+    assert(!is_open);
     ErrorsList.clear();
-    if(is_open) close(); // закрыть, если был открыт файл
 
     if(FileName.empty())
     {
@@ -446,7 +404,7 @@ namespace tr {
     {
       ErrorsList.emplace_front(std::string(sqlite3_errmsg(db))
         + std::string("\nCan't open file: ") + FileName);
-      close();
+      if(db != nullptr) sqlite3_close(db);
       return false;
     }
     else
@@ -454,17 +412,7 @@ namespace tr {
       is_open = true;
       sqlite3_update_hook(db, update_callback, &empty);
     }
-
     return is_open;
-  }
-
-
-  ///
-  /// Выполнение запроса
-  ///
-  void wsql::exec(const std::string &Query)
-  {
-    exec(Query.c_str());
   }
 
 
@@ -476,28 +424,23 @@ namespace tr {
   ///
   void wsql::exec(const char *query)
   {
-    if(is_open)
+    assert(is_open);
+
+    char* err_msg = nullptr;
+    ErrorsList.clear();
+    Table_rows.clear();
+    num_rows = 0;
+    if(SQLITE_OK != sqlite3_exec(db, query, callback, 0, &err_msg))
     {
-      char* err_msg = nullptr;
-      ErrorsList.clear();
-      Table_rows.clear();
-      num_rows = 0;
-      if(SQLITE_OK != sqlite3_exec(db, query, callback, 0, &err_msg))
+      if(nullptr == err_msg)
       {
-        if(nullptr == err_msg)
-        {
-          ErrorsList.emplace_front("sqlw::exec: can't exec query "
-                                   + std::string(query));
-        } else
-        {
-          ErrorsList.emplace_front("sqlw::exec: " + std::string(err_msg));
-          sqlite3_free(err_msg);
-        }
+        ErrorsList.emplace_front("sqlw::exec: can't exec query "
+                                 + std::string(query));
+      } else
+      {
+        ErrorsList.emplace_front("sqlw::exec: " + std::string(err_msg));
+        sqlite3_free(err_msg);
       }
-    }
-    else
-    {
-      ErrorsList.emplace_front("sqlw::exec: is not opened db-file");
     }
 
     #ifndef NDEBUG
@@ -512,8 +455,8 @@ namespace tr {
   ///
   void wsql::close(void)
   {
-    if(!is_open) return;
-    //sqlite3_finalize(pStmt);
+    assert(is_open);
+
     int rc = sqlite3_close(db);
 
 //DEBUG---------------------------------------------------------------------
