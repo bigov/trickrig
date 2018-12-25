@@ -146,7 +146,7 @@ namespace tr
         else // если в кэше есть адреса свободных мест, то используем
         {    // их с контролем, успешно ли был перемещен блок данных
           data_is_recieved = Snip.vbo_update(Point, VBOdata, CachedOffset.front());
-          CachedOffset.pop_front();                           // укоротить кэш
+          CachedOffset.pop_front();                                    // укоротить кэш
           if(data_is_recieved) VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
         }
       }

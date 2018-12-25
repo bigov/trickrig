@@ -128,20 +128,18 @@ namespace tr
   /// \param action
   /// \param mods
   ///
-  void wglfw::mouse_button_callback(
-    GLFWwindow*, int button, int action, int mods)
+  void wglfw::mouse_button_callback(GLFWwindow*, int button, int action, int mods)
   {
-    keys.mouse_mods     = mods;
-    AppWin.mouse = button;
-    AppWin.action = action;
+    keys.mouse_mods = mods;
+    AppWin.mouse    = button;
+    AppWin.action   = action;
   }
 
 
   ///
   /// Keys events callback
   ///
-  void wglfw::key_callback(GLFWwindow* window, int key, int scancode,
-    int action, int mods)
+  void wglfw::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
   {
     AppWin.key    = key;
     AppWin.action = action;

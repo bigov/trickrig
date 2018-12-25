@@ -59,6 +59,7 @@ void scene::framebuffer_init(void)
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+
 ///
 /// \brief Перестрока размера фреймбуфера и связанных с ним текстур
 ///
