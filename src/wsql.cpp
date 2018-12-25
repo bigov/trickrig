@@ -294,7 +294,20 @@ namespace tr {
   ///
   /// Бинарные данные записываются в поле, обозначенное в тексте запроса символом '?'
   ///
-  void wsql::request_put(const char* request, const void* blob_data, size_t blob_size)
+  /// четвертый параметр - это количество байтов в значении, а не количество символов.
+  ///
+  /// Пятым аргументом можно указать адрес функции деструктора бинарных данных.
+  ///
+  /// Если пятым аргументом указать значение SQLITE_STATIC, то SQLite предполагает,
+  /// что информация (принятые бинарные данные) находится в статическом, неуправляемом
+  /// пространстве и не нуждается в освобождении.
+  ///
+  /// Если пятый аргумент имеет значение SQLITE_TRANSIENT, SQLite делает свою
+  /// собственную частную копию данных.
+  ///
+  /// Как правило, быстрее всего работает вариант с выбором SQLITE_STATIC.
+  ///
+  void wsql::request_put(const char* request, const void* blob_data, int blob_size)
   {
     assert(is_open);
 
@@ -306,22 +319,13 @@ namespace tr {
     if(SQLITE_OK != sqlite3_prepare_v2(db, request, -1, &pStmt, nullptr))
       ErrorsList.emplace_front("Prepare failed: " + std::string(sqlite3_errmsg(db)));
 
-    // Пятым аргументом можно указать адрес функции деструктора бинарных данных.
-    //
-    // Если пятым аргументом указать значение SQLITE_STATIC, то SQLite предполагает,
-    // что информация (принятые бинарные данные) находится в статическом, неуправляемом
-    // пространстве и не нуждается в освобождении.
-    //
-    // Если пятый аргумент имеет значение SQLITE_TRANSIENT, SQLite делает свою
-    // собственную частную копию данных.
-    //
-    // Как правило, быстрее всего работает вариант с выбором SQLITE_STATIC.
-
     if (SQLITE_OK != sqlite3_bind_blob(pStmt, 1, blob_data, blob_size, SQLITE_STATIC))
       ErrorsList.emplace_front("Bind failed: " + std::string(sqlite3_errmsg(db)));
 
     if (SQLITE_DONE != sqlite3_step(pStmt))
       ErrorsList.emplace_front("Execution failed: " + std::string(sqlite3_errmsg(db)));
+
+    sqlite3_finalize(pStmt);
 
     #ifndef NDEBUG
     for(auto &msg: ErrorsList) tr::info(msg);
@@ -339,10 +343,10 @@ namespace tr {
   ///
   void wsql::request_put(const char * request, const float * fl, size_t fl_size)
   {
-    size_t data_chars_size = fl_size * sizeof(float);
+    auto data_chars_size = fl_size * sizeof(float);
     std::unique_ptr<char[]> data {new char[data_chars_size]};
     memcpy(data.get(), fl, data_chars_size);
-    request_put(request, data.get(), data_chars_size);
+    request_put(request, data.get(), static_cast<int>(data_chars_size));
     return;
   }
 
@@ -385,10 +389,6 @@ namespace tr {
   ///
   bool wsql::open(const std::string & FileName)
   {
-//DEBUG----------------------------------------------------------------
-    info(FileName);
-//DEBUG----------------------------------------------------------------
-
     assert(!is_open);
     ErrorsList.clear();
 
@@ -430,7 +430,7 @@ namespace tr {
     ErrorsList.clear();
     Table_rows.clear();
     num_rows = 0;
-    if(SQLITE_OK != sqlite3_exec(db, query, callback, 0, &err_msg))
+    if(SQLITE_OK != sqlite3_exec(db, query, callback, nullptr, &err_msg))
     {
       if(nullptr == err_msg)
       {
@@ -457,29 +457,11 @@ namespace tr {
   {
     assert(is_open);
 
-    int rc = sqlite3_close(db);
-
-//DEBUG---------------------------------------------------------------------
-    if (rc == SQLITE_BUSY) info("SQLite.close: fail");
-    else {
-      info ("SQLite.close: OK");
-    }
-    if(!ErrorsList.empty()) for(auto &msg: ErrorsList) info(msg);
-//DEBUG---------------------------------------------------------------------
-
-
-/*
-    int rc = sqlite3_close(db);
-    if(rc == SQLITE_BUSY)
-    {
-      sqlite3_stmt * stmt;
-      while ((stmt = sqlite3_next_stmt(db, NULL)) != NULL) { sqlite3_finalize(stmt); }
-      rc = sqlite3_close(db);
-#ifndef NDEBUG
-      if (rc != SQLITE_OK) info("Abnormal sqlite3 close");
-#endif
-    }
-*/
+    #ifndef NDEBUG
+    if (sqlite3_close(db) == SQLITE_BUSY) info("SQLite.close: fail");
+    #else
+    sqlite3_close(db);
+    #endif
 
     db = nullptr;
     is_open = false;

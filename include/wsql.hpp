@@ -41,7 +41,7 @@ class wsql
     void close(void);
     void exec(const char *);
     void write(const char *);
-    void request_put(const char *, const void *, size_t);
+    void request_put(const char *, const void *, int);
     void request_put(const char *, const float *, size_t);
     void request_get(const char *);
 
