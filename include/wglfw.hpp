@@ -5,16 +5,16 @@
 #include "main.hpp"
 #include "scene.hpp"
 #include "io.hpp"
-#include "GLFW/glfw3.h"
 
 namespace tr
 {
-  class wglfw
-  {
-    static evInput keys;
-    static std::string title;
 
-    public:
+class wglfw
+{
+  static evInput keys;
+  static std::string title;
+
+  public:
       wglfw(void);
       ~wglfw(void);
       void show(tr::scene&);

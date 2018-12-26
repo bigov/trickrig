@@ -325,27 +325,27 @@ namespace tr
     calc_position(ev);
     recalc_borders();
 
-    if((AppWin.mouse == MOUSE_BUTTON_LEFT) && (AppWin.action == PRESS))
+    if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
     {
       // Вставить элемент поверхности над выделенной точкой.
-      // RigsDb0.append(Selected);
+      ev.mouse = -1; ev.action = -1;
+      RigsDb0.remove(Selected.x, Selected.y, Selected.z);
     }
     else
     {
       RigsDb0.highlight(Selected); // Подсветка выделения
     }
 
-
     // Запись в базу данных: Ctrl+S (285, 31).
     // Код отрабатывает последовательное нажатие клавиш Ctrl(285) и S(31)
     static int mod = 0;
-    if((31 == ev.key_scancode) && (1 == mod))
+    if((31 == ev.scancode) && (1 == mod))
     {
       cfg::DataBase.save_rigs_block({0, 0, 0}, {16, 1, 16}, RigsDb0);
       //RigsDb0.save({0, 0, 0}, {16, 1, 16});
     }
     mod = 0;
-    if (285 == ev.key_scancode) mod = 1;
+    if (285 == ev.scancode) mod = 1;
 
     RigsDb0.draw();
   }

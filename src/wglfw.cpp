@@ -9,7 +9,7 @@
 
 namespace tr
 {
-  evInput wglfw::keys = {0.0, 0.0, 0, 0, 0, 0, 0, 0};
+  evInput wglfw::keys = {0.0, 0.0, 0, 0, 0, -1, -1, -1, -1, -1};
   std::string wglfw::title = "TrickRig: v.development";
 
   // TODO: сделать привязку через конфиг
@@ -20,13 +20,13 @@ namespace tr
   int wglfw::k_RIGHT = GLFW_KEY_D;
   int wglfw::k_LEFT  = GLFW_KEY_A;
 
-  int MOUSE_BUTTON_LEFT  = GLFW_MOUSE_BUTTON_LEFT;
-  int MOUSE_BUTTON_RIGHT = GLFW_MOUSE_BUTTON_RIGHT;
-  int PRESS              = GLFW_PRESS;
-  int REPEAT             = GLFW_REPEAT;
-  int RELEASE            = GLFW_RELEASE;
-  int KEY_ESCAPE         = GLFW_KEY_ESCAPE;
-  int KEY_BACKSPACE      = GLFW_KEY_BACKSPACE;
+  const int MOUSE_BUTTON_LEFT  = GLFW_MOUSE_BUTTON_LEFT;
+  const int MOUSE_BUTTON_RIGHT = GLFW_MOUSE_BUTTON_RIGHT;
+  const int PRESS              = GLFW_PRESS;
+  const int REPEAT             = GLFW_REPEAT;
+  const int RELEASE            = GLFW_RELEASE;
+  const int KEY_ESCAPE         = GLFW_KEY_ESCAPE;
+  const int KEY_BACKSPACE      = GLFW_KEY_BACKSPACE;
 
   ///
   /// Создание нового окна с обработчиками ввода и настройка контекста
@@ -130,9 +130,9 @@ namespace tr
   ///
   void wglfw::mouse_button_callback(GLFWwindow*, int button, int action, int mods)
   {
-    keys.mouse_mods = mods;
-    AppWin.mouse    = button;
-    AppWin.action   = action;
+    keys.mods   = mods;
+    keys.mouse  = button;
+    keys.action = action;
   }
 
 
@@ -141,16 +141,17 @@ namespace tr
   ///
   void wglfw::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
   {
-    AppWin.key    = key;
-    AppWin.action = action;
+    keys.key    = key;
+    keys.action = action;
+    keys.mouse  = -1;
 
     if(AppWin.mode != GUI_HUD3D) return;
 
-    keys.key_mods     = mods;
-    keys.key_scancode = scancode;
+    keys.mods = mods;
+    keys.scancode = scancode;
     keys.fb = glfwGetKey(window, k_FRONT) - glfwGetKey(window, k_BACK);
     keys.ud = glfwGetKey(window, k_DOWN)  - glfwGetKey(window, k_UP);
-    keys.rl = glfwGetKey(window, k_LEFT) - glfwGetKey(window, k_RIGHT);
+    keys.rl = glfwGetKey(window, k_LEFT)  - glfwGetKey(window, k_RIGHT);
   }
 
 

@@ -44,6 +44,8 @@
 #include "glm/gtx/transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
+#include "GLFW/glfw3.h"
+
 #define ERR throw std::runtime_error
 namespace fs = std::filesystem;
 
@@ -96,15 +98,15 @@ enum GUI_MODE_ID {   // режимы окна
   GUI_MENU_CONFIG,   // настройки
 };
 
-  // Настройка значений параметров для сравнения mouse_button и mouse_action
-  // будут выполнены в классе управления окном
-  extern int MOUSE_BUTTON_LEFT;  // GLFW_MOUSE_BUTTON_LEFT
-  extern int MOUSE_BUTTON_RIGHT; // GLFW_MOUSE_BUTTON_RIGHT
-  extern int PRESS;              // GLFW_PRESS
-  extern int REPEAT;             // GLFW_REPEAT
-  extern int RELEASE;            // GLFW_RELEASE
-  extern int KEY_ESCAPE;         // GLFW_KEY_ESCAPE
-  extern int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
+// Настройка значений параметров для сравнения mouse_button и mouse_action
+// будут выполнены в классе управления окном
+extern const int MOUSE_BUTTON_LEFT;  // GLFW_MOUSE_BUTTON_LEFT
+extern const int MOUSE_BUTTON_RIGHT; // GLFW_MOUSE_BUTTON_RIGHT
+extern const int PRESS;              // GLFW_PRESS
+extern const int REPEAT;             // GLFW_REPEAT
+extern const int RELEASE;            // GLFW_RELEASE
+extern const int KEY_ESCAPE;         // GLFW_KEY_ESCAPE
+extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
 
   // Параметры и режимы окна приложения
   struct main_window {
@@ -127,9 +129,9 @@ enum GUI_MODE_ID {   // режимы окна
     int fps = 120;        // частота кадров (для коррекции скорости движения)
     glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина прицела
 
-    int key    = -1;  // клавиша
-    int mouse  = -1;  // кнопка мыши
-    int action = -1;  // действие
+    //int key    = -1;  // клавиша
+    //int mouse  = -1;  // кнопка мыши
+    //int action = -1;  // действие
 
     char set_mouse_ptr = 0;           // запрос смены типа курсора {-1, 0, 1}
   };
@@ -175,7 +177,7 @@ enum GUI_MODE_ID {   // режимы окна
   {
     float dx, dy;   // смещение указателя мыши в активном окне
     int fb, rl, ud, // управление направлением движения в 3D пространстве
-    key_scancode, key_mods, mouse_mods;
+    scancode, mods, mouse, action, key;
   };
 
   // структуры для оперирования опорными точками в пространстве трехмерных координат

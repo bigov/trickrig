@@ -169,7 +169,7 @@ void gui::row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::str
     element_over = ROW_MAP_NAME; // для обработки в "menu_selector"
     bg_color = over;
 
-    if((AppWin.mouse == MOUSE_BUTTON_LEFT) && (AppWin.action == PRESS))
+    if(mouse_press_left)
     {
       row_selected = id;
       x += 1; y += 1;
@@ -236,8 +236,6 @@ void gui::cancel(void)
       AppWin.run = false;
       break;
   }
-  AppWin.key    = -1;
-  AppWin.action = -1;
 }
 
 
@@ -558,8 +556,7 @@ void gui::button(ELEMENT_ID btn_id, u_long x, u_long y,
       element_over = btn_id;
 
       // и если кнопку "кликнули" указателем мыши
-      if((AppWin.mouse == MOUSE_BUTTON_LEFT) &&
-         (AppWin.action == PRESS))
+      if(mouse_press_left)
       {
         button_make_body(Btn, ST_PRESSED);
       }
@@ -653,13 +650,13 @@ void gui::menu_map_select(void)
 /// BTN_ENTER_NAME введенный в строке текст будет использован для создания
 /// нового файла хранения данных 3D пространства района.
 ///
-void gui::menu_map_create(void)
+void gui::menu_map_create(evInput &ev)
 {
   obscure_screen();
   title(u8"ВВЕДИТЕ НАЗВАНИЕ");
 
-  if((AppWin.key == KEY_BACKSPACE) && // Удаление введенных символов
-    ((AppWin.action == PRESS)||(AppWin.action == REPEAT)))
+  if((ev.key == KEY_BACKSPACE) && // Удаление введенных символов
+    ((ev.action == PRESS)||(ev.action == REPEAT)))
   {
     if (user_input.length() == 0) return;
     if(char_type(user_input[user_input.size()-1]) != SINGLE)
@@ -698,20 +695,20 @@ void gui::menu_config(void)
 ///
 /// \brief gui::draw_gui_menu
 ///
-void gui::menu_selector(void)
+void gui::menu_selector(evInput &ev)
 {
-  if((AppWin.mouse == MOUSE_BUTTON_LEFT) &&
-     (AppWin.action == RELEASE) &&
+  if((ev.mouse == MOUSE_BUTTON_LEFT) &&
+     (ev.action == RELEASE) &&
      (element_over != NONE))
   {
     button_click(element_over);
-    AppWin.mouse = -1;   // сбросить флаг кнопки
-    AppWin.action = -1;  // сбросить флаг действия
+    ev.mouse = -1;   // сбросить флаг кнопки
+    ev.action = -1;  // сбросить флаг действия
   }
 
   if(element_over == NONE)
   {
-    AppWin.mouse = -1;   // сбросить флаг кнопки
+    ev.mouse = -1;   // сбросить флаг кнопки
     //AppWin.action = -1; // флаг действия потребуется при вводе названия карты
   }
 
@@ -726,7 +723,7 @@ void gui::menu_selector(void)
       menu_config();
       break;
     case GUI_MENU_CREATE:
-      menu_map_create();
+      menu_map_create(ev);
       break;
     case GUI_MENU_LSELECT:
       menu_map_select();
@@ -758,17 +755,23 @@ void gui::menu_selector(void)
 /// Из всех необходимых элементов собирается общее графическое изображение в
 /// виде текстурного массива и передается для рендера в OpenGL
 ///
-void gui::draw(void)
+void gui::draw(evInput &ev)
 {
   if(AppWin.resized) WinGui.resize(AppWin.width, AppWin.height);
 
-  if((AppWin.key == KEY_ESCAPE) && (AppWin.action == RELEASE))
+  if((ev.key == KEY_ESCAPE) && (ev.action == RELEASE))
+  {
     cancel();
+    ev.key    = -1;
+    ev.action = -1;
+  }
 
-  if(AppWin.mode == GUI_HUD3D)
-    refresh();
+  if(AppWin.mode == GUI_HUD3D) { refresh(); }
   else
-    menu_selector();
+  {
+    mouse_press_left = (ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS);
+    menu_selector(ev);
+  }
 
   AppWin.resized = false;
 }

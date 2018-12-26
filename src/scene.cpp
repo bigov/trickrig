@@ -168,7 +168,7 @@ void scene::framebuffer_resize(void)
 
     // Поверх биндим текстуру GUI и рисуем на ней необходимые элементы
     glBindTexture(GL_TEXTURE_2D, tex_hud_id);
-    WinGui.draw();
+    WinGui.draw(ev);
 
     // Второй проход рендера - по текстуре из фреймбуфера
     glBindVertexArray(vao_quad_id);

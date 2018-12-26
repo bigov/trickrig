@@ -22,6 +22,7 @@ class gui
     px bg_hud  {0x00, 0x88, 0x00, 0x40};     // фон панелей HUD (активного окна)
     img WinGui { 0, 0 };                     // GUI/HUD текстура окна приложения
     px color_title {0xFF, 0xFF, 0xDD, 0xFF}; // фон заголовка
+    bool mouse_press_left = false;           // нажатие на левую кнопку мыши
 
     struct map{
         map(const std::string &f, const std::string &n): Folder(f), Name(n){}
@@ -79,8 +80,8 @@ class gui
     void row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &);
     void select_list(const v_str &, u_int x, u_int y, u_int w, u_int h, size_t i = 0);
     void sub_img(const img &Image, GLint x, GLint y);
-    void menu_selector(void);
-    void menu_map_create(void);
+    void menu_selector(evInput& ev);
+    void menu_map_create(evInput& ev);
     void menu_map_select(void);
     void menu_start(void);
     void menu_config(void);
@@ -94,7 +95,7 @@ class gui
 
   public:
     gui(void);
-    void draw(void);      // формирование изображения GIU окна
+    void draw(evInput &);      // формирование изображения GIU окна
     void headband(void);  // заставка
 
     space Space {};
