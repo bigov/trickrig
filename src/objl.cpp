@@ -75,18 +75,18 @@ void obj_load::get_f(char *line)
 
   for(size_t n = 0; n < tr::vertices_per_snip; n++)
   {
-    Snip.data[n*SNIP_ROW_DIGITS + SNIP_X] = Places[i[n][0]][0];
-    Snip.data[n*SNIP_ROW_DIGITS + SNIP_Y] = Places[i[n][0]][1];
-    Snip.data[n*SNIP_ROW_DIGITS + SNIP_Z] = Places[i[n][0]][2];
+    Snip.data[n*ROW_SIZE + X] = Places[i[n][0]][0];
+    Snip.data[n*ROW_SIZE + Y] = Places[i[n][0]][1];
+    Snip.data[n*ROW_SIZE + Z] = Places[i[n][0]][2];
 
     if(textured) {
-      Snip.data[n*SNIP_ROW_DIGITS + SNIP_U] = UVs[i[n][1]][0];
-      Snip.data[n*SNIP_ROW_DIGITS + SNIP_V] = UVs[i[n][1]][1];
+      Snip.data[n*ROW_SIZE + U] = UVs[i[n][1]][0];
+      Snip.data[n*ROW_SIZE + V] = UVs[i[n][1]][1];
     }
 
-    Snip.data[n*SNIP_ROW_DIGITS + SNIP_NX] = Normals[i[n][2]][0];
-    Snip.data[n*SNIP_ROW_DIGITS + SNIP_NY] = Normals[i[n][2]][1];
-    Snip.data[n*SNIP_ROW_DIGITS + SNIP_NZ] = Normals[i[n][2]][2];
+    Snip.data[n*ROW_SIZE + NX] = Normals[i[n][2]][0];
+    Snip.data[n*ROW_SIZE + NY] = Normals[i[n][2]][1];
+    Snip.data[n*ROW_SIZE + NZ] = Normals[i[n][2]][2];
   }
 
   Area.push_front(Snip);

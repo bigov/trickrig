@@ -14,12 +14,7 @@
 namespace tr
 {
   // структура для обращения в тексте программы к индексам данных вершин по названиям
-  enum SNIP_DATA_ID {
-    SNIP_X, SNIP_Y, SNIP_Z, SNIP_W,
-    SNIP_R, SNIP_G, SNIP_B, SNIP_A,
-    SNIP_NX, SNIP_NY, SNIP_NZ, SNIP_NW,
-    SNIP_U, SNIP_V, SNIP_ROW_DIGITS
-  };
+  enum SNIP_DATA_ID { X, Y, Z, W, R, G, B, A, NX, NY, NZ, NW, U, V, ROW_SIZE };
 
   //## Набор данных для формирования в GPU многоугольника с индексацией вершин
   struct snip

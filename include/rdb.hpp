@@ -43,13 +43,20 @@ namespace tr
 
       void _load_16x16_obj(void);
       void put_in_vbo(rig*, const f3d&);     // разместить данные в VBO буфере
+      void clear_cashed_snips(void);         // очистка промежуточного кэша
 
     public:
       rdb(void);                             // конструктор
       void place(int, int, int);             // разместить данные в VBO буфере
       void remove(int, int, int);            // убрать трик из рендера
       void draw(void);                       // Рендер кадра
-      void clear_cashed_snips(void);         // очистка промежуточного кэша
+
+      void add_x(const i3d &);
+      void add_y(const i3d &);
+      void add_z(const i3d &);
+      void sub_x(const i3d &);
+      void sub_y(const i3d &);
+      void sub_z(const i3d &);
 
       //bool save(const i3d &, const i3d &);
       void load_space(int, const glm::vec3 &);    // загрузка уровня

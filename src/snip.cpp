@@ -43,8 +43,8 @@ namespace tr
 
     for(size_t n = 0; n < tr::vertices_per_snip; n++)
     {
-      data[SNIP_ROW_DIGITS * n + SNIP_U] = u * u_size;
-      data[SNIP_ROW_DIGITS * n + SNIP_V] = v * v_size;
+      data[ROW_SIZE * n + U] = u * u_size;
+      data[ROW_SIZE * n + V] = v * v_size;
     }
   }
 
@@ -55,9 +55,9 @@ namespace tr
   ///
   glm::vec4 snip::vertex_coord(size_t idx)
   {
-    return glm::vec4 { data[SNIP_ROW_DIGITS * idx + SNIP_X],
-                       data[SNIP_ROW_DIGITS * idx + SNIP_Y],
-                       data[SNIP_ROW_DIGITS * idx + SNIP_Z],
+    return glm::vec4 { data[ROW_SIZE * idx + X],
+                       data[ROW_SIZE * idx + Y],
+                       data[ROW_SIZE * idx + Z],
                        1.0 };
   }
 
@@ -78,9 +78,9 @@ namespace tr
     memcpy(cache, data, tr::bytes_per_snip);
     for(size_t n = 0; n < tr::vertices_per_snip; n++)
     {
-      cache[SNIP_ROW_DIGITS * n + SNIP_X] += Point.x;
-      cache[SNIP_ROW_DIGITS * n + SNIP_Y] += Point.y;
-      cache[SNIP_ROW_DIGITS * n + SNIP_Z] += Point.z;
+      cache[ROW_SIZE * n + X] += Point.x;
+      cache[ROW_SIZE * n + Y] += Point.y;
+      cache[ROW_SIZE * n + Z] += Point.z;
     }
 
     data_offset = VBOdata.data_append( tr::bytes_per_snip, cache );
@@ -102,9 +102,9 @@ namespace tr
     memcpy(vbo_data, data, tr::bytes_per_snip);
     for(size_t n = 0; n < tr::vertices_per_snip; n++)
     {
-      vbo_data[SNIP_ROW_DIGITS * n + SNIP_X] += Point.x;
-      vbo_data[SNIP_ROW_DIGITS * n + SNIP_Y] += Point.y;
-      vbo_data[SNIP_ROW_DIGITS * n + SNIP_Z] += Point.z;
+      vbo_data[ROW_SIZE * n + X] += Point.x;
+      vbo_data[ROW_SIZE * n + Y] += Point.y;
+      vbo_data[ROW_SIZE * n + Z] += Point.z;
     }
 
     if(VBOdata.data_update( tr::bytes_per_snip, vbo_data, dst ))

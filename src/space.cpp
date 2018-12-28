@@ -283,15 +283,15 @@ namespace tr
     glm::vec3 step = glm::normalize(LookDir)/1.2f; // длина шага поиска
     int i_max = 4;                                 // количество шагов проверки
 
-    glm::vec3 search = Eye.ViewFrom;               // переменная поиска
+    glm::vec3 check = Eye.ViewFrom;                // переменная поиска
     tr::rig* R = nullptr;
     for(int i = 0; i < i_max; ++i)
     {
-      R = RigsDb0.get(search);
+      R = RigsDb0.get(check);
       if(nullptr != R) break;
-      search += step;
+      check += step;
     }
-    if(nullptr == R) return;          // если пересечение не найдено - выход
+    if(nullptr == R) return;                       // если пересечение не найдено - выход
 
     // Проверяем верхний снип в найденном риге
     auto S = R->Trick.front();
@@ -310,8 +310,8 @@ namespace tr
    else
    { // Если луч взгляда не пересекает найденый снип, то берем следущий
      // по направлению взгляда:
-     search += step;
-     R = RigsDb0.get(search);
+     check += step;
+     R = RigsDb0.get(check);
      if(nullptr != R) Selected = R->Origin;
    }
   }
@@ -329,7 +329,8 @@ namespace tr
     {
       // Вставить элемент поверхности над выделенной точкой.
       ev.mouse = -1; ev.action = -1;
-      RigsDb0.remove(Selected.x, Selected.y, Selected.z);
+      //RigsDb0.remove(Selected.x, Selected.y, Selected.z);
+      RigsDb0.add_y(Selected);
     }
     else
     {

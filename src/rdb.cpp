@@ -105,6 +105,69 @@ namespace tr
 
 
   ///
+  /// \brief rdb::add_y
+  /// \details Увеличение размера по координате Y
+  ///
+  void rdb::add_y(const i3d &Pt)
+  {
+    remove(Pt.x, Pt.y, Pt.z); // убрать риг из графического буфера
+
+    //1. Выбрать целевой риг
+    rig *R = get(Pt);
+    if(nullptr == R) ERR ("Error on rig grooving by Y.");
+
+    float p_max = .0f;
+    snip &S = R->Trick.front();
+
+    // записать исходные значения вершин
+    snip S_src = S;
+
+    // найти вершину с максимальным значением Y
+    for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) p_max = std::max(p_max, S.data[i]);
+
+    //3. округлить до ближайшей сверху четверти
+    if(p_max >= 0.75f) p_max = 1.00f;
+    else if (p_max >= 0.50f) p_max = 0.75f;
+    else if (p_max >= 0.25f) p_max = 0.50f;
+    else p_max = 0.25f;
+
+    for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = p_max;
+
+    snip S_lx {}; // Cнип для боковой стороны
+
+    size_t id_dst = 0, id_src = 0;
+    S_lx.data[ROW_SIZE * id_dst + X] = S_src.data[ROW_SIZE * id_src + X];
+    S_lx.data[ROW_SIZE * id_dst + Y] = S_src.data[ROW_SIZE * id_src + Y];
+    S_lx.data[ROW_SIZE * id_dst + Z] = S_src.data[ROW_SIZE * id_src + Z];
+    S_lx.data[ROW_SIZE * id_dst + W] = S_src.data[ROW_SIZE * id_src + W];
+
+    id_dst = 1, id_src = 1;
+    S_lx.data[ROW_SIZE * id_dst + X] = S_src.data[ROW_SIZE * id_src + X];
+    S_lx.data[ROW_SIZE * id_dst + Y] = S_src.data[ROW_SIZE * id_src + Y];
+    S_lx.data[ROW_SIZE * id_dst + Z] = S_src.data[ROW_SIZE * id_src + Z];
+    S_lx.data[ROW_SIZE * id_dst + W] = S_src.data[ROW_SIZE * id_src + W];
+
+    id_dst = 2, id_src = 1;
+    S_lx.data[ROW_SIZE * id_dst + X] = S.data[ROW_SIZE * id_src + X];
+    S_lx.data[ROW_SIZE * id_dst + Y] = S.data[ROW_SIZE * id_src + Y];
+    S_lx.data[ROW_SIZE * id_dst + Z] = S.data[ROW_SIZE * id_src + Z];
+    S_lx.data[ROW_SIZE * id_dst + W] = S.data[ROW_SIZE * id_src + W];
+
+    id_dst = 3, id_src = 0;
+    S_lx.data[ROW_SIZE * id_dst + X] = S.data[ROW_SIZE * id_src + X];
+    S_lx.data[ROW_SIZE * id_dst + Y] = S.data[ROW_SIZE * id_src + Y];
+    S_lx.data[ROW_SIZE * id_dst + Z] = S.data[ROW_SIZE * id_src + Z];
+    S_lx.data[ROW_SIZE * id_dst + W] = S.data[ROW_SIZE * id_src + W];
+
+    S_lx.texture_set(0, 0);
+
+    R->Trick.insert_after(R->Trick.begin(), S_lx);
+
+    place(Pt.x, Pt.y, Pt.z); // записать модифицированый риг в графический буфер
+  }
+
+
+  ///
   /// Добавление в графический буфер элементов, расположенных в точке (x, y, z)
   ///
   void rdb::place(int x, int y, int z)
@@ -173,10 +236,10 @@ namespace tr
 
     for(size_t n = 0; n < tr::vertices_per_snip; n++)
     {
-      highlight.data[SNIP_ROW_DIGITS * n + SNIP_X] += sel.x;
-      highlight.data[SNIP_ROW_DIGITS * n + SNIP_Y] += sel.y + 0.1;
-      highlight.data[SNIP_ROW_DIGITS * n + SNIP_Z] += sel.z;
-      highlight.data[SNIP_ROW_DIGITS * n + SNIP_A] = 0.5f; // прозрачность
+      highlight.data[ROW_SIZE * n + X] += sel.x;
+      highlight.data[ROW_SIZE * n + Y] += sel.y + 0.001;
+      highlight.data[ROW_SIZE * n + Z] += sel.z;
+      highlight.data[ROW_SIZE * n + A] = 0.4f; // прозрачность
     }
 
     // Записать данные снипа подсветки в конец буфера данных VBO
