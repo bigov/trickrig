@@ -3,7 +3,7 @@
 in vec2 vFragment; // 2D коодината в текстурной карте
 in vec4 vColor;    // цвет
 in vec4 vDiff;     // диффузный свет
-flat in int vId;        // индекс вершины для определения выделенного фрагмента
+flat in int vId;   // индекс вершины для определения выделенного фрагмента
 
 uniform sampler2D texture_0;
 
@@ -12,13 +12,14 @@ layout(location = 1) out vec4 FragData;
 
 void main(void)
 {
-  vec2 flip_fragment = vec2(vFragment.x, 1.0f - vFragment.y);
-  FragColor = vColor * vDiff + texture(texture_0, flip_fragment);
+  //vec2 flip_fragment = vec2(vFragment.x, 1.0f - vFragment.y);
+  //FragColor = vColor * vDiff + texture(texture_0, flip_fragment);
+  FragColor = vColor * vDiff + texture(texture_0, vFragment);
+
   FragColor.a = vColor.a;
   if(!gl_FrontFacing) FragColor = FragColor - vec4(0.75, 0.75, 0.5, 0.0);
 
   // Индексы примитивов пишем во второй буфер
-
 
   int r = 0;
   int g = 0;

@@ -33,19 +33,33 @@ namespace tr
 
   ///
   /// \brief   настройка текстуры
-  /// \param u - номер по-горизонтали
-  /// \param v - номер по-вертикали
+  /// \param u  - номер по-горизонтали
+  /// \param v  - номер по-вертикали
+  /// \param v1 - смещение по-вертикали для первой точки
+  /// \param v2 - смещение по-вертикали второй точки
   ///
-  void snip::texture_set(u_char u, u_char v)
+  void snip::texture_set(GLfloat u, GLfloat v, GLfloat v1, GLfloat v2)
   {
     GLfloat u_size = 0.125f;
     GLfloat v_size = 0.125f;
 
-    for(size_t n = 0; n < tr::vertices_per_snip; n++)
-    {
-      data[ROW_SIZE * n + U] = u * u_size;
-      data[ROW_SIZE * n + V] = v * v_size;
-    }
+    size_t n = 0; // номер вершины
+    data[ROW_SIZE * n + U] = u * u_size;
+    data[ROW_SIZE * n + V] = (v + v1) * v_size;
+
+    n += 1;
+    data[ROW_SIZE * n + U] = (u + 1) * u_size;
+    data[ROW_SIZE * n + V] = (v + v2) * v_size;
+
+    n += 1;
+    data[ROW_SIZE * n + U] = (u + 1) * u_size;
+    data[ROW_SIZE * n + V] = (v + 1) * v_size;
+
+    n += 1;
+    data[ROW_SIZE * n + U] = u * u_size;
+    data[ROW_SIZE * n + V] = (v + 1) * v_size;
+
+
   }
 
   ///

@@ -329,7 +329,6 @@ namespace tr
     {
       // Вставить элемент поверхности над выделенной точкой.
       ev.mouse = -1; ev.action = -1;
-      //RigsDb0.remove(Selected.x, Selected.y, Selected.z);
       RigsDb0.add_y(Selected);
     }
     else

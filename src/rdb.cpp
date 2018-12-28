@@ -119,48 +119,58 @@ namespace tr
     float p_max = .0f;
     snip &S = R->Trick.front();
 
-    // записать исходные значения вершин
-    snip S_src = S;
-
     // найти вершину с максимальным значением Y
     for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) p_max = std::max(p_max, S.data[i]);
 
-    //3. округлить до ближайшей сверху четверти
+    // округлить до ближайшей сверху четверти
     if(p_max >= 0.75f) p_max = 1.00f;
     else if (p_max >= 0.50f) p_max = 0.75f;
     else if (p_max >= 0.25f) p_max = 0.50f;
     else p_max = 0.25f;
 
+    // выровнять все вершины по выбранной высоте
     for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = p_max;
 
     snip S_lx {}; // Cнип для боковой стороны
 
-    size_t id_dst = 0, id_src = 0;
-    S_lx.data[ROW_SIZE * id_dst + X] = S_src.data[ROW_SIZE * id_src + X];
-    S_lx.data[ROW_SIZE * id_dst + Y] = S_src.data[ROW_SIZE * id_src + Y];
-    S_lx.data[ROW_SIZE * id_dst + Z] = S_src.data[ROW_SIZE * id_src + Z];
-    S_lx.data[ROW_SIZE * id_dst + W] = S_src.data[ROW_SIZE * id_src + W];
+    // поиск вершин соседнего по оси +z рига
+    rig *Rpz = get(Pt.x, Pt.y, Pt.z + lod);
 
-    id_dst = 1, id_src = 1;
-    S_lx.data[ROW_SIZE * id_dst + X] = S_src.data[ROW_SIZE * id_src + X];
-    S_lx.data[ROW_SIZE * id_dst + Y] = S_src.data[ROW_SIZE * id_src + Y];
-    S_lx.data[ROW_SIZE * id_dst + Z] = S_src.data[ROW_SIZE * id_src + Z];
-    S_lx.data[ROW_SIZE * id_dst + W] = S_src.data[ROW_SIZE * id_src + W];
+    if(nullptr == Rpz) ERR("TODO: detached rig!");
+    snip Spz = Rpz->Trick.front();
+
+    size_t id_dst = 0, id_src = 3;
+    S_lx.data[ROW_SIZE * id_dst + X] = Spz.data[ROW_SIZE * id_src + X];
+    S_lx.data[ROW_SIZE * id_dst + Y] = Spz.data[ROW_SIZE * id_src + Y];
+    GLfloat v1 = S_lx.data[ROW_SIZE * id_dst + Y];
+    S_lx.data[ROW_SIZE * id_dst + Z] = Spz.data[ROW_SIZE * id_src + Z]+ lod;
+    S_lx.data[ROW_SIZE * id_dst + W] = Spz.data[ROW_SIZE * id_src + W];
+
+    id_dst = 1, id_src = 2;
+    S_lx.data[ROW_SIZE * id_dst + X] = Spz.data[ROW_SIZE * id_src + X];
+    S_lx.data[ROW_SIZE * id_dst + Y] = Spz.data[ROW_SIZE * id_src + Y];
+    GLfloat v2 = S_lx.data[ROW_SIZE * id_dst + Y];
+    S_lx.data[ROW_SIZE * id_dst + Z] = Spz.data[ROW_SIZE * id_src + Z]+ lod;
+    S_lx.data[ROW_SIZE * id_dst + W] = Spz.data[ROW_SIZE * id_src + W];
 
     id_dst = 2, id_src = 1;
     S_lx.data[ROW_SIZE * id_dst + X] = S.data[ROW_SIZE * id_src + X];
     S_lx.data[ROW_SIZE * id_dst + Y] = S.data[ROW_SIZE * id_src + Y];
+    v1 += lod - S_lx.data[ROW_SIZE * id_dst + Y];
     S_lx.data[ROW_SIZE * id_dst + Z] = S.data[ROW_SIZE * id_src + Z];
     S_lx.data[ROW_SIZE * id_dst + W] = S.data[ROW_SIZE * id_src + W];
 
     id_dst = 3, id_src = 0;
     S_lx.data[ROW_SIZE * id_dst + X] = S.data[ROW_SIZE * id_src + X];
     S_lx.data[ROW_SIZE * id_dst + Y] = S.data[ROW_SIZE * id_src + Y];
+    v2 += lod - S_lx.data[ROW_SIZE * id_dst + Y];
     S_lx.data[ROW_SIZE * id_dst + Z] = S.data[ROW_SIZE * id_src + Z];
     S_lx.data[ROW_SIZE * id_dst + W] = S.data[ROW_SIZE * id_src + W];
 
-    S_lx.texture_set(0, 0);
+    S_lx.texture_set(0, 4, v1, v2);
 
+    auto It = R->Trick.begin();
+    if(++It != R->Trick.end()) R->Trick.erase_after(R->Trick.begin());
     R->Trick.insert_after(R->Trick.begin(), S_lx);
 
     place(Pt.x, Pt.y, Pt.z); // записать модифицированый риг в графический буфер

@@ -36,7 +36,9 @@ namespace tr
 
     snip& operator=(const snip &);      // оператор присваивания
     void copy_data(const snip &);       // копирование данных из другого снипа
-    void texture_set(u_char, u_char);   // установка фрагмента текстуры
+
+    // установка фрагмента текстуры
+    void texture_set(GLfloat u, GLfloat v, GLfloat v1 = 0.0f, GLfloat v2 = 0.0f);
 
     // Функции управления данными снипа в буферах VBO данных и VBO индекса
     void vbo_append(const f3d &, vbo &);
