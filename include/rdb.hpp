@@ -44,6 +44,12 @@ namespace tr
       void _load_16x16_obj(void);
       void put_in_vbo(rig*, const f3d&);     // разместить данные в VBO буфере
       void clear_cashed_snips(void);         // очистка промежуточного кэша
+      void sides_set(rig*);                  // настройка боковых сторон
+      snip side_make(rig*, size_t*, i3d);    // настройка боковой стороны
+      void set_pz(rig*);
+      void set_nz(rig*);
+      void set_px(rig*);
+      void set_nx(rig*);
 
     public:
       rdb(void);                             // конструктор

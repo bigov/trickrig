@@ -31,36 +31,49 @@ namespace tr
       data[n] = Other.data[n];
   }
 
+
+  ///
+  /// \brief   настройка текстуры
+  /// \param u - номер по-горизонтали
+  /// \param v - номер по-вертикали
+  /// \details Устанавливает на Снип текстуру из ячейки [u,v]
+  ///
+  void snip::texture_set(GLfloat u, GLfloat v)
+  {
+    texture_set_top(u, v, 0.0f, 0.0f);
+  }
+
+
   ///
   /// \brief   настройка текстуры
   /// \param u  - номер по-горизонтали
   /// \param v  - номер по-вертикали
   /// \param v1 - смещение по-вертикали для первой точки
   /// \param v2 - смещение по-вертикали второй точки
+  /// \details Устанавливает на Снип фрагмент текстуры с обрезкой внизу по линии [v1,v2]
   ///
-  void snip::texture_set(GLfloat u, GLfloat v, GLfloat v1, GLfloat v2)
+  void snip::texture_set_top(GLfloat u, GLfloat v, GLfloat v1, GLfloat v2)
   {
     GLfloat u_size = 0.125f;
     GLfloat v_size = 0.125f;
 
     size_t n = 0; // номер вершины
     data[ROW_SIZE * n + U] = u * u_size;
-    data[ROW_SIZE * n + V] = (v + v1) * v_size;
+    data[ROW_SIZE * n + V] = v * v_size;
 
     n += 1;
     data[ROW_SIZE * n + U] = (u + 1) * u_size;
-    data[ROW_SIZE * n + V] = (v + v2) * v_size;
+    data[ROW_SIZE * n + V] = v * v_size;
 
     n += 1;
     data[ROW_SIZE * n + U] = (u + 1) * u_size;
-    data[ROW_SIZE * n + V] = (v + 1) * v_size;
+    data[ROW_SIZE * n + V] = (v + 1 - v1) * v_size;
 
     n += 1;
     data[ROW_SIZE * n + U] = u * u_size;
-    data[ROW_SIZE * n + V] = (v + 1) * v_size;
-
-
+    data[ROW_SIZE * n + V] = (v + 1 - v2) * v_size;
   }
+
 
   ///
   /// \brief snip::vertex_coord Возвращает координаты вершины № idx
@@ -74,6 +87,7 @@ namespace tr
                        data[ROW_SIZE * idx + Z],
                        1.0 };
   }
+
 
   ///
   /// \brief

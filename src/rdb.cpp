@@ -105,6 +105,127 @@ namespace tr
 
 
   ///
+  /// \brief rdb::side_make Формирование боковой стороны рига
+  /// \param R
+  ///
+  snip rdb::side_make(rig *R, size_t *src, i3d P)
+  {
+    snip &S_py = R->Trick.front(); // верхняя сторона
+    snip S {};                     // Боковая сторона
+
+    // поиск вершин соседнего рига
+    rig *R_neighbor = get(R->Origin.x + P.x, R->Origin.y, R->Origin.z + P.z);
+
+    if(nullptr == R_neighbor) ERR("TODO: detached rig!");
+    snip &S_nb = R_neighbor->Trick.front();
+
+    size_t i = 0;
+    S.data[ROW_SIZE * i + X] = S_py.data[ROW_SIZE * src[i] + X];
+    S.data[ROW_SIZE * i + Y] = S_py.data[ROW_SIZE * src[i] + Y];
+    S.data[ROW_SIZE * i + Z] = S_py.data[ROW_SIZE * src[i] + Z];
+    GLfloat v1 = lod - S.data[ROW_SIZE * i + Y];
+
+    i = 1;
+    S.data[ROW_SIZE * i + X] = S_py.data[ROW_SIZE * src[i] + X];
+    S.data[ROW_SIZE * i + Y] = S_py.data[ROW_SIZE * src[i] + Y];
+    S.data[ROW_SIZE * i + Z] = S_py.data[ROW_SIZE * src[i] + Z];
+    GLfloat v2 = lod - S.data[ROW_SIZE * i + Y];
+
+    i = 2;
+    if(S.data[Y] > S_nb.data[ROW_SIZE * src[i] + Y])
+    {
+      S.data[ROW_SIZE * i + X] = S_nb.data[ROW_SIZE * src[i] + X] + P.x;
+      S.data[ROW_SIZE * i + Y] = S_nb.data[ROW_SIZE * src[i] + Y];
+      S.data[ROW_SIZE * i + Z] = S_nb.data[ROW_SIZE * src[i] + Z] + P.z;
+      v1 += S.data[ROW_SIZE * i + Y];
+    } else {
+      S.data[ROW_SIZE * i + X] = S.data[X];
+      S.data[ROW_SIZE * i + Y] = S.data[Y];
+      S.data[ROW_SIZE * i + Z] = S.data[Z];
+    }
+
+    i = 3;
+    if(S.data[ROW_SIZE + Y] > S_nb.data[ROW_SIZE * src[i] + Y])
+    {
+      S.data[ROW_SIZE * i + X] = S_nb.data[ROW_SIZE * src[i] + X] + P.x;
+      S.data[ROW_SIZE * i + Y] = S_nb.data[ROW_SIZE * src[i] + Y];
+      S.data[ROW_SIZE * i + Z] = S_nb.data[ROW_SIZE * src[i] + Z] + P.z;
+      v2 += S.data[ROW_SIZE * i + Y];
+    } else {
+      S.data[ROW_SIZE * i + X] = S.data[ROW_SIZE + X];
+      S.data[ROW_SIZE * i + Y] = S.data[ROW_SIZE + Y];
+      S.data[ROW_SIZE * i + Z] = S.data[ROW_SIZE + Z];
+    }
+
+    S.texture_set_top(0, 4, v1, v2);
+    return std::move(S);
+  }
+
+
+  ///
+  void rdb::set_pz(rig *R)
+  {
+    auto It = R->Trick.begin();
+    if(std::next(It) != R->Trick.end()) R->Trick.erase_after(It);
+    size_t pz[] = {1, 0, 3, 2};                                       // +Z
+    auto S = side_make(R, pz, {0, 0, lod});
+    R->Trick.insert_after(It, S);
+
+    //if(S.vertex_coord(0) == S.vertex_coord(2))
+    //  set_nz(get(R->Origin.x, R->Origin.y, R->Origin.z + lod));
+  }
+
+  void rdb::set_nz(rig *R)
+  {
+    auto It = std::next(R->Trick.begin(), 1);
+    if(std::next(It) != R->Trick.end()) R->Trick.erase_after(It);
+    size_t nz[] = {3, 2, 1, 0};                                       // -Z
+    auto S = side_make(R, nz, {0, 0, -lod});
+    R->Trick.insert_after(It, S);
+
+    //if(S.vertex_coord(0) == S.vertex_coord(2))
+    //  set_pz(get(R->Origin.x, R->Origin.y, R->Origin.z - lod));
+  }
+
+  void rdb::set_px(rig *R)
+  {
+    auto It = std::next(R->Trick.begin(), 2);
+    if(std::next(It) != R->Trick.end()) R->Trick.erase_after(It);
+    size_t px[] = {2, 1, 0, 3};                                       // +X
+    auto S = side_make(R, px, {lod, 0, 0});
+    R->Trick.insert_after(It, S);
+
+    //if(S.vertex_coord(0) == S.vertex_coord(2))
+    //  set_nx(get(R->Origin.x + lod, R->Origin.y, R->Origin.z));
+  }
+
+  void rdb::set_nx(rig *R)
+  {
+    auto It = std::next(R->Trick.begin(), 3);
+    if(std::next(It) != R->Trick.end()) R->Trick.erase_after(It);
+    size_t nx[] = {0, 3, 2, 1};                                       // -X
+    auto S = side_make(R, nx, {-lod, 0, 0});
+    R->Trick.insert_after(It, S);
+
+    //if(S.vertex_coord(0) == S.vertex_coord(2))
+    //  set_px(get(R->Origin.x - lod, R->Origin.y, R->Origin.z));
+  }
+
+
+  ///
+  /// \brief rdb::sides_set
+  /// \param R
+  ///
+  void rdb::sides_set(rig *R)
+  {
+    set_pz(R);
+    set_nz(R);
+    set_px(R);
+    set_nx(R);
+  }
+
+
+  ///
   /// \brief rdb::add_y
   /// \details Увеличение размера по координате Y
   ///
@@ -130,49 +251,7 @@ namespace tr
 
     // выровнять все вершины по выбранной высоте
     for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = p_max;
-
-    snip S_lx {}; // Cнип для боковой стороны
-
-    // поиск вершин соседнего по оси +z рига
-    rig *Rpz = get(Pt.x, Pt.y, Pt.z + lod);
-
-    if(nullptr == Rpz) ERR("TODO: detached rig!");
-    snip Spz = Rpz->Trick.front();
-
-    size_t id_dst = 0, id_src = 3;
-    S_lx.data[ROW_SIZE * id_dst + X] = Spz.data[ROW_SIZE * id_src + X];
-    S_lx.data[ROW_SIZE * id_dst + Y] = Spz.data[ROW_SIZE * id_src + Y];
-    GLfloat v1 = S_lx.data[ROW_SIZE * id_dst + Y];
-    S_lx.data[ROW_SIZE * id_dst + Z] = Spz.data[ROW_SIZE * id_src + Z]+ lod;
-    S_lx.data[ROW_SIZE * id_dst + W] = Spz.data[ROW_SIZE * id_src + W];
-
-    id_dst = 1, id_src = 2;
-    S_lx.data[ROW_SIZE * id_dst + X] = Spz.data[ROW_SIZE * id_src + X];
-    S_lx.data[ROW_SIZE * id_dst + Y] = Spz.data[ROW_SIZE * id_src + Y];
-    GLfloat v2 = S_lx.data[ROW_SIZE * id_dst + Y];
-    S_lx.data[ROW_SIZE * id_dst + Z] = Spz.data[ROW_SIZE * id_src + Z]+ lod;
-    S_lx.data[ROW_SIZE * id_dst + W] = Spz.data[ROW_SIZE * id_src + W];
-
-    id_dst = 2, id_src = 1;
-    S_lx.data[ROW_SIZE * id_dst + X] = S.data[ROW_SIZE * id_src + X];
-    S_lx.data[ROW_SIZE * id_dst + Y] = S.data[ROW_SIZE * id_src + Y];
-    v1 += lod - S_lx.data[ROW_SIZE * id_dst + Y];
-    S_lx.data[ROW_SIZE * id_dst + Z] = S.data[ROW_SIZE * id_src + Z];
-    S_lx.data[ROW_SIZE * id_dst + W] = S.data[ROW_SIZE * id_src + W];
-
-    id_dst = 3, id_src = 0;
-    S_lx.data[ROW_SIZE * id_dst + X] = S.data[ROW_SIZE * id_src + X];
-    S_lx.data[ROW_SIZE * id_dst + Y] = S.data[ROW_SIZE * id_src + Y];
-    v2 += lod - S_lx.data[ROW_SIZE * id_dst + Y];
-    S_lx.data[ROW_SIZE * id_dst + Z] = S.data[ROW_SIZE * id_src + Z];
-    S_lx.data[ROW_SIZE * id_dst + W] = S.data[ROW_SIZE * id_src + W];
-
-    S_lx.texture_set(0, 4, v1, v2);
-
-    auto It = R->Trick.begin();
-    if(++It != R->Trick.end()) R->Trick.erase_after(R->Trick.begin());
-    R->Trick.insert_after(R->Trick.begin(), S_lx);
-
+    sides_set(R); // настроить боковые стороны
     place(Pt.x, Pt.y, Pt.z); // записать модифицированый риг в графический буфер
   }
 
@@ -242,7 +321,7 @@ namespace tr
     if(nullptr == R) return;
 
     auto highlight = R->Trick.front();
-    highlight.texture_set(0, 0); // белая текстура
+    highlight.texture_set(0, 7); // белая текстура
 
     for(size_t n = 0; n < tr::vertices_per_snip; n++)
     {
