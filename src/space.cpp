@@ -104,7 +104,7 @@ namespace tr
     for(int x = xMin; x<= xMax; x += g1)
       for(int y = yMin; y<= yMax; y += g1)
         for(int z = zMin; z<= zMax; z += g1)
-          RigsDb0.place(x, y, z);
+          RigsDb0.place(RigsDb0.get(x, y, z));
 
     try {
       MoveFrom = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
@@ -145,14 +145,14 @@ namespace tr
     zMax = MoveFrom.z + clod_0;
     for(int y = yMin; y <= yMax; y += g1)
       for(int z = zMin; z <= zMax; z += g1)
-        RigsDb0.remove(x_old, y, z);
+        RigsDb0.remove(RigsDb0.get(x_old, y, z));
 
     // Добавить линию элементов по направлению движения
     zMin = vf_z - clod_0;
     zMax = vf_z + clod_0;
     for(int y = yMin; y <= yMax; y += g1)
       for(int z = zMin; z <= zMax; z += g1)
-        RigsDb0.place(x_new, y, z);
+        RigsDb0.place(RigsDb0.get(x_new, y, z));
 
     MoveFrom.x = vf_x;
   }
@@ -186,14 +186,14 @@ namespace tr
     xMax = MoveFrom.x + clod_0;
     for(int y = yMin; y <= yMax; y += g1)
       for(int x = xMin; x <= xMax; x += g1)
-        RigsDb0.remove(x, y, z_old);
+        RigsDb0.remove(RigsDb0.get(x, y, z_old));
 
     // Добавить линию элементов по направлению движения
     xMin = vf_x - clod_0;
     xMax = vf_x + clod_0;
     for(int y = yMin; y <= yMax; y += g1)
       for(int x = xMin; x <= xMax; x += g1)
-        RigsDb0.place(x, y, z_new);
+        RigsDb0.place(RigsDb0.get(x, y, z_new));
 
     MoveFrom.z = vf_z;
   }
@@ -294,7 +294,7 @@ namespace tr
     if(nullptr == R) return;                       // если пересечение не найдено - выход
 
     // Проверяем верхний снип в найденном риге
-    auto S = R->Trick.front();
+    auto S = R->SideYp.front();
     glm::vec4 mv { R->Origin.x, R->Origin.y, R->Origin.z, 0 };
 
    // Проекции точек снипа на плоскость камеры

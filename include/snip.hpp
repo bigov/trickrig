@@ -19,6 +19,9 @@ namespace tr
   //## Набор данных для формирования в GPU многоугольника с индексацией вершин
   struct snip
   {
+    GLfloat u_size = 0.125f; // размер ячейки текстуры по U
+    GLfloat v_size = 0.125f; // размер ячейки текстуры по V
+
     GLsizeiptr data_offset = 0; // положение блока данных в буфере GPU
 
     // Блок данных для передачи в буфер GPU
@@ -36,14 +39,16 @@ namespace tr
 
     snip& operator=(const snip &);      // оператор присваивания
     void copy_data(const snip &);       // копирование данных из другого снипа
+    void shift(const glm::vec3&);       // сдвиг снипа на вектор
+    void flip_y(void);                  // переворот по вертикали
 
     void texture_set(GLfloat u, GLfloat v); // установка текстур
-    void texture_set_top(GLfloat u, GLfloat v, GLfloat v1 = 0.0f, GLfloat v2 = 0.0f);
+    void texture_fragment(GLfloat, GLfloat, const std::array<float, 8>&);
 
     // Функции управления данными снипа в буферах VBO данных и VBO индекса
-    void vbo_append(const f3d &, vbo &);
-    bool vbo_update(const f3d &, vbo &, GLsizeiptr);
-    void vbo_jam (vbo &, GLintptr);
+    void vbo_append(const f3d&, vbo&);
+    bool vbo_update(const f3d&, vbo&, GLsizeiptr);
+    void vbo_jam (vbo&, GLintptr);
     glm::vec4 vertex_coord(size_t);
   };
 

@@ -9,15 +9,14 @@
 namespace tr
 {
 
+
 ///
-/// Дублирующий конструктор
+/// \brief rig::rig
+/// \param Other
 ///
 rig::rig(const tr::rig & Other)
 {
-  born = Other.born;
-  for(int i = 0; i < SHIFT_DIGITS; i++) shift[i] = Other.shift[i];
-  Trick.clear();
-  for(snip Snip: Other.Trick) Trick.push_front(Snip);
+  copy_data(Other);
 }
 
 
@@ -30,12 +29,34 @@ rig& rig::operator= (const rig &Other)
 {
   if(this != &Other)
   {
-    born = get_msec();
-    for(int i = 0; i < SHIFT_DIGITS; i++) shift[i] = Other.shift[i];
-    Trick.clear();
-    for(snip Snip: Other.Trick) Trick.push_front(Snip);
+    copy_data(Other);
   }
   return *this;
+}
+
+
+///
+/// \brief rig::copy_sides
+/// \param Other
+///
+void rig::copy_data(const rig &Other)
+{
+  born = Other.born;
+  for(int i = 0; i < SHIFT_DIGITS; i++) shift[i] = Other.shift[i];
+
+  SideXp.clear();
+  SideXn.clear();
+  SideYp.clear();
+  SideYn.clear();
+  SideZp.clear();
+  SideZn.clear();
+
+  SideXp = Other.SideXp;
+  SideXn = Other.SideXn;
+  SideYp = Other.SideYp;
+  SideYn = Other.SideYn;
+  SideZp = Other.SideZp;
+  SideZn = Other.SideZn;
 }
 
 } //tr

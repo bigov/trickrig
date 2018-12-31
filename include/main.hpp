@@ -202,6 +202,10 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
                                        y(static_cast<float>(y)),
                                        z(static_cast<float>(z)) {}
 
+    f3d(i3d P): x(static_cast<float>(P.x)),
+                y(static_cast<float>(P.y)),
+                z(static_cast<float>(P.z)) {}
+
     f3d(int x, int y, int z): x(static_cast<float>(x)),
                               y(static_cast<float>(y)),
                               z(static_cast<float>(z)) {}

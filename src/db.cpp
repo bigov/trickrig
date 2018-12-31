@@ -129,7 +129,7 @@ rig db::load_rig(const i3d &P, const std::string& file_name)
     BufVector.clear();
     BufVector = std::any_cast<std::vector<unsigned char>>(Row[0]);
     memcpy(Snip.data, BufVector.data(), tr::bytes_per_snip);
-    Rig.Trick.push_front(Snip);
+    Rig.SideYp.insert(Rig.SideYp.begin(), Snip);
   }
 
   if(!file_name.empty()) SqlDb.close();
@@ -155,7 +155,7 @@ void db::save_rig(const i3d &P, const rig *R)
   int id_area = 0;
   SqlDb.open(MapPFName);
 
-  for(auto & Snip: R->Trick)
+  for(auto & Snip: R->SideYp)
   {
     // Запись снипа
     SqlDb.insert_snip(id_area, Snip.data);
@@ -202,7 +202,7 @@ void db::save_rigs_block(const i3d &From, const i3d &To, rdb &RDB )
         if(nullptr != R)
         {
           id_area = 0;
-          for(auto & Snip: R->Trick)
+          for(auto & Snip: R->SideYp)
           {
             // Запись снипа
             SqlDb.insert_snip(id_area, Snip.data);

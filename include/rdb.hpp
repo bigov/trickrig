@@ -42,20 +42,21 @@ namespace tr
       GLsizei render_points = 0;             // число точек передаваемых в рендер
 
       void _load_16x16_obj(void);
-      void put_in_vbo(rig*, const f3d&);     // разместить данные в VBO буфере
-      void clear_cashed_snips(void);         // очистка промежуточного кэша
-      void sides_set(rig*);                  // настройка боковых сторон
-      snip side_make(rig*, size_t*, i3d);    // настройка боковой стороны
-      void set_pz(rig*);
-      void set_nz(rig*);
-      void set_px(rig*);
-      void set_nx(rig*);
+      void side_place(std::vector<snip>&, const f3d&); // разместить данные в VBO буфере
+      void side_remove(std::vector<snip>&);            // убрать данные из рендера
+      void clear_cashed_snips(void);                   // очистка промежуточного кэша
+      void sides_set(rig*);                   // настройка боковых сторон
+      void side_make(const std::array<glm::vec4, 4>&, snip&);    // настройка боковой стороны
+      void set_Zp(rig*);
+      void set_Zn(rig*);
+      void set_Xp(rig*);
+      void set_Xn(rig*);
 
     public:
-      rdb(void);                             // конструктор
-      void place(int, int, int);             // разместить данные в VBO буфере
-      void remove(int, int, int);            // убрать трик из рендера
-      void draw(void);                       // Рендер кадра
+      rdb(void);                       // конструктор
+      void place(rig*);                // разместить данные в VBO буфере
+      void remove(rig*);               // убрать риг из рендера
+      void draw(void);                 // Рендер кадра
 
       void add_x(const i3d &);
       void add_y(const i3d &);

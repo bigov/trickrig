@@ -11,6 +11,23 @@
 
 namespace tr
 {
+
+/// DEGUG
+void show_texture(float* d)
+{
+
+  char buf[256];
+  std::sprintf(buf,
+    "    u      v   \n"
+    " --------------\n"
+    " %+5.3f, %+5.3f\n"
+    " %+5.3f, %+5.3f\n"
+    " %+5.3f, %+5.3f\n"
+    " %+5.3f, %+5.3f\n\n",
+      d[12], d[13], d[26], d[27], d[40], d[41], d[54], d[55]);
+  std::cout << buf;
+}
+
   ///
   /// \brief rdb::rdb
   /// \details КОНСТРУКТОР
@@ -104,207 +121,272 @@ namespace tr
   }
 
 
-  ///
-  /// \brief rdb::side_make Формирование боковой стороны рига
-  /// \param R
-  ///
-  snip rdb::side_make(rig *R, size_t *src, i3d P)
+///
+/// \brief rdb::side_make Формирование боковой стороны рига
+/// \param R
+///
+void rdb::side_make(const std::array<glm::vec4, 4>& v, snip& S)
+{
+  for(size_t i = 0; i < v.size(); ++i)
   {
-    snip &S_py = R->Trick.front(); // верхняя сторона
-    snip S {};                     // Боковая сторона
+    S.data[ROW_SIZE * i + X] = v[i].x;
+    S.data[ROW_SIZE * i + Y] = v[i].y;
+    S.data[ROW_SIZE * i + Z] = v[i].z;
+  }
+}
 
-    // поиск вершин соседнего рига
-    rig *R_neighbor = get(R->Origin.x + P.x, R->Origin.y, R->Origin.z + P.z);
 
-    if(nullptr == R_neighbor) ERR("TODO: detached rig!");
-    snip &S_nb = R_neighbor->Trick.front();
+///
+/// \brief rdb::set_Zn
+/// \param R
+///
+/// \details -Z
+///
+void rdb::set_Zn(rig *R0)
+{
+  rig* R1 = get(R0->Origin.x, R0->Origin.y, R0->Origin.z - lod);
+  if(R1 == nullptr) return; // TODO - в этом случае надо нарисовать низ
+  remove(R1);
 
-    size_t i = 0;
-    S.data[ROW_SIZE * i + X] = S_py.data[ROW_SIZE * src[i] + X];
-    S.data[ROW_SIZE * i + Y] = S_py.data[ROW_SIZE * src[i] + Y];
-    S.data[ROW_SIZE * i + Z] = S_py.data[ROW_SIZE * src[i] + Z];
-    GLfloat v1 = lod - S.data[ROW_SIZE * i + Y];
+  R0->SideZn.clear();
+  R1->SideZp.clear();
 
-    i = 1;
-    S.data[ROW_SIZE * i + X] = S_py.data[ROW_SIZE * src[i] + X];
-    S.data[ROW_SIZE * i + Y] = S_py.data[ROW_SIZE * src[i] + Y];
-    S.data[ROW_SIZE * i + Z] = S_py.data[ROW_SIZE * src[i] + Z];
-    GLfloat v2 = lod - S.data[ROW_SIZE * i + Y];
+  snip& S0 = R0->SideYp.front();
+  snip& S1 = R1->SideYp.front();
 
-    i = 2;
-    if(S.data[Y] > S_nb.data[ROW_SIZE * src[i] + Y])
+  glm::vec4
+  v0 = S0.vertex_coord(3), v1 = S0.vertex_coord(2),
+  v2 = S1.vertex_coord(1), v3 = S1.vertex_coord(0),
+  dt {0, 0, -lod, 0};
+
+  snip S {};
+
+  if(v0.y > v2.y) {
+    side_make( {v0, v1, v2 + dt, v3 + dt}, S);
+    S.texture_fragment( 1, 3, {v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, v3.x, v3.y} );
+    R0->SideZn.push_back(S);
+  } else {
+    side_make( {v2, v3, v0 - dt, v1 - dt}, S);
+    S.texture_fragment( 1, 3, {lod-v2.x, v2.y, lod-v3.x, v3.y, lod-v0.x, v0.y, lod-v1.x, v1.y} );
+    R1->SideZp.push_back(S);
+  }
+
+  place(R1);
+}
+
+
+///
+/// \brief rdb::set_Zp
+/// \param R
+///
+/// \details +Z
+///
+void rdb::set_Zp(rig* R0)
+{
+  rig* R1 = get(R0->Origin.x, R0->Origin.y, R0->Origin.z + lod);
+  if(R1 == nullptr) return; // TODO - в этом случае надо нарисовать низ
+  remove(R1);
+
+  R0->SideZp.clear();
+  R1->SideZn.clear();
+
+  snip& S0 = R0->SideYp.front();
+  snip& S1 = R1->SideYp.front();
+
+  glm::vec4
+  v0 = S0.vertex_coord(1), v1 = S0.vertex_coord(0),
+  v2 = S1.vertex_coord(3), v3 = S1.vertex_coord(2),
+  dt {0, 0, lod, 0};
+
+  snip S {};
+
+  if(v0.y > v2.y) {
+    side_make( {v0, v1, v2 + dt, v3 + dt}, S);
+    S.texture_fragment( 1, 3, {lod-v0.x, v0.y, lod-v1.x, v1.y, lod-v2.x, v2.y, lod-v3.x, v3.y} );
+    R0->SideZp.push_back(S);
+  } else {
+    side_make( {v2, v3, v0 - dt, v1 - dt}, S);
+    S.texture_fragment( 1, 3, {v2.x, v2.y, v3.x, v3.y, v0.x, v0.y, v1.x, v1.y} );
+    R1->SideZn.push_back(S);
+  }
+
+  place(R1);
+}
+
+
+///
+/// \brief rdb::set_Xp
+/// \param R
+///
+/// +X: {2, 1, 0, 3}
+///
+void rdb::set_Xp(rig* R0)
+{
+  rig* R1 = get(R0->Origin.x + lod, R0->Origin.y, R0->Origin.z);
+  if(R1 == nullptr) return; // TODO - в этом случае надо нарисовать низ
+  remove(R1);
+
+  R0->SideXp.clear();
+  R1->SideXn.clear();
+
+  snip& S0 = R0->SideYp.front();
+  snip& S1 = R1->SideYp.front();
+
+  glm::vec4
+  v0 = S0.vertex_coord(2), v1 = S0.vertex_coord(1),
+  v2 = S1.vertex_coord(0), v3 = S1.vertex_coord(3),
+  dt {lod, 0, 0, 0};
+
+  snip S {};
+
+  if(v0.y > v2.y) {
+    side_make( {v0, v1, v2 + dt, v3 + dt}, S);
+    S.texture_fragment( 1, 3, {v0.z, v0.y, v1.z, v1.y, v2.z, v2.y, v3.z, v3.y} );
+    R0->SideXp.push_back(S);
+  } else {
+    side_make( {v2, v3, v0 - dt, v1 - dt}, S);
+    S.texture_fragment( 1, 3, {lod-v2.z, v2.y, lod-v3.z, v3.y, lod-v0.z, v0.y, lod-v1.z, v1.y} );
+    R1->SideXn.push_back(S);
+  }
+
+  place(R1);
+}
+
+
+///
+/// \brief rdb::set_Xn
+/// \param R
+///
+/// -X: {0, 3, 2, 1}
+///
+void rdb::set_Xn(rig* R0)
+{
+  rig* R1 = get(R0->Origin.x - lod, R0->Origin.y, R0->Origin.z);
+  if(R1 == nullptr) return; // TODO - в этом случае надо нарисовать низ
+  remove(R1);
+
+  R0->SideXn.clear();
+  R1->SideXp.clear();
+
+  snip& S0 = R0->SideYp.front();
+  snip& S1 = R1->SideYp.front();
+
+  glm::vec4
+  v0 = S0.vertex_coord(0), v1 = S0.vertex_coord(3),
+  v2 = S1.vertex_coord(2), v3 = S1.vertex_coord(1),
+  dt {-lod, 0, 0, 0};
+
+  snip S {};
+
+  if(v0.y > v2.y) {
+    side_make( {v0, v1, v2 + dt, v3 + dt}, S);
+    S.texture_fragment( 1, 3, {lod-v0.z, v0.y, lod-v1.z, v1.y, lod-v2.z, v2.y, lod-v3.z, v3.y} );
+    R0->SideXn.push_back(S);
+  } else {
+    side_make( {v2, v3, v0 - dt, v1 - dt}, S);
+    S.texture_fragment( 1, 3, {v2.z, v2.y, v3.z, v3.y, v0.z, v0.y, v1.z, v1.y} );
+    R1->SideXp.push_back(S);
+  }
+
+  place(R1);
+}
+
+
+///
+/// \brief rdb::sides_set
+/// \param R
+///
+void rdb::sides_set(rig* R)
+{
+  set_Zp(R);
+  set_Zn(R);
+  set_Xp(R);
+  set_Xn(R);
+}
+
+
+///
+/// \brief rdb::add_y
+/// \details Увеличение размера по координате Y
+///
+void rdb::add_y(const i3d &Pt)
+{
+  rig *R = get(Pt);         //1. Выбрать целевой риг
+  remove(R); // убрать риг из графического буфера
+
+  if(nullptr == R) ERR ("Error on rig grooving by Y.");
+  float y = .0f;
+  snip &S = R->SideYp.front();
+
+  // найти вершину с максимальным значением Y
+  for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) y = std::max(y, S.data[i]);
+
+  // округлить до ближайшей сверху четверти
+  if(y >= 0.75f) y = 1.00f;
+  else if (y >= 0.50f) y = 0.75f;
+  else if (y >= 0.25f) y = 0.50f;
+  else y = 0.25f;
+
+  // выровнять все вершины по выбранной высоте
+  for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = y;
+  sides_set(R); // настроить боковые стороны
+  place(R);     // записать модифицированый риг в графический буфер
+}
+
+
+///
+/// Добавление в графический буфер элементов, расположенных в точке (x, y, z)
+///
+void rdb::place(rig* R)
+{
+  if(nullptr == R) return;   // TODO: тут можно подгружать или дебажить
+  if(R->in_vbo) return;      // Если данные уже в VBO - ничего не делаем
+
+  f3d Point = {
+    static_cast<float>(R->Origin.x) + R->shift[SHIFT_X],
+    static_cast<float>(R->Origin.y) + R->shift[SHIFT_Y],
+    static_cast<float>(R->Origin.z) + R->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
+  };
+
+  side_place(R->SideXp, Point);
+  side_place(R->SideXn, Point);
+  side_place(R->SideYp, Point);
+  side_place(R->SideYn, Point);
+  side_place(R->SideZp, Point);
+  side_place(R->SideZn, Point);
+
+  R->in_vbo = true;
+}
+
+
+///
+/// \brief rdb::put_in_vbo
+/// \param Rig
+/// \param Point
+///
+void rdb::side_place(std::vector<snip>& Side, const f3d& Point)
+{
+  for(snip& Snip: Side)
+  {
+    bool data_is_recieved = false;
+    while (!data_is_recieved)
     {
-      S.data[ROW_SIZE * i + X] = S_nb.data[ROW_SIZE * src[i] + X] + P.x;
-      S.data[ROW_SIZE * i + Y] = S_nb.data[ROW_SIZE * src[i] + Y];
-      S.data[ROW_SIZE * i + Z] = S_nb.data[ROW_SIZE * src[i] + Z] + P.z;
-      v1 += S.data[ROW_SIZE * i + Y];
-    } else {
-      S.data[ROW_SIZE * i + X] = S.data[X];
-      S.data[ROW_SIZE * i + Y] = S.data[Y];
-      S.data[ROW_SIZE * i + Z] = S.data[Z];
-    }
-
-    i = 3;
-    if(S.data[ROW_SIZE + Y] > S_nb.data[ROW_SIZE * src[i] + Y])
-    {
-      S.data[ROW_SIZE * i + X] = S_nb.data[ROW_SIZE * src[i] + X] + P.x;
-      S.data[ROW_SIZE * i + Y] = S_nb.data[ROW_SIZE * src[i] + Y];
-      S.data[ROW_SIZE * i + Z] = S_nb.data[ROW_SIZE * src[i] + Z] + P.z;
-      v2 += S.data[ROW_SIZE * i + Y];
-    } else {
-      S.data[ROW_SIZE * i + X] = S.data[ROW_SIZE + X];
-      S.data[ROW_SIZE * i + Y] = S.data[ROW_SIZE + Y];
-      S.data[ROW_SIZE * i + Z] = S.data[ROW_SIZE + Z];
-    }
-
-    S.texture_set_top(0, 4, v1, v2);
-    return std::move(S);
-  }
-
-
-  ///
-  void rdb::set_pz(rig *R)
-  {
-    auto It = R->Trick.begin();
-    if(std::next(It) != R->Trick.end()) R->Trick.erase_after(It);
-    size_t pz[] = {1, 0, 3, 2};                                       // +Z
-    auto S = side_make(R, pz, {0, 0, lod});
-    R->Trick.insert_after(It, S);
-
-    //if(S.vertex_coord(0) == S.vertex_coord(2))
-    //  set_nz(get(R->Origin.x, R->Origin.y, R->Origin.z + lod));
-  }
-
-  void rdb::set_nz(rig *R)
-  {
-    auto It = std::next(R->Trick.begin(), 1);
-    if(std::next(It) != R->Trick.end()) R->Trick.erase_after(It);
-    size_t nz[] = {3, 2, 1, 0};                                       // -Z
-    auto S = side_make(R, nz, {0, 0, -lod});
-    R->Trick.insert_after(It, S);
-
-    //if(S.vertex_coord(0) == S.vertex_coord(2))
-    //  set_pz(get(R->Origin.x, R->Origin.y, R->Origin.z - lod));
-  }
-
-  void rdb::set_px(rig *R)
-  {
-    auto It = std::next(R->Trick.begin(), 2);
-    if(std::next(It) != R->Trick.end()) R->Trick.erase_after(It);
-    size_t px[] = {2, 1, 0, 3};                                       // +X
-    auto S = side_make(R, px, {lod, 0, 0});
-    R->Trick.insert_after(It, S);
-
-    //if(S.vertex_coord(0) == S.vertex_coord(2))
-    //  set_nx(get(R->Origin.x + lod, R->Origin.y, R->Origin.z));
-  }
-
-  void rdb::set_nx(rig *R)
-  {
-    auto It = std::next(R->Trick.begin(), 3);
-    if(std::next(It) != R->Trick.end()) R->Trick.erase_after(It);
-    size_t nx[] = {0, 3, 2, 1};                                       // -X
-    auto S = side_make(R, nx, {-lod, 0, 0});
-    R->Trick.insert_after(It, S);
-
-    //if(S.vertex_coord(0) == S.vertex_coord(2))
-    //  set_px(get(R->Origin.x - lod, R->Origin.y, R->Origin.z));
-  }
-
-
-  ///
-  /// \brief rdb::sides_set
-  /// \param R
-  ///
-  void rdb::sides_set(rig *R)
-  {
-    set_pz(R);
-    set_nz(R);
-    set_px(R);
-    set_nx(R);
-  }
-
-
-  ///
-  /// \brief rdb::add_y
-  /// \details Увеличение размера по координате Y
-  ///
-  void rdb::add_y(const i3d &Pt)
-  {
-    remove(Pt.x, Pt.y, Pt.z); // убрать риг из графического буфера
-
-    //1. Выбрать целевой риг
-    rig *R = get(Pt);
-    if(nullptr == R) ERR ("Error on rig grooving by Y.");
-
-    float p_max = .0f;
-    snip &S = R->Trick.front();
-
-    // найти вершину с максимальным значением Y
-    for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) p_max = std::max(p_max, S.data[i]);
-
-    // округлить до ближайшей сверху четверти
-    if(p_max >= 0.75f) p_max = 1.00f;
-    else if (p_max >= 0.50f) p_max = 0.75f;
-    else if (p_max >= 0.25f) p_max = 0.50f;
-    else p_max = 0.25f;
-
-    // выровнять все вершины по выбранной высоте
-    for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = p_max;
-    sides_set(R); // настроить боковые стороны
-    place(Pt.x, Pt.y, Pt.z); // записать модифицированый риг в графический буфер
-  }
-
-
-  ///
-  /// Добавление в графический буфер элементов, расположенных в точке (x, y, z)
-  ///
-  void rdb::place(int x, int y, int z)
-  {
-    rig *Rig = get(x, y, z);
-    if(nullptr == Rig) return;   // TODO: тут можно подгружать или дебажить
-
-    f3d Point = {
-      static_cast<float>(x) + Rig->shift[SHIFT_X],
-      static_cast<float>(y) + Rig->shift[SHIFT_Y],
-      static_cast<float>(z) + Rig->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
-    };
-
-    put_in_vbo(Rig, Point);
-  }
-
-
-  ///
-  /// \brief rdb::put_in_vbo
-  /// \param Rig
-  /// \param Point
-  ///
-  void rdb::put_in_vbo(rig *Rig, const f3d &Point)
-  {
-    if(Rig->in_vbo) return;      // Если данные уже в VBO - ничего не делаем
-
-    for(snip &Snip: Rig->Trick)
-    {
-      bool data_is_recieved = false;
-      while (!data_is_recieved)
+      if(CachedOffset.empty()) // Если кэш пустой, то добавляем данные в конец VBO
       {
-        if(CachedOffset.empty()) // Если кэш пустой, то добавляем данные в конец VBO
-        {
-          Snip.vbo_append(Point, VBOdata);
-          render_points += tr::indices_per_snip;  // увеличить число точек рендера
-          VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
-          data_is_recieved = true;
-        }
-        else // если в кэше есть адреса свободных мест, то используем
-        {    // их с контролем, успешно ли был перемещен блок данных
-          data_is_recieved = Snip.vbo_update(Point, VBOdata, CachedOffset.front());
-          CachedOffset.pop_front();                                    // укоротить кэш
-          if(data_is_recieved) VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
-        }
+        Snip.vbo_append(Point, VBOdata);
+        render_points += tr::indices_per_snip;  // увеличить число точек рендера
+        VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
+        data_is_recieved = true;
+      }
+      else // если в кэше есть адреса свободных мест, то используем
+      {    // их с контролем, успешно ли был перемещен блок данных
+        data_is_recieved = Snip.vbo_update(Point, VBOdata, CachedOffset.front());
+        CachedOffset.pop_front();                                    // укоротить кэш
+        if(data_is_recieved) VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
       }
     }
-    Rig->in_vbo = true;
   }
+}
 
 
   ///
@@ -320,7 +402,7 @@ namespace tr
     rig* R = get(sel.x, sel.y, sel.z);
     if(nullptr == R) return;
 
-    auto highlight = R->Trick.front();
+    auto highlight = R->SideYp.front();
     highlight.texture_set(0, 7); // белая текстура
 
     for(size_t n = 0; n < tr::vertices_per_snip; n++)
@@ -336,30 +418,48 @@ namespace tr
   }
 
 
-  ///
-  /// \brief rdb::remove_from_vbo
-  /// \param x
-  /// \param y
-  /// \param z
-  /// \details убрать риг из рендера
-  ///
-  void rdb::remove(int x, int y, int z)
-  {
-  /// Индексы размещенных в VBO данных, которые при перемещении камеры вышли
-  /// за границу отображения, запоминаются в кэше, чтобы на их место
-  /// записать данные вершин, которые вошли в поле зрения с другой стороны.
-  ///
-    tr::rig * Rig = get(x, y, z);
-    if(nullptr == Rig) return;
-    if(!Rig->in_vbo) return;
+///
+/// \brief rdb::remove_from_vbo
+/// \param x
+/// \param y
+/// \param z
+/// \details убрать риг из рендера
+///
+/// Индексы размещенных в VBO данных, которые при перемещении камеры вышли
+/// за границу отображения, запоминаются в кэше, чтобы на их место
+/// записать данные вершин, которые вошли в поле зрения с другой стороны.
+///
+void rdb::remove(rig* Rig)
+{
+  if(nullptr == Rig) return;
+  if(!Rig->in_vbo) return;
 
-    for(auto & Snip: Rig->Trick)
-    {
-      VisibleSnips.erase(Snip.data_offset);
-      CachedOffset.push_front(Snip.data_offset);
-    }
-    Rig->in_vbo = false;
+  side_remove(Rig->SideYp);
+  side_remove(Rig->SideYn);
+  side_remove(Rig->SideZp);
+  side_remove(Rig->SideZn);
+  side_remove(Rig->SideXp);
+  side_remove(Rig->SideXn);
+
+  Rig->in_vbo = false;
+}
+
+
+///
+/// \brief rdb::side_remove
+/// \param Side
+///
+void rdb::side_remove(std::vector<snip>& Side)
+{
+  if(Side.empty()) return;
+
+  for(auto& Snip: Side)
+  {
+    VisibleSnips.erase(Snip.data_offset);
+    CachedOffset.push_front(Snip.data_offset);
   }
+}
+
 
 
   ///
