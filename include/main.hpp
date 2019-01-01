@@ -129,9 +129,13 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
     int fps = 120;        // частота кадров (для коррекции скорости движения)
     glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина прицела
 
-    //int key    = -1;  // клавиша
-    //int mouse  = -1;  // кнопка мыши
-    //int action = -1;  // действие
+    struct texture_coord {float u=0.f, v=4.f;};
+    texture_coord texYp { 0.f, 3.f };
+    texture_coord texYn {};
+    texture_coord texXp {};
+    texture_coord texXn {};
+    texture_coord texZp {};
+    texture_coord texZn {};
 
     char set_mouse_ptr = 0;           // запрос смены типа курсора {-1, 0, 1}
   };
@@ -156,9 +160,9 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
   static const int lod0_size = 25;
 
   // число вершин в одном снипе
-  static const size_t vertices_per_snip = 4;
+  static const u_int vertices_per_snip = 4;
   // число индексов в одном снипе
-  static const size_t indices_per_snip = 6;
+  static const u_int indices_per_snip = 6;
   // количество чисел (GLfloat) в блоке данных одной вершины
   static const size_t digits_per_vertex = 14;
   // количество чисел (GLfloat) в блоке данных снипа

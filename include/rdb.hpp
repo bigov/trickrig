@@ -39,7 +39,7 @@ namespace tr
       glsl Prog3d {};                        // GLSL программа шейдеров
 
       GLuint space_vao = 0;                  // ID VAO
-      GLsizei render_points = 0;             // число точек передаваемых в рендер
+      u_int render_points = 0;             // число точек передаваемых в рендер
 
       void _load_16x16_obj(void);
       void side_place(std::vector<snip>&, const f3d&); // разместить данные в VBO буфере
@@ -51,6 +51,7 @@ namespace tr
       void set_Zn(rig*);
       void set_Xp(rig*);
       void set_Xn(rig*);
+      void append_rig_Yp(const i3d&);
 
     public:
       rdb(void);                       // конструктор
@@ -69,8 +70,6 @@ namespace tr
       void load_space(int, const glm::vec3 &);    // загрузка уровня
       void highlight(const i3d &);
 
-      rig* get(const glm::vec3 &);
-      rig* get(int x, int y, int z);
       rig* get(const i3d &);
 
       i3d search_down(int, int, int);

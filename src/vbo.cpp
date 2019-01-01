@@ -72,11 +72,13 @@ void vbo::shrink(GLsizeiptr delta)
 
   //## Настройка атрибутов для float
   void vbo::attrib(GLuint index, GLint d_size, GLenum type, GLboolean normalized,
-    GLsizei stride, const GLvoid* pointer)
+    GLsizei stride, size_t pointer)
+//    GLsizei stride, const GLvoid* pointer)
   {
     glEnableVertexAttribArray(index);
     glBindBuffer(gl_buffer_type, id);
-    glVertexAttribPointer(index, d_size, type, normalized, stride, pointer);
+    glVertexAttribPointer(index, d_size, type, normalized, stride,
+                          reinterpret_cast<void*>(pointer));
     glBindBuffer(gl_buffer_type, 0);
   }
 

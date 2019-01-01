@@ -13,17 +13,17 @@ namespace tr
 {
 
 /// DEGUG
-void show_texture(float* d)
+void show_texture(double* d)
 {
 
   char buf[256];
   std::sprintf(buf,
     "    u      v   \n"
     " --------------\n"
-    " %+5.3f, %+5.3f\n"
-    " %+5.3f, %+5.3f\n"
-    " %+5.3f, %+5.3f\n"
-    " %+5.3f, %+5.3f\n\n",
+    " %+5.3lf, %+5.3lf\n"
+    " %+5.3lf, %+5.3lf\n"
+    " %+5.3lf, %+5.3lf\n"
+    " %+5.3lf, %+5.3lf\n\n",
       d[12], d[13], d[26], d[27], d[40], d[41], d[54], d[55]);
   std::cout << buf;
 }
@@ -45,23 +45,23 @@ void show_texture(float* d)
     glBindVertexArray(space_vao);
 
     // Число элементов в кубе с длиной стороны = "space_i0_length" элементов:
-    unsigned n = pow((tr::lod0_size + tr::lod0_size + 1), 3);
+    u_int n = static_cast<u_int>(pow((lod0_size + lod0_size + 1), 3));
 
     // Размер данных VBO для размещения снипов:
-    VBOdata.allocate(n * tr::bytes_per_snip);
+    VBOdata.allocate(n * bytes_per_snip);
 
     // настройка положения атрибутов
     VBOdata.attrib(Prog3d.attrib_location_get("position"),
-      4, GL_FLOAT, GL_FALSE, tr::bytes_per_vertex, (void*)(0 * sizeof(GLfloat)));
+      4, GL_FLOAT, GL_FALSE, tr::bytes_per_vertex, 0 * sizeof(GLfloat));
 
     VBOdata.attrib(Prog3d.attrib_location_get("color"),
-      4, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, (void*)(4 * sizeof(GLfloat)));
+      4, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, 4 * sizeof(GLfloat));
 
     VBOdata.attrib(Prog3d.attrib_location_get("normal"),
-      4, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, (void*)(8 * sizeof(GLfloat)));
+      4, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, 8 * sizeof(GLfloat));
 
     VBOdata.attrib(Prog3d.attrib_location_get("fragment"),
-      2, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, (void*)(12 * sizeof(GLfloat)));
+      2, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, 12 * sizeof(GLfloat));
 
     //
     // Так как все четырехугольники в снипах индексируются одинаково, то индексный массив
@@ -102,7 +102,7 @@ void show_texture(float* d)
     glEnable(GL_DEPTH_TEST);
 
     // можно все нарисовать за один проход
-    glDrawElements(GL_TRIANGLES, render_points, GL_UNSIGNED_INT, nullptr);
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(render_points), GL_UNSIGNED_INT, nullptr);
 
     // а можно, если потребуется, то пошагово по ячейкам -
     //GLsizei max = (render_points / indices_per_snip) * vertices_per_snip;
@@ -144,11 +144,27 @@ void rdb::side_make(const std::array<glm::vec4, 4>& v, snip& S)
 ///
 void rdb::set_Zn(rig *R0)
 {
-  rig* R1 = get(R0->Origin.x, R0->Origin.y, R0->Origin.z - lod);
-  if(R1 == nullptr) return; // TODO - в этом случае надо нарисовать низ
-  remove(R1);
-
   R0->SideZn.clear();
+
+  rig* R1 = get({R0->Origin.x, R0->Origin.y, R0->Origin.z - lod});
+  if(R1 == nullptr) // Если рядом нет блока, то боковая стенка строится от низа рига
+    {
+      glm::vec4
+      v0 = R0->SideYp.front().vertex_coord(3),
+      v1 = R0->SideYp.front().vertex_coord(2),
+      v2 = R0->SideYp.front().vertex_coord(2),
+      v3 = R0->SideYp.front().vertex_coord(3);
+      v2.y = 0.f;
+      v3.y = 0.f;
+      snip S {};
+      side_make( {v0, v1, v2, v3}, S);
+      S.texture_fragment( AppWin.texZn.u, AppWin.texZn.v,
+                         {v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, v3.x, v3.y});
+      R0->SideZn.push_back(S);
+      return;
+    }
+
+  remove(R1);
   R1->SideZp.clear();
 
   snip& S0 = R0->SideYp.front();
@@ -163,11 +179,13 @@ void rdb::set_Zn(rig *R0)
 
   if(v0.y > v2.y) {
     side_make( {v0, v1, v2 + dt, v3 + dt}, S);
-    S.texture_fragment( 1, 3, {v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, v3.x, v3.y} );
+    S.texture_fragment( AppWin.texZn.u, AppWin.texZn.v,
+                       {v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, v3.x, v3.y} );
     R0->SideZn.push_back(S);
   } else {
     side_make( {v2, v3, v0 - dt, v1 - dt}, S);
-    S.texture_fragment( 1, 3, {lod-v2.x, v2.y, lod-v3.x, v3.y, lod-v0.x, v0.y, lod-v1.x, v1.y} );
+    S.texture_fragment( AppWin.texZp.u, AppWin.texZp.v,
+                       {lod-v2.x, v2.y, lod-v3.x, v3.y, lod-v0.x, v0.y, lod-v1.x, v1.y} );
     R1->SideZp.push_back(S);
   }
 
@@ -183,11 +201,27 @@ void rdb::set_Zn(rig *R0)
 ///
 void rdb::set_Zp(rig* R0)
 {
-  rig* R1 = get(R0->Origin.x, R0->Origin.y, R0->Origin.z + lod);
-  if(R1 == nullptr) return; // TODO - в этом случае надо нарисовать низ
-  remove(R1);
-
   R0->SideZp.clear();
+
+  rig* R1 = get({R0->Origin.x, R0->Origin.y, R0->Origin.z + lod});
+  if(R1 == nullptr) // Если рядом нет блока, то боковая стенка строится от низа рига
+  {
+    glm::vec4
+    v0 = R0->SideYp.front().vertex_coord(1),
+    v1 = R0->SideYp.front().vertex_coord(0),
+    v2 = R0->SideYp.front().vertex_coord(0),
+    v3 = R0->SideYp.front().vertex_coord(1);
+    v2.y = 0.f;
+    v3.y = 0.f;
+    snip S {};
+    side_make( {v0, v1, v2, v3}, S);
+    S.texture_fragment( AppWin.texZp.u, AppWin.texZp.v,
+                       { lod-v0.x, v0.y, lod-v1.x, v1.y, lod-v2.x, v2.y, lod-v3.x, v3.y });
+    R0->SideZp.push_back(S);
+    return;
+  }
+
+  remove(R1);
   R1->SideZn.clear();
 
   snip& S0 = R0->SideYp.front();
@@ -202,11 +236,13 @@ void rdb::set_Zp(rig* R0)
 
   if(v0.y > v2.y) {
     side_make( {v0, v1, v2 + dt, v3 + dt}, S);
-    S.texture_fragment( 1, 3, {lod-v0.x, v0.y, lod-v1.x, v1.y, lod-v2.x, v2.y, lod-v3.x, v3.y} );
+    S.texture_fragment( AppWin.texZp.u, AppWin.texZp.v,
+                       { lod-v0.x, v0.y, lod-v1.x, v1.y, lod-v2.x, v2.y, lod-v3.x, v3.y });
     R0->SideZp.push_back(S);
   } else {
     side_make( {v2, v3, v0 - dt, v1 - dt}, S);
-    S.texture_fragment( 1, 3, {v2.x, v2.y, v3.x, v3.y, v0.x, v0.y, v1.x, v1.y} );
+    S.texture_fragment( AppWin.texZn.u, AppWin.texZn.v,
+                       { v2.x, v2.y, v3.x, v3.y, v0.x, v0.y, v1.x, v1.y });
     R1->SideZn.push_back(S);
   }
 
@@ -222,11 +258,27 @@ void rdb::set_Zp(rig* R0)
 ///
 void rdb::set_Xp(rig* R0)
 {
-  rig* R1 = get(R0->Origin.x + lod, R0->Origin.y, R0->Origin.z);
-  if(R1 == nullptr) return; // TODO - в этом случае надо нарисовать низ
-  remove(R1);
-
   R0->SideXp.clear();
+
+  rig* R1 = get({R0->Origin.x + lod, R0->Origin.y, R0->Origin.z});
+  if(R1 == nullptr) // Если рядом нет блока, то боковая стенка строится от низа рига
+    {
+      glm::vec4
+      v0 = R0->SideYp.front().vertex_coord(2),
+      v1 = R0->SideYp.front().vertex_coord(1),
+      v2 = R0->SideYp.front().vertex_coord(1),
+      v3 = R0->SideYp.front().vertex_coord(2);
+      v2.y = 0.f;
+      v3.y = 0.f;
+      snip S {};
+      side_make( {v0, v1, v2, v3}, S);
+      S.texture_fragment( AppWin.texXp.u, AppWin.texXp.v,
+                         {v0.z, v0.y, v1.z, v1.y, v2.z, v2.y, v3.z, v3.y});
+      R0->SideXp.push_back(S);
+      return;
+    }
+
+  remove(R1);
   R1->SideXn.clear();
 
   snip& S0 = R0->SideYp.front();
@@ -241,11 +293,13 @@ void rdb::set_Xp(rig* R0)
 
   if(v0.y > v2.y) {
     side_make( {v0, v1, v2 + dt, v3 + dt}, S);
-    S.texture_fragment( 1, 3, {v0.z, v0.y, v1.z, v1.y, v2.z, v2.y, v3.z, v3.y} );
+    S.texture_fragment( AppWin.texXp.u, AppWin.texXp.v,
+                       {v0.z, v0.y, v1.z, v1.y, v2.z, v2.y, v3.z, v3.y} );
     R0->SideXp.push_back(S);
   } else {
     side_make( {v2, v3, v0 - dt, v1 - dt}, S);
-    S.texture_fragment( 1, 3, {lod-v2.z, v2.y, lod-v3.z, v3.y, lod-v0.z, v0.y, lod-v1.z, v1.y} );
+    S.texture_fragment( AppWin.texXn.u, AppWin.texXn.v,
+                       {lod-v2.z, v2.y, lod-v3.z, v3.y, lod-v0.z, v0.y, lod-v1.z, v1.y} );
     R1->SideXn.push_back(S);
   }
 
@@ -261,11 +315,27 @@ void rdb::set_Xp(rig* R0)
 ///
 void rdb::set_Xn(rig* R0)
 {
-  rig* R1 = get(R0->Origin.x - lod, R0->Origin.y, R0->Origin.z);
-  if(R1 == nullptr) return; // TODO - в этом случае надо нарисовать низ
-  remove(R1);
-
   R0->SideXn.clear();
+
+  rig* R1 = get({R0->Origin.x - lod, R0->Origin.y, R0->Origin.z});
+  if(R1 == nullptr) // Если рядом нет блока, то боковая стенка строится от низа рига
+    {
+      glm::vec4
+      v0 = R0->SideYp.front().vertex_coord(0),
+      v1 = R0->SideYp.front().vertex_coord(3),
+      v2 = R0->SideYp.front().vertex_coord(3),
+      v3 = R0->SideYp.front().vertex_coord(0);
+      v2.y = 0.f;
+      v3.y = 0.f;
+      snip S {};
+      side_make( {v0, v1, v2, v3}, S);
+      S.texture_fragment( AppWin.texXn.u, AppWin.texXn.v,
+                         {lod-v0.z, v0.y, lod-v1.z, v1.y, lod-v2.z, v2.y, lod-v3.z, v3.y});
+      R0->SideXn.push_back(S);
+      return;
+    }
+
+  remove(R1);
   R1->SideXp.clear();
 
   snip& S0 = R0->SideYp.front();
@@ -280,11 +350,13 @@ void rdb::set_Xn(rig* R0)
 
   if(v0.y > v2.y) {
     side_make( {v0, v1, v2 + dt, v3 + dt}, S);
-    S.texture_fragment( 1, 3, {lod-v0.z, v0.y, lod-v1.z, v1.y, lod-v2.z, v2.y, lod-v3.z, v3.y} );
+    S.texture_fragment( AppWin.texXn.u, AppWin.texXn.v,
+                       {lod-v0.z, v0.y, lod-v1.z, v1.y, lod-v2.z, v2.y, lod-v3.z, v3.y} );
     R0->SideXn.push_back(S);
   } else {
     side_make( {v2, v3, v0 - dt, v1 - dt}, S);
-    S.texture_fragment( 1, 3, {v2.z, v2.y, v3.z, v3.y, v0.z, v0.y, v1.z, v1.y} );
+    S.texture_fragment( AppWin.texXp.u, AppWin.texXp.v,
+                       {v2.z, v2.y, v3.z, v3.y, v0.z, v0.y, v1.z, v1.y} );
     R1->SideXp.push_back(S);
   }
 
@@ -306,17 +378,46 @@ void rdb::sides_set(rig* R)
 
 
 ///
+/// \brief rdb::append_rig_Yp
+/// \param Pt
+///
+void rdb::append_rig_Yp(const i3d& Pt)
+{
+  MapRigs.emplace(std::pair(Pt, rig{}));
+  MapRigs[Pt].Origin = Pt;
+  snip S = {};
+  for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = 0.25f;
+  S.texture_set(AppWin.texYp.u, AppWin.texYp.v);
+
+  MapRigs[Pt].SideYp.push_back(S);
+  sides_set(&MapRigs[Pt]);
+  place(&MapRigs[Pt]);
+}
+
+
+///
 /// \brief rdb::add_y
 /// \details Увеличение размера по координате Y
 ///
-void rdb::add_y(const i3d &Pt)
+void rdb::add_y(const i3d& Pt)
 {
   rig *R = get(Pt);         //1. Выбрать целевой риг
+  if(nullptr == R) ERR ("Error get(rig) in the rdb::add_y");
   remove(R); // убрать риг из графического буфера
 
-  if(nullptr == R) ERR ("Error on rig grooving by Y.");
-  float y = .0f;
+  float y = 0.f;
   snip &S = R->SideYp.front();
+
+  if((S.data[Y + ROW_SIZE * 0] == 1.00f) &&
+     (S.data[Y + ROW_SIZE * 1] == 1.00f) &&
+     (S.data[Y + ROW_SIZE * 2] == 1.00f) &&
+     (S.data[Y + ROW_SIZE * 3] == 1.00f))
+  {
+    R->SideYp.clear();
+    append_rig_Yp({Pt.x, Pt.y + lod, Pt.z});
+    place(R);
+    return;
+  }
 
   // найти вершину с максимальным значением Y
   for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) y = std::max(y, S.data[i]);
@@ -399,16 +500,16 @@ void rdb::side_place(std::vector<snip>& Side, const f3d& Point)
 
     // Вариант 2: дорисовка прозрачной оболочки над(вокруг) выделенного рига
 
-    rig* R = get(sel.x, sel.y, sel.z);
+    rig* R = get({sel.x, sel.y, sel.z});
     if(nullptr == R) return;
 
     auto highlight = R->SideYp.front();
     highlight.texture_set(0, 7); // белая текстура
 
-    for(size_t n = 0; n < tr::vertices_per_snip; n++)
+    for(size_t n = 0; n < vertices_per_snip; n++)
     {
       highlight.data[ROW_SIZE * n + X] += sel.x;
-      highlight.data[ROW_SIZE * n + Y] += sel.y + 0.001;
+      highlight.data[ROW_SIZE * n + Y] += sel.y + 0.001f;
       highlight.data[ROW_SIZE * n + Z] += sel.z;
       highlight.data[ROW_SIZE * n + A] = 0.4f; // прозрачность
     }
@@ -641,35 +742,6 @@ void rdb::side_remove(std::vector<snip>& Side)
       { y -= lod; }
     }
     ERR("Rigs::search_down() failure. We need to use try/catch in this case.");
-  }
-
-
-  ///
-  /// \brief rdb::get
-  /// \param P
-  /// \return
-  ///
-  rig* rdb::get(const glm::vec3& P)
-  {
-    return get(
-      static_cast<int>(floor(P.x)),
-      static_cast<int>(floor(P.y)),
-      static_cast<int>(floor(P.z))
-    );
-  }
-
-
-  ///
-  /// \brief rdb::get
-  /// \param x
-  /// \param y
-  /// \param z
-  /// \return
-  /// \details Поиск элемента с указанными координатами
-  ///
-  rig* rdb::get(int x, int y, int z)
-  {
-    return get(i3d{x, y, z});
   }
 
 

@@ -160,17 +160,17 @@ namespace tr
   ///
   void snip::vbo_append(const f3d& Point, vbo& VBOdata)
   {
-    GLfloat cache[tr::digits_per_snip] = {0.0f};
-    memcpy(cache, data, tr::bytes_per_snip);
+    GLfloat cache[digits_per_snip] = {0.0f};
+    memcpy(cache, data, bytes_per_snip);
 
-    for(size_t n = 0; n < tr::vertices_per_snip; n++)
+    for(size_t n = 0; n < vertices_per_snip; n++)
     {
       cache[ROW_SIZE * n + X] += Point.x;
       cache[ROW_SIZE * n + Y] += Point.y;
       cache[ROW_SIZE * n + Z] += Point.z;
     }
 
-    data_offset = VBOdata.data_append( tr::bytes_per_snip, cache );
+    data_offset = VBOdata.data_append( bytes_per_snip, cache );
   }
 
   //## обновление данных в VBO буфере

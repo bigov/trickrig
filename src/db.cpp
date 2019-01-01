@@ -198,7 +198,7 @@ void db::save_rigs_block(const i3d &From, const i3d &To, rdb &RDB )
     for(int y = From.y; y < To.y; y++)
       for(int z = From.z; z < To.z; z++)
       {
-        rig *R = RDB.get(x, y, z);
+        rig *R = RDB.get({x, y, z});
         if(nullptr != R)
         {
           id_area = 0;

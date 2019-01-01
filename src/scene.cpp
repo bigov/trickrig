@@ -109,7 +109,7 @@ void scene::framebuffer_resize(void)
     GLfloat Position[] = { -1.f, -1.f, 1.f, -1.f, -1.f, 1.f, 1.f, 1.f };
     vboPosition.allocate( sizeof(Position), Position );
     vboPosition.attrib( screenShaderProgram.attrib_location_get("position"),
-        2, GL_FLOAT, GL_FALSE, 0, nullptr );
+        2, GL_FLOAT, GL_FALSE, 0, 0);
 
     tr::vbo vboTexcoord = {GL_ARRAY_BUFFER};
 
@@ -127,7 +127,7 @@ void scene::framebuffer_resize(void)
 
     vboTexcoord.allocate( sizeof(Texcoord), Texcoord );
     vboTexcoord.attrib( screenShaderProgram.attrib_location_get("texcoord"),
-        2, GL_FLOAT, GL_FALSE, 0, nullptr );
+        2, GL_FLOAT, GL_FALSE, 0, 0);
 
     // GL_TEXTURE1
     glUniform1i(screenShaderProgram.uniform_location_get("texFramebuffer"), 1);
