@@ -47,16 +47,20 @@ namespace tr
       void clear_cashed_snips(void);                   // очистка промежуточного кэша
       void sides_set(rig*);                   // настройка боковых сторон
       void side_make(const std::array<glm::vec4, 4>&, snip&);    // настройка боковой стороны
-      void set_Zp(rig*);
-      void set_Zn(rig*);
-      void set_Xp(rig*);
-      void set_Xn(rig*);
+      void set_Zp(rig*, rig*);
+      void set_Zn(rig*, rig*);
+      void set_Xp(rig*, rig*);
+      void set_Xn(rig*, rig*);
+      void make_Zn(std::vector<snip>&, std::vector<snip>&, float, float);
+      void make_Zp(std::vector<snip>&, std::vector<snip>&, float, float);
+      void make_Xn(std::vector<snip>&, std::vector<snip>&, float, float);
+      void make_Xp(std::vector<snip>&, std::vector<snip>&, float, float);
       void append_rig_Yp(const i3d&);
 
     public:
       rdb(void);                       // конструктор
-      void place(rig*);                // разместить данные в VBO буфере
-      void remove(rig*);               // убрать риг из рендера
+      void place_in_gpu(rig*);                // разместить данные в VBO буфере
+      void remove_from_gpu(rig*);               // убрать риг из рендера
       void draw(void);                 // Рендер кадра
 
       void add_x(const i3d &);

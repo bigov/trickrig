@@ -137,230 +137,294 @@ void rdb::side_make(const std::array<glm::vec4, 4>& v, snip& S)
 
 
 ///
-/// \brief rdb::set_Zn
-/// \param R
+/// \brief rdb::make_Xp
+/// \param Top - верхний снип
+/// \param Side - боковой снип, который перестраивается
+/// \param y2 - высота вершины v2
+/// \param y3 - высота вершины v3
+/// \details Построение стороны +X. Вызов производится после проверки того, что
+/// данную сторону видно - нет соседнего блока, либо он ниже.
 ///
-/// \details -Z
-///
-void rdb::set_Zn(rig *R0)
+void rdb::make_Xp(std::vector<snip>& VTop, std::vector<snip>& VSide, float y2, float y3)
 {
-  R0->SideZn.clear();
+  std::array<glm::vec4, 4> V {};
 
-  rig* R1 = get({R0->Origin.x, R0->Origin.y, R0->Origin.z - lod});
-  if(R1 == nullptr) // Если рядом нет блока, то боковая стенка строится от низа рига
-    {
-      glm::vec4
-      v0 = R0->SideYp.front().vertex_coord(3),
-      v1 = R0->SideYp.front().vertex_coord(2),
-      v2 = R0->SideYp.front().vertex_coord(2),
-      v3 = R0->SideYp.front().vertex_coord(3);
-      v2.y = 0.f;
-      v3.y = 0.f;
-      snip S {};
-      side_make( {v0, v1, v2, v3}, S);
-      S.texture_fragment( AppWin.texZn.u, AppWin.texZn.v,
-                         {v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, v3.x, v3.y});
-      R0->SideZn.push_back(S);
-      return;
-    }
-
-  remove(R1);
-  R1->SideZp.clear();
-
-  snip& S0 = R0->SideYp.front();
-  snip& S1 = R1->SideYp.front();
-
-  glm::vec4
-  v0 = S0.vertex_coord(3), v1 = S0.vertex_coord(2),
-  v2 = S1.vertex_coord(1), v3 = S1.vertex_coord(0),
-  dt {0, 0, -lod, 0};
-
-  snip S {};
-
-  if(v0.y > v2.y) {
-    side_make( {v0, v1, v2 + dt, v3 + dt}, S);
-    S.texture_fragment( AppWin.texZn.u, AppWin.texZn.v,
-                       {v0.x, v0.y, v1.x, v1.y, v2.x, v2.y, v3.x, v3.y} );
-    R0->SideZn.push_back(S);
-  } else {
-    side_make( {v2, v3, v0 - dt, v1 - dt}, S);
-    S.texture_fragment( AppWin.texZp.u, AppWin.texZp.v,
-                       {lod-v2.x, v2.y, lod-v3.x, v3.y, lod-v0.x, v0.y, lod-v1.x, v1.y} );
-    R1->SideZp.push_back(S);
+  if(VTop.empty())
+  {
+    V[0] = {lod, lod, 0, 1};
+    V[1] = {lod, lod, lod, 1};
+  } else
+  {
+    V[0] = VTop.front().vertex_coord(2);
+    V[1] = VTop.front().vertex_coord(1);
   }
 
-  place(R1);
+  V[2] = V[1]; V[2].y = y2;
+  V[3] = V[0]; V[3].y = y3;
+
+  snip S{};
+  side_make(V, S);
+  S.texture_fragment( AppWin.texXp.u, AppWin.texXp.v,
+                     {V[0].z, V[0].y, V[1].z, V[1].y, V[2].z, V[2].y, V[3].z, V[3].y} );
+  VSide.clear();
+  VSide.push_back(S);
+}
+
+
+///
+/// \brief rdb::make_Xn
+/// \param Top - верхний снип
+/// \param Side - боковой снип, который перестраивается
+/// \param y2 - высота вершины v2
+/// \param y3 - высота вершины v3
+/// \details Построение стороны -X. Вызов производится после проверки того, что
+/// данную сторону видно - нет соседнего блока, либо он ниже.
+///
+void rdb::make_Xn(std::vector<snip>& VTop, std::vector<snip>& VSide, float y2, float y3)
+{
+  std::array<glm::vec4, 4> V {};
+
+  if(VTop.empty())
+  {
+    V[0] = {0, lod, lod, 1};
+    V[1] = {0, lod, 0, 1};
+  } else
+  {
+    V[0] = VTop.front().vertex_coord(0);
+    V[1] = VTop.front().vertex_coord(3);
+  }
+
+  V[2] = V[1]; V[2].y = y2;
+  V[3] = V[0]; V[3].y = y3;
+
+  snip S{};
+  side_make(V, S);
+  S.texture_fragment( AppWin.texXn.u, AppWin.texXn.v,
+                     {lod-V[0].z, V[0].y, lod-V[1].z, V[1].y, lod-V[2].z, V[2].y, lod-V[3].z, V[3].y} );
+  VSide.clear();
+  VSide.push_back(S);
+}
+
+
+///
+/// \brief rdb::make_Zn
+/// \param Top - верхний снип
+/// \param Side - боковой снип, который перестраивается
+/// \param y2 - высота вершины v2
+/// \param y3 - высота вершины v3
+/// \details Построение стороны -Z. Вызов производится после проверки того, что
+/// данную сторону видно - нет соседнего блока, либо он ниже.
+///
+void rdb::make_Zn(std::vector<snip>& VTop, std::vector<snip>& VSide, float y2, float y3)
+{
+  std::array<glm::vec4, 4> V {};
+
+  if(VTop.empty())
+  {
+    V[0] = {0, lod, 0, 1};
+    V[1] = {lod, lod, 0, 1};
+  } else
+  {
+    V[0] = VTop.front().vertex_coord(3);
+    V[1] = VTop.front().vertex_coord(2);
+  }
+
+  V[2] = V[1]; V[2].y = y2;
+  V[3] = V[0]; V[3].y = y3;
+
+  snip S{};
+  side_make(V, S);
+  S.texture_fragment( AppWin.texZn.u, AppWin.texZn.v,
+                     {V[0].x, V[0].y, V[1].x, V[1].y, V[2].x, V[2].y, V[3].x, V[3].y} );
+  VSide.clear();
+  VSide.push_back(S);
+}
+
+
+///
+/// \brief rdb::make_Zp
+/// \param Top - верхний снип
+/// \param Side - боковой снип, который перестраивается
+/// \param y2 - высота вершины v2
+/// \param y3 - высота вершины v3
+/// \details Построение стороны -Z. Вызов производится после проверки того, что
+/// данную сторону видно - нет соседнего блока, либо он ниже.
+///
+void rdb::make_Zp(std::vector<snip>& VTop, std::vector<snip>& VSide, float y2, float y3)
+{
+  std::array<glm::vec4, 4> V {};
+
+  if(VTop.empty())
+  {
+    V[0] = {lod, lod, lod, 1};
+    V[1] = {0, lod, lod, 1};
+  } else
+  {
+    V[0] = VTop.front().vertex_coord(1);
+    V[1] = VTop.front().vertex_coord(0);
+  }
+
+  V[2] = V[1]; V[2].y = y2;
+  V[3] = V[0]; V[3].y = y3;
+
+  snip S{};
+  side_make(V, S);
+  S.texture_fragment( AppWin.texZp.u, AppWin.texZp.v,
+                     {lod-V[0].x, V[0].y, lod-V[1].x, V[1].y, lod-V[2].x, V[2].y, lod-V[3].x, V[3].y} );
+  VSide.clear();
+  VSide.push_back(S);
+}
+
+
+///
+/// \brief rdb::set_Zn
+/// \param R0, R1
+/// \details Выбор параметров для построения стенки -Z
+///
+void rdb::set_Zn(rig* R0, rig* R1)
+{
+#ifndef NDEBUG
+  if(nullptr == R0) ERR("Call rdb::set_Zn with nullptr");
+  if(R0->SideYp.empty()) ERR("Call rdb::set_Zn with R0->SideYp.empty()");
+#endif
+
+  if(nullptr == R1) // Если рядом нет блока, то боковая стенка строится до низа рига
+  {
+    make_Zn( R0->SideYp, R0->SideZn, 0.f, 0.f );
+    return;
+  }
+
+  remove_from_gpu(R1);
+  // Если соседний блок без верха или выше, то обновляем Z+ стенку соседнего блока
+  if( R1->SideYp.empty() ||
+     (R0->SideYp.front().vertex_coord(2).y < R1->SideYp.front().vertex_coord(1).y) )
+  {
+    make_Zp( R1->SideYp, R1->SideZp,
+             R0->SideYp.front().vertex_coord(3).y,
+             R0->SideYp.front().vertex_coord(2).y );
+  }
+  else // иначе - обновляем свою стенку Z-, а стенку Z+ соседнего блока убираем
+  {
+    R1->SideZp.clear();
+    make_Zn( R0->SideYp, R0->SideZn,
+             R1->SideYp.front().vertex_coord(1).y,
+             R1->SideYp.front().vertex_coord(0).y );
+  }
+  place_in_gpu(R1);
 }
 
 
 ///
 /// \brief rdb::set_Zp
-/// \param R
+/// \param R0, R1
+/// \details Выбор параметров для построения стенки +Z
 ///
-/// \details +Z
-///
-void rdb::set_Zp(rig* R0)
+void rdb::set_Zp(rig* R0, rig* R1)
 {
-  R0->SideZp.clear();
+#ifndef NDEBUG
+  if(nullptr == R0) ERR("Call rdb::set_Zp with nullptr");
+  if(R0->SideYp.empty()) ERR("Call rdb::set_Zp with R0->SideYp.empty()");
+#endif
 
-  rig* R1 = get({R0->Origin.x, R0->Origin.y, R0->Origin.z + lod});
-  if(R1 == nullptr) // Если рядом нет блока, то боковая стенка строится от низа рига
+  if(nullptr == R1) // Если рядом нет блока, то боковая стенка строится до низа рига
   {
-    glm::vec4
-    v0 = R0->SideYp.front().vertex_coord(1),
-    v1 = R0->SideYp.front().vertex_coord(0),
-    v2 = R0->SideYp.front().vertex_coord(0),
-    v3 = R0->SideYp.front().vertex_coord(1);
-    v2.y = 0.f;
-    v3.y = 0.f;
-    snip S {};
-    side_make( {v0, v1, v2, v3}, S);
-    S.texture_fragment( AppWin.texZp.u, AppWin.texZp.v,
-                       { lod-v0.x, v0.y, lod-v1.x, v1.y, lod-v2.x, v2.y, lod-v3.x, v3.y });
-    R0->SideZp.push_back(S);
+    make_Zp( R0->SideYp, R0->SideZp, 0.f, 0.f );
     return;
   }
 
-  remove(R1);
-  R1->SideZn.clear();
-
-  snip& S0 = R0->SideYp.front();
-  snip& S1 = R1->SideYp.front();
-
-  glm::vec4
-  v0 = S0.vertex_coord(1), v1 = S0.vertex_coord(0),
-  v2 = S1.vertex_coord(3), v3 = S1.vertex_coord(2),
-  dt {0, 0, lod, 0};
-
-  snip S {};
-
-  if(v0.y > v2.y) {
-    side_make( {v0, v1, v2 + dt, v3 + dt}, S);
-    S.texture_fragment( AppWin.texZp.u, AppWin.texZp.v,
-                       { lod-v0.x, v0.y, lod-v1.x, v1.y, lod-v2.x, v2.y, lod-v3.x, v3.y });
-    R0->SideZp.push_back(S);
-  } else {
-    side_make( {v2, v3, v0 - dt, v1 - dt}, S);
-    S.texture_fragment( AppWin.texZn.u, AppWin.texZn.v,
-                       { v2.x, v2.y, v3.x, v3.y, v0.x, v0.y, v1.x, v1.y });
-    R1->SideZn.push_back(S);
+  remove_from_gpu(R1);
+  // Если соседний блок без верха или выше, то обновляем Z- стенку соседнего блока
+  if( R1->SideYp.empty() ||
+     (R0->SideYp.front().vertex_coord(0).y < R1->SideYp.front().vertex_coord(3).y) )
+  {
+    make_Zn( R1->SideYp, R1->SideZn,
+             R0->SideYp.front().vertex_coord(1).y,
+             R0->SideYp.front().vertex_coord(0).y );
   }
-
-  place(R1);
+  else // иначе - обновляем свою стенку Z+, а стенку Z- соседнего блока убираем
+  {
+    R1->SideZn.clear();
+    make_Zp( R0->SideYp, R0->SideZp,
+             R1->SideYp.front().vertex_coord(3).y,
+             R1->SideYp.front().vertex_coord(2).y );
+  }
+  place_in_gpu(R1);
 }
 
 
 ///
 /// \brief rdb::set_Xp
-/// \param R
+/// \param R0, R1
+/// \details Выбор параметров для построения стенки +X
 ///
-/// +X: {2, 1, 0, 3}
-///
-void rdb::set_Xp(rig* R0)
+void rdb::set_Xp(rig* R0, rig* R1)
 {
-  R0->SideXp.clear();
+#ifndef NDEBUG
+  if(nullptr == R0) ERR("Call rdb::set_Xp with nullptr");
+  if(R0->SideYp.empty()) ERR("Call rdb::set_Xp with R0->SideYp.empty()");
+#endif
 
-  rig* R1 = get({R0->Origin.x + lod, R0->Origin.y, R0->Origin.z});
-  if(R1 == nullptr) // Если рядом нет блока, то боковая стенка строится от низа рига
-    {
-      glm::vec4
-      v0 = R0->SideYp.front().vertex_coord(2),
-      v1 = R0->SideYp.front().vertex_coord(1),
-      v2 = R0->SideYp.front().vertex_coord(1),
-      v3 = R0->SideYp.front().vertex_coord(2);
-      v2.y = 0.f;
-      v3.y = 0.f;
-      snip S {};
-      side_make( {v0, v1, v2, v3}, S);
-      S.texture_fragment( AppWin.texXp.u, AppWin.texXp.v,
-                         {v0.z, v0.y, v1.z, v1.y, v2.z, v2.y, v3.z, v3.y});
-      R0->SideXp.push_back(S);
-      return;
-    }
-
-  remove(R1);
-  R1->SideXn.clear();
-
-  snip& S0 = R0->SideYp.front();
-  snip& S1 = R1->SideYp.front();
-
-  glm::vec4
-  v0 = S0.vertex_coord(2), v1 = S0.vertex_coord(1),
-  v2 = S1.vertex_coord(0), v3 = S1.vertex_coord(3),
-  dt {lod, 0, 0, 0};
-
-  snip S {};
-
-  if(v0.y > v2.y) {
-    side_make( {v0, v1, v2 + dt, v3 + dt}, S);
-    S.texture_fragment( AppWin.texXp.u, AppWin.texXp.v,
-                       {v0.z, v0.y, v1.z, v1.y, v2.z, v2.y, v3.z, v3.y} );
-    R0->SideXp.push_back(S);
-  } else {
-    side_make( {v2, v3, v0 - dt, v1 - dt}, S);
-    S.texture_fragment( AppWin.texXn.u, AppWin.texXn.v,
-                       {lod-v2.z, v2.y, lod-v3.z, v3.y, lod-v0.z, v0.y, lod-v1.z, v1.y} );
-    R1->SideXn.push_back(S);
+  if(nullptr == R1) // Если рядом нет блока, то +X стенка строится до низа рига
+  {
+    make_Xp( R0->SideYp, R0->SideXp, 0.f, 0.f );
+    return;
   }
 
-  place(R1);
+  remove_from_gpu(R1);
+  // Если соседний блок без верха или выше, то обновляем -X стенку соседнего блока
+  if( R1->SideYp.empty() ||
+     (R0->SideYp.front().vertex_coord(1).y < R1->SideYp.front().vertex_coord(0).y) )
+  {
+    make_Xn( R1->SideYp, R1->SideXn,
+             R0->SideYp.front().vertex_coord(2).y,
+             R0->SideYp.front().vertex_coord(1).y );
+  }
+  else // иначе - обновляем свою стенку +X, а стенку -X соседнего блока убираем
+  {
+    R1->SideXn.clear();
+    make_Xp( R0->SideYp, R0->SideXp,
+             R1->SideYp.front().vertex_coord(0).y,
+             R1->SideYp.front().vertex_coord(3).y );
+  }
+  place_in_gpu(R1);
 }
 
 
 ///
 /// \brief rdb::set_Xn
-/// \param R
+/// \param R0, R1
+/// \details Выбор параметров для построения стенки -X
 ///
-/// -X: {0, 3, 2, 1}
-///
-void rdb::set_Xn(rig* R0)
+void rdb::set_Xn(rig* R0, rig* R1)
 {
-  R0->SideXn.clear();
+#ifndef NDEBUG
+  if(nullptr == R0) ERR("Call rdb::set_Xn with nullptr");
+  if(R0->SideYp.empty()) ERR("Call rdb::set_Xn with R0->SideYp.empty()");
+#endif
 
-  rig* R1 = get({R0->Origin.x - lod, R0->Origin.y, R0->Origin.z});
-  if(R1 == nullptr) // Если рядом нет блока, то боковая стенка строится от низа рига
-    {
-      glm::vec4
-      v0 = R0->SideYp.front().vertex_coord(0),
-      v1 = R0->SideYp.front().vertex_coord(3),
-      v2 = R0->SideYp.front().vertex_coord(3),
-      v3 = R0->SideYp.front().vertex_coord(0);
-      v2.y = 0.f;
-      v3.y = 0.f;
-      snip S {};
-      side_make( {v0, v1, v2, v3}, S);
-      S.texture_fragment( AppWin.texXn.u, AppWin.texXn.v,
-                         {lod-v0.z, v0.y, lod-v1.z, v1.y, lod-v2.z, v2.y, lod-v3.z, v3.y});
-      R0->SideXn.push_back(S);
-      return;
-    }
-
-  remove(R1);
-  R1->SideXp.clear();
-
-  snip& S0 = R0->SideYp.front();
-  snip& S1 = R1->SideYp.front();
-
-  glm::vec4
-  v0 = S0.vertex_coord(0), v1 = S0.vertex_coord(3),
-  v2 = S1.vertex_coord(2), v3 = S1.vertex_coord(1),
-  dt {-lod, 0, 0, 0};
-
-  snip S {};
-
-  if(v0.y > v2.y) {
-    side_make( {v0, v1, v2 + dt, v3 + dt}, S);
-    S.texture_fragment( AppWin.texXn.u, AppWin.texXn.v,
-                       {lod-v0.z, v0.y, lod-v1.z, v1.y, lod-v2.z, v2.y, lod-v3.z, v3.y} );
-    R0->SideXn.push_back(S);
-  } else {
-    side_make( {v2, v3, v0 - dt, v1 - dt}, S);
-    S.texture_fragment( AppWin.texXp.u, AppWin.texXp.v,
-                       {v2.z, v2.y, v3.z, v3.y, v0.z, v0.y, v1.z, v1.y} );
-    R1->SideXp.push_back(S);
+  if(nullptr == R1) // Если рядом нет блока, то стенка -X строится до низа рига
+  {
+    make_Xn( R0->SideYp, R0->SideXn, 0.f, 0.f );
+    return;
   }
 
-  place(R1);
+  remove_from_gpu(R1);
+  // Если соседний блок без верха или выше, то обновляем +X стенку соседнего блока
+  if( R1->SideYp.empty() ||
+     (R0->SideYp.front().vertex_coord(3).y < R1->SideYp.front().vertex_coord(2).y) )
+  {
+    make_Xp( R1->SideYp, R1->SideXp,
+             R0->SideYp.front().vertex_coord(0).y,
+             R0->SideYp.front().vertex_coord(3).y );
+  }
+  else // иначе - обновляем свою стенку -X, а стенку +X соседнего блока убираем
+  {
+    R1->SideXp.clear();
+    make_Xn( R0->SideYp, R0->SideXn,
+             R1->SideYp.front().vertex_coord(2).y,
+             R1->SideYp.front().vertex_coord(1).y );
+  }
+  place_in_gpu(R1);
 }
 
 
@@ -370,10 +434,10 @@ void rdb::set_Xn(rig* R0)
 ///
 void rdb::sides_set(rig* R)
 {
-  set_Zp(R);
-  set_Zn(R);
-  set_Xp(R);
-  set_Xn(R);
+  set_Zp( R, get({R->Origin.x, R->Origin.y, R->Origin.z + lod}) );
+  set_Zn( R, get({R->Origin.x, R->Origin.y, R->Origin.z - lod}) );
+  set_Xp( R, get({R->Origin.x + lod, R->Origin.y, R->Origin.z}) );
+  set_Xn( R, get({R->Origin.x - lod, R->Origin.y, R->Origin.z}) );
 }
 
 
@@ -391,7 +455,7 @@ void rdb::append_rig_Yp(const i3d& Pt)
 
   MapRigs[Pt].SideYp.push_back(S);
   sides_set(&MapRigs[Pt]);
-  place(&MapRigs[Pt]);
+  place_in_gpu(&MapRigs[Pt]);
 }
 
 
@@ -403,7 +467,7 @@ void rdb::add_y(const i3d& Pt)
 {
   rig *R = get(Pt);         //1. Выбрать целевой риг
   if(nullptr == R) ERR ("Error get(rig) in the rdb::add_y");
-  remove(R); // убрать риг из графического буфера
+  remove_from_gpu(R); // убрать риг из графического буфера
 
   float y = 0.f;
   snip &S = R->SideYp.front();
@@ -415,7 +479,7 @@ void rdb::add_y(const i3d& Pt)
   {
     R->SideYp.clear();
     append_rig_Yp({Pt.x, Pt.y + lod, Pt.z});
-    place(R);
+    place_in_gpu(R);
     return;
   }
 
@@ -431,14 +495,14 @@ void rdb::add_y(const i3d& Pt)
   // выровнять все вершины по выбранной высоте
   for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = y;
   sides_set(R); // настроить боковые стороны
-  place(R);     // записать модифицированый риг в графический буфер
+  place_in_gpu(R);     // записать модифицированый риг в графический буфер
 }
 
 
 ///
 /// Добавление в графический буфер элементов, расположенных в точке (x, y, z)
 ///
-void rdb::place(rig* R)
+void rdb::place_in_gpu(rig* R)
 {
   if(nullptr == R) return;   // TODO: тут можно подгружать или дебажить
   if(R->in_vbo) return;      // Если данные уже в VBO - ничего не делаем
@@ -530,7 +594,7 @@ void rdb::side_place(std::vector<snip>& Side, const f3d& Point)
 /// за границу отображения, запоминаются в кэше, чтобы на их место
 /// записать данные вершин, которые вошли в поле зрения с другой стороны.
 ///
-void rdb::remove(rig* Rig)
+void rdb::remove_from_gpu(rig* Rig)
 {
   if(nullptr == Rig) return;
   if(!Rig->in_vbo) return;
