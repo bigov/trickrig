@@ -466,12 +466,11 @@ void rdb::append_rig_Yp(const i3d& Pt)
 void rdb::add_y(const i3d& Pt)
 {
   rig *R = get(Pt);         //1. Выбрать целевой риг
-  if(nullptr == R) ERR ("Error get(rig) in the rdb::add_y");
+  if(nullptr == R) ERR ("Error: call rdb::add_y for nullptr point");
+  if(R->SideYp.empty()) return;
   remove_from_gpu(R); // убрать риг из графического буфера
 
-  float y = 0.f;
   snip &S = R->SideYp.front();
-
   if((S.data[Y + ROW_SIZE * 0] == 1.00f) &&
      (S.data[Y + ROW_SIZE * 1] == 1.00f) &&
      (S.data[Y + ROW_SIZE * 2] == 1.00f) &&
@@ -483,6 +482,7 @@ void rdb::add_y(const i3d& Pt)
     return;
   }
 
+  float y = 0.f;
   // найти вершину с максимальным значением Y
   for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) y = std::max(y, S.data[i]);
 
@@ -490,6 +490,110 @@ void rdb::add_y(const i3d& Pt)
   if(y >= 0.75f) y = 1.00f;
   else if (y >= 0.50f) y = 0.75f;
   else if (y >= 0.25f) y = 0.50f;
+  else y = 0.25f;
+
+  // выровнять все вершины по выбранной высоте
+  for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = y;
+  sides_set(R); // настроить боковые стороны
+  place_in_gpu(R);     // записать модифицированый риг в графический буфер
+}
+
+
+///
+/// \brief rdb::remove_rig_Yp
+/// \param Pt
+/// \details Удаляет риг в указанной точке пространства и обновляет
+/// боковые стороны ригов примыкающих к данной точке.
+///
+void rdb::remove_rig_Yp(const i3d& P)
+{
+  MapRigs.erase(P);             // Удалить риг в точке P пространства 3D
+
+  i3d Psub {P.x, P.y-lod, P.z}; // Координаты точки на шаг ниже
+  rig* R = get(Psub);
+  if(nullptr == R)              // Если снизу рига нет, то следует его создать
+  {
+    MapRigs.emplace(std::pair(Psub, rig{}));
+    MapRigs[Psub].Origin = Psub;
+    R = get(Psub);
+  }
+  else {
+    remove_from_gpu(R);
+  }
+
+  snip S = {};
+  for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = 1.f;
+  S.texture_set(AppWin.texYp.u, AppWin.texYp.v);
+  R->SideYp.clear();
+  R->SideYp.push_back(S);
+  place_in_gpu(R);     // записать в графический буфер
+
+  // Обновить боковые стороны вокруг удаленного рига
+  R = get({P.x + lod, P.y, P.z});
+  if(nullptr != R)
+  {
+    remove_from_gpu(R);  // убрать риг из графического буфера
+    make_Xn( R->SideYp, R->SideXn, 0.f, 0.f );
+    place_in_gpu(R);     // записать модифицированый риг в графический буфер
+  }
+
+  R = get({P.x - lod, P.y, P.z});
+  if(nullptr != R)
+  {
+    remove_from_gpu(R);  // убрать риг из графического буфера
+    make_Xp( R->SideYp, R->SideXp, 0.f, 0.f );
+    place_in_gpu(R);     // записать модифицированый риг в графический буфер
+  }
+
+  R = get({P.x, P.y, P.z + lod});
+  if(nullptr != R)
+  {
+    remove_from_gpu(R);  // убрать риг из графического буфера
+    make_Zn( R->SideYp, R->SideZn, 0.f, 0.f );
+    place_in_gpu(R);     // записать модифицированый риг в графический буфер
+  }
+
+  R = get({P.x, P.y, P.z - lod});
+  if(nullptr != R)
+  {
+    remove_from_gpu(R);  // убрать риг из графического буфера
+    make_Zp( R->SideYp, R->SideZp, 0.f, 0.f );
+    place_in_gpu(R);     // записать модифицированый риг в графический буфер
+  }
+}
+
+
+///
+/// \brief rdb::sub_y
+/// \details Уменьшение рига по координате Y.
+/// Если высота рига не больше ( 0,25*lod ), то этот риг
+/// удаляется и рисуется риг на один шаг ниже.
+///
+void rdb::sub_y(const i3d& Pt)
+{
+  rig *R = get(Pt);         //1. Выбрать целевой риг
+  if(nullptr == R) ERR ("Error: call rdb::sub_y for nullptr point");
+  if(R->SideYp.empty()) return;
+
+  remove_from_gpu(R); // убрать риг из графического буфера
+
+  snip &S = R->SideYp.front();
+
+  if((S.data[Y + ROW_SIZE * 0] <= 0.25f) ||
+     (S.data[Y + ROW_SIZE * 1] <= 0.25f) ||
+     (S.data[Y + ROW_SIZE * 2] <= 0.25f) ||
+     (S.data[Y + ROW_SIZE * 3] <= 0.25f))
+  {                                         // Если одна из вершин данного рига
+    remove_rig_Yp(Pt);                      // расположена ниже у=0.25, то этот
+    return;                                 // риг полностью удаляется
+  }
+
+  float y = 1.f; // найти вершину с минимальным значением Y
+  for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) y = std::min(y, S.data[i]);
+
+  // выровнять по ближайшей снизу четверти
+  if(y > 0.75f) y = 0.75f;
+  else if (y > 0.50f) y = 0.50f;
   else y = 0.25f;
 
   // выровнять все вершины по выбранной высоте

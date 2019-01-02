@@ -327,9 +327,13 @@ namespace tr
 
     if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
     {
-      // Вставить элемент поверхности над выделенной точкой.
       ev.mouse = -1; ev.action = -1;
-      RigsDb0.add_y(Selected);
+      RigsDb0.add_y(Selected); // Вставить элемент поверхности над выделенной точкой.
+    }
+    else if((ev.mouse == MOUSE_BUTTON_RIGHT) && (ev.action == PRESS))
+    {
+      ev.mouse = -1; ev.action = -1;
+      RigsDb0.sub_y(Selected); // Удалить элемент поверхности над выделенной точкой.
     }
     else
     {
