@@ -12,6 +12,16 @@
 namespace tr
 {
 
+#define R0y0 R0->SideYp.front().data[Y + ROW_SIZE * 0]
+#define R0y1 R0->SideYp.front().data[Y + ROW_SIZE * 1]
+#define R0y2 R0->SideYp.front().data[Y + ROW_SIZE * 2]
+#define R0y3 R0->SideYp.front().data[Y + ROW_SIZE * 3]
+
+#define R1y0 R1->SideYp.front().data[Y + ROW_SIZE * 0]
+#define R1y1 R1->SideYp.front().data[Y + ROW_SIZE * 1]
+#define R1y2 R1->SideYp.front().data[Y + ROW_SIZE * 2]
+#define R1y3 R1->SideYp.front().data[Y + ROW_SIZE * 3]
+
 /// DEGUG
 void show_texture(double* d)
 {
@@ -213,7 +223,7 @@ void rdb::make_Xn(std::vector<snip>& VTop, std::vector<snip>& VSide, float y2, f
 /// \param y2 - высота вершины v2
 /// \param y3 - высота вершины v3
 /// \details Построение стороны -Z. Вызов производится после проверки того, что
-/// данную сторону видно - нет соседнего блока, либо он ниже.
+/// данную сторону видно (нет соседнего блока, либо он ниже).
 ///
 void rdb::make_Zn(std::vector<snip>& VTop, std::vector<snip>& VSide, float y2, float y3)
 {
@@ -247,8 +257,8 @@ void rdb::make_Zn(std::vector<snip>& VTop, std::vector<snip>& VSide, float y2, f
 /// \param Side - боковой снип, который перестраивается
 /// \param y2 - высота вершины v2
 /// \param y3 - высота вершины v3
-/// \details Построение стороны -Z. Вызов производится после проверки того, что
-/// данную сторону видно - нет соседнего блока, либо он ниже.
+/// \details Построение стороны +Z. Вызов производится после проверки того, что
+/// данную сторону видно (нет соседнего блока, либо он ниже).
 ///
 void rdb::make_Zp(std::vector<snip>& VTop, std::vector<snip>& VSide, float y2, float y3)
 {
@@ -277,44 +287,6 @@ void rdb::make_Zp(std::vector<snip>& VTop, std::vector<snip>& VSide, float y2, f
 
 
 ///
-/// \brief rdb::set_Zn
-/// \param R0, R1
-/// \details Выбор параметров для построения стенки -Z
-///
-void rdb::set_Zn(rig* R0, rig* R1)
-{
-#ifndef NDEBUG
-  if(nullptr == R0) ERR("Call rdb::set_Zn with nullptr");
-  if(R0->SideYp.empty()) ERR("Call rdb::set_Zn with R0->SideYp.empty()");
-#endif
-
-  if(nullptr == R1) // Если рядом нет блока, то боковая стенка строится до низа рига
-  {
-    make_Zn( R0->SideYp, R0->SideZn, 0.f, 0.f );
-    return;
-  }
-
-  remove_from_gpu(R1);
-  // Если соседний блок без верха или выше, то обновляем Z+ стенку соседнего блока
-  if( R1->SideYp.empty() ||
-     (R0->SideYp.front().vertex_coord(2).y < R1->SideYp.front().vertex_coord(1).y) )
-  {
-    make_Zp( R1->SideYp, R1->SideZp,
-             R0->SideYp.front().vertex_coord(3).y,
-             R0->SideYp.front().vertex_coord(2).y );
-  }
-  else // иначе - обновляем свою стенку Z-, а стенку Z+ соседнего блока убираем
-  {
-    R1->SideZp.clear();
-    make_Zn( R0->SideYp, R0->SideZn,
-             R1->SideYp.front().vertex_coord(1).y,
-             R1->SideYp.front().vertex_coord(0).y );
-  }
-  place_in_gpu(R1);
-}
-
-
-///
 /// \brief rdb::set_Zp
 /// \param R0, R1
 /// \details Выбор параметров для построения стенки +Z
@@ -326,28 +298,56 @@ void rdb::set_Zp(rig* R0, rig* R1)
   if(R0->SideYp.empty()) ERR("Call rdb::set_Zp with R0->SideYp.empty()");
 #endif
 
-  if(nullptr == R1) // Если рядом нет блока, то боковая стенка строится до низа рига
+  R0->SideZp.clear();
+
+  if(nullptr == R1) // Если рядом нет блока, то +Z стенка строится до низа рига
   {
     make_Zp( R0->SideYp, R0->SideZp, 0.f, 0.f );
     return;
   }
 
   remove_from_gpu(R1);
-  // Если соседний блок без верха или выше, то обновляем Z- стенку соседнего блока
-  if( R1->SideYp.empty() ||
-     (R0->SideYp.front().vertex_coord(0).y < R1->SideYp.front().vertex_coord(3).y) )
+  R1->SideZn.clear();    // убрать стенку -Z соседнего блока (если она есть)
+
+  // Если соседний блок без верха или выше, то построить -Z стенку соседнего блока
+  if( R1->SideYp.empty() || ((R0y1 < R1y2) && (R0y0 < R1y3)) )
+  {  make_Zn(R1->SideYp, R1->SideZn, R0y1, R0y0); }
+  else // иначе - построить свою +Z
+  {  make_Zp( R0->SideYp, R0->SideZp, R1y3, R1y2 ); }
+
+  place_in_gpu(R1);
+}
+
+
+///
+/// \brief rdb::set_Zn
+/// \param R0, R1
+/// \details Выбор параметров для построения стенки -Z
+///
+void rdb::set_Zn(rig* R0, rig* R1)
+{
+#ifndef NDEBUG
+  if(nullptr == R0) ERR("Call rdb::set_Zn with nullptr");
+  if(R0->SideYp.empty()) ERR("Call rdb::set_Zn with R0->SideYp.empty()");
+#endif
+
+  R0->SideZn.clear();
+
+  if(nullptr == R1) // Если рядом нет блока, то -Z строится до низа рига
   {
-    make_Zn( R1->SideYp, R1->SideZn,
-             R0->SideYp.front().vertex_coord(1).y,
-             R0->SideYp.front().vertex_coord(0).y );
+    make_Zn( R0->SideYp, R0->SideZn, 0.f, 0.f );
+    return;
   }
-  else // иначе - обновляем свою стенку Z+, а стенку Z- соседнего блока убираем
-  {
-    R1->SideZn.clear();
-    make_Zp( R0->SideYp, R0->SideZp,
-             R1->SideYp.front().vertex_coord(3).y,
-             R1->SideYp.front().vertex_coord(2).y );
-  }
+
+  remove_from_gpu(R1);
+  R1->SideZp.clear();    // убрать +Z соседнего блока (если есть)
+
+  // Если соседний блок без верха или выше, то построить +Z соседнего блока
+  if( R1->SideYp.empty() || ((R0y3 < R1y0) && (R0y2 < R1y1)) )
+  {  make_Zp( R1->SideYp, R1->SideZp, R0y3, R0y2 ); }
+  else // иначе - обновить -Z
+  {  make_Zn( R0->SideYp, R0->SideZn, R1y1, R1y0 ); }
+
   place_in_gpu(R1);
 }
 
@@ -364,28 +364,23 @@ void rdb::set_Xp(rig* R0, rig* R1)
   if(R0->SideYp.empty()) ERR("Call rdb::set_Xp with R0->SideYp.empty()");
 #endif
 
-  if(nullptr == R1) // Если рядом нет блока, то +X стенка строится до низа рига
+  R0->SideXp.clear();
+
+  if(nullptr == R1) // Если рядом нет блока, то +X строится до низа рига
   {
     make_Xp( R0->SideYp, R0->SideXp, 0.f, 0.f );
     return;
   }
 
   remove_from_gpu(R1);
-  // Если соседний блок без верха или выше, то обновляем -X стенку соседнего блока
-  if( R1->SideYp.empty() ||
-     (R0->SideYp.front().vertex_coord(1).y < R1->SideYp.front().vertex_coord(0).y) )
-  {
-    make_Xn( R1->SideYp, R1->SideXn,
-             R0->SideYp.front().vertex_coord(2).y,
-             R0->SideYp.front().vertex_coord(1).y );
-  }
-  else // иначе - обновляем свою стенку +X, а стенку -X соседнего блока убираем
-  {
-    R1->SideXn.clear();
-    make_Xp( R0->SideYp, R0->SideXp,
-             R1->SideYp.front().vertex_coord(0).y,
-             R1->SideYp.front().vertex_coord(3).y );
-  }
+  R1->SideXn.clear();  // стенку -X соседнего блока убираем
+
+  // Если соседний блок без верха или выше, то строим -X соседнего блока
+  if( R1->SideYp.empty() || ((R0y2 < R1y3) && (R0y1 < R1y0)) )
+  {  make_Xn( R1->SideYp, R1->SideXn, R0y2, R0y1 ); }
+  else // иначе - строим свою +X
+  {  make_Xp( R0->SideYp, R0->SideXp, R1y0, R1y3 ); }
+
   place_in_gpu(R1);
 }
 
@@ -402,28 +397,23 @@ void rdb::set_Xn(rig* R0, rig* R1)
   if(R0->SideYp.empty()) ERR("Call rdb::set_Xn with R0->SideYp.empty()");
 #endif
 
-  if(nullptr == R1) // Если рядом нет блока, то стенка -X строится до низа рига
+  R0->SideXn.clear();
+
+  if(nullptr == R1) // Если рядом нет блока, то -X строится до низа рига
   {
     make_Xn( R0->SideYp, R0->SideXn, 0.f, 0.f );
     return;
   }
 
   remove_from_gpu(R1);
-  // Если соседний блок без верха или выше, то обновляем +X стенку соседнего блока
-  if( R1->SideYp.empty() ||
-     (R0->SideYp.front().vertex_coord(3).y < R1->SideYp.front().vertex_coord(2).y) )
-  {
-    make_Xp( R1->SideYp, R1->SideXp,
-             R0->SideYp.front().vertex_coord(0).y,
-             R0->SideYp.front().vertex_coord(3).y );
-  }
-  else // иначе - обновляем свою стенку -X, а стенку +X соседнего блока убираем
-  {
-    R1->SideXp.clear();
-    make_Xn( R0->SideYp, R0->SideXn,
-             R1->SideYp.front().vertex_coord(2).y,
-             R1->SideYp.front().vertex_coord(1).y );
-  }
+  R1->SideXp.clear(); // +X соседнего блока убрать
+
+  // Если соседний блок без верха или выше, то построить +X соседнего блока
+  if( R1->SideYp.empty() || ((R0y0 < R1y1) && (R0y3 < R1y2)) )
+  {  make_Xp( R1->SideYp, R1->SideXp, R0y0, R0y3 ); }
+  else // иначе - построить свою -X
+  {  make_Xn( R0->SideYp, R0->SideXn, R1y2, R1y1 ); }
+
   place_in_gpu(R1);
 }
 
@@ -431,13 +421,58 @@ void rdb::set_Xn(rig* R0, rig* R1)
 ///
 /// \brief rdb::sides_set
 /// \param R
+/// \details Построение боковых сторон. Перед вызовом методов для
+/// боковых сторон проиводится проверка 4-х верхних ребер рига чтобы они не
+/// пересекались с соответствующими ребрами соседних ригов. В случае, если
+/// из пары вершин любого ребра одна расположена выше соответствующей
+/// соседней вершины, а вторая ниже (возникло пересечение), то производим
+/// коррекцию высоты нижней вершины ребра основного рига - поднимаем ее до
+/// высоты соответствующей вершины соседнего рига. При этом пересекающиеся
+/// ранее ребра выстраиваются в форме треугольника.
 ///
-void rdb::sides_set(rig* R)
+/// Так как при этом изменяется положение верхней стороны, то это необходимо
+/// проделать до вызова методов построения боковых сторон. Иначе может возникнуть
+/// ситуация когда одна из вершин будет приподнята после того, как сопряженная
+/// с ней сторона уже построена. Это приведет к образованию в данной стороне
+/// треугольного отверстия.
+///
+void rdb::sides_set(rig* R0)
 {
-  set_Zp( R, get({R->Origin.x, R->Origin.y, R->Origin.z + lod}) );
-  set_Zn( R, get({R->Origin.x, R->Origin.y, R->Origin.z - lod}) );
-  set_Xp( R, get({R->Origin.x + lod, R->Origin.y, R->Origin.z}) );
-  set_Xn( R, get({R->Origin.x - lod, R->Origin.y, R->Origin.z}) );
+  rig* R1 = nullptr;
+
+  // +Z
+  R1 = get({R0->Origin.x, R0->Origin.y, R0->Origin.z + lod});
+  if(nullptr != R1)
+  {
+    if((R0y1 < R1y2) && (R0y0 > R1y3)) R0y1 = R1y2;
+    if((R0y0 < R1y3) && (R0y1 > R1y2)) R0y0 = R1y3;
+  }
+  // -Z
+  R1 = get({R0->Origin.x, R0->Origin.y, R0->Origin.z - lod});
+  if(nullptr != R1)
+  {
+    if((R0y3 < R1y0) && (R0y2 > R1y1)) R0y3 = R1y0;
+    if((R0y2 < R1y1) && (R0y3 > R1y0)) R0y2 = R1y1;
+  }
+  // +X
+  R1 = get({R0->Origin.x + lod, R0->Origin.y, R0->Origin.z});
+  if(nullptr != R1)
+  {
+    if((R0y2 < R1y3) && (R0y1 > R1y0)) R0y2 = R1y3;
+    if((R0y1 < R1y0) && (R0y2 > R1y3)) R0y1 = R1y0;
+  }
+  // -X
+  R1 = get({R0->Origin.x - lod, R0->Origin.y, R0->Origin.z});
+  if(nullptr != R1)
+  {
+    if((R0y0 < R1y1) && (R0y3 > R1y2)) R0y0 = R1y1;
+    if((R0y3 < R1y2) && (R0y0 > R1y1)) R0y3 = R1y2;
+  }
+
+  set_Zp( R0, get({R0->Origin.x, R0->Origin.y, R0->Origin.z + lod}) );
+  set_Zn( R0, get({R0->Origin.x, R0->Origin.y, R0->Origin.z - lod}) );
+  set_Xp( R0, get({R0->Origin.x + lod, R0->Origin.y, R0->Origin.z}) );
+  set_Xn( R0, get({R0->Origin.x - lod, R0->Origin.y, R0->Origin.z}) );
 }
 
 
