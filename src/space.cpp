@@ -24,7 +24,7 @@ namespace tr
   ///
   inline bool dir(const glm::vec4 &a, const glm::vec4 &b)
   {
-    return ((0.0 - b.x) * (a.y - b.y) - (a.x - b.x) * (0.0 - b.y)) > 0.0;
+    return ((0.0f - b.x) * (a.y - b.y) - (a.x - b.x) * (0.0f - b.y)) > 0.0f;
   }
 
 
