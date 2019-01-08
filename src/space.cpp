@@ -54,27 +54,37 @@ namespace tr
     glEnable(GL_BLEND);      // поддержка прозрачности
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    img ImgTex0 { cfg::app_key(PNG_TEXTURE0) }; // Загрузка из файла текстуры
+    load_texture(GL_TEXTURE0, cfg::app_key(PNG_TEXTURE0));
+}
 
-    glGenTextures(1, &m_textureObj);
-    glActiveTexture(GL_TEXTURE0); // можно загрузить не меньше 48
-    glBindTexture(GL_TEXTURE_2D, m_textureObj);
 
-    GLint level_of_details = 0;
-    GLint frame = 0;
-    glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-                 static_cast<GLsizei>(ImgTex0.w_summ),
-                 static_cast<GLsizei>(ImgTex0.h_summ),
-                 frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgTex0.uchar());
+///
+/// \brief space::load_texture
+/// \param index
+/// \param fname
+///
+void space::load_texture(unsigned texture_index, const std::string& FileName)
+{
+  img ImgTex0 { FileName };
+  glGenTextures(1, &texture_id);
+  glActiveTexture(texture_index); // можно загрузить не меньше 48
+  glBindTexture(GL_TEXTURE_2D, texture_id);
 
-    // Установка опций отрисовки текстур
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-      GL_NEAREST_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  GLint level_of_details = 0;
+  GLint frame = 0;
+  glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
+               static_cast<GLsizei>(ImgTex0.w_summ),
+               static_cast<GLsizei>(ImgTex0.h_summ),
+               frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgTex0.uchar());
+
+  // Установка опций отрисовки текстур
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glGenerateMipmap(GL_TEXTURE_2D);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+    GL_NEAREST_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
 

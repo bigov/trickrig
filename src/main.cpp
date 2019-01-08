@@ -27,8 +27,8 @@ int main(int, char* argv[])
 
 #ifndef NDEBUG
   assert(sizeof(GLfloat) == 4);
-  tr::info("\nDebug mode: ON");
-  tr::info("Exec path: " + tr::AppPathDir);
+  tr::info("--- --- ---\nExec path: " + tr::AppPathDir);
+  tr::info("Debug mode: ON\n--- --- ---\n");
 #endif
 
   try

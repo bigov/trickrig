@@ -20,8 +20,8 @@ namespace tr
       scene operator=(const tr::scene&);
 
       GLuint fbuf_id      = 0;         // id фрейм-буфера рендера сцены
-      GLuint rbuf_id      = 0;         // id рендер-буфера
-      GLuint text_fbuf_id = 0;         // id основной тектуры фрейм-буфера
+      GLuint rbuf_id      = 0;         // id рендер-буфера глубины
+      GLuint tex_color_id  = 0;         // id основной тектуры фрейм-буфера
       GLuint tex_hud_id   = 0;         // id тектуры HUD
       GLuint vao_quad_id  = 0;
       gui WinGui {};               // Интерфейс окна

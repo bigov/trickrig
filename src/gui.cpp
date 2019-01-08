@@ -24,7 +24,6 @@ gui::gui(void)
 void gui::headband(void)
 {
   GLint level_of_details = 0; GLint frame = 0;
-
   glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
                static_cast<GLsizei>(BgImage.w_summ),
                static_cast<GLsizei>(BgImage.h_summ),

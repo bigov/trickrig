@@ -35,18 +35,17 @@ namespace tr
       // Карта размещения cнипов по адресам в VBO
       std::unordered_map<GLsizeiptr, snip*> VisibleSnips {};
 
-      vbo VBOdata = {GL_ARRAY_BUFFER};       // VBO вершин поверхности
-      glsl Prog3d {};                        // GLSL программа шейдеров
-
-      GLuint space_vao = 0;                  // ID VAO
+      vbo VBOdata = {GL_ARRAY_BUFFER};     // VBO вершин поверхности
+      glsl Prog3d {};                      // GLSL программа шейдеров
+      GLuint space_vao = 0;                // ID VAO
       u_int render_points = 0;             // число точек передаваемых в рендер
 
       void _load_16x16_obj(void);
-      void side_place(std::vector<snip>&, const f3d&); // разместить данные в VBO буфере
-      void side_remove(std::vector<snip>&);            // убрать данные из рендера
-      void clear_cashed_snips(void);                   // очистка промежуточного кэша
-      void sides_set(rig*);                   // настройка боковых сторон
-      void side_make(const std::array<glm::vec4, 4>&, snip&);    // настройка боковой стороны
+      void side_place(std::vector<snip>&, const f3d&);        // разместить данные в VBO буфере
+      void side_remove(std::vector<snip>&);                   // убрать данные из рендера
+      void clear_cashed_snips(void);                          // очистка промежуточного кэша
+      void sides_set(rig*);                                   // настройка боковых сторон
+      void side_make(const std::array<glm::vec4, 4>&, snip&); // настройка боковой стороны
       void set_Zp(rig*, rig*);
       void set_Zn(rig*, rig*);
       void set_Xp(rig*, rig*);
