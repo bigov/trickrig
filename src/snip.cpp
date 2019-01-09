@@ -173,9 +173,15 @@ namespace tr
     data_offset = VBOdata.data_append( bytes_per_snip, cache );
   }
 
-  //## обновление данных в VBO буфере
-  bool snip::vbo_update(const f3d &Point, vbo & VBOdata, GLsizeiptr dst)
-  {
+  ///
+  /// \brief snip::vbo_update
+  /// \param Point
+  /// \param VBOdata
+  /// \param dst
+  /// \return
+  ///
+  /// \details обновление данных в VBO буфере
+  ///
   /// Целевой адрес для перемещения блока данных в VBO (параметр "offset")
   /// берется обычно из кэша. При этом может возникнуть ситуация, когда в кэше
   /// остаются адреса блоков за текущей границей VBO. Такой адрес считается
@@ -184,6 +190,9 @@ namespace tr
   /// Координаты вершин снипов в трике хранятся в нормализованом виде,
   /// поэтому перед отправкой данных в VBO координаты вершин пересчитываются
   /// в соответствии с координатами и данными(shift) связаного рига,
+  ///
+  bool snip::vbo_update(const f3d &Point, vbo & VBOdata, GLsizeiptr dst)
+  {
 
     GLfloat vbo_data[tr::digits_per_snip] = {0.0f};
     memcpy(vbo_data, data, tr::bytes_per_snip);
@@ -202,14 +211,20 @@ namespace tr
     return false;
   }
 
-  //## Перемещение блока данных из конца ближе к началу VBO буфера
-  void snip::vbo_jam(vbo &VBOdata, GLintptr dst)
-  {
+  ///
+  /// \brief snip::vbo_jam
+  /// \param VBOdata
+  /// \param dst
+  ///
+  /// \details Перемещение блока данных из конца ближе к началу VBO буфера
+  ///
   /// Эта функция используется только для крайних блоков данных, расположеных
   /// в конце VBO. Данные перемещаются на указанное место (dst) ближе к началу
   /// буфера, после чего активная граница VBO сдвигается к началу на размер
   /// перемещеного блока данных.
-
+  ///
+  void snip::vbo_jam(vbo &VBOdata, GLintptr dst)
+  {
     VBOdata.jam_data(data_offset, dst, tr::bytes_per_snip);
     data_offset = dst;
   }

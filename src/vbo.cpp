@@ -13,6 +13,7 @@ namespace tr
 ///
 /// \brief vbo::shrink
 /// \param delta
+///
 /// \details Сжатие границы размещения активных данных в буфере
 ///
 void vbo::shrink(GLsizeiptr delta)
@@ -25,6 +26,7 @@ void vbo::shrink(GLsizeiptr delta)
   ///
   /// \brief vbo::allocate
   /// \param al
+  ///
   /// \details Cоздание нового буфера указанного в параметре размера
   ///
   void vbo::allocate(GLsizeiptr al)
@@ -50,6 +52,7 @@ void vbo::shrink(GLsizeiptr delta)
   /// \brief vbo::allocate
   /// \param al
   /// \param data
+  ///
   /// \details Cоздание графического буфера и заполнение его данными
   ///
   void vbo::allocate(GLsizeiptr al, const GLvoid* data)
@@ -70,10 +73,20 @@ void vbo::shrink(GLsizeiptr delta)
     hem = al;
   }
 
-  //## Настройка атрибутов для float
+
+  ///
+  /// \brief vbo::attrib
+  /// \param index
+  /// \param d_size
+  /// \param type
+  /// \param normalized
+  /// \param stride
+  /// \param pointer
+  ///
+  /// \details Настройка атрибутов для float
+  ///
   void vbo::attrib(GLuint index, GLint d_size, GLenum type, GLboolean normalized,
     GLsizei stride, size_t pointer)
-//    GLsizei stride, const GLvoid* pointer)
   {
     glEnableVertexAttribArray(index);
     glBindBuffer(gl_buffer_type, id);
@@ -82,7 +95,17 @@ void vbo::shrink(GLsizeiptr delta)
     glBindBuffer(gl_buffer_type, 0);
   }
 
-  //## Настройка атрибутов для int
+
+  ///
+  /// \brief vbo::attrib_i
+  /// \param index
+  /// \param d_size
+  /// \param type
+  /// \param stride
+  /// \param pointer
+  ///
+  /// \details  Настройка атрибутов для int
+  ///
   void vbo::attrib_i(GLuint index, GLint d_size, GLenum type,
     GLsizei stride, const GLvoid* pointer)
   {
@@ -92,12 +115,19 @@ void vbo::shrink(GLsizeiptr delta)
     glBindBuffer(gl_buffer_type, 0);
   }
 
-  //## Сжатие буфера атрибутов за счет перемещения блока данных из хвоста
+  ///
+  /// \brief vbo::jam_data
+  /// \param src
+  /// \param dst
+  /// \param d_size
+  ///
+  /// \details Сжатие буфера атрибутов за счет перемещения блока данных
+  /// из хвоста. Данные перемещаются внутри VBO только из хвоста ближе
+  /// к началу на освободившее место. Адрес начала свободного блока
+  /// берется из кэша.
+  ///
   void vbo::jam_data(GLintptr src, GLintptr dst, GLsizeiptr d_size)
   {
-  /// Данные перемещаются внутри VBO только из хвоста ближе к началу на
-  /// освободившее место. Адрес начала свободного блока берется из кэша.
-
     #ifndef NDEBUG // контроль направления переноса - только крайний в конце блок
       if((src + d_size) != hem) ERR("vbo::jam_data got err src address");
       if(dst > (src - d_size))  ERR("vbo::jam_data: dst + size > src");
@@ -111,9 +141,13 @@ void vbo::shrink(GLsizeiptr delta)
 
 
   ///
-  ///  Добавление данных в конец VBO (с контролем границы размера буфера)
+  /// \brief vbo::data_append
+  /// \param d_size
+  /// \param data
+  /// \return
   ///
-  /// вносит данные в буфер по указателю границы данных блока (hem),
+  /// \details Добавление данных в конец VBO (с контролем границы размера
+  /// буфера). Вносит данные в буфер по указателю границы данных блока (hem),
   /// возвращает положение указателя по которому разместились данные и
   /// сдвигает границу указателя на размер внесенных данных для приема
   /// следующеего блока данных

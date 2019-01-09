@@ -24,10 +24,7 @@ class vbo {
     ~vbo(void) {}
     void allocate(GLsizeiptr allocated);
     void allocate(GLsizeiptr allocated, const GLvoid* data);
-
-    //void attrib(GLuint, GLint, GLenum, GLboolean, GLsizei, const GLvoid*);
     void attrib(GLuint, GLint, GLenum, GLboolean, GLsizei, size_t);
-
     void attrib_i(GLuint, GLint, GLenum, GLsizei, const GLvoid*);
     void jam_data(GLintptr, GLintptr, GLsizeiptr);
     GLsizeiptr data_append(GLsizeiptr data_size, const GLvoid* data);
