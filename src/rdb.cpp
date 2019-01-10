@@ -38,6 +38,7 @@ void show_texture(double* d)
   std::cout << buf;
 }
 
+
 ///
 /// \brief rdb::rdb
 /// \details КОНСТРУКТОР
@@ -58,19 +59,19 @@ rdb::rdb(void)
   u_int n = static_cast<u_int>(pow((lod0_size + lod0_size + 1), 3));
 
   // Размер данных VBO для размещения снипов:
-  VBOdata.allocate(n * bytes_per_snip);
+  VBO.allocate(n * bytes_per_snip);
 
   // настройка положения атрибутов
-  VBOdata.attrib(Prog3d.attrib_location_get("position"),
+  VBO.attrib(Prog3d.attrib_location_get("position"),
     4, GL_FLOAT, GL_FALSE, tr::bytes_per_vertex, 0 * sizeof(GLfloat));
 
-  VBOdata.attrib(Prog3d.attrib_location_get("color"),
+  VBO.attrib(Prog3d.attrib_location_get("color"),
     4, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, 4 * sizeof(GLfloat));
 
-  VBOdata.attrib(Prog3d.attrib_location_get("normal"),
+  VBO.attrib(Prog3d.attrib_location_get("normal"),
     4, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, 8 * sizeof(GLfloat));
 
-  VBOdata.attrib(Prog3d.attrib_location_get("fragment"),
+  VBO.attrib(Prog3d.attrib_location_get("fragment"),
     2, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, 12 * sizeof(GLfloat));
 
   //
@@ -96,11 +97,64 @@ rdb::rdb(void)
 
 
 ///
+/// Добавление в графический буфер элементов, расположенных в точке (x, y, z)
+///
+void rdb::put_in(rig* R)
+{
+  if(nullptr == R) return;   // TODO: тут можно подгружать или дебажить
+  if(R->in_vbo) return;      // Если данные уже в VBO - ничего не делаем
+
+  f3d Point = {
+    static_cast<float>(R->Origin.x) + R->shift[SHIFT_X],
+    static_cast<float>(R->Origin.y) + R->shift[SHIFT_Y],
+    static_cast<float>(R->Origin.z) + R->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
+  };
+
+  VBO.data_place(R->SideXp, Point);
+  VBO.data_place(R->SideXn, Point);
+  VBO.data_place(R->SideYp, Point);
+  VBO.data_place(R->SideYn, Point);
+  VBO.data_place(R->SideZp, Point);
+  VBO.data_place(R->SideZn, Point);
+
+  R->in_vbo = true;
+}
+
+
+
+///
+/// \brief rdb::remove_from_vbo
+/// \param x
+/// \param y
+/// \param z
+/// \details убрать риг из рендера
+///
+/// Индексы размещенных в VBO данных, которые при перемещении камеры вышли
+/// за границу отображения, запоминаются в кэше, чтобы на их место
+/// записать данные вершин, которые вошли в поле зрения с другой стороны.
+///
+void rdb::remove(rig* Rig)
+{
+  if(nullptr == Rig) return;
+  if(!Rig->in_vbo) return;
+
+  VBO.data_remove(Rig->SideYp);
+  VBO.data_remove(Rig->SideYn);
+  VBO.data_remove(Rig->SideZp);
+  VBO.data_remove(Rig->SideZn);
+  VBO.data_remove(Rig->SideXp);
+  VBO.data_remove(Rig->SideXn);
+
+  Rig->in_vbo = false;
+}
+
+
+///
 /// Рендер кадра
 ///
-void rdb::draw(void)
+void rdb::render(void)
 {
-  if (!CachedOffset.empty()) clear_cashed_snips();
+  VBO.clear_cashed_snips();
 
   Prog3d.use();   // включить шейдерную программу
   Prog3d.set_uniform("mvp", MatMVP);
@@ -112,7 +166,7 @@ void rdb::draw(void)
   glEnable(GL_DEPTH_TEST);
 
   // можно все нарисовать за один проход
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(render_points), GL_UNSIGNED_INT, nullptr);
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(VBO.render_points), GL_UNSIGNED_INT, nullptr);
 
   // а можно, если потребуется, то пошагово по ячейкам -
   //GLsizei max = (render_points / indices_per_snip) * vertices_per_snip;
@@ -124,7 +178,7 @@ void rdb::draw(void)
 
   // в конец массива добавлен снип подсветки - нарисуем его отдельно
   glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT,
-      nullptr, (render_points / indices_per_snip) * vertices_per_snip);
+      nullptr, (VBO.render_points / indices_per_snip) * vertices_per_snip);
 
   glBindVertexArray(0);
   Prog3d.unuse(); // отключить шейдерную программу
@@ -307,7 +361,7 @@ void rdb::set_Zp(rig* R0, rig* R1)
     return;
   }
 
-  remove_from_gpu(R1);
+  remove(R1);
   R1->SideZn.clear();    // убрать стенку -Z соседнего блока (если она есть)
 
   // Если соседний блок без верха или выше, то построить -Z стенку соседнего блока
@@ -316,7 +370,7 @@ void rdb::set_Zp(rig* R0, rig* R1)
   else // иначе - построить свою +Z
   {  make_Zp( R0->SideYp, R0->SideZp, R1y3, R1y2 ); }
 
-  place_in_gpu(R1);
+  put_in(R1);
 }
 
 
@@ -340,7 +394,7 @@ void rdb::set_Zn(rig* R0, rig* R1)
     return;
   }
 
-  remove_from_gpu(R1);
+  remove(R1);
   R1->SideZp.clear();    // убрать +Z соседнего блока (если есть)
 
   // Если соседний блок без верха или выше, то построить +Z соседнего блока
@@ -349,7 +403,7 @@ void rdb::set_Zn(rig* R0, rig* R1)
   else // иначе - обновить -Z
   {  make_Zn( R0->SideYp, R0->SideZn, R1y1, R1y0 ); }
 
-  place_in_gpu(R1);
+  put_in(R1);
 }
 
 
@@ -373,7 +427,7 @@ void rdb::set_Xp(rig* R0, rig* R1)
     return;
   }
 
-  remove_from_gpu(R1);
+  remove(R1);
   R1->SideXn.clear();  // стенку -X соседнего блока убираем
 
   // Если соседний блок без верха или выше, то строим -X соседнего блока
@@ -382,7 +436,7 @@ void rdb::set_Xp(rig* R0, rig* R1)
   else // иначе - строим свою +X
   {  make_Xp( R0->SideYp, R0->SideXp, R1y0, R1y3 ); }
 
-  place_in_gpu(R1);
+  put_in(R1);
 }
 
 
@@ -406,7 +460,7 @@ void rdb::set_Xn(rig* R0, rig* R1)
     return;
   }
 
-  remove_from_gpu(R1);
+  remove(R1);
   R1->SideXp.clear(); // +X соседнего блока убрать
 
   // Если соседний блок без верха или выше, то построить +X соседнего блока
@@ -415,7 +469,7 @@ void rdb::set_Xn(rig* R0, rig* R1)
   else // иначе - построить свою -X
   {  make_Xn( R0->SideYp, R0->SideXn, R1y2, R1y1 ); }
 
-  place_in_gpu(R1);
+  put_in(R1);
 }
 
 
@@ -491,7 +545,7 @@ void rdb::append_rig_Yp(const i3d& Pt)
 
   MapRigs[Pt].SideYp.push_back(S);
   sides_set(&MapRigs[Pt]);
-  place_in_gpu(&MapRigs[Pt]);
+  put_in(&MapRigs[Pt]);
 }
 
 
@@ -504,7 +558,7 @@ void rdb::add_y(const i3d& Pt)
   rig *R = get(Pt);         //1. Выбрать целевой риг
   if(nullptr == R) ERR ("Error: call rdb::add_y for nullptr point");
   if(R->SideYp.empty()) return;
-  remove_from_gpu(R); // убрать риг из графического буфера
+  remove(R); // убрать риг из графического буфера
 
   snip &S = R->SideYp.front();
   if((S.data[Y + ROW_SIZE * 0] == 1.00f) &&
@@ -514,7 +568,7 @@ void rdb::add_y(const i3d& Pt)
   {
     R->SideYp.clear();
     append_rig_Yp({Pt.x, Pt.y + lod, Pt.z});
-    place_in_gpu(R);
+    put_in(R);
     return;
   }
 
@@ -531,7 +585,7 @@ void rdb::add_y(const i3d& Pt)
   // выровнять все вершины по выбранной высоте
   for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = y;
   sides_set(R); // настроить боковые стороны
-  place_in_gpu(R);     // записать модифицированый риг в графический буфер
+  put_in(R);     // записать модифицированый риг в графический буфер
 }
 
 
@@ -554,7 +608,7 @@ void rdb::remove_rig_Yp(const i3d& P)
     R = get(Psub);
   }
   else {
-    remove_from_gpu(R);
+    remove(R);
   }
 
   snip S = {};
@@ -562,39 +616,39 @@ void rdb::remove_rig_Yp(const i3d& P)
   S.texture_set(AppWin.texYp.u, AppWin.texYp.v);
   R->SideYp.clear();
   R->SideYp.push_back(S);
-  place_in_gpu(R);     // записать в графический буфер
+  put_in(R);     // записать в графический буфер
 
   // Обновить боковые стороны вокруг удаленного рига
   R = get({P.x + lod, P.y, P.z});
   if(nullptr != R)
   {
-    remove_from_gpu(R);  // убрать риг из графического буфера
+    remove(R);  // убрать риг из графического буфера
     make_Xn( R->SideYp, R->SideXn, 0.f, 0.f );
-    place_in_gpu(R);     // записать модифицированый риг в графический буфер
+    put_in(R);     // записать модифицированый риг в графический буфер
   }
 
   R = get({P.x - lod, P.y, P.z});
   if(nullptr != R)
   {
-    remove_from_gpu(R);  // убрать риг из графического буфера
+    remove(R);  // убрать риг из графического буфера
     make_Xp( R->SideYp, R->SideXp, 0.f, 0.f );
-    place_in_gpu(R);     // записать модифицированый риг в графический буфер
+    put_in(R);     // записать модифицированый риг в графический буфер
   }
 
   R = get({P.x, P.y, P.z + lod});
   if(nullptr != R)
   {
-    remove_from_gpu(R);  // убрать риг из графического буфера
+    remove(R);  // убрать риг из графического буфера
     make_Zn( R->SideYp, R->SideZn, 0.f, 0.f );
-    place_in_gpu(R);     // записать модифицированый риг в графический буфер
+    put_in(R);     // записать модифицированый риг в графический буфер
   }
 
   R = get({P.x, P.y, P.z - lod});
   if(nullptr != R)
   {
-    remove_from_gpu(R);  // убрать риг из графического буфера
+    remove(R);  // убрать риг из графического буфера
     make_Zp( R->SideYp, R->SideZp, 0.f, 0.f );
-    place_in_gpu(R);     // записать модифицированый риг в графический буфер
+    put_in(R);     // записать модифицированый риг в графический буфер
   }
 }
 
@@ -611,7 +665,7 @@ void rdb::sub_y(const i3d& Pt)
   if(nullptr == R) ERR ("Error: call rdb::sub_y for nullptr point");
   if(R->SideYp.empty()) return;
 
-  remove_from_gpu(R); // убрать риг из графического буфера
+  remove(R); // убрать риг из графического буфера
 
   snip &S = R->SideYp.front();
 
@@ -635,62 +689,7 @@ void rdb::sub_y(const i3d& Pt)
   // выровнять все вершины по выбранной высоте
   for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = y;
   sides_set(R); // настроить боковые стороны
-  place_in_gpu(R);     // записать модифицированый риг в графический буфер
-}
-
-
-///
-/// Добавление в графический буфер элементов, расположенных в точке (x, y, z)
-///
-void rdb::place_in_gpu(rig* R)
-{
-  if(nullptr == R) return;   // TODO: тут можно подгружать или дебажить
-  if(R->in_vbo) return;      // Если данные уже в VBO - ничего не делаем
-
-  f3d Point = {
-    static_cast<float>(R->Origin.x) + R->shift[SHIFT_X],
-    static_cast<float>(R->Origin.y) + R->shift[SHIFT_Y],
-    static_cast<float>(R->Origin.z) + R->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
-  };
-
-  side_place(R->SideXp, Point);
-  side_place(R->SideXn, Point);
-  side_place(R->SideYp, Point);
-  side_place(R->SideYn, Point);
-  side_place(R->SideZp, Point);
-  side_place(R->SideZn, Point);
-
-  R->in_vbo = true;
-}
-
-
-///
-/// \brief rdb::put_in_vbo
-/// \param Rig
-/// \param Point
-///
-void rdb::side_place(std::vector<snip>& Side, const f3d& Point)
-{
-  for(snip& Snip: Side)
-  {
-    bool data_is_recieved = false;
-    while (!data_is_recieved)
-    {
-      if(CachedOffset.empty()) // Если кэш пустой, то добавляем данные в конец VBO
-      {
-        Snip.vbo_append(Point, VBOdata);
-        render_points += tr::indices_per_snip;  // увеличить число точек рендера
-        VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
-        data_is_recieved = true;
-      }
-      else // если в кэше есть адреса свободных мест, то используем
-      {    // их с контролем, успешно ли был перемещен блок данных
-        data_is_recieved = Snip.vbo_update(Point, VBOdata, CachedOffset.front());
-        CachedOffset.pop_front();                                    // укоротить кэш
-        if(data_is_recieved) VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
-      }
-    }
-  }
+  put_in(R);     // записать модифицированый риг в графический буфер
 }
 
 
@@ -719,139 +718,7 @@ void rdb::highlight(const i3d& sel)
   }
 
   // Записать данные снипа подсветки в конец буфера данных VBO
-  VBOdata.data_append_tmp(tr::bytes_per_snip, highlight.data);
-}
-
-
-///
-/// \brief rdb::remove_from_vbo
-/// \param x
-/// \param y
-/// \param z
-/// \details убрать риг из рендера
-///
-/// Индексы размещенных в VBO данных, которые при перемещении камеры вышли
-/// за границу отображения, запоминаются в кэше, чтобы на их место
-/// записать данные вершин, которые вошли в поле зрения с другой стороны.
-///
-void rdb::remove_from_gpu(rig* Rig)
-{
-  if(nullptr == Rig) return;
-  if(!Rig->in_vbo) return;
-
-  side_remove(Rig->SideYp);
-  side_remove(Rig->SideYn);
-  side_remove(Rig->SideZp);
-  side_remove(Rig->SideZn);
-  side_remove(Rig->SideXp);
-  side_remove(Rig->SideXn);
-
-  Rig->in_vbo = false;
-}
-
-
-///
-/// \brief rdb::side_remove
-/// \param Side
-///
-void rdb::side_remove(std::vector<snip>& Side)
-{
-  if(Side.empty()) return;
-
-  for(auto& Snip: Side)
-  {
-    VisibleSnips.erase(Snip.data_offset);
-    CachedOffset.push_front(Snip.data_offset);
-  }
-}
-
-
-///
-/// \brief rdb::clear_cashed_snips
-/// \details Удаление элементов по адресам с кэше и сжатие данных в VBO
-///
-/// Если в кэше есть адрес блока из середины VBO, то в него переносим данные
-/// из конца VBO и сжимаем буфер на длину одного блока. Если адрес из кэша
-/// указывает на крайний блок в конце VBO, то сжимаем буфер сдвигая границу
-/// на длину одного блока.
-///
-/// Не забываем уменьшить число элементов в рендере.
-///
-void rdb::clear_cashed_snips(void)
-{
-
-  // Выбрать самый крайний элемент VBO на границе блока данных
-  GLsizeiptr data_src = VBOdata.get_hem();
-
-  if(0 == render_points)
-  {
-    CachedOffset.clear();   // очистить все, сообщить о проблеме
-    VisibleSnips.clear();   // и закончить обработку кэша
-    return;
-  }
-
-  #ifndef NDEBUG
-  if (data_src == 0 ) {      // Если (вдруг!) данных нет, то
-    CachedOffset.clear();   // очистить все, сообщить о проблеме
-    VisibleSnips.clear();   // и закончить обработку кэша
-    render_points = 0;
-    info("WARNING: space::clear_cashed_snips got empty data_src\n");
-    return;
-  }
-
-  /// Граница буфера (VBOdata.get_hem()), если она не равна нулю,
-  /// не может быть меньше размера блока данных (bytes_per_snip)
-  if(data_src < tr::bytes_per_snip)
-    ERR ("BUG!!! space::jam_vbo got error address in VBO");
-  #endif
-
-  data_src -= tr::bytes_per_snip; // адрес последнего блока
-
-  /// Если крайний блок не в списке VisibleSnips, то он и не в рендере.
-  /// Поэтому просто отбросим его, сдвинув границу буфера VBO. Кэш не
-  /// изменяем, так как в контейнере "forward_list" удаление элементов
-  /// из середины списка - затратная операция.
-  ///
-  /// Внимание! Так как после этого где-то в кэше остается невалидный
-  /// (за рабочей границей VBO) адрес блока, то при использовании
-  /// адресов из кэша надо делать проверку - не "протухли" ли они.
-  ///
-  if(VisibleSnips.find(data_src) == VisibleSnips.end())
-  {
-    VBOdata.shrink(tr::bytes_per_snip);    // укоротить VBO данных
-    render_points -= tr::indices_per_snip; // уменьшить число точек рендера
-    return;                                // и прервать обработку кэша
-  }
-
-  GLsizeiptr data_dst = data_src;
-  // Извлечь из кэша адрес
-  while(data_dst >= data_src)
-  {
-    if(CachedOffset.empty()) return;
-    data_dst = CachedOffset.front();
-    CachedOffset.pop_front();
-
-    // Идеальный вариант, когда освободившийся блок оказался крайним в VBO
-    if(data_dst == data_src)
-    {
-      VBOdata.shrink(tr::bytes_per_snip);    // укоротить VBO данных
-      render_points -= tr::indices_per_snip; // уменьшить число точек рендера
-      return;                                // закончить шаг обработки
-    }
-  }
-
-  // Самый частый и самый сложный вариант
-  try { // Если есть отображаемый data_src и меньший data_dst из кэша, то
-    snip *Snip = VisibleSnips.at(data_src);  // найти перемещаемый снип,
-    VisibleSnips.erase(data_src);                // удалить его из карты
-    Snip->vbo_jam(VBOdata, data_dst);            // переместить данные в VBO
-    VisibleSnips[data_dst] = Snip;               // внести ссылку в карту
-    render_points -= tr::indices_per_snip;       // Так как данные из хвоста
-  } catch(std::exception & e) {
-    ERR(e.what());
-  } catch(...) {
-    ERR("rigs::clear_cashed_snips got error VisibleSnips[data_src]");
-  }
+  VBO.data_append_tmp(tr::bytes_per_snip, highlight.data);
 }
 
 

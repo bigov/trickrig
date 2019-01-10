@@ -208,4 +208,221 @@ void vbo::shrink(GLsizeiptr delta)
     return true;
   }
 
+
+  ///
+  /// \brief
+  /// Добавляет данные в конец буфера данных VBO и фиксирует адрес смещения.
+  ///
+  /// \details
+  /// Координаты вершин снипов хранятся в нормализованом виде, поэтому перед
+  /// отправкой в VBO все данные снипа копируются во временный кэш, где
+  /// координаты вершин пересчитываются с учетом координат (TODO: сдвига и
+  /// поворота рига-контейнера) и преобразованные данные записываются в VBO.
+  ///
+  void vbo::vbo_append(snip& S, const f3d& Point)
+  {
+    GLfloat cache[digits_per_snip] = {0.0f};
+    memcpy(cache, S.data, bytes_per_snip);
+
+    for(size_t n = 0; n < vertices_per_snip; n++)
+    {
+      cache[ROW_SIZE * n + X] += Point.x;
+      cache[ROW_SIZE * n + Y] += Point.y;
+      cache[ROW_SIZE * n + Z] += Point.z;
+    }
+
+    S.data_offset = data_append( bytes_per_snip, cache );
+  }
+
+  ///
+  /// \brief snip::vbo_update
+  /// \param Point
+  /// \param VBOdata
+  /// \param dst
+  /// \return
+  ///
+  /// \details обновление данных в VBO буфере
+  ///
+  /// Целевой адрес для перемещения блока данных в VBO (параметр "offset")
+  /// берется обычно из кэша. При этом может возникнуть ситуация, когда в кэше
+  /// остаются адреса блоков за текущей границей VBO. Такой адрес считается
+  /// "протухшим", блок данных не перемещается, функция возвращает false.
+  ///
+  /// Координаты вершин снипов в трике хранятся в нормализованом виде,
+  /// поэтому перед отправкой данных в VBO координаты вершин пересчитываются
+  /// в соответствии с координатами и данными(shift) связаного рига,
+  ///
+  bool vbo::update(snip& S, const f3d &Point, GLsizeiptr dst)
+  {
+    GLfloat new_data[digits_per_snip] = {0.0f};
+    memcpy(new_data, S.data, bytes_per_snip);
+    for(size_t n = 0; n < vertices_per_snip; n++)
+    {
+      new_data[ROW_SIZE * n + X] += Point.x;
+      new_data[ROW_SIZE * n + Y] += Point.y;
+      new_data[ROW_SIZE * n + Z] += Point.z;
+    }
+
+    if(data_update( bytes_per_snip, new_data, dst ))
+    {
+      S.data_offset = dst;
+      return true;
+    }
+    return false;
+  }
+
+  ///
+  /// \brief snip::vbo_jam
+  /// \param VBOdata
+  /// \param dst
+  ///
+  /// \details Перемещение блока данных из конца ближе к началу VBO буфера
+  ///
+  /// Эта функция используется только для крайних блоков данных, расположеных
+  /// в конце VBO. Данные перемещаются на указанное место (dst) ближе к началу
+  /// буфера, после чего активная граница VBO сдвигается к началу на размер
+  /// перемещеного блока данных.
+  ///
+  void vbo::vbo_jam(snip* S, GLintptr dst)
+  {
+    jam_data(S->data_offset, dst, bytes_per_snip);
+    S->data_offset = dst;
+  }
+
+
+  ///
+  /// \brief rdb::put_in_vbo
+  /// \param Rig
+  /// \param Point
+  ///
+  void vbo::data_place(std::vector<snip>& Side, const f3d& Point)
+  {
+    for(snip& Snip: Side)
+    {
+      bool data_is_recieved = false;
+      while (!data_is_recieved)
+      {
+        if(CachedOffset.empty()) // Если кэш пустой, то добавляем данные в конец VBO
+        {
+          vbo_append(Snip, Point);
+          render_points += indices_per_snip;  // увеличить число точек рендера
+          VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
+          data_is_recieved = true;
+        }
+        else // если в кэше есть адреса свободных мест, то используем
+        {    // их с контролем, успешно ли был перемещен блок данных
+          data_is_recieved = update(Snip, Point, CachedOffset.front());
+          CachedOffset.pop_front();                                    // укоротить кэш
+          if(data_is_recieved) VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
+        }
+      }
+    }
+  }
+
+
+  ///
+  /// \brief rdb::side_remove
+  /// \param Side
+  ///
+  void vbo::data_remove(std::vector<snip>& Side)
+  {
+    if(Side.empty()) return;
+
+    for(auto& Snip: Side)
+    {
+      VisibleSnips.erase(Snip.data_offset);
+      CachedOffset.push_front(Snip.data_offset);
+    }
+  }
+
+
+  ///
+  /// \brief rdb::clear_cashed_snips
+  /// \details Удаление элементов по адресам с кэше и сжатие данных в VBO
+  ///
+  /// Если в кэше есть адрес блока из середины VBO, то в него переносим данные
+  /// из конца VBO и сжимаем буфер на длину одного блока. Если адрес из кэша
+  /// указывает на крайний блок в конце VBO, то сжимаем буфер сдвигая границу
+  /// на длину одного блока.
+  ///
+  /// Не забываем уменьшить число элементов в рендере.
+  ///
+  void vbo::clear_cashed_snips(void)
+  {
+    if(CachedOffset.empty()) return;
+
+    // Выбрать самый крайний элемент VBO на границе блока данных
+    GLsizeiptr data_src = get_hem();
+
+    if(0 == render_points)
+    {
+      CachedOffset.clear();   // очистить все, сообщить о проблеме
+      VisibleSnips.clear();   // и закончить обработку кэша
+      return;
+    }
+
+    #ifndef NDEBUG
+    if (data_src == 0 ) {      // Если (вдруг!) данных нет, то
+      CachedOffset.clear();   // очистить все, сообщить о проблеме
+      VisibleSnips.clear();   // и закончить обработку кэша
+      render_points = 0;
+      info("WARNING: space::clear_cashed_snips got empty data_src\n");
+      return;
+    }
+
+    /// Граница буфера (VBOdata.get_hem()), если она не равна нулю,
+    /// не может быть меньше размера блока данных (bytes_per_snip)
+    if(data_src < bytes_per_snip)
+      ERR ("BUG!!! space::jam_vbo got error address in VBO");
+    #endif
+
+    data_src -= bytes_per_snip; // адрес последнего блока
+
+    /// Если крайний блок не в списке VisibleSnips, то он и не в рендере.
+    /// Поэтому просто отбросим его, сдвинув границу буфера VBO. Кэш не
+    /// изменяем, так как в контейнере "forward_list" удаление элементов
+    /// из середины списка - затратная операция.
+    ///
+    /// Внимание! Так как после этого где-то в кэше остается невалидный
+    /// (за рабочей границей VBO) адрес блока, то при использовании
+    /// адресов из кэша надо делать проверку - не "протухли" ли они.
+    ///
+    if(VisibleSnips.find(data_src) == VisibleSnips.end())
+    {
+      shrink(bytes_per_snip);    // укоротить VBO данных
+      render_points -= indices_per_snip; // уменьшить число точек рендера
+      return;                                // и прервать обработку кэша
+    }
+
+    GLsizeiptr data_dst = data_src;
+    // Извлечь из кэша адрес
+    while(data_dst >= data_src)
+    {
+      if(CachedOffset.empty()) return;
+      data_dst = CachedOffset.front();
+      CachedOffset.pop_front();
+
+      // Идеальный вариант, когда освободившийся блок оказался крайним в VBO
+      if(data_dst == data_src)
+      {
+        shrink(bytes_per_snip);    // укоротить VBO данных
+        render_points -= indices_per_snip; // уменьшить число точек рендера
+        return;                                // закончить шаг обработки
+      }
+    }
+
+    // Самый частый и самый сложный вариант
+    try { // Если есть отображаемый data_src и меньший data_dst из кэша, то
+      snip* Snip = VisibleSnips.at(data_src);  // найти перемещаемый снип,
+      VisibleSnips.erase(data_src);            // удалить его из карты
+      vbo_jam(Snip, data_dst);         // переместить данные в VBO
+      VisibleSnips[data_dst] = Snip;           // внести ссылку в карту
+      render_points -= indices_per_snip;   // Так как данные из хвоста
+    } catch(std::exception & e) {
+      ERR(e.what());
+    } catch(...) {
+      ERR("rigs::clear_cashed_snips got error VisibleSnips[data_src]");
+    }
+  }
+
 } //tr

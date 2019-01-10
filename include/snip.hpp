@@ -9,7 +9,7 @@
 #ifndef SNIP_HPP
 #define SNIP_HPP
 
-#include "vbo.hpp"
+#include "main.hpp"
 
 namespace tr
 {
@@ -41,14 +41,8 @@ namespace tr
     void copy_data(const snip &);       // копирование данных из другого снипа
     void shift(const glm::vec3&);       // сдвиг снипа на вектор
     void flip_y(void);                  // переворот по вертикали
-
     void texture_set(GLfloat u, GLfloat v); // установка текстур
     void texture_fragment(GLfloat, GLfloat, const std::array<float, 8>&);
-
-    // Функции управления данными снипа в буферах VBO данных и VBO индекса
-    void vbo_append(const f3d&, vbo&);
-    bool vbo_update(const f3d&, vbo&, GLsizeiptr);
-    void vbo_jam (vbo&, GLintptr);
     glm::vec4 vertex_coord(size_t);
   };
 

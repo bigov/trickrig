@@ -10,77 +10,71 @@
 
 #include "main.hpp"
 #include "glsl.hpp"
-#include "rig.hpp"
+#include "vbo.hpp"
 
 //#include "objl.hpp"
 
 namespace tr
 {
+///
+/// \brief The rdb class
+/// \details Управление кэшем ригов с поверхности одного уровня LOD
+///
+class rdb
+{
+  private:
+    std::map<i3d, rig> MapRigs {}; // карта поверхности
 
-  //## Управление кэшем ригов с поверхности одного уровня LOD
-  class rdb
-  {
-    private:
-      std::map<i3d, rig> MapRigs {}; // карта поверхности
+    int yMin = -100;  // временное ограничение рабочего пространства
+    int yMax = 100;
 
-      int yMin = -100;  // временное ограничение рабочего пространства
-      int yMax = 100;
+    // --Level--Of--Details--
+    int lod = 1; // размер стороны элементов в LOD = 1
 
-      // --Level--Of--Details--
-      int lod = 1; // размер стороны элементов в LOD = 1
+    glsl Prog3d {};                   // GLSL программа шейдеров
+    GLuint vao_id = 0;                // VAO ID
 
-      // Кэш адресов блоков данных в VBO, вышедших за границу рендера
-      std::forward_list<GLsizeiptr> CachedOffset {};
+    void _load_16x16_obj(void);
+    void sides_set(rig*);                                        // настройка боковых сторон
+    void side_make_snip(const std::array<glm::vec4, 4>&, snip&); // настройка боковой стороны
+    void set_Zp(rig*, rig*);
+    void set_Zn(rig*, rig*);
+    void set_Xp(rig*, rig*);
+    void set_Xn(rig*, rig*);
+    void make_Zn(std::vector<snip>&, std::vector<snip>&, float, float);
+    void make_Zp(std::vector<snip>&, std::vector<snip>&, float, float);
+    void make_Xn(std::vector<snip>&, std::vector<snip>&, float, float);
+    void make_Xp(std::vector<snip>&, std::vector<snip>&, float, float);
+    void append_rig_Yp(const i3d&);
+    void remove_rig_Yp(const i3d&);
 
-      // Карта размещения cнипов по адресам в VBO
-      std::unordered_map<GLsizeiptr, snip*> VisibleSnips {};
+  public:
+    rdb(void);                    // конструктор
+    void render(void);              // Рендер кадра
 
-      vbo VBOdata = {GL_ARRAY_BUFFER};  // VBO вершин поверхности
-      glsl Prog3d {};                   // GLSL программа шейдеров
-      GLuint vao_id = 0;                // VAO ID
-      u_int render_points = 0;          // число точек передаваемых в рендер
+    vbo VBO = {GL_ARRAY_BUFFER};  // VBO вершин поверхности
 
-      void _load_16x16_obj(void);
-      void side_place(std::vector<snip>&, const f3d&);        // разместить данные в VBO буфере
-      void side_remove(std::vector<snip>&);                   // убрать данные из рендера
-      void clear_cashed_snips(void);                          // очистка промежуточного кэша
-      void sides_set(rig*);                                   // настройка боковых сторон
-      void side_make_snip(const std::array<glm::vec4, 4>&, snip&); // настройка боковой стороны
-      void set_Zp(rig*, rig*);
-      void set_Zn(rig*, rig*);
-      void set_Xp(rig*, rig*);
-      void set_Xn(rig*, rig*);
-      void make_Zn(std::vector<snip>&, std::vector<snip>&, float, float);
-      void make_Zp(std::vector<snip>&, std::vector<snip>&, float, float);
-      void make_Xn(std::vector<snip>&, std::vector<snip>&, float, float);
-      void make_Xp(std::vector<snip>&, std::vector<snip>&, float, float);
-      void append_rig_Yp(const i3d&);
-      void remove_rig_Yp(const i3d&);
+    void put_in(rig*);            // разместить данные в VBO буфере
+    void remove(rig*);            // убрать риг из VBO
 
-    public:
-      rdb(void);                       // конструктор
-      void place_in_gpu(rig*);                // разместить данные в VBO буфере
-      void remove_from_gpu(rig*);               // убрать риг из рендера
-      void draw(void);                 // Рендер кадра
+    void add_x(const i3d &);
+    void add_y(const i3d &);
+    void add_z(const i3d &);
+    void sub_x(const i3d &);
+    void sub_y(const i3d &);
+    void sub_z(const i3d &);
 
-      void add_x(const i3d &);
-      void add_y(const i3d &);
-      void add_z(const i3d &);
-      void sub_x(const i3d &);
-      void sub_y(const i3d &);
-      void sub_z(const i3d &);
+    //bool save(const i3d &, const i3d &);
+    void load_space(int, const glm::vec3 &);    // загрузка уровня
+    void highlight(const i3d &);
 
-      //bool save(const i3d &, const i3d &);
-      void load_space(int, const glm::vec3 &);    // загрузка уровня
-      void highlight(const i3d &);
+    rig* get(const i3d &);
 
-      rig* get(const i3d &);
-
-      i3d search_down(int, int, int);
-      i3d search_down(double, double, double);
-      i3d search_down(float, float, float);
-      i3d search_down(const glm::vec3 &);
-  };
+    i3d search_down(int, int, int);
+    i3d search_down(double, double, double);
+    i3d search_down(float, float, float);
+    i3d search_down(const glm::vec3 &);
+};
 
 } //namespace tr
 
