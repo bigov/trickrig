@@ -50,7 +50,18 @@ rdb::rdb(void)
     cfg::app_key(SHADER_FRAG_SCENE)
   );
   Prog3d.use();  // слинковать шейдерную рограмму
+  init_vbo();
 
+
+  Prog3d.unuse();
+}
+
+
+///
+/// \brief rdb::init_vbo
+///
+void rdb::init_vbo(void)
+{
   // инициализация VAO
   glGenVertexArrays(1, &vao_id);
   glBindVertexArray(vao_id);
@@ -92,7 +103,6 @@ rdb::rdb(void)
   delete[] idx_data;                                             // Удалить исходный массив.
 
   glBindVertexArray(0);
-  Prog3d.unuse();
 }
 
 
@@ -110,16 +120,26 @@ void rdb::put_in(rig* R)
     static_cast<float>(R->Origin.z) + R->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
   };
 
-  VBO.data_place(R->SideXp, Point);
-  VBO.data_place(R->SideXn, Point);
-  VBO.data_place(R->SideYp, Point);
-  VBO.data_place(R->SideYn, Point);
-  VBO.data_place(R->SideZp, Point);
-  VBO.data_place(R->SideZn, Point);
+  place_snip(R->SideXp, Point);
+  place_snip(R->SideXn, Point);
+  place_snip(R->SideYp, Point);
+  place_snip(R->SideYn, Point);
+  place_snip(R->SideZp, Point);
+  place_snip(R->SideZn, Point);
 
   R->in_vbo = true;
 }
 
+
+///
+/// \brief rdb::place_snip
+/// \param Side
+/// \param Point
+///
+void rdb::place_snip(std::vector<snip>& Side, const f3d& Point)
+{
+  for(snip& S: Side) VBO.data_place(S, Point);
+}
 
 
 ///

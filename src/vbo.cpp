@@ -196,43 +196,44 @@ void vbo::shrink(GLsizeiptr delta)
   /// \param data
   /// \param dst
   /// \return
-  /// \details Замена блока данных в указанном месте (с контролем положения)
+  /// \details Замена блока данных в указанном месте
   ///
-  bool vbo::data_update(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr dst)
+  void vbo::data_update(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr dst)
   {
-    if(dst > (hem - d_size)) return false; // протухший адрес из кэша
-
+#ifndef NDEBUG
+    if(dst > (hem - d_size)) ERR("ERR vbo::data_update"); // протухший адрес кэша
+#endif
     if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, id);
     glBufferSubData(gl_buffer_type, dst, d_size, data);
     if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
-    return true;
   }
 
 
-  ///
-  /// \brief
-  /// Добавляет данные в конец буфера данных VBO и фиксирует адрес смещения.
-  ///
-  /// \details
-  /// Координаты вершин снипов хранятся в нормализованом виде, поэтому перед
-  /// отправкой в VBO все данные снипа копируются во временный кэш, где
-  /// координаты вершин пересчитываются с учетом координат (TODO: сдвига и
-  /// поворота рига-контейнера) и преобразованные данные записываются в VBO.
-  ///
-  void vbo::vbo_append(snip& S, const f3d& Point)
+///
+/// \brief
+/// Добавляет данные в конец буфера данных VBO и фиксирует адрес смещения.
+///
+/// \details
+/// Координаты вершин снипов хранятся в нормализованом виде, поэтому перед
+/// отправкой в VBO все данные снипа копируются во временный кэш, где
+/// координаты вершин пересчитываются с учетом координат (TODO: сдвига и
+/// поворота рига-контейнера) и преобразованные данные записываются в VBO.
+///
+GLsizeiptr vbo::append(GLfloat* s_data, const f3d& Point)
+{
+  GLfloat cache[digits_per_snip] = {0.0f};
+  memcpy(cache, s_data, bytes_per_snip);
+
+  for(size_t n = 0; n < vertices_per_snip; n++)
   {
-    GLfloat cache[digits_per_snip] = {0.0f};
-    memcpy(cache, S.data, bytes_per_snip);
-
-    for(size_t n = 0; n < vertices_per_snip; n++)
-    {
-      cache[ROW_SIZE * n + X] += Point.x;
-      cache[ROW_SIZE * n + Y] += Point.y;
-      cache[ROW_SIZE * n + Z] += Point.z;
-    }
-
-    S.data_offset = data_append( bytes_per_snip, cache );
+    cache[ROW_SIZE * n + X] += Point.x;
+    cache[ROW_SIZE * n + Y] += Point.y;
+    cache[ROW_SIZE * n + Z] += Point.z;
   }
+
+  return data_append( bytes_per_snip, cache );
+}
+
 
   ///
   /// \brief snip::vbo_update
@@ -252,10 +253,10 @@ void vbo::shrink(GLsizeiptr delta)
   /// поэтому перед отправкой данных в VBO координаты вершин пересчитываются
   /// в соответствии с координатами и данными(shift) связаного рига,
   ///
-  bool vbo::update(snip& S, const f3d &Point, GLsizeiptr dst)
+  void vbo::update(GLfloat* s_data, const f3d &Point, GLsizeiptr dst)
   {
     GLfloat new_data[digits_per_snip] = {0.0f};
-    memcpy(new_data, S.data, bytes_per_snip);
+    memcpy(new_data, s_data, bytes_per_snip);
     for(size_t n = 0; n < vertices_per_snip; n++)
     {
       new_data[ROW_SIZE * n + X] += Point.x;
@@ -263,13 +264,9 @@ void vbo::shrink(GLsizeiptr delta)
       new_data[ROW_SIZE * n + Z] += Point.z;
     }
 
-    if(data_update( bytes_per_snip, new_data, dst ))
-    {
-      S.data_offset = dst;
-      return true;
-    }
-    return false;
+    data_update( bytes_per_snip, new_data, dst );
   }
+
 
   ///
   /// \brief snip::vbo_jam
@@ -295,28 +292,21 @@ void vbo::shrink(GLsizeiptr delta)
   /// \param Rig
   /// \param Point
   ///
-  void vbo::data_place(std::vector<snip>& Side, const f3d& Point)
+  void vbo::data_place(snip& Snip, const f3d& Point)
   {
-    for(snip& Snip: Side)
+
+    if(CachedOffset.empty()) // Если кэш пустой, то добавляем данные в конец VBO
     {
-      bool data_is_recieved = false;
-      while (!data_is_recieved)
-      {
-        if(CachedOffset.empty()) // Если кэш пустой, то добавляем данные в конец VBO
-        {
-          vbo_append(Snip, Point);
-          render_points += indices_per_snip;  // увеличить число точек рендера
-          VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
-          data_is_recieved = true;
-        }
-        else // если в кэше есть адреса свободных мест, то используем
-        {    // их с контролем, успешно ли был перемещен блок данных
-          data_is_recieved = update(Snip, Point, CachedOffset.front());
-          CachedOffset.pop_front();                                    // укоротить кэш
-          if(data_is_recieved) VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
-        }
-      }
+      Snip.data_offset = append(Snip.data, Point);
+      render_points += indices_per_snip;      // увеличить число точек рендера
     }
+    else // если в кэше есть адреса свободных мест, то используем их
+    {
+      Snip.data_offset = CachedOffset.front();
+      update(Snip.data, Point, CachedOffset.front());
+      CachedOffset.pop_front(); // укоротить кэш
+    }
+    VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
   }
 
 
@@ -414,10 +404,10 @@ void vbo::shrink(GLsizeiptr delta)
     // Самый частый и самый сложный вариант
     try { // Если есть отображаемый data_src и меньший data_dst из кэша, то
       snip* Snip = VisibleSnips.at(data_src);  // найти перемещаемый снип,
-      VisibleSnips.erase(data_src);            // удалить его из карты
-      vbo_jam(Snip, data_dst);         // переместить данные в VBO
-      VisibleSnips[data_dst] = Snip;           // внести ссылку в карту
-      render_points -= indices_per_snip;   // Так как данные из хвоста
+      VisibleSnips.erase(data_src);            // удалить ссылку с карты
+      vbo_jam(Snip, data_dst);                 // переместить данные в VBO
+      VisibleSnips[data_dst] = Snip;           // внести новую ссылку в карту
+      render_points -= indices_per_snip;       // Так как данные из хвоста - подрезать длину
     } catch(std::exception & e) {
       ERR(e.what());
     } catch(...) {

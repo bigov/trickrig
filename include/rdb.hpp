@@ -47,6 +47,8 @@ class rdb
     void make_Xp(std::vector<snip>&, std::vector<snip>&, float, float);
     void append_rig_Yp(const i3d&);
     void remove_rig_Yp(const i3d&);
+    void init_vbo(void);
+    void place_snip(std::vector<snip>& Side, const f3d& Point);
 
   public:
     rdb(void);                    // конструктор

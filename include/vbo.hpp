@@ -33,12 +33,11 @@ class vbo
     void clear_cashed_snips(void);            // очистка промежуточного кэша
 
     // Функции управления данными снипа в буферах VBO данных и VBO индекса
-    void vbo_append(snip&, const f3d&);
-    bool update(snip&, const f3d&, GLsizeiptr);
+    void update(GLfloat* s_data, const f3d&, GLsizeiptr);
     void vbo_jam(snip*, GLintptr);
 
-    void data_place(std::vector<snip>&, const f3d&);   // разместить данные в VBO буфере
-    void data_remove(std::vector<snip>&);              // убрать данные из рендера
+    void data_place(snip& Snip, const f3d&);   // разместить данные в VBO буфере
+    void data_remove(std::vector<snip>&);      // убрать данные из рендера
 
 private:
     GLuint id = 0;            // индекс VBO
@@ -48,8 +47,9 @@ private:
     std::unordered_map<GLsizeiptr, snip*> VisibleSnips {}; // Карта размещения cнипов по адресам в VBO
     std::forward_list<GLsizeiptr> CachedOffset {}; // Кэш адресов блоков данных в VBO, вышедших за границу рендера
 
-    bool data_update(GLsizeiptr, const GLvoid*, GLsizeiptr offset);
+    void data_update(GLsizeiptr, const GLvoid*, GLsizeiptr offset);
     GLsizeiptr data_append(GLsizeiptr data_size, const GLvoid* data);
+    GLsizeiptr append(GLfloat*, const f3d&);
 
 };
 
