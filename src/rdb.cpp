@@ -98,7 +98,7 @@ void rdb::init_vbo(void)
     for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
     stride += 4;                                                 // по 4 вершины на снип
   }
-  tr::vbo VBOindex = { GL_ELEMENT_ARRAY_BUFFER };                // Создать индексный буфер
+  vbo VBOindex = { GL_ELEMENT_ARRAY_BUFFER };                // Создать индексный буфер
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data);   // и заполнить данными.
   delete[] idx_data;                                             // Удалить исходный массив.
 
@@ -174,8 +174,6 @@ void rdb::remove(rig* Rig)
 ///
 void rdb::render(void)
 {
-  VBO.clear_cashed_snips();
-
   Prog3d.use();   // включить шейдерную программу
   Prog3d.set_uniform("mvp", MatMVP);
   Prog3d.set_uniform("light_direction", glm::vec4(0.2f, 0.9f, 0.5f, 0.0));
@@ -195,10 +193,6 @@ void rdb::render(void)
   //  glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT,
   //      nullptr, i);
   //}
-
-  // в конец массива добавлен снип подсветки - нарисуем его отдельно
-  glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT,
-      nullptr, (VBO.render_points / indices_per_snip) * vertices_per_snip);
 
   glBindVertexArray(0);
   Prog3d.unuse(); // отключить шейдерную программу
@@ -716,29 +710,16 @@ void rdb::sub_y(const i3d& Pt)
 ///
 /// Подсветка выделенного рига
 ///
-void rdb::highlight(const i3d& sel)
+void rdb::highlight(const i3d&)
 {
+  // === ОТКЛЮЧЕНО ===
+  return;
+
+
   // Вариант 1: изменить цвет снипа/рига чтобы было понятно, что он выделен.
   //return;
 
-  // Вариант 2: дорисовка прозрачной оболочки над(вокруг) выделенного рига
-
-  rig* R = get({sel.x, sel.y, sel.z});
-  if(nullptr == R) return;
-
-  auto highlight = R->SideYp.front();
-  highlight.texture_set(0, 7); // белая текстура
-
-  for(size_t n = 0; n < vertices_per_snip; n++)
-  {
-    highlight.data[ROW_SIZE * n + X] += sel.x;
-    highlight.data[ROW_SIZE * n + Y] += sel.y + 0.001f;
-    highlight.data[ROW_SIZE * n + Z] += sel.z;
-    highlight.data[ROW_SIZE * n + A] = 0.4f; // прозрачность
-  }
-
-  // Записать данные снипа подсветки в конец буфера данных VBO
-  VBO.data_append_tmp(tr::bytes_per_snip, highlight.data);
+  // Вариант 2: выделение границ выделенного снипа
 }
 
 
