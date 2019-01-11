@@ -113,13 +113,13 @@ void scene::framebuffer_resize(void)
           cfg::app_key(SHADER_VERT_SCREEN), cfg::app_key(SHADER_FRAG_SCREEN) );
     screenShaderProgram.use();
 
-    vbo VboPosition { GL_ARRAY_BUFFER };
+    vbo_base VboPosition { GL_ARRAY_BUFFER };
     GLfloat Position[8] = { -1.f, -1.f, 1.f, -1.f, -1.f, 1.f, 1.f, 1.f };
     VboPosition.allocate( sizeof(Position), Position );
     VboPosition.attrib( screenShaderProgram.attrib_location_get("position"),
         2, GL_FLOAT, GL_FALSE, 0, 0);
 
-    vbo VboTexcoord { GL_ARRAY_BUFFER };
+    vbo_base VboTexcoord { GL_ARRAY_BUFFER };
     GLfloat Texcoord[8] = {
       0.f, 1.f, //3
       1.f, 1.f, //4

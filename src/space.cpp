@@ -114,7 +114,7 @@ void space::load_texture(unsigned texture_index, const std::string& FileName)
     for(int x = xMin; x<= xMax; x += g1)
       for(int y = yMin; y<= yMax; y += g1)
         for(int z = zMin; z<= zMax; z += g1)
-          RigsDb0.put_in(RigsDb0.get({x, y, z}));
+          RigsDb0.rig_place(RigsDb0.get({x, y, z}));
 
     try {
       MoveFrom = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
@@ -155,14 +155,14 @@ void space::load_texture(unsigned texture_index, const std::string& FileName)
     zMax = MoveFrom.z + clod_0;
     for(int y = yMin; y <= yMax; y += g1)
       for(int z = zMin; z <= zMax; z += g1)
-        RigsDb0.remove(RigsDb0.get({x_old, y, z}));
+        RigsDb0.rig_remove(RigsDb0.get({x_old, y, z}));
 
     // Добавить линию элементов по направлению движения
     zMin = vf_z - clod_0;
     zMax = vf_z + clod_0;
     for(int y = yMin; y <= yMax; y += g1)
       for(int z = zMin; z <= zMax; z += g1)
-        RigsDb0.put_in(RigsDb0.get({x_new, y, z}));
+        RigsDb0.rig_place(RigsDb0.get({x_new, y, z}));
 
     MoveFrom.x = vf_x;
   }
@@ -196,14 +196,14 @@ void space::load_texture(unsigned texture_index, const std::string& FileName)
     xMax = MoveFrom.x + clod_0;
     for(int y = yMin; y <= yMax; y += g1)
       for(int x = xMin; x <= xMax; x += g1)
-        RigsDb0.remove(RigsDb0.get({x, y, z_old}));
+        RigsDb0.rig_remove(RigsDb0.get({x, y, z_old}));
 
     // Добавить линию элементов по направлению движения
     xMin = vf_x - clod_0;
     xMax = vf_x + clod_0;
     for(int y = yMin; y <= yMax; y += g1)
       for(int x = xMin; x <= xMax; x += g1)
-        RigsDb0.put_in(RigsDb0.get({x, y, z_new}));
+        RigsDb0.rig_place(RigsDb0.get({x, y, z_new}));
 
     MoveFrom.z = vf_z;
   }

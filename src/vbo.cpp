@@ -16,7 +16,7 @@ namespace tr
 ///
 /// \details Сжатие границы размещения активных данных в буфере
 ///
-void vbo_mem::shrink(GLsizeiptr delta)
+void vbo_ext::shrink(GLsizeiptr delta)
 {
   if(0 == delta) return;
   if(delta > hem) ERR("VBO::shrink got negative value of new size");
@@ -37,13 +37,13 @@ void vbo_base::allocate(GLsizeiptr al)
   glBindBuffer(gl_buffer_type, id);
   glBufferData(gl_buffer_type, allocated, nullptr, GL_STATIC_DRAW);
 
-  #ifndef NDEBUG //--контроль создания буфера--------------------------------
+#ifndef NDEBUG //--контроль создания буфера--------------------------------
   GLint d_size = 0;
   glGetBufferParameteriv(gl_buffer_type, GL_BUFFER_SIZE, &d_size);
   assert(allocated == d_size);
-  #endif //------------------------------------------------------------------
+#endif //------------------------------------------------------------------
 
-  if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindBuffer(gl_buffer_type, 0);
 }
 
 
@@ -115,7 +115,7 @@ void vbo_base::attrib_i(GLuint index, GLint d_size, GLenum type,
 }
 
 ///
-/// \brief vbo::jam_data
+/// \brief vbo::move_data
 /// \param src
 /// \param dst
 /// \param d_size
@@ -127,12 +127,12 @@ void vbo_base::attrib_i(GLuint index, GLint d_size, GLenum type,
 /// После перемещения активная граница VBO сдвигается к началу на размер
 /// перемещеного блока данных.
 ///
-void vbo_mem::jam_data(GLintptr src, GLintptr dst, GLsizeiptr data_size)
+void vbo_ext::move_data(GLintptr src, GLintptr dst, GLsizeiptr data_size)
 {
-  #ifndef NDEBUG // контроль направления переноса - только крайний в конце блок
-    if((src + data_size) != hem) ERR("vbo::jam_data got err src address");
-    if(dst > (src - data_size))  ERR("vbo::jam_data: dst + size > src");
-  #endif
+#ifndef NDEBUG // контроль направления переноса - только крайний в конце блок
+  if((src + data_size) != hem) ERR("vbo::move_data got err src address");
+  if(dst > (src - data_size))  ERR("vbo::move_data: dst + size > src");
+#endif
 
   glBindBuffer(gl_buffer_type, id);
   glCopyBufferSubData(gl_buffer_type, gl_buffer_type, src, dst, data_size);
@@ -140,6 +140,32 @@ void vbo_mem::jam_data(GLintptr src, GLintptr dst, GLsizeiptr data_size)
   hem = src;
 }
 
+
+///
+/// \brief vbo_ext::remove
+/// \param dest
+/// \return
+/// \details Для удаления данных из VBO используется перемещение: на мето
+/// удаляемого блока перемещаются данные из конца буфера, заменяя их. Длина
+/// активной части буфера уменьшается на размер удаленного блока.
+///
+GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
+{
+  if(data_size >= hem) hem = 0;
+  if(hem == 0) return hem;
+
+#ifndef NDEBUG
+  if((dest + data_size) > hem) ERR("vbo_ext::remove error block size");
+#endif
+  auto src = hem - data_size;
+  if(src == dest)    // Если удаляется блок данных, раположенный в конце активной зоны,
+  {                  // то укорачиваем гранцу зоны на размер блока без перемещения данных
+    hem = src;
+    return dest;
+  }
+  move_data(src, dest, data_size);
+  return hem;
+}
 
 ///
 /// \brief vbo::data_append
@@ -153,17 +179,17 @@ void vbo_mem::jam_data(GLintptr src, GLintptr dst, GLsizeiptr data_size)
 /// сдвигает границу указателя на размер внесенных данных для приема
 /// следующеего блока данных
 ///
-GLsizeiptr vbo_mem::data_append(GLsizeiptr d_size, const GLvoid* data)
+GLsizeiptr vbo_ext::data_append(const GLvoid* data, GLsizeiptr data_size)
 {
   #ifndef NDEBUG // проверка свободного места в буфере----------------------
-  if((allocated - hem) < d_size) ERR("VBO::SubDataAppend got overflow buffer");
+  if((allocated - hem) < data_size) ERR("VBO::SubDataAppend got overflow buffer");
   #endif //------------------------------------------------------------------
 
   glBindBuffer(gl_buffer_type, id);
-  glBufferSubData(GL_ARRAY_BUFFER, hem, d_size, data);
+  glBufferSubData(gl_buffer_type, hem, data_size, data);
   glBindBuffer(gl_buffer_type, 0);
   GLsizeiptr res = hem;
-  hem += d_size;
+  hem += data_size;
 
   return res;
 }
@@ -177,103 +203,14 @@ GLsizeiptr vbo_mem::data_append(GLsizeiptr d_size, const GLvoid* data)
 /// \return
 /// \details Замена блока данных в указанном месте
 ///
-void vbo_mem::data_update(GLsizeiptr d_size, const GLvoid* data, GLsizeiptr dst)
+void vbo_ext::data_update(GLsizeiptr dist, const GLvoid* data, GLsizeiptr data_size)
 {
 #ifndef NDEBUG
-    if(dst > (hem - d_size)) ERR("ERR vbo::data_update"); // протухший адрес кэша
+    if(dist > (hem - data_size)) ERR("ERR vbo::data_update");
 #endif
     glBindBuffer(gl_buffer_type, id);
-    glBufferSubData(gl_buffer_type, dst, d_size, data);
+    glBufferSubData(gl_buffer_type, dist, data_size, data);
     glBindBuffer(gl_buffer_type, 0);
   }
-
-
-///
-/// \brief
-/// Добавляет данные в конец буфера данных VBO и фиксирует адрес смещения.
-///
-/// \details
-/// Координаты вершин снипов хранятся в нормализованом виде, поэтому перед
-/// отправкой в VBO все данные снипа копируются во временный кэш, где
-/// координаты вершин пересчитываются с учетом координат (TODO: сдвига и
-/// поворота рига-контейнера) и преобразованные данные записываются в VBO.
-///
-GLsizeiptr vbo::append(GLfloat* s_data, const f3d& Point)
-{
-  GLfloat cache[digits_per_snip] = {0.0f};
-  memcpy(cache, s_data, bytes_per_snip);
-
-  for(size_t n = 0; n < vertices_per_snip; n++)
-  {
-    cache[ROW_SIZE * n + X] += Point.x;
-    cache[ROW_SIZE * n + Y] += Point.y;
-    cache[ROW_SIZE * n + Z] += Point.z;
-  }
-
-  return data_append( bytes_per_snip, cache );
-}
-
-
-///
-/// \brief snip::vbo_update
-/// \param Point
-/// \param VBOdata
-/// \param dst
-/// \return
-///
-/// \details обновление данных в VBO буфере
-///
-/// Целевой адрес для перемещения блока данных в VBO (параметр "offset")
-/// берется обычно из кэша. При этом может возникнуть ситуация, когда в кэше
-/// остаются адреса блоков за текущей границей VBO. Такой адрес считается
-/// "протухшим", блок данных не перемещается, функция возвращает false.
-///
-/// Координаты вершин снипов в трике хранятся в нормализованом виде,
-/// поэтому перед отправкой данных в VBO координаты вершин пересчитываются
-/// в соответствии с координатами и данными(shift) связаного рига,
-///
-void vbo::update(GLfloat* s_data, const f3d &Point, GLsizeiptr dst)
-{
-  GLfloat new_data[digits_per_snip] = {0.0f};
-  memcpy(new_data, s_data, bytes_per_snip);
-  for(size_t n = 0; n < vertices_per_snip; n++)
-  {
-    new_data[ROW_SIZE * n + X] += Point.x;
-    new_data[ROW_SIZE * n + Y] += Point.y;
-    new_data[ROW_SIZE * n + Z] += Point.z;
-  }
-  data_update( bytes_per_snip, new_data, dst );
-}
-
-
-///
-/// \brief vbo::data_place
-/// \param Rig
-/// \param Point
-///
-void vbo::data_place(snip& Snip, const f3d& Point)
-{
-  Snip.data_offset = append(Snip.data, Point);
-  render_points += indices_per_snip;      // увеличить число точек рендера
-  VisibleSnips[Snip.data_offset] = &Snip; // добавить ссылку
-}
-
-
-///
-/// \brief vbo::data_remove
-/// \param Side
-///
-/// \details Удаление данных из VBO
-///
-void vbo::data_remove(std::vector<snip>& Side)
-{
-  if(Side.empty()) return;
-
-  for(auto& Snip: Side)
-  {
-    VisibleSnips.erase(Snip.data_offset);
-  }
-}
-
 
 } //tr

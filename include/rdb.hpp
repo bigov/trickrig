@@ -24,6 +24,8 @@ class rdb
 {
   private:
     std::map<i3d, rig> MapRigs {}; // карта поверхности
+    std::unordered_map<GLsizeiptr, snip*> VisibleSnips {}; // Карта размещения cнипов по адресам в VBO
+    u_int render_points = 0;                               // число точек передаваемых в рендер
 
     int yMin = -100;  // временное ограничение рабочего пространства
     int yMax = 100;
@@ -48,16 +50,18 @@ class rdb
     void append_rig_Yp(const i3d&);
     void remove_rig_Yp(const i3d&);
     void init_vbo(void);
-    void place_snip(std::vector<snip>& Side, const f3d& Point);
+    void snip_place(std::vector<snip>& Side, const f3d& Point);
+    void side_remove(std::vector<snip>&); // убрать сторону рига из VBO
+    //void snip_update(GLfloat* s_data, const f3d &Point, GLsizeiptr dist); // код метода в конце файла .cpp
 
   public:
-    rdb(void);                    // конструктор
-    void render(void);              // Рендер кадра
+    rdb(void);                            // конструктор
+    void render(void);                    // Рендер кадра
 
-    vbo VBO = {GL_ARRAY_BUFFER};  // VBO вершин поверхности
+    vbo_ext VBO = {GL_ARRAY_BUFFER};      // VBO вершин поверхности
 
-    void put_in(rig*);            // разместить данные в VBO буфере
-    void remove(rig*);            // убрать риг из VBO
+    void rig_place(rig*);                 // разместить данные в VBO буфере
+    void rig_remove(rig*);                // убрать риг из VBO
 
     void add_x(const i3d &);
     void add_y(const i3d &);

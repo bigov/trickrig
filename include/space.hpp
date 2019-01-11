@@ -42,7 +42,6 @@ namespace tr
       void load_texture(unsigned index, const std::string& fname);
       void calc_position(evInput&);
       void calc_selected_area(glm::vec3 & sight_direction);
-      void vbo_allocate_mem(void);
       void recalc_borders(void);
       void redraw_borders_x(void);
       //void redraw_borders_y(void); // TODO

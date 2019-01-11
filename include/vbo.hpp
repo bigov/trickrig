@@ -12,11 +12,10 @@
 #include "main.hpp"
 #include "rig.hpp"
 
-namespace tr{
-
-
+namespace tr
+{
 ///
-/// \brief The vbo_base class
+/// \brief The VBO base class
 ///
 class vbo_base
 {
@@ -38,39 +37,20 @@ class vbo_base
 
 
 ///
-/// \brief The vbo_mem class
+/// \brief The VBO extended class
 ///
-class vbo_mem: public vbo_base
+class vbo_ext: public vbo_base
 {
   protected:
-    void data_update(GLsizeiptr, const GLvoid*, GLsizeiptr offset);
-    GLsizeiptr data_append(GLsizeiptr data_size, const GLvoid* data);
     void shrink(GLsizeiptr);
-    void jam_data(GLintptr data_src, GLintptr data_dst, GLsizeiptr data_size);
+    void move_data(GLintptr data_src, GLintptr data_dst, GLsizeiptr data_size);
 
   public:
-    vbo_mem(GLenum type): vbo_base(type) {}
-};
+    vbo_ext(GLenum type): vbo_base(type) {}
 
-
-///
-/// \brief The vbo class
-///
-class vbo: public vbo_mem
-{
-  private:
-    std::unordered_map<GLsizeiptr, snip*> VisibleSnips {}; // Карта размещения cнипов по адресам в VBO
-    GLsizeiptr append(GLfloat*, const f3d&);
-
-  public:
-    u_int render_points = 0;                               // число точек передаваемых в рендер
-
-    vbo(GLenum type): vbo_mem(type) {}
-
-    // Функции управления данными снипа в буферах VBO данных и VBO индекса
-    void update(GLfloat* s_data, const f3d&, GLsizeiptr);
-    void data_place(snip& Snip, const f3d&);               // разместить данные в VBO буфере
-    void data_remove(std::vector<snip>&);                  // убрать данные из рендера
+    GLsizeiptr data_append(const GLvoid* data, GLsizeiptr data_size);
+    GLsizeiptr remove(GLsizeiptr dest, GLsizeiptr data_size);
+    void data_update(GLsizeiptr dist, const GLvoid* data, GLsizeiptr data_size);
 };
 
 } //tr
