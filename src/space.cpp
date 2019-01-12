@@ -53,8 +53,64 @@ namespace tr
     glEnable(GL_LINE_SMOOTH);
     glEnable(GL_BLEND);      // поддержка прозрачности
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
     load_texture(GL_TEXTURE0, cfg::app_key(PNG_TEXTURE0));
+    init_prog3d();
+}
+
+
+///
+/// \brief rdb::init_vbo
+///
+void space::init_prog3d(void)
+{
+  Prog3d.attach_shaders(
+    cfg::app_key(SHADER_VERT_SCENE),
+    cfg::app_key(SHADER_FRAG_SCENE)
+  );
+  Prog3d.use();  // слинковать шейдерную рограмму
+
+  // инициализация VAO
+  glGenVertexArrays(1, &vao_id);
+  glBindVertexArray(vao_id);
+
+  // Число элементов в кубе с длиной стороны = "space_i0_length" элементов:
+  u_int n = static_cast<u_int>(pow((lod0_size + lod0_size + 1), 3));
+
+  // Размер данных VBO для размещения снипов:
+  VBO.allocate(n * bytes_per_snip);
+
+  // настройка положения атрибутов
+  VBO.attrib(Prog3d.attrib_location_get("position"),
+    4, GL_FLOAT, GL_FALSE, bytes_per_vertex, 0 * sizeof(GLfloat));
+
+  VBO.attrib(Prog3d.attrib_location_get("color"),
+    4, GL_FLOAT, GL_TRUE, bytes_per_vertex, 4 * sizeof(GLfloat));
+
+  VBO.attrib(Prog3d.attrib_location_get("normal"),
+    4, GL_FLOAT, GL_TRUE, bytes_per_vertex, 8 * sizeof(GLfloat));
+
+  VBO.attrib(Prog3d.attrib_location_get("fragment"),
+    2, GL_FLOAT, GL_TRUE, bytes_per_vertex, 12 * sizeof(GLfloat));
+
+  //
+  // Так как все четырехугольники в снипах индексируются одинаково, то индексный массив
+  // заполняем один раз "под завязку" и забываем про него. Число используемых индексов
+  // будет всегда соответствовать числу элементов, передаваемых в процедру "glDraw..."
+  //
+  size_t idx_size = static_cast<size_t>(6 * n * sizeof(GLuint)); // Размер индексного массива
+  GLuint *idx_data = new GLuint[idx_size];                       // данные для заполнения
+  GLuint idx[6] = {0, 1, 2, 2, 3, 0};                            // шаблон четырехугольника
+  GLuint stride = 0;                                             // число описаных вершин
+  for(size_t i=0; i < idx_size; i += 6) {                        // заполнить массив для VBO
+    for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
+    stride += 4;                                                 // по 4 вершины на снип
+  }
+  vbo_base VBOindex = { GL_ELEMENT_ARRAY_BUFFER };               // Создать индексный буфер
+  VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data);   // и заполнить данными.
+  delete[] idx_data;                                             // Удалить исходный массив.
+
+  glBindVertexArray(0);
+  Prog3d.unuse();
 }
 
 
@@ -91,10 +147,10 @@ void space::load_texture(unsigned texture_index, const std::string& FileName)
   ///
   /// \brief space::init
   ///
-  void space::init(void)
+  void space::init3d(void)
   {
     // начальная загрузка пространства масштаба g0, в точке Eye.ViewFrom
-    RigsDb0.load_space(g1, Eye.ViewFrom);
+    RigsDb0.load_space(&VBO, g1, Eye.ViewFrom);
 
     MoveFrom = {
       static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
@@ -103,21 +159,21 @@ void space::load_texture(unsigned texture_index, const std::string& FileName)
     };
 
     int // границы уровня lod_0
-      xMin = MoveFrom.x - tr::lod0_size,
-      yMin = MoveFrom.y - tr::lod0_size,
-      zMin = MoveFrom.z - tr::lod0_size,
-      xMax = MoveFrom.x + tr::lod0_size,
-      yMax = MoveFrom.y + tr::lod0_size,
-      zMax = MoveFrom.z + tr::lod0_size;
+      xMin = MoveFrom.x - lod0_size,
+      yMin = MoveFrom.y - lod0_size,
+      zMin = MoveFrom.z - lod0_size,
+      xMax = MoveFrom.x + lod0_size,
+      yMax = MoveFrom.y + lod0_size,
+      zMax = MoveFrom.z + lod0_size;
 
-    // Загрузить в графический буфер атрибуты элементов
+    // Загрузить в графический буфер элементы пространства
     for(int x = xMin; x<= xMax; x += g1)
       for(int y = yMin; y<= yMax; y += g1)
         for(int z = zMin; z<= zMax; z += g1)
           RigsDb0.rig_place(RigsDb0.get({x, y, z}));
 
     try {
-      MoveFrom = RigsDb0.search_down(tr::Eye.ViewFrom); // ближайший к камере снизу блок
+      MoveFrom = RigsDb0.search_down(Eye.ViewFrom); // ближайший к камере снизу блок
     }
     catch(...)
     {
@@ -138,7 +194,7 @@ void space::load_texture(unsigned texture_index, const std::string& FileName)
       x_old, x_new,  // координаты линий удаления/вставки новых фрагментов
       vf_x = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
       vf_z = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.z))),
-      clod_0 = tr::lod0_size;
+      clod_0 = lod0_size;
 
     if(MoveFrom.x > vf_x) {
       x_old = MoveFrom.x + clod_0;
@@ -179,7 +235,7 @@ void space::load_texture(unsigned texture_index, const std::string& FileName)
       z_old, z_new,  // координаты линий удаления/вставки новых фрагментов
       vf_z = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.z))),
       vf_x = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
-      clod_0 = tr::lod0_size;
+      clod_0 = lod0_size;
 
     if(MoveFrom.z > vf_z) {
       z_old = MoveFrom.z + clod_0;
@@ -233,9 +289,9 @@ void space::load_texture(unsigned texture_index, const std::string& FileName)
   ///
   void space::recalc_borders(void)
   {
-    if(static_cast<int>(floor(tr::Eye.ViewFrom.x)) != MoveFrom.x) redraw_borders_x();
-  //if(static_cast<int>(floor(tr::Eye.ViewFrom.y)) != MoveFrom.y) redraw_borders_y();
-    if(static_cast<int>(floor(tr::Eye.ViewFrom.z)) != MoveFrom.z) redraw_borders_z();
+    if(static_cast<int>(floor(Eye.ViewFrom.x)) != MoveFrom.x) redraw_borders_x();
+  //if(static_cast<int>(floor(Eye.ViewFrom.y)) != MoveFrom.y) redraw_borders_y();
+    if(static_cast<int>(floor(Eye.ViewFrom.z)) != MoveFrom.z) redraw_borders_z();
   }
 
 
@@ -258,7 +314,7 @@ void space::load_texture(unsigned texture_index, const std::string& FileName)
 
     float _k = Eye.speed / static_cast<float>(AppWin.fps); // корректировка по FPS
 
-    //if (!space_is_empty(tr::Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
+    //if (!space_is_empty(Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
 
     rl = _k * static_cast<float>(ev.rl);   // скорости движения
     fb = _k * static_cast<float>(ev.fb);   // по трем нормалям от камеры
@@ -271,11 +327,11 @@ void space::load_texture(unsigned texture_index, const std::string& FileName)
       _ct = static_cast<float>(cos(Eye.look_t));
 
     glm::vec3 LookDir {_ca*_ct, sin(Eye.look_t), _sa*_ct}; //Направление взгляда
-    tr::Eye.ViewFrom += glm::vec3(fb *_ca + rl*sin(Eye.look_a - Pi), ud,  fb*_sa + rl*_ca);
-    ViewTo = tr::Eye.ViewFrom + LookDir;
+    Eye.ViewFrom += glm::vec3(fb *_ca + rl*sin(Eye.look_a - Pi), ud,  fb*_sa + rl*_ca);
+    ViewTo = Eye.ViewFrom + LookDir;
 
     // Расчет матрицы вида
-    MatView = glm::lookAt(tr::Eye.ViewFrom, ViewTo, UpWard);
+    MatView = glm::lookAt(Eye.ViewFrom, ViewTo, UpWard);
 
     // Матрица преобразования
     MatMVP =  MatProjection * MatView;
@@ -361,7 +417,37 @@ void space::load_texture(unsigned texture_index, const std::string& FileName)
     mod = 0;
     if (285 == ev.scancode) mod = 1;
 
-    RigsDb0.render();
+    render();
+  }
+
+
+  ///
+  /// Рендер кадра
+  ///
+  void space::render(void)
+  {
+    Prog3d.use();   // включить шейдерную программу
+    Prog3d.set_uniform("mvp", MatMVP);
+    Prog3d.set_uniform("light_direction", glm::vec4(0.2f, 0.9f, 0.5f, 0.0));
+    Prog3d.set_uniform("light_bright", glm::vec4(0.5f, 0.5f, 0.5f, 0.0));
+
+    glBindVertexArray(vao_id);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+
+    // можно все нарисовать за один проход
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_points), GL_UNSIGNED_INT, nullptr);
+
+    // а можно, если потребуется, то пошагово по ячейкам -
+    //GLsizei max = (render_points / indices_per_snip) * vertices_per_snip;
+    //for (GLsizei i = 0; i < max; i += vertices_per_snip)
+    //{
+    //  glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT,
+    //      nullptr, i);
+    //}
+
+    glBindVertexArray(0);
+    Prog3d.unuse(); // отключить шейдерную программу
   }
 
 } // namespace tr

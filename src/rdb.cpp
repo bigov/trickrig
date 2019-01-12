@@ -22,10 +22,9 @@ namespace tr
 #define R1y2 R1->SideYp.front().data[Y + ROW_SIZE * 2]
 #define R1y3 R1->SideYp.front().data[Y + ROW_SIZE * 3]
 
-/// DEGUG
+/// DEBUG
 void show_texture(double* d)
 {
-
   char buf[256];
   std::sprintf(buf,
     "    u      v   \n"
@@ -36,73 +35,6 @@ void show_texture(double* d)
     " %+5.3lf, %+5.3lf\n\n",
       d[12], d[13], d[26], d[27], d[40], d[41], d[54], d[55]);
   std::cout << buf;
-}
-
-
-///
-/// \brief rdb::rdb
-/// \details КОНСТРУКТОР
-///
-rdb::rdb(void)
-{
-  Prog3d.attach_shaders(
-    cfg::app_key(SHADER_VERT_SCENE),
-    cfg::app_key(SHADER_FRAG_SCENE)
-  );
-  Prog3d.use();  // слинковать шейдерную рограмму
-  init_vbo();
-
-
-  Prog3d.unuse();
-}
-
-
-///
-/// \brief rdb::init_vbo
-///
-void rdb::init_vbo(void)
-{
-  // инициализация VAO
-  glGenVertexArrays(1, &vao_id);
-  glBindVertexArray(vao_id);
-
-  // Число элементов в кубе с длиной стороны = "space_i0_length" элементов:
-  u_int n = static_cast<u_int>(pow((lod0_size + lod0_size + 1), 3));
-
-  // Размер данных VBO для размещения снипов:
-  VBO.allocate(n * bytes_per_snip);
-
-  // настройка положения атрибутов
-  VBO.attrib(Prog3d.attrib_location_get("position"),
-    4, GL_FLOAT, GL_FALSE, tr::bytes_per_vertex, 0 * sizeof(GLfloat));
-
-  VBO.attrib(Prog3d.attrib_location_get("color"),
-    4, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, 4 * sizeof(GLfloat));
-
-  VBO.attrib(Prog3d.attrib_location_get("normal"),
-    4, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, 8 * sizeof(GLfloat));
-
-  VBO.attrib(Prog3d.attrib_location_get("fragment"),
-    2, GL_FLOAT, GL_TRUE, tr::bytes_per_vertex, 12 * sizeof(GLfloat));
-
-  //
-  // Так как все четырехугольники в снипах индексируются одинаково, то индексный массив
-  // заполняем один раз "под завязку" и забываем про него. Число используемых индексов
-  // будет всегда соответствовать числу элементов, передаваемых в процедру "glDraw..."
-  //
-  size_t idx_size = static_cast<size_t>(6 * n * sizeof(GLuint)); // Размер индексного массива
-  GLuint *idx_data = new GLuint[idx_size];                       // данные для заполнения
-  GLuint idx[6] = {0, 1, 2, 2, 3, 0};                            // шаблон четырехугольника
-  GLuint stride = 0;                                             // число описаных вершин
-  for(size_t i=0; i < idx_size; i += 6) {                        // заполнить массив для VBO
-    for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
-    stride += 4;                                                 // по 4 вершины на снип
-  }
-  vbo_base VBOindex = { GL_ELEMENT_ARRAY_BUFFER };                // Создать индексный буфер
-  VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data);   // и заполнить данными.
-  delete[] idx_data;                                             // Удалить исходный массив.
-
-  glBindVertexArray(0);
 }
 
 
@@ -160,7 +92,7 @@ void rdb::snip_place(std::vector<snip>& Side, const f3d& Point)
       cache[ROW_SIZE * n + Z] += Point.z;
     }
 
-    Snip.data_offset = VBO.data_append(cache,  bytes_per_snip); // записать расположение в VBO
+    Snip.data_offset = VBO->data_append(cache,  bytes_per_snip); // записать расположение в VBO
     render_points += indices_per_snip;                          // увеличить число точек рендера
     VisibleSnips[Snip.data_offset] = &Snip;                     // добавить ссылку
   }
@@ -207,56 +139,26 @@ void rdb::side_remove(std::vector<snip>& Side)
   for(auto& Snip: Side)
   {
     dest = Snip.data_offset;                   // адрес снипа, подлежащий удалению
-    assert(sizeof(Snip.data) == bytes_per_snip);
-    moved = VBO.remove(dest, bytes_per_snip);  // убрать снип из VBO
+    moved = VBO->remove(dest, bytes_per_snip);  // убрать снип из VBO
 
     if(moved == 0)                             // Если VBO пустой
     {
       VisibleSnips.clear();
+      render_points = 0;
       return;
     }
     else if (moved == dest)                    // Если удаляемый снип оказался в конце активной
-    {                                          // части VBO, то просто удалить его из массива
+    {                                          // части VBO, то только удалить его с карты
       VisibleSnips.erase(dest);
     }
-    else                                        // Если удаляемый снип не в конце, то на его
-    {                                           // место перемещан отображаемый блок с конца:
-      VisibleSnips[moved]->data_offset = dest;  // изменить адрес размещения в VBO у перемещенного снипа
-      VisibleSnips[dest] = VisibleSnips[moved]; // перенести его в карте видимых снипов
-      VisibleSnips.erase(moved);                // удалить освободившийся элемент карты
+    else                                        // Если удаляемый снип не в конце, то на его место
+    {                                           // ставится крайний снип в конце VBO:
+      VisibleSnips[dest] = VisibleSnips[moved]; // - заменить блок в карте снипов,
+      VisibleSnips[dest]->data_offset = dest;   // - изменить адрес размещения в VBO у перемещенного снипа,
+      VisibleSnips.erase(moved);                // - удалить освободившийся элемент карты.
     }
-    render_points -= indices_per_snip;          // уменьшить число точек рендера на снип
+    render_points -= indices_per_snip;          // Уменьшить число точек рендера
   }
-}
-
-
-///
-/// Рендер кадра
-///
-void rdb::render(void)
-{
-  Prog3d.use();   // включить шейдерную программу
-  Prog3d.set_uniform("mvp", MatMVP);
-  Prog3d.set_uniform("light_direction", glm::vec4(0.2f, 0.9f, 0.5f, 0.0));
-  Prog3d.set_uniform("light_bright", glm::vec4(0.5f, 0.5f, 0.5f, 0.0));
-
-  glBindVertexArray(vao_id);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glEnable(GL_DEPTH_TEST);
-
-  // можно все нарисовать за один проход
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(render_points), GL_UNSIGNED_INT, nullptr);
-
-  // а можно, если потребуется, то пошагово по ячейкам -
-  //GLsizei max = (render_points / indices_per_snip) * vertices_per_snip;
-  //for (GLsizei i = 0; i < max; i += vertices_per_snip)
-  //{
-  //  glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT,
-  //      nullptr, i);
-  //}
-
-  glBindVertexArray(0);
-  Prog3d.unuse(); // отключить шейдерную программу
 }
 
 
@@ -791,10 +693,11 @@ void rdb::highlight(const i3d&)
 /// выбраной области пространства. Из этой карты берутся данные снипов,
 /// размещаемых в VBO для рендера сцены.
 ///
-void rdb::load_space(int g, const glm::vec3& Position)
+void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
 {
+  VBO = vbo;
   i3d P{ Position };
-  lod = g; // TODO проверка масштаба на допустимость
+  lod = l_o_d; // TODO проверка масштаба на допустимость
 
   // Загрузка фрагмента карты 8х8х(16x16) раз на xz плоскости
   i3d From {P.x - 64, 0, P.z - 64};

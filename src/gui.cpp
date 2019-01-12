@@ -409,7 +409,7 @@ void gui::button_click(ELEMENT_ID id)
       AppWin.mode = GUI_HUD3D;
       AppWin.Cursor[2] = 4.0f;
       AppWin.set_mouse_ptr = -1;
-      Space.init();
+      Space.init3d();
       break;
     case BTN_CONFIG:
       AppWin.mode = GUI_MENU_CONFIG;

@@ -11,19 +11,6 @@ namespace tr
 {
 
 ///
-/// \brief vbo::shrink
-/// \param delta
-///
-/// \details Сжатие границы размещения активных данных в буфере
-///
-void vbo_ext::shrink(GLsizeiptr delta)
-{
-  if(0 == delta) return;
-  if(delta > hem) ERR("VBO::shrink got negative value of new size");
-  hem -= delta;
-}
-
-///
 /// \brief vbo::allocate
 /// \param al
 ///

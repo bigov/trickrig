@@ -17,18 +17,19 @@ namespace tr
     public:
       space(void);
       ~space(void) {}
-      void init(void);
+      void init3d(void);
       void draw(evInput &);
 
     private:
       space(const space &);
       space operator=(const space &);
 
-      rdb RigsDb0 {};               // структура 3D пространства LOD-0
-      const int g1 = 1;             // масштаб элементов в RigsDb0
-
+      const int g1 = 1;              // масштаб элементов в RigsDb0
+      GLuint vao_id = 0;             // VAO ID
+      glsl Prog3d {};                // GLSL программа шейдеров
+      vbo_ext VBO {GL_ARRAY_BUFFER}; // VBO вершин поверхности
+      rdb RigsDb0 {};                // структура 3D пространства LOD-0
       GLuint texture_id = 0;
-
       float rl=0.f, ud=0.f, fb=0.f; // скорость движения по направлениям
 
       i3d MoveFrom {0, 0, 0},       // координаты рига, на котором "стоим"
@@ -40,12 +41,14 @@ namespace tr
         ViewTo {};                  // направление взгляда
 
       void load_texture(unsigned index, const std::string& fname);
+      void init_prog3d(void);
       void calc_position(evInput&);
       void calc_selected_area(glm::vec3 & sight_direction);
       void recalc_borders(void);
       void redraw_borders_x(void);
       //void redraw_borders_y(void); // TODO
       void redraw_borders_z(void);
+      void render(void);             // Рендер кадра
   };
 
 } //namespace

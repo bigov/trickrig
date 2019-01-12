@@ -25,16 +25,12 @@ class rdb
   private:
     std::map<i3d, rig> MapRigs {}; // карта поверхности
     std::unordered_map<GLsizeiptr, snip*> VisibleSnips {}; // Карта размещения cнипов по адресам в VBO
-    u_int render_points = 0;                               // число точек передаваемых в рендер
 
     int yMin = -100;  // временное ограничение рабочего пространства
     int yMax = 100;
 
     // --Level--Of--Details--
     int lod = 1; // размер стороны элементов в LOD = 1
-
-    glsl Prog3d {};                   // GLSL программа шейдеров
-    GLuint vao_id = 0;                // VAO ID
 
     void _load_16x16_obj(void);
     void sides_set(rig*);                                        // настройка боковых сторон
@@ -55,13 +51,14 @@ class rdb
     //void snip_update(GLfloat* s_data, const f3d &Point, GLsizeiptr dist); // код метода в конце файла .cpp
 
   public:
-    rdb(void);                            // конструктор
-    void render(void);                    // Рендер кадра
+    rdb(void) {}
+    ~rdb(void) {}
 
-    vbo_ext VBO = {GL_ARRAY_BUFFER};      // VBO вершин поверхности
+    u_int render_points = 0;          // число точек передаваемых в рендер
+    vbo_ext* VBO = nullptr;           // VBO вершин поверхности
 
-    void rig_place(rig*);                 // разместить данные в VBO буфере
-    void rig_remove(rig*);                // убрать риг из VBO
+    void rig_place(rig*);             // разместить данные в VBO буфере
+    void rig_remove(rig*);            // убрать риг из VBO
 
     void add_x(const i3d &);
     void add_y(const i3d &);
@@ -71,7 +68,7 @@ class rdb
     void sub_z(const i3d &);
 
     //bool save(const i3d &, const i3d &);
-    void load_space(int, const glm::vec3 &);    // загрузка уровня
+    void load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position);    // загрузка уровня
     void highlight(const i3d &);
 
     rig* get(const i3d &);
