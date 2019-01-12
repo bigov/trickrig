@@ -675,9 +675,7 @@ void rdb::sub_y(const i3d& Pt)
 ///
 void rdb::highlight(const i3d&)
 {
-  // === ОТКЛЮЧЕНО ===
   return;
-
 
   // Вариант 1: изменить цвет снипа/рига чтобы было понятно, что он выделен.
   //return;
@@ -703,7 +701,11 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
   i3d From {P.x - 64, 0, P.z - 64};
   i3d To {P.x + 64, 1, P.z + 64};
 
+  VBO->clear();
   MapRigs.clear();
+  VisibleSnips.clear();
+  render_points = 0;
+
   cfg::DataBase.rigs_loader(MapRigs, From, To);
 }
 

@@ -28,6 +28,28 @@ namespace tr
   const int KEY_ESCAPE         = GLFW_KEY_ESCAPE;
   const int KEY_BACKSPACE      = GLFW_KEY_BACKSPACE;
 
+
+  ///
+  /// \brief main_window::resize
+  /// \param w
+  /// \param h
+  ///
+  void main_window::resize(u_int w, u_int h)
+  {
+    width  = w;
+    height = h;
+    resized = true; // для пересчета фреймбуфера
+
+    // пересчет позции координат прицела (центр окна)
+    AppWin.Cursor.x = static_cast<float>(AppWin.width/2) + 0.5f;
+    AppWin.Cursor.y = static_cast<float>(AppWin.height/2) + 0.5f;
+
+    // пересчет матрицы проекции
+    AppWin.aspect = static_cast<float>(AppWin.width) / static_cast<float>(AppWin.height);
+    MatProjection = glm::perspective(1.118f, AppWin.aspect, 0.01f, 1000.0f);
+  }
+
+
   ///
   /// Создание нового окна с обработчиками ввода и настройка контекста
   /// отображения OpenGL
@@ -194,9 +216,7 @@ namespace tr
   ///
   void wglfw::framebuffer_size_callback(GLFWwindow*, int width, int height)
   {
-    AppWin.width  = static_cast<u_int>(width);
-    AppWin.height = static_cast<u_int>(height);
-    AppWin.resized = true; // для пересчета фреймбуфера
+    AppWin.resize(static_cast<u_int>(width), static_cast<u_int>(height));
   }
 
 

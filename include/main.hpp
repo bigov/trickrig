@@ -138,6 +138,8 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
     texture_coord texZn {};
 
     char set_mouse_ptr = 0;           // запрос смены типа курсора {-1, 0, 1}
+    void resize(u_int w, u_int h);
+    //std::function <void*(GLsizei width, GLsizei height)> fb_resize {};
   };
   extern main_window AppWin;
 
