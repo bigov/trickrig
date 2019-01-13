@@ -15,19 +15,16 @@ gui::gui(void)
   for(auto &P: MapsDirs) { Maps.push_back(map(P, cfg::map_name(P))); }
 
   //cfg::DataBase.load_template();
-}
+  // настройка текстуры для HUD
+  glActiveTexture(GL_TEXTURE2);
+  glGenTextures(1, &tex_hud_id);
+  glBindTexture(GL_TEXTURE_2D, tex_hud_id);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glBindTexture(GL_TEXTURE_2D, 0);
 
-
-///
-/// Загрузка в текстурный буфер начальной заставки
-///
-void gui::headband(void)
-{
-  GLint level_of_details = 0; GLint frame = 0;
-  glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-               static_cast<GLsizei>(BgImage.w_summ),
-               static_cast<GLsizei>(BgImage.h_summ),
-               frame, GL_RGBA, GL_UNSIGNED_BYTE, BgImage.uchar());
+  WinGui.resize(AppWin.width, AppWin.height);
+  AppWin.pWinGui = &WinGui;
 }
 
 
@@ -214,22 +211,22 @@ void gui::select_list(const v_str &Rows, u_int lx, u_int ly, u_int lw, u_int lh,
 ///
 void gui::cancel(void)
 {
-  switch (AppWin.mode)
+  switch (GuiMode)
   {
     case GUI_HUD3D:
       cfg::save_map_view();
-      AppWin.mode = GUI_MENU_LSELECT;
+      GuiMode = GUI_MENU_LSELECT;
       AppWin.Cursor[2] = 0.0f;  // Убрать прицел
       AppWin.set_mouse_ptr = 1; // Включить указатель мыши
       break;
     case GUI_MENU_LSELECT:
-      AppWin.mode = GUI_MENU_START;
+      GuiMode = GUI_MENU_START;
       break;
     case GUI_MENU_CREATE:
-      AppWin.mode = GUI_MENU_LSELECT;
+      GuiMode = GUI_MENU_LSELECT;
       break;
     case GUI_MENU_CONFIG:
-      AppWin.mode = GUI_MENU_START;
+      GuiMode = GUI_MENU_START;
       break;
     case GUI_MENU_START:
       AppWin.run = false;
@@ -270,10 +267,8 @@ void gui::sub_img(const img &Image, GLint x, GLint y)
 ///
 /// \brief gui::update
 ///
-void gui::refresh(void)
+void gui::refresh_hud(void)
 {
-  if(AppWin.resized) hud_load();
-
   // счетчик FPS
   px bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения
   u_int fps_length = 4;               // количество символов в надписи
@@ -393,7 +388,7 @@ void gui::button_click(ELEMENT_ID id)
   AppWin.pInputBuffer = nullptr; // Во всех режимах, кроме GUI_MENU_CREATE,
                                  // строка ввода отключена
 
-  if(AppWin.mode == GUI_HUD3D) return;
+  if(GuiMode == GUI_HUD3D) return;
 
   if(id == ROW_MAP_NAME)
   { // В списке карт первый клик выбирает карту, второй открывает.
@@ -406,21 +401,23 @@ void gui::button_click(ELEMENT_ID id)
   {
     case BTN_OPEN:
       cfg::load_map_cfg(Maps[row_selected - 1].Folder);
-      AppWin.mode = GUI_HUD3D;
+      GuiMode = GUI_HUD3D;
       AppWin.Cursor[2] = 4.0f;
       AppWin.set_mouse_ptr = -1;
+      WinGui.resize(AppWin.width, AppWin.height); // для очистки элементов GUI окна
+      hud_load();
       Space.init3d();
       break;
     case BTN_CONFIG:
-      AppWin.mode = GUI_MENU_CONFIG;
+      GuiMode = GUI_MENU_CONFIG;
       break;
     case BTN_LOCATION:
-      AppWin.mode = GUI_MENU_LSELECT;
+      GuiMode = GUI_MENU_LSELECT;
       break;
     case BTN_CREATE:
       user_input.clear();
       AppWin.pInputBuffer = &user_input;       // Включить пользовательский ввод
-      AppWin.mode = GUI_MENU_CREATE;
+      GuiMode = GUI_MENU_CREATE;
       break;
     case BTN_ENTER_NAME:
       create_map();
@@ -694,29 +691,11 @@ void gui::menu_config(void)
 ///
 /// \brief gui::draw_gui_menu
 ///
-void gui::menu_selector(evInput &ev)
+void gui::show_menu(evInput &ev)
 {
-  if((ev.mouse == MOUSE_BUTTON_LEFT) &&
-     (ev.action == RELEASE) &&
-     (element_over != NONE))
-  {
-    button_click(element_over);
-    ev.mouse = -1;   // сбросить флаг кнопки
-    ev.action = -1;  // сбросить флаг действия
-  }
+  mouse_press_left = (ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS);
 
-  if(element_over == NONE)
-  {
-    ev.mouse = -1;   // сбросить флаг кнопки
-    //AppWin.action = -1; // флаг действия потребуется при вводе названия карты
-  }
-
-  // При каждом рисовании каждой кнопки проверяются координаты указателя мыши.
-  // Если указатель находится над кнопкой, то кнопка изображается другим цветом
-  // и ее ID присваивается переменной "button_over"
-  element_over = NONE;
-
-  switch (AppWin.mode)
+  switch (GuiMode)
   {
     case GUI_MENU_CONFIG:
       menu_config();
@@ -738,6 +717,27 @@ void gui::menu_selector(evInput &ev)
                static_cast<GLint>(AppWin.width),
                static_cast<GLint>(AppWin.height),
                0, GL_RGBA, GL_UNSIGNED_BYTE, WinGui.uchar());
+
+  if((ev.mouse == MOUSE_BUTTON_LEFT) &&
+     (ev.action == RELEASE) &&
+     (element_over != NONE))
+  {
+    button_click(element_over);
+    ev.mouse = -1;   // сбросить флаг кнопки
+    ev.action = -1;  // сбросить флаг действия
+  }
+
+  if(element_over == NONE)
+  {
+    ev.mouse = -1;   // сбросить флаг кнопки
+    //AppWin.action = -1; // флаг действия потребуется при вводе названия карты
+  }
+
+  // При каждом рисовании каждой кнопки проверяются координаты указателя мыши.
+  // Если указатель находится над кнопкой, то кнопка изображается другим цветом
+  // и ее ID присваивается переменной "button_over"
+  element_over = NONE;
+
 }
 
 
@@ -756,7 +756,7 @@ void gui::menu_selector(evInput &ev)
 ///
 void gui::draw(evInput &ev)
 {
-  if(AppWin.resized) WinGui.resize(AppWin.width, AppWin.height);
+  if(GuiMode == GUI_HUD3D) Space.draw(ev); // Рендер фреймбуфера
 
   if((ev.key == KEY_ESCAPE) && (ev.action == RELEASE))
   {
@@ -765,14 +765,9 @@ void gui::draw(evInput &ev)
     ev.action = -1;
   }
 
-  if(AppWin.mode == GUI_HUD3D) { refresh(); }
-  else
-  {
-    mouse_press_left = (ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS);
-    menu_selector(ev);
-  }
-
-  AppWin.resized = false;
+  glBindTexture(GL_TEXTURE_2D, tex_hud_id);
+  if(GuiMode == GUI_HUD3D) refresh_hud();
+  else show_menu(ev);
 }
 
 } //tr

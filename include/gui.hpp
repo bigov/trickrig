@@ -15,6 +15,14 @@ enum BUTTON_STATE {
   ST_OFF
 };
 
+enum GUI_MODES {   // режимы окна
+  GUI_HUD3D,         // основной режим - без шторки
+  GUI_MENU_START,    // начальное меню
+  GUI_MENU_LSELECT,  // выбор игры
+  GUI_MENU_CREATE,   // создание нового района
+  GUI_MENU_CONFIG,   // настройки
+};
+
 class gui
 {
   private:
@@ -24,15 +32,17 @@ class gui
     px color_title {0xFF, 0xFF, 0xDD, 0xFF}; // фон заголовка
     bool mouse_press_left = false;           // нажатие на левую кнопку мыши
 
+    GLuint tex_hud_id   = 0;                 // id тектуры HUD
+
     struct map{
         map(const std::string &f, const std::string &n): Folder(f), Name(n){}
         std::string Folder;
         std::string Name;
     };
 
-    std::vector<map> Maps {};             // список карт
-
-    enum ELEMENT_ID {                      // Идентификаторы кнопок GIU
+    std::vector<map> Maps {};            // список карт
+    GUI_MODES GuiMode = GUI_MENU_START;  // режим окна приложения
+    enum ELEMENT_ID {                    // Идентификаторы кнопок GIU
       BTN_OPEN,
       BTN_CANCEL,
       BTN_CONFIG,
@@ -63,9 +73,8 @@ class gui
     img Font18s { "../assets/font_10x18_sh.png", f_len }; //шрифт 10x18 (тень)
     img Font18l { "../assets/font_10x18_lt.png", f_len }; //шрифт 10x18 (светл)
 
-    img BgImage {"../assets/quad.png"}; // Текстура заставки
-
     std::string user_input {};  // строка ввода пользователя
+    space Space {};
 
     void hud_load(void);
     void obscure_screen(void);
@@ -80,14 +89,14 @@ class gui
     void row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &);
     void select_list(const v_str &, u_int x, u_int y, u_int w, u_int h, size_t i = 0);
     void sub_img(const img &Image, GLint x, GLint y);
-    void menu_selector(evInput& ev);
+    void show_menu(evInput& ev);
     void menu_map_create(evInput& ev);
     void menu_map_select(void);
     void menu_start(void);
     void menu_config(void);
     void button_click(ELEMENT_ID);
     void cancel(void);
-    void refresh(void);      // обновление кадра
+    void refresh_hud(void);      // обновление кадра
     void create_map(void);
     void remove_map(void);
 
@@ -96,10 +105,6 @@ class gui
   public:
     gui(void);
     void draw(evInput &);      // формирование изображения GIU окна
-    void headband(void);  // заставка
-
-    space Space {};
-
 };
 
 } //tr

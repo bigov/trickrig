@@ -16,16 +16,6 @@ namespace tr
 scene::scene()
 {
   program2d_init();
-
-  // настройка рендер-буфера
-  if(!RenderBuffer.init()) ERR("Error on creating Render Buffer.");
-
-  // настройка текстуры для HUD
-  glActiveTexture(GL_TEXTURE2);
-  glGenTextures(1, &tex_hud_id);
-  glBindTexture(GL_TEXTURE_2D, tex_hud_id);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
 
@@ -87,30 +77,12 @@ void scene::program2d_init(void)
 ///
 void scene::draw(evInput &ev)
 {
-  if(AppWin.resized)
-    RenderBuffer.resize(static_cast<GLsizei>(AppWin.width), static_cast<GLsizei>(AppWin.height));
-
-  // первый проход рендера во фреймбуфер
-  if(AppWin.mode == GUI_HUD3D)
-  {
-    RenderBuffer.bind();
-    WinGui.Space.draw(ev);
-    RenderBuffer.unbind();
-  }
-  else
-  {
-    WinGui.headband();
-  }
-
-  // На текстуре GUI рисуем необходимые элементы
-  glBindTexture(GL_TEXTURE_2D, tex_hud_id);
   WinGui.draw(ev);
 
-  // Второй проход - рендер прямоугольника окна с текстурой фреймбуфера
+  // Рендер окна с текстурами фреймбуфера и GIU
   glBindVertexArray(vao_quad_id);
   glDisable(GL_DEPTH_TEST);
   screenShaderProgram.use();
-  // Прицел должен динамически изменять яркость, поэтому используем шейдер
   screenShaderProgram.set_uniform("Cursor", AppWin.Cursor);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   screenShaderProgram.unuse();

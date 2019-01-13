@@ -16,14 +16,12 @@ namespace tr
 ///
 bool fb_ren::init(void)
 {
-
   // настройка текстуры для рендера 3D пространства
   glActiveTexture(GL_TEXTURE1);
   glGenTextures(1, &tex_space_id);
   glBindTexture(GL_TEXTURE_2D, tex_space_id);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
 
   glGenFramebuffers(1, &id);
   glBindFramebuffer(GL_FRAMEBUFFER, id);
@@ -45,7 +43,9 @@ bool fb_ren::init(void)
 ///
 void fb_ren::bind(void)
 {
+  glBindTexture(GL_TEXTURE_2D, tex_space_id);
   glBindFramebuffer(GL_FRAMEBUFFER, id);
+  glBindRenderbuffer(GL_RENDERBUFFER, rbuf_id);
 }
 
 
@@ -54,6 +54,7 @@ void fb_ren::bind(void)
 ///
 void fb_ren::unbind(void)
 {
+  glBindRenderbuffer(GL_RENDERBUFFER, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -66,17 +67,17 @@ void fb_ren::unbind(void)
 void fb_ren::resize(GLsizei w, GLsizei h)
 {
   GLint l_o_d = 0, frame = 0;
+  glViewport(0, 0, w, h); // пересчет Viewport
 
-  // пересчет Viewport
-  glViewport(0, 0, w, h);
-
-  // настройка размера текстуры рендера фреймбуфера
+  // Настройка размера и начальная заливка голубым цветом текстуры рендера фреймбуфера
   glBindTexture(GL_TEXTURE_2D, tex_space_id);
-  glTexImage2D(GL_TEXTURE_2D, l_o_d, GL_RGBA, w, h, frame, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+  img Bg{static_cast<u_long>(w), static_cast<u_long>(h), {0x7F, 0xB0, 0xFF, 0xFF}};
+  glTexImage2D(GL_TEXTURE_2D, l_o_d, GL_RGBA, w, h, frame, GL_RGBA, GL_UNSIGNED_BYTE, Bg.uchar());
 
   // настройка размера рендербуфера
   glBindRenderbuffer(GL_RENDERBUFFER, rbuf_id);
   glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, w, h);
+  glBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
 
 
@@ -102,13 +103,14 @@ bool fb_tex::init(GLsizei width, GLsizei height)
   glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
 
   // Create the texture object for the primitive information buffer
+  glActiveTexture(GL_TEXTURE3);
   glGenTextures(1, &tex_color_id);
   glBindTexture(GL_TEXTURE_2D, tex_color_id);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, width, height, 0, GL_RGB_INTEGER, GL_UNSIGNED_INT, nullptr);
-
   glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_color_id, 0);
 
   // Create the texture object for the depth buffer
+  glActiveTexture(GL_TEXTURE4);   //??? нужно ли это тут ???
   glGenTextures(1, &tex_depth_id);
   glBindTexture(GL_TEXTURE_2D, tex_depth_id);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT,  nullptr);

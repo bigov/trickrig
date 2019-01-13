@@ -9,7 +9,6 @@
 
 #include "gui.hpp"
 #include "config.hpp"
-#include "framebuf.hpp"
 
 namespace tr
 {
@@ -19,10 +18,6 @@ class scene
     scene(const tr::scene&);
     scene operator=(const tr::scene&);
 
-    //GLuint tex_space_id  = 0;    // id тектуры для рендера фрейм-буфера
-    fb_ren RenderBuffer {};
-
-    GLuint tex_hud_id   = 0;     // id тектуры HUD
     GLuint vao_quad_id  = 0;
     gui WinGui {};               // Интерфейс окна
     glsl screenShaderProgram {}; // шейдерная программа обработки текстуры рендера

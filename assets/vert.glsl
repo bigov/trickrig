@@ -1,4 +1,5 @@
 #version 330
+
 in vec4 position;  // 3D координаты точки
 in vec4 color;     // цвет точки
 in vec4 normal;    // направление нормали к поверхности
@@ -9,10 +10,10 @@ uniform vec4 light_direction; // вектор освещения
 uniform vec4 light_bright;    // яркость источника
 
 // выходные параметры
-out vec2 vFragment; // 2D коодината в текстурной карте
-out vec4 vColor;    // цвет пикселя
-out vec4 vDiff;     // диффузное освещение
-flat out int vId;        // индекс для определения выделенного фрагмента
+out vec2 vFragment;  // 2D коодината в текстурной карте
+out vec4 vColor;     // цвет пикселя
+out vec4 vDiff;      // диффузное освещение
+//flat out int vId;    // индекс для определения выделенного фрагмента
 
 void main(void)
 {
@@ -21,5 +22,5 @@ void main(void)
   vDiff = light_bright * max(dot(normal, light_direction), 0.0f);
   gl_Position = mvp * position;
 
-  vId = gl_VertexID/6;
+  //vId = gl_VertexID/6;
 }

@@ -34,11 +34,12 @@ namespace tr
 
       GLuint attrib_location_get(const char *);
       GLint uniform_location_get(const char *);
-      void set_uniform(const char *, const glm::mat4 &);
-      void set_uniform(const char *, const glm::vec3 &);
-      void set_uniform(const char *, const glm::vec4 &);
-      void set_uniform(const char * name, GLint u);
-      void set_uniform(const char * name, GLfloat u);
+      void set_uniform(const char*, const glm::mat4 &);
+      void set_uniform(const char*, const glm::vec3 &);
+      void set_uniform(const char*, const glm::vec4 &);
+      void set_uniform(const char* name, GLint u);
+      void set_uniform(const char* name, GLfloat u);
+      void set_uniform1ui(const char* name, GLuint u);
       void link(void);
       void use(void);
       void unuse(void);

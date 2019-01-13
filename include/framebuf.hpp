@@ -8,6 +8,7 @@
 #define FRBUF_HPP
 
 #include "main.hpp"
+#include "io.hpp"
 
 namespace tr
 {

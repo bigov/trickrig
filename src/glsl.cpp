@@ -197,6 +197,8 @@ namespace tr {
     glUniform4fv(loc, 1, glm::value_ptr(m));
     return;
   }
+
+
   ////////
   // Передача в шейдер целого числа
   //
@@ -209,6 +211,18 @@ namespace tr {
   }
   
   
+  ////////
+  // Передача в шейдер целого числа
+  //
+  void glsl::set_uniform1ui(const char* name, GLuint u)
+  {
+    GLint loc;
+    loc = uniform_location_get(name);
+    glUniform1ui(loc, u);
+    return;
+  }
+
+
   ////////
   // Передача в шейдер значения float
   //

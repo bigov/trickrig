@@ -90,14 +90,6 @@ enum MAP_INIT {      // вначале списка идут названия ф
 extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
 extern glm::mat4 MatMVP;        // Матрица преобразования
 
-enum GUI_MODE_ID {   // режимы окна
-  GUI_HUD3D,         // основной режим - без шторки
-  GUI_MENU_START,    // начальное меню
-  GUI_MENU_LSELECT,  // выбор игры
-  GUI_MENU_CREATE,   // создание нового района
-  GUI_MENU_CONFIG,   // настройки
-};
-
 // Настройка значений параметров для сравнения mouse_button и mouse_action
 // будут выполнены в классе управления окном
 extern const int MOUSE_BUTTON_LEFT;  // GLFW_MOUSE_BUTTON_LEFT
@@ -107,41 +99,6 @@ extern const int REPEAT;             // GLFW_REPEAT
 extern const int RELEASE;            // GLFW_RELEASE
 extern const int KEY_ESCAPE;         // GLFW_KEY_ESCAPE
 extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
-
-  // Параметры и режимы окна приложения
-  struct main_window {
-    u_int width = 400;                    // ширина окна
-    u_int height = 400;                   // высота окна
-    u_int left = 0;                       // положение окна по горизонтали
-    u_int top = 0;                        // положение окна по вертикали
-    u_int btn_w = 120;                    // ширина кнопки GUI
-    u_int btn_h = 36;                     // высота кнопки GUI
-    u_int minwidth = (btn_w + 16) * 4;    // минимально допустимая ширина окна
-    u_int minheight = btn_h * 4 + 8;      // минимально допустимая высота окна
-    GUI_MODE_ID mode = GUI_MENU_START;    // режим окна приложения
-    std::string* pInputBuffer = nullptr;  // строка ввода пользователя
-
-    bool run     = true;  // индикатор закрытия окна
-    float aspect = 1.0f;  // соотношение размеров окна
-    bool resized = true;  // флаг наличия изменений параметров окна
-    double xpos = 0.0;    // позиция указателя относительно левой границы
-    double ypos = 0.0;    // позиция указателя относительно верхней границы
-    int fps = 120;        // частота кадров (для коррекции скорости движения)
-    glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина прицела
-
-    struct texture_coord {float u=0.f, v=4.f;};
-    texture_coord texYp { 0.f, 3.f };
-    texture_coord texYn {};
-    texture_coord texXp {};
-    texture_coord texXn {};
-    texture_coord texZp {};
-    texture_coord texZn {};
-
-    char set_mouse_ptr = 0;           // запрос смены типа курсора {-1, 0, 1}
-    void resize(u_int w, u_int h);
-    //std::function <void*(GLsizei width, GLsizei height)> fb_resize {};
-  };
-  extern main_window AppWin;
 
   // Настройка параметров главной камеры 3D вида
   struct camera_3d {

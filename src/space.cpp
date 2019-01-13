@@ -54,19 +54,34 @@ space::space(void)
   glEnable(GL_BLEND);      // поддержка прозрачности
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   load_texture(GL_TEXTURE0, cfg::app_key(PNG_TEXTURE0));
-  init_prog3d();
+
+  glsl_progs_init();
+
+  // настройка рендер-буфера
+  if(!BufferRender.init()) ERR("Error on creating Render Buffer.");
+  AppWin.pRenderBuffer = &BufferRender;
+  BufferRender.resize(AppWin.width, AppWin.height);
+
+  if(!BufferPick.init(AppWin.width, AppWin.height)) ERR("Error on creating Picking Buffer.");
+  BufferPick.resize(AppWin.width, AppWin.height);
+
 }
 
 
 ///
 /// \brief rdb::init_vbo
 ///
-void space::init_prog3d(void)
+void space::glsl_progs_init(void)
 {
   Prog3d.attach_shaders( cfg::app_key(SHADER_VERT_SCENE), cfg::app_key(SHADER_FRAG_SCENE) );
   Prog3d.use();  // слинковать шейдерную рограмму
   init_vao();    // настроить VAO
   Prog3d.unuse();
+
+  ProgPick.attach_shaders("../assets/sel_vert.glsl", "../assets/sel_frag.glsl" );
+  ProgPick.use();
+  ProgPick.unuse();
+
 }
 
 
@@ -397,7 +412,14 @@ void space::draw(evInput & ev)
 
   if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
   {
-    ev.mouse = -1; ev.action = -1;
+    pixel_info Pixel = BufferPick.read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
+    std::cout
+        << Pixel.draw_id << ", "
+        << Pixel.object_id << ", "
+        << Pixel.primitive_id << "\n";
+    ev.action = -1;
+  }
+/*    ev.mouse = -1; ev.action = -1;
     RigsDb0.add_y(Selected); // Вставить элемент поверхности над выделенной точкой.
   }
   else if((ev.mouse == MOUSE_BUTTON_RIGHT) && (ev.action == PRESS))
@@ -407,7 +429,7 @@ void space::draw(evInput & ev)
   }
 
   RigsDb0.highlight(Selected); // Подсветка выделения
-
+*/
   // Запись в базу данных: Ctrl+S (285, 31).
   // Код отрабатывает последовательное нажатие клавиш Ctrl(285) и S(31)
   static int mod = 0;
@@ -419,7 +441,30 @@ void space::draw(evInput & ev)
   mod = 0;
   if (285 == ev.scancode) mod = 1;
 
+  glBindVertexArray(vao_id);
+  render_picker();
   render_3d_space();
+  glBindVertexArray(0);
+}
+
+
+///
+/// \brief space::render_picker
+///
+void space::render_picker(void)
+{
+  BufferPick.bind();
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  ProgPick.use();
+  ProgPick.set_uniform("mvp", MatMVP);
+  //ProgPick.set_uniform1ui("ObjectId", 123);
+  //ProgPick.set_uniform1ui("DrawIndex", 456);
+
+///
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_points), GL_UNSIGNED_INT, nullptr);
+
+  ProgPick.unuse();
+  BufferPick.unbind();
 }
 
 
@@ -428,14 +473,15 @@ void space::draw(evInput & ev)
 ///
 void space::render_3d_space(void)
 {
+
+  BufferRender.bind();
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glEnable(GL_DEPTH_TEST);
+
   Prog3d.use();   // включить шейдерную программу
   Prog3d.set_uniform("mvp", MatMVP);
   Prog3d.set_uniform("light_direction", glm::vec4(0.2f, 0.9f, 0.5f, 0.0));
   Prog3d.set_uniform("light_bright", glm::vec4(0.5f, 0.5f, 0.5f, 0.0));
-
-  glBindVertexArray(vao_id);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glEnable(GL_DEPTH_TEST);
 
   // можно все нарисовать за один проход
   glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_points), GL_UNSIGNED_INT, nullptr);
@@ -448,8 +494,9 @@ void space::render_3d_space(void)
   //      nullptr, i);
   //}
 
-  glBindVertexArray(0);
   Prog3d.unuse(); // отключить шейдерную программу
-}
+  BufferRender.unbind();
+
+ }
 
 } // namespace tr
