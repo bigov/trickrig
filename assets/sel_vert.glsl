@@ -1,6 +1,6 @@
 #version 330
 
-layout (location = 0) in vec3 Position;
+in vec4 position;
 uniform mat4 mvp;
 
 flat out int VertId;    // индекс для определения выделенного фрагмента
@@ -8,6 +8,6 @@ flat out int VertId;    // индекс для определения выдел
 void main()
 {
   VertId = gl_VertexID;
-  gl_Position = mvp * vec4(Position, 1.0);
+  gl_Position = mvp * position;
 }
 
