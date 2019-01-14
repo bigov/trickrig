@@ -457,7 +457,7 @@ void space::render_picker(void)
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   ProgPick.use();
   ProgPick.set_uniform("mvp", MatMVP);
-  //ProgPick.set_uniform1ui("ObjectId", 123);
+  ProgPick.set_uniform1ui("ObjectId", 123);
   //ProgPick.set_uniform1ui("DrawIndex", 456);
 
 ///
