@@ -31,6 +31,7 @@ namespace tr
         const std::string& fragment_shader_filename);
 
       GLuint get_id(void);
+      std::map<std::string, GLuint> Atrib {};
 
       GLuint attrib_location_get(const char *);
       GLint uniform_location_get(const char *);

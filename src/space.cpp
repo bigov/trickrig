@@ -75,11 +75,23 @@ void space::glsl_progs_init(void)
 {
   Prog3d.attach_shaders( cfg::app_key(SHADER_VERT_SCENE), cfg::app_key(SHADER_FRAG_SCENE) );
   Prog3d.use();  // слинковать шейдерную рограмму
+
+  Prog3d.Atrib["position"] = Prog3d.attrib_location_get("position");
+  Prog3d.Atrib["color"] = Prog3d.attrib_location_get("color");
+  Prog3d.Atrib["normal"] = Prog3d.attrib_location_get("normal");
+  Prog3d.Atrib["fragment"] = Prog3d.attrib_location_get("fragment");
+
   init_vao();    // настроить VAO
   Prog3d.unuse();
 
   ProgPick.attach_shaders("../assets/sel_vert.glsl", "../assets/sel_frag.glsl" );
   ProgPick.use();
+  glBindVertexArray(vao_id);
+  ProgPick.Atrib["position"] = ProgPick.attrib_location_get("position");
+  //ProgPick.Atrib["color"] = ProgPick.attrib_location_get("color");
+  //ProgPick.Atrib["normal"] = ProgPick.attrib_location_get("normal");
+  //ProgPick.Atrib["fragment"] = ProgPick.attrib_location_get("fragment");
+  glBindVertexArray(0);
   ProgPick.unuse();
 
 }
@@ -456,6 +468,12 @@ void space::draw(evInput & ev)
 void space::render_picker(void)
 {
   BufferPick.bind();
+  glEnableVertexAttribArray(ProgPick.Atrib["position"]);
+  //glEnableVertexAttribArray(ProgPick.Atrib["color"]);
+  //glEnableVertexAttribArray(ProgPick.Atrib["normal"]);
+  //glEnableVertexAttribArray(ProgPick.Atrib["fragment"]);
+
+
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   ProgPick.use();
   ProgPick.set_uniform("mvp", MatMVP);
@@ -466,6 +484,10 @@ void space::render_picker(void)
   glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_points), GL_UNSIGNED_INT, nullptr);
 
   ProgPick.unuse();
+  //glDisableVertexAttribArray(ProgPick.Atrib["fragment"]);
+  //glDisableVertexAttribArray(ProgPick.Atrib["normal"]);
+  //glDisableVertexAttribArray(ProgPick.Atrib["color"]);
+  glDisableVertexAttribArray(ProgPick.Atrib["position"]);
   BufferPick.unbind();
 }
 
@@ -475,8 +497,13 @@ void space::render_picker(void)
 ///
 void space::render_3d_space(void)
 {
-
   BufferRender.bind();
+  glEnableVertexAttribArray(Prog3d.Atrib["position"]);
+  glEnableVertexAttribArray(Prog3d.Atrib["color"]);
+  glEnableVertexAttribArray(Prog3d.Atrib["normal"]);
+  glEnableVertexAttribArray(Prog3d.Atrib["fragment"]);
+
+
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
@@ -497,6 +524,10 @@ void space::render_3d_space(void)
   //}
 
   Prog3d.unuse(); // отключить шейдерную программу
+  glDisableVertexAttribArray(Prog3d.Atrib["fragment"]);
+  glDisableVertexAttribArray(Prog3d.Atrib["normal"]);
+  glDisableVertexAttribArray(Prog3d.Atrib["color"]);
+  glDisableVertexAttribArray(Prog3d.Atrib["position"]);
   BufferRender.unbind();
 
  }

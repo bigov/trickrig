@@ -17,6 +17,7 @@ namespace tr {
   {
     id = glCreateProgram();
     if (glGetError()) ERR("Can't create GLSL program");
+    Atrib.clear();
     return;
   }
 
