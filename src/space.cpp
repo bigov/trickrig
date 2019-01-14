@@ -413,10 +413,12 @@ void space::draw(evInput & ev)
   if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
   {
     pixel_info Pixel = BufferPick.read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
-    std::cout
-        << Pixel.draw_id << ", "
-        << Pixel.object_id << ", "
-        << Pixel.primitive_id << "\n";
+
+
+    char buf[256];
+    std::sprintf(buf, "%8i, %8i, %8i\n", Pixel.draw_id, Pixel.object_id, Pixel.primitive_id);
+    std::cout << buf;
+
     ev.action = -1;
   }
 /*    ev.mouse = -1; ev.action = -1;
