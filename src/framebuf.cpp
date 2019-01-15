@@ -18,6 +18,7 @@ bool fb_ren::init(void)
 {
   // настройка текстуры для рендера 3D пространства
   glActiveTexture(GL_TEXTURE1);
+
   glGenTextures(1, &tex_space_id);
   glBindTexture(GL_TEXTURE_2D, tex_space_id);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -100,27 +101,27 @@ fb_ren::~fb_ren(void)
 bool fb_tex::init(GLsizei width, GLsizei height)
 {
   glGenFramebuffers(1, &id);
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+  glBindFramebuffer(GL_FRAMEBUFFER, id);
 
   // Create the texture object for the primitive information buffer
   glActiveTexture(GL_TEXTURE3);
   glGenTextures(1, &tex_color_id);
   glBindTexture(GL_TEXTURE_2D, tex_color_id);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, width, height, 0, GL_RGB_INTEGER, GL_UNSIGNED_INT, nullptr);
-  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_color_id, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_color_id, 0);
 
   // Create the texture object for the depth buffer
   glActiveTexture(GL_TEXTURE4);   //??? нужно ли это тут ???
   glGenTextures(1, &tex_depth_id);
   glBindTexture(GL_TEXTURE_2D, tex_depth_id);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT,  nullptr);
-  glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex_depth_id, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex_depth_id, 0);
 
   //
   //TODO
   // 1. настройку размеров текстур сделать через вызов метода resize(w, h)
   // 2. проверить, какой параметр д.б. в glCheckFramebufferStatus( ??? )
-  //    GL_FRAMEBUFFER или GL_DRAW_FRAMEBUFFER
+  //    GL_FRAMEBUFFER или GL_FRAMEBUFFER
 
   GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
   if (Status != GL_FRAMEBUFFER_COMPLETE) ERR("Framebufer error, status: " + std::to_string(Status));
@@ -139,7 +140,7 @@ bool fb_tex::init(GLsizei width, GLsizei height)
 void fb_tex::resize(GLsizei width, GLsizei height)
 {
   GLint lod = 0, frame = 0;
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+  glBindFramebuffer(GL_FRAMEBUFFER, id);
 
   glBindTexture(GL_TEXTURE_2D, tex_color_id);
   glTexImage2D(GL_TEXTURE_2D, lod, GL_RGB32UI, width, height, frame, GL_RGB_INTEGER, GL_UNSIGNED_INT, nullptr);
@@ -156,7 +157,7 @@ void fb_tex::resize(GLsizei width, GLsizei height)
 ///
 void fb_tex::bind()
 {
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+  glBindFramebuffer(GL_FRAMEBUFFER, id);
 }
 
 
@@ -165,7 +166,7 @@ void fb_tex::bind()
 ///
 void fb_tex::unbind()
 {
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 
@@ -192,7 +193,7 @@ pixel_info fb_tex::read_pixel(GLint x, GLint y)
 ///
 fb_tex::~fb_tex()
 {
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
+  glBindFramebuffer(GL_FRAMEBUFFER, id);
 
   glBindTexture(GL_TEXTURE_2D, 0);
   if(tex_color_id != 0) glDeleteTextures(1, &tex_color_id);
@@ -200,7 +201,7 @@ fb_tex::~fb_tex()
   if(tex_depth_id != 0) glDeleteTextures(1, &tex_depth_id);
   tex_depth_id = 0;
 
-  glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
   if(id != 0) glDeleteFramebuffers(1, &id);
   id = 0;
 }
