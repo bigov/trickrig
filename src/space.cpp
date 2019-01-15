@@ -58,12 +58,9 @@ space::space(void)
   glsl_progs_init();
 
   // настройка рендер-буфера
-  if(!BufferRender.init()) ERR("Error on creating Render Buffer.");
+  if(!BufferRender.init(AppWin.width, AppWin.height)) ERR("Error on creating Render Buffer.");
   AppWin.pRenderBuffer = &BufferRender;
   BufferRender.resize(AppWin.width, AppWin.height);
-
-  if(!BufferPick.init(AppWin.width, AppWin.height)) ERR("Error on creating Picking Buffer.");
-  BufferPick.resize(AppWin.width, AppWin.height);
 
 }
 
@@ -83,17 +80,6 @@ void space::glsl_progs_init(void)
 
   init_vao();    // настроить VAO
   Prog3d.unuse();
-
-  ProgPick.attach_shaders("../assets/sel_vert.glsl", "../assets/sel_frag.glsl" );
-  ProgPick.use();
-  glBindVertexArray(vao_id);
-  ProgPick.Atrib["position"] = ProgPick.attrib_location_get("position");
-  //ProgPick.Atrib["color"] = ProgPick.attrib_location_get("color");
-  //ProgPick.Atrib["normal"] = ProgPick.attrib_location_get("normal");
-  //ProgPick.Atrib["fragment"] = ProgPick.attrib_location_get("fragment");
-  glBindVertexArray(0);
-  ProgPick.unuse();
-
 }
 
 
@@ -209,7 +195,7 @@ void space::init3d(void)
   catch(...)
   {
     //TODO: установить точку обзора над поверхностью
-    tr::info("Fail setup 3d coordinates for ViewFrom point.");
+    info("Fail setup 3d coordinates for ViewFrom point.");
   }
 }
 
@@ -424,13 +410,10 @@ void space::draw(evInput & ev)
 
   if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
   {
-    pixel_info Pixel = BufferPick.read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
-
-
+    pixel_info Pixel = BufferRender.read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
     char buf[256];
-    std::sprintf(buf, "%8i, %8i, %8i\n", Pixel.draw_id, Pixel.object_id, Pixel.primitive_id);
+    std::sprintf(buf, "%10u, %10u, %10u\n", Pixel.r, Pixel.g, Pixel.b);
     std::cout << buf;
-
     ev.action = -1;
   }
 /*    ev.mouse = -1; ev.action = -1;
@@ -456,39 +439,8 @@ void space::draw(evInput & ev)
   if (285 == ev.scancode) mod = 1;
 
   glBindVertexArray(vao_id);
-  render_picker();
   render_3d_space();
   glBindVertexArray(0);
-}
-
-
-///
-/// \brief space::render_picker
-///
-void space::render_picker(void)
-{
-  BufferPick.bind();
-  glEnableVertexAttribArray(ProgPick.Atrib["position"]);
-  //glEnableVertexAttribArray(ProgPick.Atrib["color"]);
-  //glEnableVertexAttribArray(ProgPick.Atrib["normal"]);
-  //glEnableVertexAttribArray(ProgPick.Atrib["fragment"]);
-
-
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  ProgPick.use();
-  ProgPick.set_uniform("mvp", MatMVP);
-  ProgPick.set_uniform1ui("ObjectId", 123);
-  //ProgPick.set_uniform1ui("DrawIndex", 456);
-
-///
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_points), GL_UNSIGNED_INT, nullptr);
-
-  ProgPick.unuse();
-  //glDisableVertexAttribArray(ProgPick.Atrib["fragment"]);
-  //glDisableVertexAttribArray(ProgPick.Atrib["normal"]);
-  //glDisableVertexAttribArray(ProgPick.Atrib["color"]);
-  glDisableVertexAttribArray(ProgPick.Atrib["position"]);
-  BufferPick.unbind();
 }
 
 
@@ -511,6 +463,9 @@ void space::render_3d_space(void)
   Prog3d.set_uniform("mvp", MatMVP);
   Prog3d.set_uniform("light_direction", glm::vec4(0.2f, 0.9f, 0.5f, 0.0));
   Prog3d.set_uniform("light_bright", glm::vec4(0.5f, 0.5f, 0.5f, 0.0));
+
+  //ProgPick.set_uniform1ui("snip_id", 123);
+
 
   // можно все нарисовать за один проход
   glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_points), GL_UNSIGNED_INT, nullptr);

@@ -38,7 +38,7 @@ void main_window::resize(u_int w, u_int h)
 {
   width  = w;
   height = h;
-  //resized = true; // для пересчета фреймбуфера
+  glViewport(0, 0, w, h); // пересчет Viewport
 
   // пересчет позции координат прицела (центр окна)
   Cursor.x = static_cast<float>(w/2) + 0.5f;

@@ -25,8 +25,8 @@ namespace tr
       space(const space &);
       space operator=(const space &);
 
-      fb_ren BufferRender {};
-      fb_tex BufferPick{};
+      fb_base BufferRender {};
+      //fb_tex BufferPick{};
 
       glsl Prog3d {};                // GLSL программа шейдеров
       glsl ProgPick {};               // GLSL программа шейдеров для отбора элементов
@@ -56,8 +56,6 @@ namespace tr
       void redraw_borders_x(void);
       //void redraw_borders_y(void); // TODO
       void redraw_borders_z(void);
-
-      void render_picker(void);      // Рендер в служебную текстуру выбора элементов
       void render_3d_space(void);    // Рендер 3D сцены
   };
 

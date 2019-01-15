@@ -15,25 +15,27 @@ namespace tr
 
 struct pixel_info
 {
-  unsigned int object_id = 0;
-  unsigned int draw_id = 0;
-  unsigned int primitive_id = 0;
+  unsigned int r = 0;
+  unsigned int g = 0;
+  unsigned int b = 0;
 };
 
 
-class fb_ren
+class fb_base
 {
 private:
   GLuint id = 0;
   GLuint rbuf_id = 0;
-  GLuint tex_space_id  = 0;    // id тектуры для рендера фрейм-буфера
+  GLuint tex_color = 0;  // тектура рендера пространства
+  GLuint tex_ident = 0;  // тектуры идентификации объетов
 
 public:
-  fb_ren(void) {}
-  ~fb_ren(void);
+  fb_base(void) {}
+  ~fb_base(void);
 
-  bool init(void);
+  bool init(GLsizei w, GLsizei h);
   void resize(GLsizei w, GLsizei h);
+  pixel_info read_pixel(GLint x, GLint y);
   void bind(void);
   void unbind(void);
 };

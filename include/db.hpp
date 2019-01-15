@@ -27,7 +27,7 @@ struct main_window {
   u_int minwidth = (btn_w + 16) * 4;    // минимально допустимая ширина окна
   u_int minheight = btn_h * 4 + 8;      // минимально допустимая высота окна
   std::string* pInputBuffer = nullptr;  // строка ввода пользователя
-  fb_ren* pRenderBuffer = nullptr;      // рендер-буфер окна
+  fb_base* pRenderBuffer = nullptr;      // рендер-буфер окна
   img* pWinGui = nullptr;               // текстура GUI окна
 
   bool run     = true;  // индикатор закрытия окна
