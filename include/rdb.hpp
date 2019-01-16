@@ -60,6 +60,7 @@ class rdb
     void rig_place(rig*);             // разместить данные в VBO буфере
     void rig_remove(rig*);            // убрать риг из VBO
 
+    void modify(unsigned int);        // изменить по индексу снипа
     void add_x(const i3d &);
     void add_y(const i3d &);
     void add_z(const i3d &);

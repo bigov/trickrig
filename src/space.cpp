@@ -332,9 +332,7 @@ void space::draw(evInput & ev)
   if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
   {
     pixel_info Pixel = FrBuffer.read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
-    char buf[256];
-    std::sprintf(buf, "%9i, %9i, %9i\n", Pixel.r, Pixel.g, Pixel.b);
-    std::cout << buf;
+    RigsDb0.modify(Pixel.Xid);
     ev.action = -1;
   }
 /*    ev.mouse = -1; ev.action = -1;
@@ -386,6 +384,8 @@ void space::render_3d_space(void)
   for (GLsizei i = 0; i < max; i += vertices_per_snip)
   {
     glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT, nullptr, i);
+    Prog3d.set_uniform1ui("Xid", static_cast<unsigned int>(i));
+
   }
 
   Prog3d.unuse(); // отключить шейдерную программу

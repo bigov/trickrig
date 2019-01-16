@@ -183,6 +183,20 @@ GLsizeiptr vbo_ext::data_append(const GLvoid* data, GLsizeiptr data_size)
 
 
 ///
+/// \brief vbo_ext::data_get
+/// \param offset
+/// \param size
+/// \param data
+///
+void vbo_ext::data_get(GLintptr offset, GLsizeiptr size, GLvoid* data)
+{
+  glBindBuffer(gl_buffer_type, id);
+  glGetBufferSubData(gl_buffer_type, offset, size,	data);
+  glBindBuffer(gl_buffer_type, 0);
+}
+
+
+///
 /// \brief vbo::data_update
 /// \param d_size
 /// \param data

@@ -22,19 +22,20 @@ namespace tr
 #define R1y2 R1->SideYp.front().data[Y + ROW_SIZE * 2]
 #define R1y3 R1->SideYp.front().data[Y + ROW_SIZE * 3]
 
-/// DEBUG
-void show_texture(double* d)
+
+void rdb::modify(unsigned int i)
 {
-  char buf[256];
-  std::sprintf(buf,
-    "    u      v   \n"
-    " --------------\n"
-    " %+5.3lf, %+5.3lf\n"
-    " %+5.3lf, %+5.3lf\n"
-    " %+5.3lf, %+5.3lf\n"
-    " %+5.3lf, %+5.3lf\n\n",
-      d[12], d[13], d[26], d[27], d[40], d[41], d[54], d[55]);
-  std::cout << buf;
+  GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip; // + bytes_per_vertex;
+
+  GLfloat v[3] = {0.f, 0.f, 0.f};
+
+  VBO->data_get(offset, sizeof(GLfloat)*3, v);
+
+  std::cout << i << " - V: "  << v[0] << ", " << v[1] << ", " << v[2] << "\n";
+
+  i3d Pt {static_cast<int>(floor(v[0])), static_cast<int>(floor(v[1])), static_cast<int>(floor(v[2]))};
+
+  add_y(Pt);
 }
 
 

@@ -14,9 +14,9 @@ out vec2 vFragment;  // 2D коодината в текстурной карте
 out vec4 vColor;     // цвет пикселя
 out vec4 vDiff;      // диффузное освещение
 
-flat out int vX;    // индекс для определения выделенного фрагмента
-flat out int vY;    // индекс для определения выделенного фрагмента
-flat out int vZ;    // индекс для определения выделенного фрагмента
+//flat out int vX;    // индекс для определения выделенного фрагмента
+//flat out int vY;    // индекс для определения выделенного фрагмента
+//flat out int vZ;    // индекс для определения выделенного фрагмента
 
 void main(void)
 {
@@ -26,7 +26,7 @@ void main(void)
   gl_Position = mvp * position;
 
   //vId = gl_VertexID;
-  vX = int(position.x);
-  vY = int(position.y);
-  vZ = int(position.z);
+  //vX = int(position.x);
+  //vY = int(position.y);
+  //vZ = int(position.z);
 }

@@ -15,9 +15,9 @@ namespace tr
 
 struct pixel_info
 {
-  int r = 0;
-  int g = 0;
-  int b = 0;
+  unsigned int Xid = 0;
+  unsigned int Yid = 0;
+  unsigned int Zid = 0;
 };
 
 
