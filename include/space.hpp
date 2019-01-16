@@ -25,11 +25,8 @@ namespace tr
       space(const space &);
       space operator=(const space &);
 
-      fb_base BufferRender {};
-      //fb_tex BufferPick{};
-
+      frame_buffer FrBuffer {};      // Фрейм-буфер рендера
       glsl Prog3d {};                // GLSL программа шейдеров
-      glsl ProgPick {};               // GLSL программа шейдеров для отбора элементов
 
       const int g1 = 1;              // масштаб элементов в RigsDb0
       GLuint vao_id = 0;             // VAO ID
@@ -47,8 +44,7 @@ namespace tr
         UpWard {0.0, -1.0, 0.0},    // направление наверх
         ViewTo {};                  // направление взгляда
 
-      void load_texture(unsigned index, const std::string& fname);
-      void glsl_progs_init(void);
+      void load_texture(unsigned gl_texture_index, const std::string& fname);
       void init_vao(void);
       void calc_position(evInput&);
       void recalc_borders(void);

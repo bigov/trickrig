@@ -20,7 +20,8 @@ const float down_max = -up_max;    // Максимальный угол вниз
 
 
 ///
-/// \brief space::space ## Формирование 3D пространства
+/// \brief space::space
+/// \details Формирование 3D пространства
 ///
 space::space(void)
 {
@@ -33,34 +34,27 @@ space::space(void)
   glEnable(GL_LINE_SMOOTH);
   glEnable(GL_BLEND);      // поддержка прозрачности
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  // компиляция GLSL программы
+  Prog3d.attach_shaders( cfg::app_key(SHADER_VERT_SCENE), cfg::app_key(SHADER_FRAG_SCENE) );
+  Prog3d.use();
+  Prog3d.Atrib["position"] = Prog3d.attrib_location_get("position");
+  Prog3d.Atrib["color"]    = Prog3d.attrib_location_get("color");
+  Prog3d.Atrib["normal"]   = Prog3d.attrib_location_get("normal");
+  Prog3d.Atrib["fragment"] = Prog3d.attrib_location_get("fragment");
+  Prog3d.unuse();
+
+  // настройка VAO
+  init_vao();
+
+  // загрузка основной текстуры
   load_texture(GL_TEXTURE0, cfg::app_key(PNG_TEXTURE0));
 
-  glsl_progs_init();
-
-  // настройка рендер-буфера
-  if(!BufferRender.init(AppWin.width, AppWin.height)) ERR("Error on creating Render Buffer.");
-  AppWin.pRenderBuffer = &BufferRender;
-  BufferRender.resize(AppWin.width, AppWin.height);
-
-}
-
-
-///
-/// \brief rdb::init_vbo
-///
-void space::glsl_progs_init(void)
-{
-  Prog3d.attach_shaders( cfg::app_key(SHADER_VERT_SCENE), cfg::app_key(SHADER_FRAG_SCENE) );
-  Prog3d.use();  // слинковать шейдерную рограмму
-
-  Prog3d.Atrib["position"] = Prog3d.attrib_location_get("position");
-  Prog3d.Atrib["color"] = Prog3d.attrib_location_get("color");
-  Prog3d.Atrib["normal"] = Prog3d.attrib_location_get("normal");
-  Prog3d.Atrib["fragment"] = Prog3d.attrib_location_get("fragment");
-
-  init_vao();    // настроить VAO
-
-  Prog3d.unuse();
+  // настройка рендер-буфера с двумя текстурами
+  if(!FrBuffer.init(AppWin.width, AppWin.height, GL_TEXTURE1, GL_TEXTURE2))
+    ERR("Error on creating Render Buffer.");
+  AppWin.pFrBuffer = &FrBuffer;
+  FrBuffer.resize(AppWin.width, AppWin.height);
 }
 
 
@@ -117,11 +111,11 @@ void space::init_vao(void)
 /// \param index
 /// \param fname
 ///
-void space::load_texture(unsigned texture_index, const std::string& FileName)
+void space::load_texture(unsigned gl_texture_index, const std::string& FileName)
 {
   img ImgTex0 { FileName };
   glGenTextures(1, &texture_id);
-  glActiveTexture(texture_index); // можно загрузить не меньше 48
+  glActiveTexture(gl_texture_index); // можно загрузить не меньше 48
   glBindTexture(GL_TEXTURE_2D, texture_id);
 
   GLint level_of_details = 0;
@@ -337,9 +331,9 @@ void space::draw(evInput & ev)
 
   if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
   {
-    pixel_info Pixel = BufferRender.read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
+    pixel_info Pixel = FrBuffer.read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
     char buf[256];
-    std::sprintf(buf, "%10u, %10u, %10u\n", Pixel.r, Pixel.g, Pixel.b);
+    std::sprintf(buf, "%9i, %9i, %9i\n", Pixel.r, Pixel.g, Pixel.b);
     std::cout << buf;
     ev.action = -1;
   }
@@ -365,9 +359,7 @@ void space::draw(evInput & ev)
   mod = 0;
   if (285 == ev.scancode) mod = 1;
 
-  glBindVertexArray(vao_id);
   render_3d_space();
-  glBindVertexArray(0);
 }
 
 
@@ -376,13 +368,8 @@ void space::draw(evInput & ev)
 ///
 void space::render_3d_space(void)
 {
-  BufferRender.bind();
-  glEnableVertexAttribArray(Prog3d.Atrib["position"]);
-  glEnableVertexAttribArray(Prog3d.Atrib["color"]);
-  glEnableVertexAttribArray(Prog3d.Atrib["normal"]);
-  glEnableVertexAttribArray(Prog3d.Atrib["fragment"]);
-
-
+  glBindVertexArray(vao_id);
+  FrBuffer.bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
@@ -391,27 +378,19 @@ void space::render_3d_space(void)
   Prog3d.set_uniform("light_direction", glm::vec4(0.2f, 0.9f, 0.5f, 0.0));
   Prog3d.set_uniform("light_bright", glm::vec4(0.5f, 0.5f, 0.5f, 0.0));
 
-  //ProgPick.set_uniform1ui("snip_id", 123);
-
-
   // можно все нарисовать за один проход
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_points), GL_UNSIGNED_INT, nullptr);
+  //glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_points), GL_UNSIGNED_INT, nullptr);
 
-  // а можно, если потребуется, то пошагово по ячейкам -
-  //GLsizei max = (render_points / indices_per_snip) * vertices_per_snip;
-  //for (GLsizei i = 0; i < max; i += vertices_per_snip)
-  //{
-  //  glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT,
-  //      nullptr, i);
-  //}
+  // а можно, если потребуется, то "поснипно":
+  GLsizei max = (RigsDb0.render_points / indices_per_snip) * vertices_per_snip;
+  for (GLsizei i = 0; i < max; i += vertices_per_snip)
+  {
+    glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT, nullptr, i);
+  }
 
   Prog3d.unuse(); // отключить шейдерную программу
-  glDisableVertexAttribArray(Prog3d.Atrib["fragment"]);
-  glDisableVertexAttribArray(Prog3d.Atrib["normal"]);
-  glDisableVertexAttribArray(Prog3d.Atrib["color"]);
-  glDisableVertexAttribArray(Prog3d.Atrib["position"]);
-  BufferRender.unbind();
-
+  FrBuffer.unbind();
+  glBindVertexArray(0);
  }
 
 } // namespace tr
