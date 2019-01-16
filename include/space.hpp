@@ -51,7 +51,6 @@ namespace tr
       void glsl_progs_init(void);
       void init_vao(void);
       void calc_position(evInput&);
-      void calc_selected_area(glm::vec3 & sight_direction);
       void recalc_borders(void);
       void redraw_borders_x(void);
       //void redraw_borders_y(void); // TODO

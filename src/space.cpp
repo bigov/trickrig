@@ -19,26 +19,6 @@ const float up_max = hPi - 0.001f; // Максимальный угол ввер
 const float down_max = -up_max;    // Максимальный угол вниз
 
 
-/// Вычисление расположения отрезка (a, b) относительно (слева или справа)
-/// точки c нулевыми координатами на плоскости (x,y)
-///
-inline bool dir(const glm::vec4 &a, const glm::vec4 &b)
-{
-  return ((0.0f - b.x) * (a.y - b.y) - (a.x - b.x) * (0.0f - b.y)) > 0.0f;
-}
-
-
-/// \brief Проверка размещения четырехугольника в центре плоскости камеры
-/// \return
-///
-/// Выбор вершин производится в направлении против часовой стрелки
-///
-inline bool is_target(glm::vec4 &a, glm::vec4 &b, glm::vec4 &c, glm::vec4 &d)
-{
-  return dir(a, b) && dir(b, c) && dir(c, d) && dir(d, a);
-}
-
-
 ///
 /// \brief space::space ## Формирование 3D пространства
 ///
@@ -79,6 +59,7 @@ void space::glsl_progs_init(void)
   Prog3d.Atrib["fragment"] = Prog3d.attrib_location_get("fragment");
 
   init_vao();    // настроить VAO
+
   Prog3d.unuse();
 }
 
@@ -99,16 +80,16 @@ void space::init_vao(void)
   VBO.allocate(n * bytes_per_snip);
 
   // настройка положения атрибутов
-  VBO.attrib(Prog3d.attrib_location_get("position"),
+  VBO.attrib(Prog3d.Atrib["position"],
     4, GL_FLOAT, GL_FALSE, bytes_per_vertex, 0 * sizeof(GLfloat));
 
-  VBO.attrib(Prog3d.attrib_location_get("color"),
+  VBO.attrib(Prog3d.Atrib["color"],
     4, GL_FLOAT, GL_TRUE, bytes_per_vertex, 4 * sizeof(GLfloat));
 
-  VBO.attrib(Prog3d.attrib_location_get("normal"),
+  VBO.attrib(Prog3d.Atrib["normal"],
     4, GL_FLOAT, GL_TRUE, bytes_per_vertex, 8 * sizeof(GLfloat));
 
-  VBO.attrib(Prog3d.attrib_location_get("fragment"),
+  VBO.attrib(Prog3d.Atrib["fragment"],
     2, GL_FLOAT, GL_TRUE, bytes_per_vertex, 12 * sizeof(GLfloat));
 
   //
@@ -286,18 +267,9 @@ void space::redraw_borders_z()
 /// \brief space::recalc_borders
 /// \details Перестроение границ активной области при перемещении камеры
 ///
-/// - собираем в кэш адреса удаляемых снипов. данные добавляемых в сцену
-///   снипов записываем в VBO по адресам из кэша.
-/// - если кэш пустой, то данные добавляем в конец VBO буфера.
-///
 /// TODO? (на случай притормаживания - если прыгать камерой туда-сюда через
 /// границу запуска перерисовки границ) можно процедуры "redraw_borders_?"
-/// разбить по две части - отдельно сбор данных в кэш и отдельно построение
-/// новой границы по ходу движения.
-///
-/// - запускать их с небольшим зазором (вначале сбор, потом перестроение)
-/// - в процедуре построения вначале проверять наличие снипов рига в кэше
-///   и просто активировать их без запроса к базе данных, если они там.
+/// разбить по две части.
 ///
 /// Еще можно кэшировать данные в обработчике соединений с базой данных,
 /// сохраняя в нем данные, например, о двух линиях одновременно по внешнему
@@ -352,51 +324,6 @@ void space::calc_position(evInput & ev)
 
   // Матрица преобразования
   MatMVP =  MatProjection * MatView;
-
-  calc_selected_area(LookDir);
-}
-
-
-///
-/// Расчет координат рига, на который направлен взгляд
-///
-void space::calc_selected_area(glm::vec3 & LookDir)
-{
-  Selected = { 0, 0, 0 };                        // координаты выбранного рига
-  glm::vec3 step = glm::normalize(LookDir)/1.2f; // длина шага поиска
-  int i_max = 4;                                 // количество шагов проверки
-
-  glm::vec3 check = Eye.ViewFrom;                // переменная поиска
-  tr::rig* R = nullptr;
-  for(int i = 0; i < i_max; ++i)
-  {
-    R = RigsDb0.get(check);
-    if(nullptr != R) break;
-    check += step;
-  }
-  if(nullptr == R) return;                       // если пересечение не найдено - выход
-
-  // Проверяем верхний снип в найденном риге
-  auto S = R->SideYp.front();
-  glm::vec4 mv { R->Origin.x, R->Origin.y, R->Origin.z, 0 };
-
-  // Проекции точек снипа на плоскость камеры
-  glm::vec4 A = MatView * (S.vertex_coord(0) + mv);
-  glm::vec4 B = MatView * (S.vertex_coord(1) + mv);
-  glm::vec4 C = MatView * (S.vertex_coord(2) + mv);
-  glm::vec4 D = MatView * (S.vertex_coord(3) + mv);
-
-  if(is_target(A, B, C, D))
-  {
-    Selected = R->Origin;
-  }
-  else
-  { // Если луч взгляда не пересекает найденый снип, то берем следущий
-    // по направлению взгляда:
-    check += step;
-    R = RigsDb0.get(check);
-    if(nullptr != R) Selected = R->Origin;
-  }
 }
 
 
