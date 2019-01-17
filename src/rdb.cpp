@@ -23,18 +23,21 @@ namespace tr
 #define R1y3 R1->SideYp.front().data[Y + ROW_SIZE * 3]
 
 
+///
+/// \brief rdb::modify
+/// \param i
+///
 void rdb::modify(unsigned int i)
 {
   GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip; // + bytes_per_vertex;
 
-  GLfloat v[3] = {0.f, 0.f, 0.f};
-
-  VBO->data_get(offset, sizeof(GLfloat)*3, v);
-
-  std::cout << i << " - V: "  << v[0] << ", " << v[1] << ", " << v[2] << "\n";
-
-  i3d Pt {static_cast<int>(floor(v[0])), static_cast<int>(floor(v[1])), static_cast<int>(floor(v[2]))};
-
+  snip S{};
+  VBO->data_get(offset, bytes_per_snip, S.data);
+  auto Origin = S.vertex_coord(3);
+  if(Origin.y == floor(Origin.y)) Origin.y -= lod;
+  i3d Pt { static_cast<int>(floor(Origin.x)),
+           static_cast<int>(floor(Origin.y)),
+           static_cast<int>(floor(Origin.z)) };
   add_y(Pt);
 }
 
@@ -53,12 +56,12 @@ void rdb::rig_place(rig* R)
     static_cast<float>(R->Origin.z) + R->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
   };
 
-  snip_place(R->SideXp, Point);
-  snip_place(R->SideXn, Point);
-  snip_place(R->SideYp, Point);
-  snip_place(R->SideYn, Point);
-  snip_place(R->SideZp, Point);
-  snip_place(R->SideZn, Point);
+  side_vbo_append(R->SideXp, Point);
+  side_vbo_append(R->SideXn, Point);
+  side_vbo_append(R->SideYp, Point);
+  side_vbo_append(R->SideYn, Point);
+  side_vbo_append(R->SideZp, Point);
+  side_vbo_append(R->SideZn, Point);
 
   R->in_vbo = true;
 }
@@ -78,7 +81,7 @@ void rdb::rig_place(rig* R)
 /// координаты вершин пересчитываются с учетом координат (TODO: сдвига и
 /// поворота рига-контейнера), после чего данные записываются в VBO.
 ///
-void rdb::snip_place(std::vector<snip>& Side, const f3d& Point)
+void rdb::side_vbo_append(std::vector<snip>& Side, const f3d& Point)
 {
   for(snip& Snip: Side)
   {
@@ -94,8 +97,8 @@ void rdb::snip_place(std::vector<snip>& Side, const f3d& Point)
     }
 
     Snip.data_offset = VBO->data_append(cache,  bytes_per_snip); // записать расположение в VBO
-    render_points += indices_per_snip;                          // увеличить число точек рендера
-    VisibleSnips[Snip.data_offset] = &Snip;                     // добавить ссылку
+    render_points += indices_per_snip;                           // увеличить число точек рендера
+    VisibleSnips[Snip.data_offset] = &Snip;                      // добавить ссылку
   }
 }
 
@@ -116,12 +119,12 @@ void rdb::rig_remove(rig* Rig)
   if(nullptr == Rig) return;
   if(!Rig->in_vbo) return;
 
-  side_remove(Rig->SideYp);
-  side_remove(Rig->SideYn);
-  side_remove(Rig->SideZp);
-  side_remove(Rig->SideZn);
-  side_remove(Rig->SideXp);
-  side_remove(Rig->SideXn);
+  side_vbo_remove(Rig->SideYp);
+  side_vbo_remove(Rig->SideYn);
+  side_vbo_remove(Rig->SideZp);
+  side_vbo_remove(Rig->SideZn);
+  side_vbo_remove(Rig->SideXp);
+  side_vbo_remove(Rig->SideXn);
 
   Rig->in_vbo = false;
 }
@@ -131,34 +134,37 @@ void rdb::rig_remove(rig* Rig)
 /// \brief side_remove
 /// \param Side
 ///
-void rdb::side_remove(std::vector<snip>& Side)
+void rdb::side_vbo_remove(std::vector<snip>& Side)
 {
-  GLsizeiptr dest = 0;
-  GLsizeiptr moved = 0;
+  GLsizeiptr target = 0;         // адрес смещения, где данные будут перезаписаны
+  GLsizeiptr moving = 0;         // адрес снипа с "хвоста" VBO, который будет перемещен на target
 
   if(Side.empty()) return;
   for(auto& Snip: Side)
   {
-    dest = Snip.data_offset;                   // адрес снипа, подлежащий удалению
-    moved = VBO->remove(dest, bytes_per_snip);  // убрать снип из VBO
+    target = Snip.data_offset;                    // адрес снипа, подлежащий удалению
+    moving = VBO->remove(target, bytes_per_snip); // убрать снип из VBO и получить адрес крайнего
 
-    if(moved == 0)                             // Если VBO пустой
+    if(moving == 0)                               // Если VBO пустой
     {
       VisibleSnips.clear();
       render_points = 0;
       return;
     }
-    else if (moved == dest)                    // Если удаляемый снип оказался в конце активной
-    {                                          // части VBO, то только удалить его с карты
-      VisibleSnips.erase(dest);
+    else if (moving == target)                     // Если удаляемый снип оказался в конце активной
+    {                                              // части VBO, то только удалить его с карты
+      VisibleSnips.erase(target);
     }
-    else                                        // Если удаляемый снип не в конце, то на его место
-    {                                           // ставится крайний снип в конце VBO:
-      VisibleSnips[dest] = VisibleSnips[moved]; // - заменить блок в карте снипов,
-      VisibleSnips[dest]->data_offset = dest;   // - изменить адрес размещения в VBO у перемещенного снипа,
-      VisibleSnips.erase(moved);                // - удалить освободившийся элемент карты.
+    else                                           // Если удаляемый снип не в конце, то на его место
+    {                                              // ставится крайний снип в конце VBO:
+      VisibleSnips[target] = VisibleSnips[moving]; // - заменить блок в карте снипов,
+#ifndef NDEBUG
+      if(VisibleSnips[target]->data_offset != moving) info("Err data_offset on rdb::side_vbo_remove");
+#endif
+      VisibleSnips[target]->data_offset = target;  // - изменить адрес размещения в VBO у перемещенного снипа,
+      VisibleSnips.erase(moving);                  // - удалить освободившийся элемент
     }
-    render_points -= indices_per_snip;          // Уменьшить число точек рендера
+    render_points -= indices_per_snip;             // Уменьшить число точек рендера
   }
 }
 
@@ -562,8 +568,8 @@ void rdb::add_y(const i3d& Pt)
 
   // выровнять все вершины по выбранной высоте
   for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = y;
-  sides_set(R); // настроить боковые стороны
-  rig_place(R);     // записать модифицированый риг в графический буфер
+  sides_set(R);   // настроить боковые стороны
+  rig_place(R);   // записать модифицированый риг в графический буфер
 }
 
 

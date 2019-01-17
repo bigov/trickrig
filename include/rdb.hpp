@@ -46,8 +46,8 @@ class rdb
     void append_rig_Yp(const i3d&);
     void remove_rig_Yp(const i3d&);
     void init_vbo(void);
-    void snip_place(std::vector<snip>& Side, const f3d& Point);
-    void side_remove(std::vector<snip>&); // убрать сторону рига из VBO
+    void side_vbo_append(std::vector<snip>& Side, const f3d& Point);
+    void side_vbo_remove(std::vector<snip>&); // убрать сторону рига из VBO
     //void snip_update(GLfloat* s_data, const f3d &Point, GLsizeiptr dist); // код метода в конце файла .cpp
 
   public:

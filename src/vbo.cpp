@@ -132,7 +132,7 @@ void vbo_ext::move_data(GLintptr src, GLintptr dst, GLsizeiptr data_size)
 /// \brief vbo_ext::remove
 /// \param dest
 /// \return
-/// \details Для удаления данных из VBO используется перемещение: на мето
+/// \details Для удаления данных из VBO используется перемещение: на место
 /// удаляемого блока перемещаются данные из конца буфера, заменяя их. Длина
 /// активной части буфера уменьшается на размер удаленного блока.
 ///
@@ -144,13 +144,15 @@ GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
 #ifndef NDEBUG
   if((dest + data_size) > hem) ERR("vbo_ext::remove error block size");
 #endif
-  auto src = hem - data_size;
-  if(src == dest)    // Если удаляется блок данных, раположенный в конце активной зоны,
-  {                  // то укорачиваем гранцу зоны на размер блока без перемещения данных
-    hem = src;
-    return dest;
+  auto src = hem - data_size; // Адрес крайнего на хвосте блока данных, которые будут перемещены.
+  if(src != dest)
+  {
+    move_data(src, dest, data_size);
   }
-  move_data(src, dest, data_size);
+  else
+  {                            // Если удаляемый блок оказался в конце буфера, то только
+    hem = src;                 // сдвигаем гранцу зоны на размер блока (без перемещения данных).
+  }
   return hem;
 }
 
