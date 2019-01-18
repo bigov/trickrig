@@ -191,10 +191,18 @@ GLsizeiptr vbo_ext::data_append(const GLvoid* data, GLsizeiptr data_size)
 /// \param data
 ///
 void vbo_ext::data_get(GLintptr offset, GLsizeiptr size, GLvoid* data)
+//void vbo_ext::data_get(GLintptr, GLsizeiptr size, GLvoid* data)
 {
   glBindBuffer(gl_buffer_type, id);
-  glGetBufferSubData(gl_buffer_type, offset, size,	data);
+  //std::unique_ptr<u_char> tmp_buf(new u_char[size]);
+  u_char* tmp_buf = new u_char[size];
+  glGetBufferSubData(gl_buffer_type, offset, size, tmp_buf);
+  memcpy(data, tmp_buf, size);
   glBindBuffer(gl_buffer_type, 0);
+  //glUnmapBuffer(id);
+  delete[] tmp_buf;
+
+  if(glGetError() != GL_NO_ERROR) info("err in vbo_ext::data_get");
 }
 
 

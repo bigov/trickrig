@@ -89,27 +89,65 @@ void rdb::snip_analyze(snip_ext& S)
   glm::vec4 V2 = S.vertex_coord(2);
   glm::vec4 V3 = S.vertex_coord(3);
   glm::vec4 Normal = S.vertex_normal(0);
+  float foo = 0.f;
 
-  if(normal_on_y({V0, V1, V2, V3}))
+  if( normal_on_y({V0, V1, V2, V3}) )
   {
+    if((modff(V0.y, &foo) == 0) &&
+       (modff(V1.y, &foo) == 0) &&
+       (modff(V2.y, &foo) == 0) &&
+       (modff(V3.y, &foo) == 0)) S.top = true;
+
     if(Normal.y > 0)
     {
-      S.Origin = V3;
-      if((V0.y == floor(V0.y)) && (V1.y == floor(V1.y)) &&(V2.y == floor(V2.y)) &&(V3.y == floor(V3.y)) )
-      {
-        S.top = true;
-        S.Origin.y -= lod;
-      }
       S.lay = LAY_YP;
+      S.Origin = V3;
+      if(S.top) S.Origin.y -= lod;
     }
     else
     {
-      S.Origin = V0;
-      if(S.Origin.y == floor(S.Origin.y))
-      {
-        S.top = true;
-      }
       S.lay = LAY_YN;
+      S.Origin = V0;
+    }
+  }
+
+  if( normal_on_x({V0, V1, V2, V3}) )
+  {
+    if((modff(V0.x, &foo) == 0) &&
+       (modff(V1.x, &foo) == 0) &&
+       (modff(V2.x, &foo) == 0) &&
+       (modff(V3.x, &foo) == 0)) S.top = true;
+
+    if(Normal.x > 0)
+    {
+      S.lay = LAY_XP;
+      S.Origin = V3;
+      if(S.top) S.Origin.x -= lod;
+    }
+    else
+    {
+      S.lay = LAY_XN;
+      S.Origin = V2;
+    }
+  }
+
+  if( normal_on_z({V0, V1, V2, V3}) )
+  {
+    if((modff(V0.z, &foo) == 0) &&
+       (modff(V1.z, &foo) == 0) &&
+       (modff(V2.z, &foo) == 0) &&
+       (modff(V3.z, &foo) == 0)) S.top = true;
+
+    if(Normal.z > 0)
+    {
+      S.lay = LAY_ZP;
+      S.Origin = V2;
+      if(S.top) S.Origin.z -= lod;
+    }
+    else
+    {
+      S.lay = LAY_ZN;
+      S.Origin = V3;
     }
   }
 
@@ -117,6 +155,19 @@ void rdb::snip_analyze(snip_ext& S)
   S.Origin.y = floor(S.Origin.y);
   S.Origin.z = floor(S.Origin.z);
 }
+
+
+void add_yn(i3d&) { info("add YP"); }
+void add_xn(i3d&) { info("add XN"); }
+void add_xp(i3d&) { info("add XP"); }
+void add_zn(i3d&) { info("add ZN"); }
+void add_zp(i3d&) { info("add ZP"); }
+
+void sub_yn(i3d&) { info("sub YP"); }
+void sub_xn(i3d&) { info("sub XN"); }
+void sub_xp(i3d&) { info("sub XP"); }
+void sub_zn(i3d&) { info("sub ZN"); }
+void sub_zp(i3d&) { info("sub ZP"); }
 
 
 ///
@@ -129,9 +180,18 @@ void rdb::increase(unsigned int i)
 {
   GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip; // + bytes_per_vertex;
   snip_ext S{};
+
   VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
-  snip_analyze(S);                               //
+//DEBUG
+return;
+
+  snip_analyze(S);
   if(S.lay == LAY_YP) add_yp(S.Origin);
+  //if(S.lay == LAY_YN) add_yn(S.Origin);
+  //if(S.lay == LAY_XP) add_xp(S.Origin);
+  //if(S.lay == LAY_XN) add_xn(S.Origin);
+  //if(S.lay == LAY_ZP) add_zp(S.Origin);
+  //if(S.lay == LAY_ZN) add_zn(S.Origin);
 }
 
 
@@ -148,6 +208,11 @@ void rdb::decrease(unsigned int i)
   VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
   snip_analyze(S);                               //
   if(S.lay == LAY_YP) sub_yp(S.Origin);
+  if(S.lay == LAY_YN) sub_yn(S.Origin);
+  if(S.lay == LAY_XP) sub_xp(S.Origin);
+  if(S.lay == LAY_XN) sub_xn(S.Origin);
+  if(S.lay == LAY_ZP) sub_zp(S.Origin);
+  if(S.lay == LAY_ZN) sub_zn(S.Origin);
 }
 
 
