@@ -113,8 +113,24 @@ namespace tr
     return glm::vec4 { data[ROW_SIZE * idx + X],
                        data[ROW_SIZE * idx + Y],
                        data[ROW_SIZE * idx + Z],
-                       1.0 };
+                       1.0f };
   }
+
+
+  ///
+  /// \brief snip::normal_coord
+  /// \param idx
+  /// \return
+  ///
+  glm::vec4 snip::vertex_normal(size_t idx)
+  {
+    return glm::vec4 { data[ROW_SIZE * idx + NX],
+                       data[ROW_SIZE * idx + NY],
+                       data[ROW_SIZE * idx + NZ],
+                       0.0f };
+  }
+
+
 
 
   ///

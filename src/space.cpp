@@ -327,52 +327,22 @@ void space::calc_position(evInput & ev)
 void space::draw(evInput & ev)
 {
   calc_position(ev);
-
-  //DEBUG !включить после окончания отладки!
-  //recalc_borders();
+  recalc_borders();
 
   if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
   {
     ev.action = -1;
     pixel_info Pixel = FrBuffer.read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
-    RigsDb0.modify(Pixel.Xid);
+    RigsDb0.increase(Pixel.Xid);
   }
 
   if((ev.mouse == MOUSE_BUTTON_RIGHT) && (ev.action == PRESS))
   {
     ev.action = -1;
     pixel_info Pixel = FrBuffer.read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
-    GLsizeiptr offset = (Pixel.Xid/vertices_per_snip) * bytes_per_snip;
-
-    snip S{};
-    RigsDb0.VBO->data_get(offset, bytes_per_snip, S.data);
-    auto v0 = S.vertex_coord(0);
-    auto v1 = S.vertex_coord(1);
-    auto v2 = S.vertex_coord(2);
-    auto v3 = S.vertex_coord(3);
-
-    std::cout << "Xid: " << Pixel.Xid
-       << ", offset: " << offset << "\n"
-       << v0.x << ", "<< v0.y << ", "<< v0.z << "\n"
-       << v1.x << ", "<< v1.y << ", "<< v1.z << "\n"
-       << v2.x << ", "<< v2.y << ", "<< v2.z << "\n"
-       << v3.x << ", "<< v3.y << ", "<< v3.z << "\n\n"
-    ;
+    RigsDb0.decrease(Pixel.Xid);
   }
 
-
-
-/*    ev.mouse = -1; ev.action = -1;
-    RigsDb0.add_y(Selected); // Вставить элемент поверхности над выделенной точкой.
-  }
-  else if((ev.mouse == MOUSE_BUTTON_RIGHT) && (ev.action == PRESS))
-  {
-    ev.mouse = -1; ev.action = -1;
-    RigsDb0.sub_y(Selected); // Удалить элемент поверхности над выделенной точкой.
-  }
-
-  RigsDb0.highlight(Selected); // Подсветка выделения
-*/
   // Запись в базу данных: Ctrl+S (285, 31).
   // Код отрабатывает последовательное нажатие клавиш Ctrl(285) и S(31)
   static int mod = 0;

@@ -44,6 +44,7 @@ namespace tr
     void texture_set(GLfloat u, GLfloat v); // установка текстур
     void texture_fragment(GLfloat, GLfloat, const std::array<float, 8>&);
     glm::vec4 vertex_coord(size_t);
+    glm::vec4 vertex_normal(size_t idx);
   };
 
 } //namespace tr

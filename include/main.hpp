@@ -146,10 +146,15 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
   // структуры для оперирования опорными точками в пространстве трехмерных координат
   struct i3d
   {
-    int x, y, z;
+    int x = 0;
+    int y = 0;
+    int z = 0;
+
     i3d(void) = delete;
     i3d(int X, int Y, int Z): x(X), y(Y), z(Z) {}
     i3d(const glm::vec3 &v): x(static_cast<int>(floor(v.x))),
+      y(static_cast<int>(floor(v.y))), z(static_cast<int>(floor(v.z))) {}
+    i3d(const glm::vec4 &v): x(static_cast<int>(floor(v.x))),
       y(static_cast<int>(floor(v.y))), z(static_cast<int>(floor(v.z))) {}
   };
   extern bool operator< (i3d const& left, i3d const& right);

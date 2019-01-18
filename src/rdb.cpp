@@ -22,23 +22,132 @@ namespace tr
 #define R1y2 R1->SideYp.front().data[Y + ROW_SIZE * 2]
 #define R1y3 R1->SideYp.front().data[Y + ROW_SIZE * 3]
 
+///
+/// \brief normal_X
+/// \param V
+/// \return
+///
+bool rdb::normal_on_x(const std::array<glm::vec4, 4>& V)
+{
+  if((V[0].x == V[1].x) && (V[0].x == V[2].x) && (V[0].x == V[3].x)) return true;
+
+  if(
+      (V[0].z == V[3].z) && (V[2].z == V[1].z) &&
+      (V[1].y == V[0].y) && (V[3].y == V[2].y)
+    ) return true;
+
+  return false;
+}
+
 
 ///
-/// \brief rdb::modify
+/// \brief normal_Y
+/// \param V
+/// \return
+///
+bool rdb::normal_on_y(const std::array<glm::vec4, 4>& V)
+{
+  if((V[0].y == V[1].y) && (V[0].y == V[2].y) && (V[0].y == V[3].y)) return true;
+
+  if(
+      (V[0].x == V[3].x) && (V[2].x == V[1].x) &&
+      (V[1].z == V[0].z) && (V[3].z == V[2].z)
+    ) return true;
+
+  return false;
+}
+
+
+///
+/// \brief normal_Z
+/// \param V
+/// \return
+///
+bool rdb::normal_on_z(const std::array<glm::vec4, 4>& V)
+{
+  if((V[0].z == V[1].z) && (V[0].z == V[2].z) && (V[0].z == V[3].z)) return true;
+
+  if(
+      (V[0].x == V[3].x) && (V[2].x == V[1].x) &&
+      (V[1].y == V[0].y) && (V[3].y == V[2].y)
+    ) return true;
+
+  return false;
+}
+
+
+///
+/// \brief rdb::snip_analise
+/// \param S
+/// \details Анализ положения снипа в пространстве и установка значений
+/// необходимых для вычислений параметров
+///
+void rdb::snip_analyze(snip_ext& S)
+{
+  glm::vec4 V0 = S.vertex_coord(0);
+  glm::vec4 V1 = S.vertex_coord(1);
+  glm::vec4 V2 = S.vertex_coord(2);
+  glm::vec4 V3 = S.vertex_coord(3);
+  glm::vec4 Normal = S.vertex_normal(0);
+
+  if(normal_on_y({V0, V1, V2, V3}))
+  {
+    if(Normal.y > 0)
+    {
+      S.Origin = V3;
+      if((V0.y == floor(V0.y)) && (V1.y == floor(V1.y)) &&(V2.y == floor(V2.y)) &&(V3.y == floor(V3.y)) )
+      {
+        S.top = true;
+        S.Origin.y -= lod;
+      }
+      S.lay = LAY_YP;
+    }
+    else
+    {
+      S.Origin = V0;
+      if(S.Origin.y == floor(S.Origin.y))
+      {
+        S.top = true;
+      }
+      S.lay = LAY_YN;
+    }
+  }
+
+  S.Origin.x = floor(S.Origin.x);
+  S.Origin.y = floor(S.Origin.y);
+  S.Origin.z = floor(S.Origin.z);
+}
+
+
+///
+/// \brief rdb::increase
 /// \param i
 ///
-void rdb::modify(unsigned int i)
+/// \details Добавление объема к указанной стороне
+///
+void rdb::increase(unsigned int i)
 {
   GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip; // + bytes_per_vertex;
+  snip_ext S{};
+  VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
+  snip_analyze(S);                               //
+  if(S.lay == LAY_YP) add_yp(S.Origin);
+}
 
-  snip S{};
-  VBO->data_get(offset, bytes_per_snip, S.data);
-  auto Origin = S.vertex_coord(3);
-  if(Origin.y == floor(Origin.y)) Origin.y -= lod;
-  i3d Pt { static_cast<int>(floor(Origin.x)),
-           static_cast<int>(floor(Origin.y)),
-           static_cast<int>(floor(Origin.z)) };
-  add_y(Pt);
+
+///
+/// \brief rdb::decrease
+/// \param i
+///
+/// \details Уменьшение объема с указанной стороны
+///
+void rdb::decrease(unsigned int i)
+{
+  GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip; // + bytes_per_vertex;
+  snip_ext S{};
+  VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
+  snip_analyze(S);                               //
+  if(S.lay == LAY_YP) sub_yp(S.Origin);
 }
 
 
@@ -170,16 +279,25 @@ void rdb::side_vbo_remove(std::vector<snip>& Side)
 
 
 ///
-/// \brief rdb::side_make Формирование снипа для боковой стороны рига
-/// \param R
+/// \brief rdb::side_make_snip
+/// \param v координаты 4-х опорных точек
+/// \param S формируемый снип
+/// \param n направление нормали стороны
+/// \details Формирование снипа для боковой стороны рига
 ///
-void rdb::side_make_snip(const std::array<glm::vec4, 4>& v, snip& S)
+void rdb::side_make_snip(const std::array<glm::vec4, 4>& v, snip& S, const glm::vec3& n)
 {
   for(size_t i = 0; i < v.size(); ++i)
   {
     S.data[ROW_SIZE * i + X] = v[i].x;
     S.data[ROW_SIZE * i + Y] = v[i].y;
     S.data[ROW_SIZE * i + Z] = v[i].z;
+    S.data[ROW_SIZE * i + W] = 1.0f;
+
+    S.data[ROW_SIZE * i + NX] = n.x;
+    S.data[ROW_SIZE * i + NY] = n.y;
+    S.data[ROW_SIZE * i + NZ] = n.z;
+    S.data[ROW_SIZE * i + NW] = 0.0f;
   }
 }
 
@@ -212,7 +330,7 @@ void rdb::make_Xp(std::vector<snip>& VTop, std::vector<snip>& VSide, float y2, f
   V[3] = V[0]; V[3].y = y3;
 
   snip S{};
-  side_make_snip(V, S);
+  side_make_snip(V, S, {1.f, 0.f, 0.f});
   S.texture_fragment( AppWin.texXp.u, AppWin.texXp.v,
                      {V[0].z, V[0].y, V[1].z, V[1].y, V[2].z, V[2].y, V[3].z, V[3].y} );
   VSide.clear();
@@ -247,7 +365,7 @@ void rdb::make_Xn(std::vector<snip>& VTop, std::vector<snip>& VSide, float y2, f
   V[3] = V[0]; V[3].y = y3;
 
   snip S{};
-  side_make_snip(V, S);
+  side_make_snip(V, S, {-1.f, 0.f, 0.f});
   S.texture_fragment( AppWin.texXn.u, AppWin.texXn.v,
                      {lod-V[0].z, V[0].y, lod-V[1].z, V[1].y, lod-V[2].z, V[2].y, lod-V[3].z, V[3].y} );
   VSide.clear();
@@ -282,7 +400,7 @@ void rdb::make_Zn(std::vector<snip>& VTop, std::vector<snip>& VSide, float y2, f
   V[3] = V[0]; V[3].y = y3;
 
   snip S{};
-  side_make_snip(V, S);
+  side_make_snip(V, S, {0.f, 0.f, -1.f});
   S.texture_fragment( AppWin.texZn.u, AppWin.texZn.v,
                      {V[0].x, V[0].y, V[1].x, V[1].y, V[2].x, V[2].y, V[3].x, V[3].y} );
   VSide.clear();
@@ -317,7 +435,7 @@ void rdb::make_Zp(std::vector<snip>& VTop, std::vector<snip>& VSide, float y2, f
   V[3] = V[0]; V[3].y = y3;
 
   snip S{};
-  side_make_snip(V, S);
+  side_make_snip(V, S, {0.f, 0.f, 1.f});
   S.texture_fragment( AppWin.texZp.u, AppWin.texZp.v,
                      {lod-V[0].x, V[0].y, lod-V[1].x, V[1].y, lod-V[2].x, V[2].y, lod-V[3].x, V[3].y} );
   VSide.clear();
@@ -537,10 +655,16 @@ void rdb::append_rig_Yp(const i3d& Pt)
 /// \brief rdb::add_y
 /// \details Увеличение размера по координате Y
 ///
-void rdb::add_y(const i3d& Pt)
+void rdb::add_yp(const i3d& Pt)
 {
   rig *R = get(Pt);         //1. Выбрать целевой риг
-  if(nullptr == R) ERR ("Error: call rdb::add_y for nullptr point");
+  if(nullptr == R)
+  {
+    info ("Error: call rdb::add_y for nullptr point: "
+          + std::to_string(Pt.x) + ", " + std::to_string(Pt.y) + ", " + std::to_string(Pt.y) );
+    return;
+  }
+
   if(R->SideYp.empty()) return;
   rig_remove(R); // убрать риг из графического буфера
 
@@ -568,6 +692,16 @@ void rdb::add_y(const i3d& Pt)
 
   // выровнять все вершины по выбранной высоте
   for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = y;
+
+  // настроить нормали
+  for(size_t i = 0; i < 4; ++i)
+  {
+    S.data[ROW_SIZE * i + NX] = 0.f;
+    S.data[ROW_SIZE * i + NY] = 1.f;
+    S.data[ROW_SIZE * i + NZ] = 0.f;
+    S.data[ROW_SIZE * i + NW] = 0.f;
+  }
+
   sides_set(R);   // настроить боковые стороны
   rig_place(R);   // записать модифицированый риг в графический буфер
 }
@@ -643,7 +777,7 @@ void rdb::remove_rig_Yp(const i3d& P)
 /// Если высота рига не больше ( 0,25*lod ), то этот риг
 /// удаляется и рисуется риг на один шаг ниже.
 ///
-void rdb::sub_y(const i3d& Pt)
+void rdb::sub_yp(const i3d& Pt)
 {
   rig *R = get(Pt);         //1. Выбрать целевой риг
   if(nullptr == R) ERR ("Error: call rdb::sub_y for nullptr point");

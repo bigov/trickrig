@@ -16,6 +16,17 @@
 
 namespace tr
 {
+
+enum LAY_NAME { LAY_XP, LAY_XN, LAY_YP, LAY_YN, LAY_ZP, LAY_ZN, LAYS_COUNT };
+
+struct snip_ext: public snip
+{
+   LAY_NAME lay = LAYS_COUNT;
+   bool top = false;
+   i3d Origin {0,0,0};
+};
+
+
 ///
 /// \brief The rdb class
 /// \details Управление кэшем ригов с поверхности одного уровня LOD
@@ -34,7 +45,7 @@ class rdb
 
     void _load_16x16_obj(void);
     void sides_set(rig*);                                        // настройка боковых сторон
-    void side_make_snip(const std::array<glm::vec4, 4>&, snip&); // настройка боковой стороны
+    void side_make_snip(const std::array<glm::vec4, 4>&, snip&, const glm::vec3&); // настройка боковой стороны
     void set_Zp(rig*, rig*);
     void set_Zn(rig*, rig*);
     void set_Xp(rig*, rig*);
@@ -48,6 +59,11 @@ class rdb
     void init_vbo(void);
     void side_vbo_append(std::vector<snip>& Side, const f3d& Point);
     void side_vbo_remove(std::vector<snip>&); // убрать сторону рига из VBO
+    bool normal_on_x(const std::array<glm::vec4, 4>&);
+    bool normal_on_y(const std::array<glm::vec4, 4>&);
+    bool normal_on_z(const std::array<glm::vec4, 4>&);
+    void snip_analyze(snip_ext& S);
+
     //void snip_update(GLfloat* s_data, const f3d &Point, GLsizeiptr dist); // код метода в конце файла .cpp
 
   public:
@@ -60,12 +76,13 @@ class rdb
     void rig_place(rig*);             // разместить данные в VBO буфере
     void rig_remove(rig*);            // убрать риг из VBO
 
-    void modify(unsigned int);        // изменить по индексу снипа
+    void increase(unsigned int);      // добавить объем по индексу снипа
+    void decrease(unsigned int);        // удалить объем по индексу снипа
     void add_x(const i3d &);
-    void add_y(const i3d &);
+    void add_yp(const i3d &);
     void add_z(const i3d &);
     void sub_x(const i3d &);
-    void sub_y(const i3d &);
+    void sub_yp(const i3d &);
     void sub_z(const i3d &);
 
     //bool save(const i3d &, const i3d &);
