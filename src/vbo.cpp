@@ -190,17 +190,20 @@ GLsizeiptr vbo_ext::data_append(const GLvoid* data, GLsizeiptr data_size)
 /// \param size
 /// \param data
 ///
-void vbo_ext::data_get(GLintptr offset, GLsizeiptr size, GLvoid* data)
-//void vbo_ext::data_get(GLintptr, GLsizeiptr size, GLvoid* data)
+void vbo_ext::data_get(GLintptr offset, GLsizeiptr sz, GLvoid* dst)
 {
   glBindBuffer(gl_buffer_type, id);
-  //std::unique_ptr<u_char> tmp_buf(new u_char[size]);
-  u_char* tmp_buf = new u_char[size];
-  glGetBufferSubData(gl_buffer_type, offset, size, tmp_buf);
-  memcpy(data, tmp_buf, size);
+  //glGetBufferSubData(gl_buffer_type, offset, sz, dst);
+
+  //GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT
+  GLvoid* ptr = glMapBufferRange(gl_buffer_type, offset, sz, GL_MAP_READ_BIT);
+  memcpy(dst, ptr, sz);
+  glUnmapBuffer(gl_buffer_type);
+
   glBindBuffer(gl_buffer_type, 0);
-  //glUnmapBuffer(id);
-  delete[] tmp_buf;
+
+  //GLsync s = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+  //glDeleteSync(s);
 
   if(glGetError() != GL_NO_ERROR) info("err in vbo_ext::data_get");
 }

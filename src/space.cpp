@@ -183,7 +183,8 @@ void space::redraw_borders_x()
 {
   int
     yMin = -5, yMax =  5, // Y границы области сбора
-    x_old, x_new,  // координаты линий удаления/вставки новых фрагментов
+    x_old,                // координаты линий удаления фрагментов
+    x_new,                // координаты линий вставки новых фрагментов
     vf_x = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
     vf_z = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.z))),
     clod_0 = lod0_size;

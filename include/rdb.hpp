@@ -22,8 +22,7 @@ enum LAY_NAME { LAY_XP, LAY_XN, LAY_YP, LAY_YN, LAY_ZP, LAY_ZN, LAYS_COUNT };
 struct snip_ext: public snip
 {
    LAY_NAME lay = LAYS_COUNT;
-   bool top = false;
-   i3d Origin {0,0,0};
+   i3d Origin {0, 0, 0};
 };
 
 
@@ -59,9 +58,8 @@ class rdb
     void init_vbo(void);
     void side_vbo_append(std::vector<snip>& Side, const f3d& Point);
     void side_vbo_remove(std::vector<snip>&); // убрать сторону рига из VBO
-    bool normal_on_x(const std::array<glm::vec4, 4>&);
-    bool normal_on_y(const std::array<glm::vec4, 4>&);
-    bool normal_on_z(const std::array<glm::vec4, 4>&);
+    LAY_NAME lay_direction(const glm::vec4&);
+    bool is_top(const std::array<glm::vec4, 4>& V, size_t n);
     void snip_analyze(snip_ext& S);
 
     //void snip_update(GLfloat* s_data, const f3d &Point, GLsizeiptr dist); // код метода в конце файла .cpp
@@ -78,12 +76,22 @@ class rdb
 
     void increase(unsigned int);      // добавить объем по индексу снипа
     void decrease(unsigned int);        // удалить объем по индексу снипа
-    void add_x(const i3d &);
+
     void add_yp(const i3d &);
-    void add_z(const i3d &);
-    void sub_x(const i3d &);
+    void add_yn(const i3d&);
+    void add_xn(const i3d&);
+    void add_xp(const i3d&);
+    void add_zn(const i3d&);
+    void add_zp(const i3d&);
+    void sub_yn(const i3d&);
+    void sub_xn(const i3d&);
     void sub_yp(const i3d &);
-    void sub_z(const i3d &);
+    void sub_xp(const i3d&);
+    void sub_zn(const i3d&);
+    void sub_zp(const i3d&);
+
+
+
 
     //bool save(const i3d &, const i3d &);
     void load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position);    // загрузка уровня

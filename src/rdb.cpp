@@ -22,152 +22,98 @@ namespace tr
 #define R1y2 R1->SideYp.front().data[Y + ROW_SIZE * 2]
 #define R1y3 R1->SideYp.front().data[Y + ROW_SIZE * 3]
 
+
 ///
-/// \brief normal_X
-/// \param V
-/// \return
+/// \brief rdb::lay_direction
+/// \param N
+/// \return направление вектора
 ///
-bool rdb::normal_on_x(const std::array<glm::vec4, 4>& V)
+LAY_NAME rdb::lay_direction(const glm::vec4& N)
 {
-  if((V[0].x == V[1].x) && (V[0].x == V[2].x) && (V[0].x == V[3].x)) return true;
-
-  if(
-      (V[0].z == V[3].z) && (V[2].z == V[1].z) &&
-      (V[1].y == V[0].y) && (V[3].y == V[2].y)
-    ) return true;
-
-  return false;
+  if (( abs(N.x) > abs(N.y) ) && ( abs(N.x) > abs(N.z) ) &&
+         ( (N.x) >= 0.0f )) return LAY_XP;
+  else if (( abs(N.x) > abs(N.y) ) && ( abs(N.x) > abs(N.z) ) &&
+         ( (N.x) < 0.0f )) return LAY_XN;
+  else if (( abs(N.y) > abs(N.x) ) && ( abs(N.y) > abs(N.z) ) &&
+         ( (N.y) >= 0.0f )) return LAY_YP;
+  else if (( abs(N.y) > abs(N.x) ) && ( abs(N.y) > abs(N.z) ) &&
+         ( (N.y) < 0.0f )) return LAY_YN;
+  else if (( abs(N.z) > abs(N.x) ) && ( abs(N.z) > abs(N.y) ) &&
+         ( (N.z) >= 0.0f )) return LAY_ZP;
+  else if (( abs(N.z) > abs(N.x) ) && ( abs(N.z) > abs(N.y) ) &&
+         ( (N.z) < 0.0f )) return LAY_ZN;
+  else return LAYS_COUNT;
 }
 
 
 ///
-/// \brief normal_Y
+/// \brief rdb::is_top
 /// \param V
-/// \return
+/// \param n
+/// \return У всех 4-х векторов нет дробной части в указанной по индексу (n) координате
 ///
-bool rdb::normal_on_y(const std::array<glm::vec4, 4>& V)
+bool rdb::is_top(const std::array<glm::vec4, 4>& V, size_t n)
 {
-  if((V[0].y == V[1].y) && (V[0].y == V[2].y) && (V[0].y == V[3].y)) return true;
-
-  if(
-      (V[0].x == V[3].x) && (V[2].x == V[1].x) &&
-      (V[1].z == V[0].z) && (V[3].z == V[2].z)
-    ) return true;
-
-  return false;
-}
-
-
-///
-/// \brief normal_Z
-/// \param V
-/// \return
-///
-bool rdb::normal_on_z(const std::array<glm::vec4, 4>& V)
-{
-  if((V[0].z == V[1].z) && (V[0].z == V[2].z) && (V[0].z == V[3].z)) return true;
-
-  if(
-      (V[0].x == V[3].x) && (V[2].x == V[1].x) &&
-      (V[1].y == V[0].y) && (V[3].y == V[2].y)
-    ) return true;
-
-  return false;
+  return ((nearbyint(V[0][n]) == V[0][n]) &&
+          (nearbyint(V[1][n]) == V[1][n]) &&
+          (nearbyint(V[2][n]) == V[2][n]) &&
+          (nearbyint(V[3][n]) == V[3][n]) );
 }
 
 
 ///
 /// \brief rdb::snip_analise
 /// \param S
-/// \details Анализ положения снипа в пространстве и установка значений
-/// необходимых для вычислений параметров
+///
+/// \details Установка значений ".lay" и "Origin"
+/// на основе анализ положения снипа в пространстве
 ///
 void rdb::snip_analyze(snip_ext& S)
 {
-  glm::vec4 V0 = S.vertex_coord(0);
-  glm::vec4 V1 = S.vertex_coord(1);
-  glm::vec4 V2 = S.vertex_coord(2);
-  glm::vec4 V3 = S.vertex_coord(3);
-  glm::vec4 Normal = S.vertex_normal(0);
-  float foo = 0.f;
+  std::array<glm::vec4, 4> V {};
+  glm::vec4 NS { 0.0f, 0.0f, 0.0f, 0.0f };
 
-  if( normal_on_y({V0, V1, V2, V3}) )
+  for(size_t i = 0; i <4; i++)
   {
-    if((modff(V0.y, &foo) == 0) &&
-       (modff(V1.y, &foo) == 0) &&
-       (modff(V2.y, &foo) == 0) &&
-       (modff(V3.y, &foo) == 0)) S.top = true;
-
-    if(Normal.y > 0)
-    {
-      S.lay = LAY_YP;
-      S.Origin = V3;
-      if(S.top) S.Origin.y -= lod;
-    }
-    else
-    {
-      S.lay = LAY_YN;
-      S.Origin = V0;
-    }
+    V[i] = S.vertex_coord(i);
+    NS += S.vertex_normal(i);
   }
 
-  if( normal_on_x({V0, V1, V2, V3}) )
+  S.lay = lay_direction(NS);
+  switch (S.lay)
   {
-    if((modff(V0.x, &foo) == 0) &&
-       (modff(V1.x, &foo) == 0) &&
-       (modff(V2.x, &foo) == 0) &&
-       (modff(V3.x, &foo) == 0)) S.top = true;
-
-    if(Normal.x > 0)
-    {
-      S.lay = LAY_XP;
-      S.Origin = V3;
-      if(S.top) S.Origin.x -= lod;
-    }
-    else
-    {
-      S.lay = LAY_XN;
-      S.Origin = V2;
-    }
-  }
-
-  if( normal_on_z({V0, V1, V2, V3}) )
-  {
-    if((modff(V0.z, &foo) == 0) &&
-       (modff(V1.z, &foo) == 0) &&
-       (modff(V2.z, &foo) == 0) &&
-       (modff(V3.z, &foo) == 0)) S.top = true;
-
-    if(Normal.z > 0)
-    {
-      S.lay = LAY_ZP;
-      S.Origin = V2;
-      if(S.top) S.Origin.z -= lod;
-    }
-    else
-    {
-      S.lay = LAY_ZN;
-      S.Origin = V3;
-    }
+    case LAY_XP:
+      S.Origin = V[3];
+      if(is_top(V, 0)) S.Origin.y -= lod;
+      break;
+    case LAY_XN:
+      S.Origin = V[2];
+      break;
+    case LAY_YP:
+      S.Origin = V[3];
+      if(is_top(V, 1)) S.Origin.y -= lod;
+      break;
+    case LAY_YN:
+      S.Origin = V[0];
+      break;
+    case LAY_ZP:
+      S.Origin = V[2];
+      if(is_top(V, 2)) S.Origin.y -= lod;
+      break;
+    case LAY_ZN:
+      S.Origin = V[3];
+      break;
+    case LAYS_COUNT:
+#ifndef NDEBUG
+      info("Undefined LAY direction.");
+#endif
+      break;
   }
 
   S.Origin.x = floor(S.Origin.x);
   S.Origin.y = floor(S.Origin.y);
   S.Origin.z = floor(S.Origin.z);
 }
-
-
-void add_yn(i3d&) { info("add YP"); }
-void add_xn(i3d&) { info("add XN"); }
-void add_xp(i3d&) { info("add XP"); }
-void add_zn(i3d&) { info("add ZN"); }
-void add_zp(i3d&) { info("add ZP"); }
-
-void sub_yn(i3d&) { info("sub YP"); }
-void sub_xn(i3d&) { info("sub XN"); }
-void sub_xp(i3d&) { info("sub XP"); }
-void sub_zn(i3d&) { info("sub ZN"); }
-void sub_zp(i3d&) { info("sub ZP"); }
 
 
 ///
@@ -180,18 +126,31 @@ void rdb::increase(unsigned int i)
 {
   GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip; // + bytes_per_vertex;
   snip_ext S{};
-
   VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
-//DEBUG
-return;
-
   snip_analyze(S);
-  if(S.lay == LAY_YP) add_yp(S.Origin);
-  //if(S.lay == LAY_YN) add_yn(S.Origin);
-  //if(S.lay == LAY_XP) add_xp(S.Origin);
-  //if(S.lay == LAY_XN) add_xn(S.Origin);
-  //if(S.lay == LAY_ZP) add_zp(S.Origin);
-  //if(S.lay == LAY_ZN) add_zn(S.Origin);
+  switch (S.lay)
+  {
+    case LAY_XP:
+      add_xp(S.Origin);
+      break;
+    case LAY_XN:
+      add_xn(S.Origin);
+      break;
+    case LAY_YP:
+      add_yp(S.Origin);
+      break;
+    case LAY_YN:
+      add_yn(S.Origin);
+      break;
+    case LAY_ZP:
+      add_zp(S.Origin);
+      break;
+    case LAY_ZN:
+      add_zn(S.Origin);
+      break;
+    case LAYS_COUNT:
+      break;
+  }
 }
 
 
@@ -207,12 +166,29 @@ void rdb::decrease(unsigned int i)
   snip_ext S{};
   VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
   snip_analyze(S);                               //
-  if(S.lay == LAY_YP) sub_yp(S.Origin);
-  if(S.lay == LAY_YN) sub_yn(S.Origin);
-  if(S.lay == LAY_XP) sub_xp(S.Origin);
-  if(S.lay == LAY_XN) sub_xn(S.Origin);
-  if(S.lay == LAY_ZP) sub_zp(S.Origin);
-  if(S.lay == LAY_ZN) sub_zn(S.Origin);
+  switch (S.lay)
+  {
+    case LAY_XP:
+      sub_xp(S.Origin);
+      break;
+    case LAY_XN:
+      sub_xn(S.Origin);
+      break;
+    case LAY_YP:
+      sub_yp(S.Origin);
+      break;
+    case LAY_YN:
+      sub_yn(S.Origin);
+      break;
+    case LAY_ZP:
+      sub_zp(S.Origin);
+      break;
+    case LAY_ZN:
+      sub_zn(S.Origin);
+      break;
+    case LAYS_COUNT:
+      break;
+  }
 }
 
 
@@ -770,6 +746,19 @@ void rdb::add_yp(const i3d& Pt)
   sides_set(R);   // настроить боковые стороны
   rig_place(R);   // записать модифицированый риг в графический буфер
 }
+
+
+void rdb::add_yn(const i3d&) { info("add YP"); }
+void rdb::add_xn(const i3d&) { info("add XN"); }
+void rdb::add_xp(const i3d&) { info("add XP"); }
+void rdb::add_zn(const i3d&) { info("add ZN"); }
+void rdb::add_zp(const i3d&) { info("add ZP"); }
+
+void rdb::sub_yn(const i3d&) { info("sub YP"); }
+void rdb::sub_xn(const i3d&) { info("sub XN"); }
+void rdb::sub_xp(const i3d&) { info("sub XP"); }
+void rdb::sub_zn(const i3d&) { info("sub ZN"); }
+void rdb::sub_zp(const i3d&) { info("sub ZP"); }
 
 
 ///
