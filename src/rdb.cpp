@@ -124,6 +124,8 @@ void rdb::snip_analyze(snip_ext& S)
 ///
 void rdb::increase(unsigned int i)
 {
+  if(i > (render_points/indices_per_snip) * bytes_per_snip) return;
+
   GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip; // + bytes_per_vertex;
   snip_ext S{};
   VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
@@ -162,6 +164,8 @@ void rdb::increase(unsigned int i)
 ///
 void rdb::decrease(unsigned int i)
 {
+  if(i > (render_points/indices_per_snip) * bytes_per_snip) return;
+
   GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip; // + bytes_per_vertex;
   snip_ext S{};
   VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
@@ -193,9 +197,9 @@ void rdb::decrease(unsigned int i)
 
 
 ///
-/// Добавление в графический буфер элементов, расположенных в точке (x, y, z)
+/// Добавление в графический буфер элементов рига
 ///
-void rdb::rig_place(rig* R)
+void rdb::rig_display(rig* R)
 {
   if(nullptr == R) return;   // TODO: тут можно подгружать или дебажить
   if(R->in_vbo) return;      // Если данные уже в VBO - ничего не делаем
@@ -206,12 +210,12 @@ void rdb::rig_place(rig* R)
     static_cast<float>(R->Origin.z) + R->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
   };
 
-  side_vbo_append(R->SideXp, Point);
-  side_vbo_append(R->SideXn, Point);
-  side_vbo_append(R->SideYp, Point);
-  side_vbo_append(R->SideYn, Point);
-  side_vbo_append(R->SideZp, Point);
-  side_vbo_append(R->SideZn, Point);
+  side_display(R->SideXp, Point);
+  side_display(R->SideXn, Point);
+  side_display(R->SideYp, Point);
+  side_display(R->SideYn, Point);
+  side_display(R->SideZp, Point);
+  side_display(R->SideZn, Point);
 
   R->in_vbo = true;
 }
@@ -223,15 +227,16 @@ void rdb::rig_place(rig* R)
 /// \param Point
 ///
 /// \brief
-/// Добавляет снип в конец VBO и записывает адрес смещения блока данных.
+/// Добавляет данные снипов указанной стороны в конец VBO
 ///
 /// \details
 /// Координаты вершин снипов хранятся в нормализованом виде, поэтому перед
 /// отправкой в VBO все данные снипа копируются во временный кэш, где
 /// координаты вершин пересчитываются с учетом координат (TODO: сдвига и
 /// поворота рига-контейнера), после чего данные записываются в VBO.
+/// Адрес смещения блока данных в VBO запоминается в переменной снипа.
 ///
-void rdb::side_vbo_append(std::vector<snip>& Side, const f3d& Point)
+void rdb::side_display(std::vector<snip>& Side, const f3d& Point)
 {
   for(snip& Snip: Side)
   {
@@ -258,33 +263,31 @@ void rdb::side_vbo_append(std::vector<snip>& Side, const f3d& Point)
 /// \param x
 /// \param y
 /// \param z
-/// \details убрать риг из рендера
+/// \details Стереть риг в рендере
 ///
-/// Индексы размещенных в VBO данных, которые при перемещении камеры вышли
-/// за границу отображения, запоминаются в кэше, чтобы на их место
-/// записать данные вершин, которые вошли в поле зрения с другой стороны.
-///
-void rdb::rig_remove(rig* Rig)
+void rdb::rig_wipeoff(rig* Rig)
 {
   if(nullptr == Rig) return;
   if(!Rig->in_vbo) return;
 
-  side_vbo_remove(Rig->SideYp);
-  side_vbo_remove(Rig->SideYn);
-  side_vbo_remove(Rig->SideZp);
-  side_vbo_remove(Rig->SideZn);
-  side_vbo_remove(Rig->SideXp);
-  side_vbo_remove(Rig->SideXn);
+  side_wipeoff(Rig->SideYp);
+  side_wipeoff(Rig->SideYn);
+  side_wipeoff(Rig->SideZp);
+  side_wipeoff(Rig->SideZn);
+  side_wipeoff(Rig->SideXp);
+  side_wipeoff(Rig->SideXn);
 
   Rig->in_vbo = false;
 }
 
 
 ///
-/// \brief side_remove
+/// \brief side_wipeoff
 /// \param Side
 ///
-void rdb::side_vbo_remove(std::vector<snip>& Side)
+/// \details Удаление из VBO данных указанной стороны
+///
+void rdb::side_wipeoff(std::vector<snip>& Side)
 {
   GLsizeiptr target = 0;         // адрес смещения, где данные будут перезаписаны
   GLsizeiptr moving = 0;         // адрес снипа с "хвоста" VBO, который будет перемещен на target
@@ -504,7 +507,7 @@ void rdb::set_Zp(rig* R0, rig* R1)
     return;
   }
 
-  rig_remove(R1);
+  rig_wipeoff(R1);
   R1->SideZn.clear();    // убрать стенку -Z соседнего блока (если она есть)
 
   // Если соседний блок без верха или выше, то построить -Z стенку соседнего блока
@@ -513,7 +516,7 @@ void rdb::set_Zp(rig* R0, rig* R1)
   else // иначе - построить свою +Z
   {  make_Zp( R0->SideYp, R0->SideZp, R1y3, R1y2 ); }
 
-  rig_place(R1);
+  rig_display(R1);
 }
 
 
@@ -537,7 +540,7 @@ void rdb::set_Zn(rig* R0, rig* R1)
     return;
   }
 
-  rig_remove(R1);
+  rig_wipeoff(R1);
   R1->SideZp.clear();    // убрать +Z соседнего блока (если есть)
 
   // Если соседний блок без верха или выше, то построить +Z соседнего блока
@@ -546,7 +549,7 @@ void rdb::set_Zn(rig* R0, rig* R1)
   else // иначе - обновить -Z
   {  make_Zn( R0->SideYp, R0->SideZn, R1y1, R1y0 ); }
 
-  rig_place(R1);
+  rig_display(R1);
 }
 
 
@@ -570,7 +573,7 @@ void rdb::set_Xp(rig* R0, rig* R1)
     return;
   }
 
-  rig_remove(R1);
+  rig_wipeoff(R1);
   R1->SideXn.clear();  // стенку -X соседнего блока убираем
 
   // Если соседний блок без верха или выше, то строим -X соседнего блока
@@ -579,7 +582,7 @@ void rdb::set_Xp(rig* R0, rig* R1)
   else // иначе - строим свою +X
   {  make_Xp( R0->SideYp, R0->SideXp, R1y0, R1y3 ); }
 
-  rig_place(R1);
+  rig_display(R1);
 }
 
 
@@ -603,7 +606,7 @@ void rdb::set_Xn(rig* R0, rig* R1)
     return;
   }
 
-  rig_remove(R1);
+  rig_wipeoff(R1);
   R1->SideXp.clear(); // +X соседнего блока убрать
 
   // Если соседний блок без верха или выше, то построить +X соседнего блока
@@ -612,7 +615,7 @@ void rdb::set_Xn(rig* R0, rig* R1)
   else // иначе - построить свою -X
   {  make_Xn( R0->SideYp, R0->SideXn, R1y2, R1y1 ); }
 
-  rig_place(R1);
+  rig_display(R1);
 }
 
 
@@ -688,7 +691,7 @@ void rdb::append_rig_Yp(const i3d& Pt)
 
   MapRigs[Pt].SideYp.push_back(S);
   sides_set(&MapRigs[Pt]);
-  rig_place(&MapRigs[Pt]);
+  rig_display(&MapRigs[Pt]);
 }
 
 
@@ -707,7 +710,7 @@ void rdb::add_yp(const i3d& Pt)
   }
 
   if(R->SideYp.empty()) return;
-  rig_remove(R); // убрать риг из графического буфера
+  rig_wipeoff(R); // убрать риг из графического буфера
 
   snip &S = R->SideYp.front();
   if((S.data[Y + ROW_SIZE * 0] == 1.00f) &&
@@ -717,7 +720,7 @@ void rdb::add_yp(const i3d& Pt)
   {
     R->SideYp.clear();
     append_rig_Yp({Pt.x, Pt.y + lod, Pt.z});
-    rig_place(R);
+    rig_display(R);
     return;
   }
 
@@ -744,7 +747,7 @@ void rdb::add_yp(const i3d& Pt)
   }
 
   sides_set(R);   // настроить боковые стороны
-  rig_place(R);   // записать модифицированый риг в графический буфер
+  rig_display(R);   // записать модифицированый риг в графический буфер
 }
 
 
@@ -762,82 +765,157 @@ void rdb::sub_zp(const i3d&) { info("sub ZP"); }
 
 
 ///
-/// \brief rdb::remove_rig_Yp
-/// \param Pt
-/// \details Удаляет риг в указанной точке пространства и обновляет
-/// боковые стороны ригов примыкающих к данной точке.
+/// \brief rdb::make_Yp
+/// \param SideYp
 ///
-void rdb::remove_rig_Yp(const i3d& P)
+void rdb::make_Yp(std::vector<snip>& SideYp)
 {
-  MapRigs.erase(P);             // Удалить риг в точке P пространства 3D
+  SideYp.clear();
 
-  i3d Psub {P.x, P.y-lod, P.z}; // Координаты точки на шаг ниже
-  rig* R = get(Psub);
-  if(nullptr == R)              // Если снизу рига нет, то следует его создать
-  {
-    MapRigs.emplace(std::pair(Psub, rig{}));
-    MapRigs[Psub].Origin = Psub;
-    R = get(Psub);
-  }
-  else {
-    rig_remove(R);
-  }
-
-  snip S = {};
+  snip S {};
   for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = 1.f;
   S.texture_set(AppWin.texYp.u, AppWin.texYp.v);
-  R->SideYp.clear();
-  R->SideYp.push_back(S);
-  rig_place(R);     // записать в графический буфер
+  SideYp.push_back(S);
+}
 
-  // Обновить боковые стороны вокруг удаленного рига
-  R = get({P.x + lod, P.y, P.z});
-  if(nullptr != R)
+
+bool full_size(std::vector<snip>&)
+{
+  return true;
+}
+
+
+///
+/// \brief rdb::remove_rig_Yp
+/// \param Pt
+/// \details Удаляет риг в указанной точке пространства
+/// и обновляет стороны ригов, примыкающих к данной точке.
+///
+void rdb::remove_rig(const i3d& P)
+{
+  // Перед удалением надо отметить наличие соседних ригов - соседнего
+  // рига нет, если в это направлении есть полная сторона. В этом
+  // направлении содавать продолжение не требуется.
+/*
+  rig* R_rm = get(P);
+  bool no_xp = full_size(R_rm->SideXp);
+  bool no_xn = full_size(R_rm->SideXn);
+  bool no_yp = full_size(R_rm->SideYp);
+  bool no_yn = full_size(R_rm->SideYn);
+  bool no_zp = full_size(R_rm->SideZp);
+  bool no_zn = full_size(R_rm->SideZn);
+*/
+
+  MapRigs.erase(P);             // Удалить риг из БД
+  rig* Rtst = nullptr;
+
+  // Y + lod
+  Rtst = get({P.x, P.y + lod, P.z});
+  if(nullptr != Rtst)
   {
-    rig_remove(R);  // убрать риг из графического буфера
-    make_Xn( R->SideYp, R->SideXn, 0.f, 0.f );
-    rig_place(R);     // записать модифицированый риг в графический буфер
+    rig_wipeoff(Rtst);   // убрать риг из графического буфера
+    //make_Yn( ??? );    // нарисовать донышко
+    rig_display(Rtst);   // записать модифицированый риг в графический буфер
   }
 
-  R = get({P.x - lod, P.y, P.z});
-  if(nullptr != R)
+  // Y - lod
+  Rtst = get({P.x, P.y - lod, P.z});
+  if(nullptr != Rtst)
   {
-    rig_remove(R);  // убрать риг из графического буфера
-    make_Xp( R->SideYp, R->SideXp, 0.f, 0.f );
-    rig_place(R);     // записать модифицированый риг в графический буфер
+    side_wipeoff(Rtst->SideYp);              //Если в БД снизу риг есть, то стереть его Yp.
+    make_Yp(Rtst->SideYp);
+    f3d Point = {
+      static_cast<float>(Rtst->Origin.x) + Rtst->shift[SHIFT_X],
+      static_cast<float>(Rtst->Origin.y) + Rtst->shift[SHIFT_Y],
+      static_cast<float>(Rtst->Origin.z) + Rtst->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
+    };
+    side_display(Rtst->SideYp, Point);     // записать в графический буфер
+  }
+  else // Если в БД снизу риг не обозначен, то надо проверить SideYn ригов вокруг точки удаления.
+       // И если где-то "нижней крышки" нет, то под этим ригом в виртуальном пространстве есть
+       //риг, но все его стороны были невидимы (примыкали с соседним ригам), поэтому в базе данных
+       // он отсутствует. Так как теперь одна из сторон стала видна, то риг добавляется в БД.
+  {
+
+/*
+    bool xp = false, xn = false, zp = false, zn = false;
+
+    auto Rxp = get({P.x+lod, P.y, P.z});
+    if(nullptr != Rxp) xp = Rxp->SideYn.empty();
+
+    auto Rxn = get({P.x-lod, P.y, P.z});
+    if(nullptr != Rxn) xn = Rxn->SideYn.empty();
+
+    auto Rzp = get({P.x, P.y, P.z+lod});
+    if(nullptr != Rzp) zp = Rzp->SideYn.empty();
+
+    auto Rzn = get({P.x, P.y, P.z-lod});
+    if(nullptr != Rzn) zn = Rzn->SideYn.empty();
+*/
+
+
+    //MapRigs.emplace(std::pair(Psub, rig{}));
+    //MapRigs[Psub].Origin = Psub;
+    //Rtst = get(Psub);
   }
 
-  R = get({P.x, P.y, P.z + lod});
-  if(nullptr != R)
+  // Х + lod
+  Rtst = get({P.x + lod, P.y, P.z});
+  if(nullptr != Rtst)
   {
-    rig_remove(R);  // убрать риг из графического буфера
-    make_Zn( R->SideYp, R->SideZn, 0.f, 0.f );
-    rig_place(R);     // записать модифицированый риг в графический буфер
+    rig_wipeoff(Rtst);  // убрать риг из графического буфера
+    make_Xn( Rtst->SideYp, Rtst->SideXn, 0.f, 0.f );
+    rig_display(Rtst);     // записать модифицированый риг в графический буфер
   }
 
-  R = get({P.x, P.y, P.z - lod});
-  if(nullptr != R)
+  // X - lod
+  Rtst = get({P.x - lod, P.y, P.z});
+  if(nullptr != Rtst)
   {
-    rig_remove(R);  // убрать риг из графического буфера
-    make_Zp( R->SideYp, R->SideZp, 0.f, 0.f );
-    rig_place(R);     // записать модифицированый риг в графический буфер
+    rig_wipeoff(Rtst);  // убрать риг из графического буфера
+    make_Xp( Rtst->SideYp, Rtst->SideXp, 0.f, 0.f );
+    rig_display(Rtst);     // записать модифицированый риг в графический буфер
+  }
+
+  // Z + lod
+  Rtst = get({P.x, P.y, P.z + lod});
+  if(nullptr != Rtst)
+  {
+    rig_wipeoff(Rtst);  // убрать риг из графического буфера
+    make_Zn( Rtst->SideYp, Rtst->SideZn, 0.f, 0.f );
+    rig_display(Rtst);     // записать модифицированый риг в графический буфер
+  }
+
+  // Z - lod
+  Rtst = get({P.x, P.y, P.z - lod});
+  if(nullptr != Rtst)
+  {
+    rig_wipeoff(Rtst);  // убрать риг из графического буфера
+    make_Zp( Rtst->SideYp, Rtst->SideZp, 0.f, 0.f );
+    rig_display(Rtst);     // записать модифицированый риг в графический буфер
   }
 }
 
 
 ///
-/// \brief rdb::sub_y
-/// \details Уменьшение рига по координате Y.
-/// Если высота рига не больше ( 0,25*lod ), то этот риг
-/// удаляется и рисуется риг на один шаг ниже.
+/// \brief rdb::sub_yp
+///
+/// \details Уменьшение высоты рига на четверть. Если высота
+/// меньше четверти (0,25*lod), то этот риг удаляется.
 ///
 void rdb::sub_yp(const i3d& Pt)
 {
   rig *R = get(Pt);         //1. Выбрать целевой риг
-  if(nullptr == R) ERR ("Error: call rdb::sub_y for nullptr point");
+
+  if(nullptr == R)
+  {
+    info("Error: call rdb::sub_yp for nullptr point");
+    return;
+  }
+
   if(R->SideYp.empty()) return;
 
-  rig_remove(R); // убрать риг из графического буфера
+  rig_wipeoff(R); // убрать риг из графического буфера
 
   snip &S = R->SideYp.front();
 
@@ -846,8 +924,8 @@ void rdb::sub_yp(const i3d& Pt)
      (S.data[Y + ROW_SIZE * 2] <= 0.25f) ||
      (S.data[Y + ROW_SIZE * 3] <= 0.25f))
   {                                         // Если одна из вершин данного рига
-    remove_rig_Yp(Pt);                      // расположена ниже у=0.25, то этот
-    return;                                 // риг полностью удаляется
+    remove_rig(Pt);                         // расположена ниже у=0.25, то этот
+    return;                                 // риг просто удаляется из БД
   }
 
   float y = 1.f; // найти вершину с минимальным значением Y
@@ -861,21 +939,7 @@ void rdb::sub_yp(const i3d& Pt)
   // выровнять все вершины по выбранной высоте
   for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = y;
   sides_set(R); // настроить боковые стороны
-  rig_place(R);     // записать модифицированый риг в графический буфер
-}
-
-
-///
-/// Подсветка выделенного рига
-///
-void rdb::highlight(const i3d&)
-{
-  return;
-
-  // Вариант 1: изменить цвет снипа/рига чтобы было понятно, что он выделен.
-  //return;
-
-  // Вариант 2: выделение границ выделенного снипа
+  rig_display(R);     // записать модифицированый риг в графический буфер
 }
 
 

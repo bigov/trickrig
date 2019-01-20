@@ -34,7 +34,11 @@ class rdb
 {
   private:
     std::map<i3d, rig> MapRigs {}; // карта поверхности
-    std::unordered_map<GLsizeiptr, snip*> VisibleSnips {}; // Карта размещения cнипов по адресам в VBO
+
+    // Карта размещения cнипов по адресам в VBO. Необходима для того,
+    // чтобы при перемещениях данных снипов в VBO было проще вносить
+    // изменения адреса смещения в буфере.
+    std::unordered_map<GLsizeiptr, snip*> VisibleSnips {};
 
     int yMin = -100;  // временное ограничение рабочего пространства
     int yMax = 100;
@@ -49,15 +53,16 @@ class rdb
     void set_Zn(rig*, rig*);
     void set_Xp(rig*, rig*);
     void set_Xn(rig*, rig*);
+    void make_Yp(std::vector<snip>&);
     void make_Zn(std::vector<snip>&, std::vector<snip>&, float, float);
     void make_Zp(std::vector<snip>&, std::vector<snip>&, float, float);
     void make_Xn(std::vector<snip>&, std::vector<snip>&, float, float);
     void make_Xp(std::vector<snip>&, std::vector<snip>&, float, float);
     void append_rig_Yp(const i3d&);
-    void remove_rig_Yp(const i3d&);
+    void remove_rig(const i3d&);
     void init_vbo(void);
-    void side_vbo_append(std::vector<snip>& Side, const f3d& Point);
-    void side_vbo_remove(std::vector<snip>&); // убрать сторону рига из VBO
+    void side_display(std::vector<snip>& Side, const f3d& Point);
+    void side_wipeoff(std::vector<snip>&); // убрать сторону рига из VBO
     LAY_NAME lay_direction(const glm::vec4&);
     bool is_top(const std::array<glm::vec4, 4>& V, size_t n);
     void snip_analyze(snip_ext& S);
@@ -71,8 +76,8 @@ class rdb
     u_int render_points = 0;          // число точек передаваемых в рендер
     vbo_ext* VBO = nullptr;           // VBO вершин поверхности
 
-    void rig_place(rig*);             // разместить данные в VBO буфере
-    void rig_remove(rig*);            // убрать риг из VBO
+    void rig_display(rig*);             // разместить данные в VBO буфере
+    void rig_wipeoff(rig*);            // убрать риг из VBO
 
     void increase(unsigned int);      // добавить объем по индексу снипа
     void decrease(unsigned int);        // удалить объем по индексу снипа
@@ -90,13 +95,8 @@ class rdb
     void sub_zn(const i3d&);
     void sub_zp(const i3d&);
 
-
-
-
     //bool save(const i3d &, const i3d &);
     void load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position);    // загрузка уровня
-    void highlight(const i3d &);
-
     rig* get(const i3d &);
 
     i3d search_down(int, int, int);
