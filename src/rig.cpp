@@ -42,6 +42,7 @@ rig& rig::operator= (const rig &Other)
 void rig::copy_data(const rig &Other)
 {
   born = Other.born;
+  Origin = Other.Origin;
   for(int i = 0; i < SHIFT_DIGITS; i++) shift[i] = Other.shift[i];
 
   SideXp.clear();

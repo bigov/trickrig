@@ -124,6 +124,9 @@ void rdb::snip_analyze(snip_ext& S)
 ///
 void rdb::increase(unsigned int i)
 {
+  //debug
+  //info("increase call");
+
   if(i > (render_points/indices_per_snip) * bytes_per_snip) return;
 
   GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip; // + bytes_per_vertex;
@@ -818,6 +821,7 @@ void rdb::remove_rig(const i3d& P)
   rig* RigTst = nullptr;                           // Указатель на соседний риг
   i3d  OrTst {0,0,0};                              // Адрес соседнего рига
 
+
   // Y + lod
   OrTst = {P.x, P.y + lod, P.z};
   RigTst = get(OrTst);                              // Указатель на соседний риг
@@ -825,7 +829,7 @@ void rdb::remove_rig(const i3d& P)
   {                                                 // то рядом есть риг и надо нарисовать его стенку
     if(nullptr == RigTst)
     {                                               // Если соседа в БД нет,
-      MapRigs.emplace(std::pair(OrTst, rig{OrTst}));//  то его следует создать
+      MapRigs[OrTst] = rig{OrTst};                  //  то его следует создать
       RigTst = get(OrTst);                          // Получить указатель на созданного соседа
     }
     side_wipeoff(RigTst->SideYn);                   // Очистить изображение стороны(если есть)
@@ -842,6 +846,7 @@ void rdb::remove_rig(const i3d& P)
     }
   }
 
+
   // Y - lod
   OrTst = {P.x, P.y - lod, P.z};
   RigTst = get(OrTst);                              // Указатель на соседний риг
@@ -849,7 +854,7 @@ void rdb::remove_rig(const i3d& P)
   {                                                 // то рядом есть риг и надо нарисовать его стенку
     if(nullptr == RigTst)
     {                                               // Если соседа в БД нет,
-      MapRigs.emplace(std::pair(OrTst, rig{OrTst}));//  то его следует создать
+      MapRigs[OrTst] = rig{OrTst};                  //  то его следует создать
       RigTst = get(OrTst);                          // Получить указатель на созданного соседа
     }
     side_wipeoff(RigTst->SideYp);                   // Очистить изображение стороны(если есть)
@@ -903,6 +908,7 @@ void rdb::remove_rig(const i3d& P)
     rig_display(RigTst);     // записать модифицированый риг в графический буфер
   }
 
+  rig_wipeoff(RigRm);
   MapRigs.erase(P);             // Удалить риг из БД
 }
 
