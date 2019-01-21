@@ -54,6 +54,7 @@ class rdb
     void set_Xp(rig*, rig*);
     void set_Xn(rig*, rig*);
     void make_Yp(std::vector<snip>&);
+    void make_Yn(std::vector<snip>&);
     void make_Zn(std::vector<snip>&, std::vector<snip>&, float, float);
     void make_Zp(std::vector<snip>&, std::vector<snip>&, float, float);
     void make_Xn(std::vector<snip>&, std::vector<snip>&, float, float);

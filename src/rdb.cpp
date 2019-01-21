@@ -347,6 +347,25 @@ void rdb::side_make_snip(const std::array<glm::vec4, 4>& v, snip& S, const glm::
 
 
 ///
+/// \brief rdb::make_Yn
+/// \param SideYn
+///
+void rdb::make_Yn(std::vector<snip>& SideYn)
+{
+  snip S{};                                       // Стандартный снип для стенки
+  for(size_t i = 0; i < 4; ++i)                   // настроить нормали вниз
+  {
+    S.data[ROW_SIZE * i + NX] =  0.f;
+    S.data[ROW_SIZE * i + NY] = -1.f;
+    S.data[ROW_SIZE * i + NZ] =  0.f;
+  }
+  S.texture_set( AppWin.texYn.u, AppWin.texYn.v); // настроить текстуру
+  SideYn.clear();
+  SideYn.push_back(S);                            // заполнить сторону
+}
+
+
+///
 /// \brief rdb::make_Xp
 /// \param Top - верхний снип
 /// \param Side - боковой снип, который перестраивается
@@ -680,6 +699,7 @@ void rdb::sides_set(rig* R0)
 ///
 /// \brief rdb::append_rig_Yp
 /// \param Pt
+/// \brief Добавить сверху новый риг
 ///
 void rdb::append_rig_Yp(const i3d& Pt)
 {
@@ -779,121 +799,111 @@ void rdb::make_Yp(std::vector<snip>& SideYp)
 }
 
 
-bool full_size(std::vector<snip>&)
-{
-  return true;
-}
-
-
 ///
 /// \brief rdb::remove_rig_Yp
 /// \param Pt
 /// \details Удаляет риг в указанной точке пространства
 /// и обновляет стороны ригов, примыкающих к данной точке.
 ///
+/// Перед удалением производится проверка дла каждой стороны условий:
+/// 1. Если этой стороны нет в буфере, то всегда создается ответная сторона
+/// примыкающего рига. Если такого рига в базе данных нет - его следует создать.
+/// 2. Если проверяемая сторона имеется, то при наличии примыкающего
+/// рига его ответная сторона обновляется; если примыкающего рига в БД нет, то
+/// новый не создается.
+///
 void rdb::remove_rig(const i3d& P)
 {
-  // Перед удалением надо отметить наличие соседних ригов - соседнего
-  // рига нет, если в это направлении есть полная сторона. В этом
-  // направлении содавать продолжение не требуется.
-/*
-  rig* R_rm = get(P);
-  bool no_xp = full_size(R_rm->SideXp);
-  bool no_xn = full_size(R_rm->SideXn);
-  bool no_yp = full_size(R_rm->SideYp);
-  bool no_yn = full_size(R_rm->SideYn);
-  bool no_zp = full_size(R_rm->SideZp);
-  bool no_zn = full_size(R_rm->SideZn);
-*/
-
-  MapRigs.erase(P);             // Удалить риг из БД
-  rig* Rtst = nullptr;
+  rig* RigRm = get(P);                             // Указатель на удаляемый риг
+  rig* RigTst = nullptr;                           // Указатель на соседний риг
+  i3d  OrTst {0,0,0};                              // Адрес соседнего рига
 
   // Y + lod
-  Rtst = get({P.x, P.y + lod, P.z});
-  if(nullptr != Rtst)
-  {
-    rig_wipeoff(Rtst);   // убрать риг из графического буфера
-    //make_Yn( ??? );    // нарисовать донышко
-    rig_display(Rtst);   // записать модифицированый риг в графический буфер
+  OrTst = {P.x, P.y + lod, P.z};
+  RigTst = get(OrTst);                              // Указатель на соседний риг
+  if(RigRm->SideYp.empty())                         // Если удаляемой стенки нет,
+  {                                                 // то рядом есть риг и надо нарисовать его стенку
+    if(nullptr == RigTst)
+    {                                               // Если соседа в БД нет,
+      MapRigs.emplace(std::pair(OrTst, rig{OrTst}));//  то его следует создать
+      RigTst = get(OrTst);                          // Получить указатель на созданного соседа
+    }
+    side_wipeoff(RigTst->SideYn);                   // Очистить изображение стороны(если есть)
+    make_Yn(RigTst->SideYn);                        // Построить нижнюю стенку
+    side_display(RigTst->SideYp, OrTst);            // Записать в графический буфер
+  }
+  else // Если у удаляемого рига есть вверху стенка, то проверить наличие соседа,
+  {    // если сосед присутствует, то обновить его нижнюю стенку
+    if(nullptr != RigTst)
+    {
+      side_wipeoff(RigTst->SideYn);                   // Очистить изображение стороны(если есть)
+      make_Yn(RigTst->SideYn);                        // Построить нижнюю стенку
+      side_display(RigTst->SideYp, OrTst);            // Записать в графический буфер
+    }
   }
 
   // Y - lod
-  Rtst = get({P.x, P.y - lod, P.z});
-  if(nullptr != Rtst)
-  {
-    side_wipeoff(Rtst->SideYp);              //Если в БД снизу риг есть, то стереть его Yp.
-    make_Yp(Rtst->SideYp);
-    f3d Point = {
-      static_cast<float>(Rtst->Origin.x) + Rtst->shift[SHIFT_X],
-      static_cast<float>(Rtst->Origin.y) + Rtst->shift[SHIFT_Y],
-      static_cast<float>(Rtst->Origin.z) + Rtst->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
-    };
-    side_display(Rtst->SideYp, Point);     // записать в графический буфер
+  OrTst = {P.x, P.y - lod, P.z};
+  RigTst = get(OrTst);                              // Указатель на соседний риг
+  if(RigRm->SideYn.empty())                         // Если удаляемой стенки нет,
+  {                                                 // то рядом есть риг и надо нарисовать его стенку
+    if(nullptr == RigTst)
+    {                                               // Если соседа в БД нет,
+      MapRigs.emplace(std::pair(OrTst, rig{OrTst}));//  то его следует создать
+      RigTst = get(OrTst);                          // Получить указатель на созданного соседа
+    }
+    side_wipeoff(RigTst->SideYp);                   // Очистить изображение стороны(если есть)
+    make_Yp(RigTst->SideYp);                        // Построить нижнюю стенку
+    side_display(RigTst->SideYp, OrTst);            // Записать в графический буфер
   }
-  else // Если в БД снизу риг не обозначен, то надо проверить SideYn ригов вокруг точки удаления.
-       // И если где-то "нижней крышки" нет, то под этим ригом в виртуальном пространстве есть
-       //риг, но все его стороны были невидимы (примыкали с соседним ригам), поэтому в базе данных
-       // он отсутствует. Так как теперь одна из сторон стала видна, то риг добавляется в БД.
-  {
-
-/*
-    bool xp = false, xn = false, zp = false, zn = false;
-
-    auto Rxp = get({P.x+lod, P.y, P.z});
-    if(nullptr != Rxp) xp = Rxp->SideYn.empty();
-
-    auto Rxn = get({P.x-lod, P.y, P.z});
-    if(nullptr != Rxn) xn = Rxn->SideYn.empty();
-
-    auto Rzp = get({P.x, P.y, P.z+lod});
-    if(nullptr != Rzp) zp = Rzp->SideYn.empty();
-
-    auto Rzn = get({P.x, P.y, P.z-lod});
-    if(nullptr != Rzn) zn = Rzn->SideYn.empty();
-*/
-
-
-    //MapRigs.emplace(std::pair(Psub, rig{}));
-    //MapRigs[Psub].Origin = Psub;
-    //Rtst = get(Psub);
+  else // Если у удаляемого рига есть вверху стенка, то проверить наличие соседа,
+  {    // если сосед присутствует, то обновить его нижнюю стенку
+    if(nullptr != RigTst)
+    {
+      side_wipeoff(RigTst->SideYp);                   // Очистить изображение стороны(если есть)
+      make_Yp(RigTst->SideYp);                        // Построить нижнюю стенку
+      side_display(RigTst->SideYp, OrTst);            // Записать в графический буфер
+    }
   }
+
 
   // Х + lod
-  Rtst = get({P.x + lod, P.y, P.z});
-  if(nullptr != Rtst)
+  RigTst = get({P.x + lod, P.y, P.z});
+  if(nullptr != RigTst)
   {
-    rig_wipeoff(Rtst);  // убрать риг из графического буфера
-    make_Xn( Rtst->SideYp, Rtst->SideXn, 0.f, 0.f );
-    rig_display(Rtst);     // записать модифицированый риг в графический буфер
+    rig_wipeoff(RigTst);  // убрать риг из графического буфера
+    make_Xn( RigTst->SideYp, RigTst->SideXn, 0.f, 0.f );
+    rig_display(RigTst);     // записать модифицированый риг в графический буфер
   }
 
   // X - lod
-  Rtst = get({P.x - lod, P.y, P.z});
-  if(nullptr != Rtst)
+  RigTst = get({P.x - lod, P.y, P.z});
+  if(nullptr != RigTst)
   {
-    rig_wipeoff(Rtst);  // убрать риг из графического буфера
-    make_Xp( Rtst->SideYp, Rtst->SideXp, 0.f, 0.f );
-    rig_display(Rtst);     // записать модифицированый риг в графический буфер
+    rig_wipeoff(RigTst);  // убрать риг из графического буфера
+    make_Xp( RigTst->SideYp, RigTst->SideXp, 0.f, 0.f );
+    rig_display(RigTst);     // записать модифицированый риг в графический буфер
   }
 
   // Z + lod
-  Rtst = get({P.x, P.y, P.z + lod});
-  if(nullptr != Rtst)
+  RigTst = get({P.x, P.y, P.z + lod});
+  if(nullptr != RigTst)
   {
-    rig_wipeoff(Rtst);  // убрать риг из графического буфера
-    make_Zn( Rtst->SideYp, Rtst->SideZn, 0.f, 0.f );
-    rig_display(Rtst);     // записать модифицированый риг в графический буфер
+    rig_wipeoff(RigTst);  // убрать риг из графического буфера
+    make_Zn( RigTst->SideYp, RigTst->SideZn, 0.f, 0.f );
+    rig_display(RigTst);     // записать модифицированый риг в графический буфер
   }
 
   // Z - lod
-  Rtst = get({P.x, P.y, P.z - lod});
-  if(nullptr != Rtst)
+  RigTst = get({P.x, P.y, P.z - lod});
+  if(nullptr != RigTst)
   {
-    rig_wipeoff(Rtst);  // убрать риг из графического буфера
-    make_Zp( Rtst->SideYp, Rtst->SideZp, 0.f, 0.f );
-    rig_display(Rtst);     // записать модифицированый риг в графический буфер
+    rig_wipeoff(RigTst);  // убрать риг из графического буфера
+    make_Zp( RigTst->SideYp, RigTst->SideZp, 0.f, 0.f );
+    rig_display(RigTst);     // записать модифицированый риг в графический буфер
   }
+
+  MapRigs.erase(P);             // Удалить риг из БД
 }
 
 

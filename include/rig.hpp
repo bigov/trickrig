@@ -41,6 +41,7 @@ class rig // группа элементов, образующих объект 
     bool in_vbo = false;               // данные помещены в VBO
 
     rig(void): born(tr::get_msec()) {} // конструктор по-умолчанию
+    rig(const i3d& Or): born(tr::get_msec()), Origin(Or) {}
     rig(const rig &);                  // дублирующий конструктор
     rig& operator= (const rig &);      // копирующее присваивание
 
