@@ -325,10 +325,19 @@ void space::calc_position(evInput & ev)
 ///
 /// Функция, вызываемая из цикла окна для рендера сцены
 ///
+/// S == 31; C == 46
 void space::draw(evInput & ev)
 {
   calc_position(ev);
   recalc_borders();
+
+  if((46 == ev.scancode) && (ev.action == PRESS))
+  {
+    ev.action = -1;
+    ev.scancode = -1;
+    pixel_info Pixel = FrBuffer.read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
+    std::cout << "ID=" << Pixel.Xid << " ";
+  }
 
   if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
   {
