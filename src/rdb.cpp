@@ -671,7 +671,12 @@ void rdb::sides_set(rig* R0)
   {
     if((R0y1 < R1y2) && (R0y0 > R1y3)) R0y1 = R1y2;
     if((R0y0 < R1y3) && (R0y1 > R1y2)) R0y0 = R1y3;
+  } else {
+    if(R0->SideZp.empty())
+      MapRigs[{R0->Origin.x, R0->Origin.y, R0->Origin.z + lod}]
+          = rig{{R0->Origin.x, R0->Origin.y, R0->Origin.z + lod}};
   }
+
   // -Z
   R1 = get({R0->Origin.x, R0->Origin.y, R0->Origin.z - lod});
   if(nullptr != R1)
