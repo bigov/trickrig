@@ -22,7 +22,7 @@ void vbo_base::allocate(GLsizeiptr al)
   allocated = al;
   glGenBuffers(1, &id);
   glBindBuffer(gl_buffer_type, id);
-  glBufferData(gl_buffer_type, allocated, nullptr, GL_STATIC_DRAW);
+  glBufferData(gl_buffer_type, allocated, nullptr, GL_STATIC_DRAW); // GL_STREAM_DRAW
 
 #ifndef NDEBUG //--контроль создания буфера--------------------------------
   GLint d_size = 0;
@@ -172,13 +172,21 @@ GLsizeiptr vbo_ext::data_append(const GLvoid* data, GLsizeiptr data_size)
 {
   #ifndef NDEBUG // проверка свободного места в буфере----------------------
   if((allocated - hem) < data_size) ERR("VBO::SubDataAppend got overflow buffer");
+  if(data == nullptr) ERR("VBO::SubDataAppend nullptr");
   #endif //------------------------------------------------------------------
 
   glBindBuffer(gl_buffer_type, id);
+
   glBufferSubData(gl_buffer_type, hem, data_size, data);
+  //GLvoid* ptr = glMapBufferRange(gl_buffer_type, hem, data_size, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+  //memcpy(ptr, data, data_size);
+  //glUnmapBuffer(gl_buffer_type);
+
   glBindBuffer(gl_buffer_type, 0);
   GLsizeiptr res = hem;
   hem += data_size;
+  //glFlush();
+  //glFinish();
 
   return res;
 }
@@ -195,7 +203,6 @@ void vbo_ext::data_get(GLintptr offset, GLsizeiptr sz, GLvoid* dst)
   glBindBuffer(gl_buffer_type, id);
   //glGetBufferSubData(gl_buffer_type, offset, sz, dst);
 
-  //GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT
   GLvoid* ptr = glMapBufferRange(gl_buffer_type, offset, sz, GL_MAP_READ_BIT);
   memcpy(dst, ptr, sz);
   glUnmapBuffer(gl_buffer_type);
@@ -209,6 +216,7 @@ void vbo_ext::data_get(GLintptr offset, GLsizeiptr sz, GLvoid* dst)
 }
 
 
+/*
 ///
 /// \brief vbo::data_update
 /// \param d_size
@@ -226,5 +234,6 @@ void vbo_ext::data_update(GLsizeiptr dist, const GLvoid* data, GLsizeiptr data_s
     glBufferSubData(gl_buffer_type, dist, data_size, data);
     glBindBuffer(gl_buffer_type, 0);
   }
+*/
 
 } //tr

@@ -48,7 +48,7 @@ class vbo_ext: public vbo_base
     vbo_ext(GLenum type): vbo_base(type) {}
     GLsizeiptr data_append(const GLvoid* data, GLsizeiptr data_size);
     GLsizeiptr remove(GLsizeiptr dest, GLsizeiptr data_size);
-    void data_update(GLsizeiptr dist, const GLvoid* data, GLsizeiptr data_size);
+    //void data_update(GLsizeiptr dist, const GLvoid* data, GLsizeiptr data_size);
     void data_get(GLintptr offset, GLsizeiptr size, GLvoid* data);
     void clear(void) {hem = 0;}
 };
