@@ -664,40 +664,51 @@ void rdb::set_Xn(rig* R0, rig* R1)
 void rdb::sides_set(rig* R0)
 {
   rig* R1 = nullptr;
+  i3d pOr {0,0,0};
 
-  // +Z
-  R1 = get({R0->Origin.x, R0->Origin.y, R0->Origin.z + lod});
+  pOr = {R0->Origin.x, R0->Origin.y, R0->Origin.z + lod};   // +Z
+  R1 = get(pOr);
   if(nullptr != R1)
   {
-    if((R0y1 < R1y2) && (R0y0 > R1y3)) R0y1 = R1y2;
-    if((R0y0 < R1y3) && (R0y1 > R1y2)) R0y0 = R1y3;
-  } else {
-    if(R0->SideZp.empty())
-      MapRigs[{R0->Origin.x, R0->Origin.y, R0->Origin.z + lod}]
-          = rig{{R0->Origin.x, R0->Origin.y, R0->Origin.z + lod}};
-  }
+    if(!R1->SideYp.empty())
+    {
+      if((R0y1 < R1y2) && (R0y0 > R1y3)) R0y1 = R1y2;
+      if((R0y0 < R1y3) && (R0y1 > R1y2)) R0y0 = R1y3;
+    }
+  } else { if(R0->SideZp.empty()) MapRigs[pOr] = rig{pOr}; }
 
-  // -Z
+  pOr = {R0->Origin.x, R0->Origin.y, R0->Origin.z - lod};   // -Z
   R1 = get({R0->Origin.x, R0->Origin.y, R0->Origin.z - lod});
   if(nullptr != R1)
   {
-    if((R0y3 < R1y0) && (R0y2 > R1y1)) R0y3 = R1y0;
-    if((R0y2 < R1y1) && (R0y3 > R1y0)) R0y2 = R1y1;
-  }
-  // +X
+    if(!R1->SideYp.empty())
+    {
+      if((R0y3 < R1y0) && (R0y2 > R1y1)) R0y3 = R1y0;
+      if((R0y2 < R1y1) && (R0y3 > R1y0)) R0y2 = R1y1;
+    }
+  } else { if(R0->SideZn.empty()) MapRigs[pOr] = rig{pOr}; }
+
+  pOr = {R0->Origin.x + lod, R0->Origin.y, R0->Origin.z};   // +X
   R1 = get({R0->Origin.x + lod, R0->Origin.y, R0->Origin.z});
   if(nullptr != R1)
   {
-    if((R0y2 < R1y3) && (R0y1 > R1y0)) R0y2 = R1y3;
-    if((R0y1 < R1y0) && (R0y2 > R1y3)) R0y1 = R1y0;
-  }
-  // -X
+    if(!R1->SideYp.empty())
+    {
+      if((R0y2 < R1y3) && (R0y1 > R1y0)) R0y2 = R1y3;
+      if((R0y1 < R1y0) && (R0y2 > R1y3)) R0y1 = R1y0;
+    }
+  } else { if(R0->SideXp.empty()) MapRigs[pOr] = rig{pOr}; }
+
+  pOr = {R0->Origin.x - lod, R0->Origin.y, R0->Origin.z};   // -X
   R1 = get({R0->Origin.x - lod, R0->Origin.y, R0->Origin.z});
   if(nullptr != R1)
   {
-    if((R0y0 < R1y1) && (R0y3 > R1y2)) R0y0 = R1y1;
-    if((R0y3 < R1y2) && (R0y0 > R1y1)) R0y3 = R1y2;
-  }
+    if(!R1->SideYp.empty())
+    {
+      if((R0y0 < R1y1) && (R0y3 > R1y2)) R0y0 = R1y1;
+      if((R0y3 < R1y2) && (R0y0 > R1y1)) R0y3 = R1y2;
+    }
+  } else { if(R0->SideXn.empty()) MapRigs[pOr] = rig{pOr}; }
 
   set_Zp( R0, get({R0->Origin.x, R0->Origin.y, R0->Origin.z + lod}) );
   set_Zn( R0, get({R0->Origin.x, R0->Origin.y, R0->Origin.z - lod}) );
