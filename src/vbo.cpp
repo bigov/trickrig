@@ -101,6 +101,20 @@ void vbo_base::attrib_i(GLuint index, GLint d_size, GLenum type,
   glBindBuffer(gl_buffer_type, 0);
 }
 
+
+///
+/// \brief vbo_ext::vbo_ext
+/// \param type
+///
+vbo_ext::vbo_ext(GLenum type): vbo_base(type)
+{
+  glGenBuffers(1, &id_subbuf);
+  glBindBuffer(GL_COPY_WRITE_BUFFER, id_subbuf);
+  glBufferData(GL_COPY_WRITE_BUFFER, bytes_per_snip, nullptr, GL_STATIC_DRAW);
+  glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+}
+
+
 ///
 /// \brief vbo::move_data
 /// \param src
@@ -197,20 +211,29 @@ GLsizeiptr vbo_ext::data_append(const GLvoid* data, GLsizeiptr data_size)
 /// \param offset
 /// \param size
 /// \param data
+/// \details Если читать из рендер-буфера напрямую в ОЗУ, то после считывания
+/// скорость операции перемещения данных внутри памяти GPU устанавливается
+/// равной скорости обмена с CPU. Чтобы это обойти, создается промежуточный
+/// буфер (id_subbuf), через который и производится чтение данных.
 ///
 void vbo_ext::data_get(GLintptr offset, GLsizeiptr sz, GLvoid* dst)
 {
-  glBindBuffer(gl_buffer_type, id);
-  //glGetBufferSubData(gl_buffer_type, offset, sz, dst);
+#ifndef NDEBUG
+  if(sz > bytes_per_snip) ERR("vbo_ext::data_get > bytes_per_snip");
+#endif
 
-  GLvoid* ptr = glMapBufferRange(gl_buffer_type, offset, sz, GL_MAP_READ_BIT);
+  glBindBuffer(GL_COPY_WRITE_BUFFER, id_subbuf);
+  glBindBuffer(GL_COPY_READ_BUFFER, id);
+  glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, offset, 0, sz);
+  glBindBuffer(GL_COPY_READ_BUFFER, 0);
+  glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+
+  glBindBuffer(GL_COPY_READ_BUFFER, id_subbuf);
+  //glGetBufferSubData(GL_COPY_WRITE_BUFFER, offset, sz, dst);
+  GLvoid* ptr = glMapBufferRange(GL_COPY_READ_BUFFER, 0, sz, GL_MAP_READ_BIT);
   memcpy(dst, ptr, sz);
-  glUnmapBuffer(gl_buffer_type);
-
-  glBindBuffer(gl_buffer_type, 0);
-
-  //GLsync s = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
-  //glDeleteSync(s);
+  glUnmapBuffer(GL_COPY_READ_BUFFER);
+  glBindBuffer(GL_COPY_READ_BUFFER, 0);
 
   if(glGetError() != GL_NO_ERROR) info("err in vbo_ext::data_get");
 }

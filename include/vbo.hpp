@@ -42,10 +42,11 @@ class vbo_base
 class vbo_ext: public vbo_base
 {
   protected:
+  GLuint id_subbuf = 0;
     void move_data(GLintptr data_src, GLintptr data_dst, GLsizeiptr data_size);
 
   public:
-    vbo_ext(GLenum type): vbo_base(type) {}
+    vbo_ext(GLenum type);
     GLsizeiptr data_append(const GLvoid* data, GLsizeiptr data_size);
     GLsizeiptr remove(GLsizeiptr dest, GLsizeiptr data_size);
     //void data_update(GLsizeiptr dist, const GLvoid* data, GLsizeiptr data_size);

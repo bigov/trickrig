@@ -126,14 +126,12 @@ void rdb::snip_analyze(snip_ext& S)
 ///
 void rdb::increase(unsigned int i)
 {
-  //debug
-  //info("increase call");
-
   if(i > (render_points/indices_per_snip) * bytes_per_snip) return;
 
   GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip; // + bytes_per_vertex;
   snip_ext S{};
   VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
+
   snip_analyze(S);
   switch (S.lay)
   {

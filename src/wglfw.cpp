@@ -88,7 +88,7 @@ wglfw::wglfw(void)
 
   glfwShowWindow(win_ptr);
   glfwMakeContextCurrent(win_ptr);
-  glfwSwapInterval(0);
+  glfwSwapInterval(0);  // Vertical sync is "OFF". When param is 1 - will be ON
   glfwSetKeyCallback(win_ptr, key_callback);
   glfwSetCharCallback(win_ptr, character_callback);
   glfwSetMouseButtonCallback(win_ptr, mouse_button_callback);
