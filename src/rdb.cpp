@@ -50,12 +50,32 @@ LAY_NAME rdb::lay_direction(const glm::vec4& N)
 
 ///
 /// \brief rdb::is_top
+/// \param S
+/// \param n
+/// \return
+///
+bool rdb::is_top(std::vector<snip>& Side, size_t n)
+{
+  std::array<glm::vec4, 4> V {};
+  for (size_t i = 0; i < 4; ++i)
+  {
+    V[i] = Side.front().vertex_coord(i);
+  }
+  return is_top(V, n);
+}
+
+
+///
+/// \brief rdb::is_top
 /// \param V
 /// \param n
 /// \return У всех 4-х векторов нет дробной части в указанной по индексу (n) координате
+/// X:n=0, Y:n=1, Z:n=2
 ///
 bool rdb::is_top(const std::array<glm::vec4, 4>& V, size_t n)
 {
+  if(n>2) ERR(__func__);
+
   return ((nearbyint(V[0][n]) == V[0][n]) &&
           (nearbyint(V[1][n]) == V[1][n]) &&
           (nearbyint(V[2][n]) == V[2][n]) &&
@@ -512,14 +532,47 @@ void rdb::make_Zp(std::vector<snip>& VTop, std::vector<snip>& VSide, float y2, f
 ///
 /// \brief rdb::set_Zp
 /// \param R0, R1
+///
 /// \details Выбор параметров для построения стенки +Z
 ///
-void rdb::set_Zp(rig* R0, rig* R1)
+/// Построение боковых сторон. Перед вызовом методов для
+/// боковых сторон проиводится проверка 4-х верхних ребер рига чтобы они не
+/// пересекались с соответствующими ребрами соседних ригов. В случае, если
+/// из пары вершин любого ребра одна расположена выше соответствующей
+/// соседней вершины, а вторая ниже (возникло пересечение), то производится
+/// коррекция высоты нижней вершины ребра основного рига - поднимаем ее до
+/// высоты соответствующей вершины соседнего рига. При этом пересекающиеся
+/// ранее ребра выстраиваются в форме треугольника.
+///
+/// Так как при этом изменяется положение верхней стороны, то это необходимо
+/// проделать до вызова методов построения боковых сторон. Иначе может возникнуть
+/// ситуация когда одна из вершин будет приподнята после того, как сопряженная
+/// с ней сторона уже построена. Это приведет к образованию в данной стороне
+/// треугольного отверстия.
+///
+void rdb::set_Zp(rig* R0)
 {
 #ifndef NDEBUG
   if(nullptr == R0) ERR("Call rdb::set_Zp with nullptr");
-  if(R0->SideYp.empty()) ERR("Call rdb::set_Zp with R0->SideYp.empty()");
+  if(R0->SideYp.empty()) {ERR("Call rdb::set_Zp with R0->SideYp.empty()"); return;}
 #endif
+
+  i3d Ptst = {R0->Origin.x, R0->Origin.y, R0->Origin.z + lod};
+  rig* R1 = get(Ptst);
+  if(nullptr != R1)
+  {
+    if(!R1->SideYp.empty())
+    {
+      if((R0y1 < R1y2) && (R0y0 > R1y3)) R0y1 = R1y2;
+      if((R0y0 < R1y3) && (R0y1 > R1y2)) R0y0 = R1y3;
+    }
+  } else {
+    if(R0->SideZp.empty())
+    {
+      if(nullptr != get({Ptst.x, Ptst.y + lod, Ptst.z})) MapRigs[Ptst] = rig{Ptst};
+    }
+    R1 = get(Ptst);
+  }
 
   R0->SideZp.clear();
 
@@ -547,12 +600,28 @@ void rdb::set_Zp(rig* R0, rig* R1)
 /// \param R0, R1
 /// \details Выбор параметров для построения стенки -Z
 ///
-void rdb::set_Zn(rig* R0, rig* R1)
+void rdb::set_Zn(rig* R0)
 {
 #ifndef NDEBUG
   if(nullptr == R0) ERR("Call rdb::set_Zn with nullptr");
-  if(R0->SideYp.empty()) ERR("Call rdb::set_Zn with R0->SideYp.empty()");
+  if(R0->SideYp.empty()){ ERR("Call rdb::set_Zn with R0->SideYp.empty()"); return; }
 #endif
+
+  i3d Ptst = {R0->Origin.x, R0->Origin.y, R0->Origin.z - lod};
+  rig* R1 = get(Ptst);
+  if(nullptr != R1)
+  {
+    if(!R1->SideYp.empty())
+    {
+      if((R0y3 < R1y0) && (R0y2 > R1y1)) R0y3 = R1y0;
+      if((R0y2 < R1y1) && (R0y3 > R1y0)) R0y2 = R1y1;
+    }
+  } else {
+    if(R0->SideZn.empty()) {
+      if(nullptr != get({Ptst.x, Ptst.y + lod, Ptst.z})) MapRigs[Ptst] = rig{Ptst};
+    }
+    R1 = get(Ptst);
+  }
 
   R0->SideZn.clear();
 
@@ -580,12 +649,28 @@ void rdb::set_Zn(rig* R0, rig* R1)
 /// \param R0, R1
 /// \details Выбор параметров для построения стенки +X
 ///
-void rdb::set_Xp(rig* R0, rig* R1)
+void rdb::set_Xp(rig* R0)
 {
 #ifndef NDEBUG
   if(nullptr == R0) ERR("Call rdb::set_Xp with nullptr");
-  if(R0->SideYp.empty()) ERR("Call rdb::set_Xp with R0->SideYp.empty()");
+  if(R0->SideYp.empty()) { info("Call rdb::set_Xp with R0->SideYp.empty()"); return; }
 #endif
+
+  i3d Ptst = {R0->Origin.x + lod, R0->Origin.y, R0->Origin.z};
+  rig* R1 = get(Ptst);
+  if(nullptr != R1)
+  {
+    if(!R1->SideYp.empty())
+    {
+      if((R0y2 < R1y3) && (R0y1 > R1y0)) R0y2 = R1y3;
+      if((R0y1 < R1y0) && (R0y2 > R1y3)) R0y1 = R1y0;
+    }
+  } else {
+    if(R0->SideXp.empty()) {
+      if(nullptr != get({Ptst.x, Ptst.y + lod, Ptst.z})) MapRigs[Ptst] = rig{Ptst};
+    }
+    R1 = get(Ptst);
+  }
 
   R0->SideXp.clear();
 
@@ -613,12 +698,28 @@ void rdb::set_Xp(rig* R0, rig* R1)
 /// \param R0, R1
 /// \details Выбор параметров для построения стенки -X
 ///
-void rdb::set_Xn(rig* R0, rig* R1)
+void rdb::set_Xn(rig* R0)
 {
 #ifndef NDEBUG
   if(nullptr == R0) ERR("Call rdb::set_Xn with nullptr");
-  if(R0->SideYp.empty()) ERR("Call rdb::set_Xn with R0->SideYp.empty()");
+  if(R0->SideYp.empty()) {info("Call rdb::set_Xn with R0->SideYp.empty()"); return;}
 #endif
+
+  i3d Ptst = {R0->Origin.x - lod, R0->Origin.y, R0->Origin.z};
+  rig* R1 = get(Ptst);
+  if(nullptr != R1)
+  {
+    if(!R1->SideYp.empty())
+    {
+      if((R0y0 < R1y1) && (R0y3 > R1y2)) R0y0 = R1y1;
+      if((R0y3 < R1y2) && (R0y0 > R1y1)) R0y3 = R1y2;
+    }
+  } else {
+    if(R0->SideXn.empty()) {
+      if(nullptr != get({Ptst.x, Ptst.y + lod, Ptst.z})) MapRigs[Ptst] = rig{Ptst};
+    }
+    R1 = get(Ptst);
+  }
 
   R0->SideXn.clear();
 
@@ -642,95 +743,28 @@ void rdb::set_Xn(rig* R0, rig* R1)
 
 
 ///
-/// \brief rdb::sides_set
-/// \param R
-/// \details Построение боковых сторон. Перед вызовом методов для
-/// боковых сторон проиводится проверка 4-х верхних ребер рига чтобы они не
-/// пересекались с соответствующими ребрами соседних ригов. В случае, если
-/// из пары вершин любого ребра одна расположена выше соответствующей
-/// соседней вершины, а вторая ниже (возникло пересечение), то производим
-/// коррекцию высоты нижней вершины ребра основного рига - поднимаем ее до
-/// высоты соответствующей вершины соседнего рига. При этом пересекающиеся
-/// ранее ребра выстраиваются в форме треугольника.
-///
-/// Так как при этом изменяется положение верхней стороны, то это необходимо
-/// проделать до вызова методов построения боковых сторон. Иначе может возникнуть
-/// ситуация когда одна из вершин будет приподнята после того, как сопряженная
-/// с ней сторона уже построена. Это приведет к образованию в данной стороне
-/// треугольного отверстия.
-///
-void rdb::sides_set(rig* R0)
-{
-  rig* R1 = nullptr;
-  i3d pOr {0,0,0};
-
-  pOr = {R0->Origin.x, R0->Origin.y, R0->Origin.z + lod};   // +Z
-  R1 = get(pOr);
-  if(nullptr != R1)
-  {
-    if(!R1->SideYp.empty())
-    {
-      if((R0y1 < R1y2) && (R0y0 > R1y3)) R0y1 = R1y2;
-      if((R0y0 < R1y3) && (R0y1 > R1y2)) R0y0 = R1y3;
-    }
-  } else { if(R0->SideZp.empty()) MapRigs[pOr] = rig{pOr}; }
-
-  pOr = {R0->Origin.x, R0->Origin.y, R0->Origin.z - lod};   // -Z
-  R1 = get({R0->Origin.x, R0->Origin.y, R0->Origin.z - lod});
-  if(nullptr != R1)
-  {
-    if(!R1->SideYp.empty())
-    {
-      if((R0y3 < R1y0) && (R0y2 > R1y1)) R0y3 = R1y0;
-      if((R0y2 < R1y1) && (R0y3 > R1y0)) R0y2 = R1y1;
-    }
-  } else { if(R0->SideZn.empty()) MapRigs[pOr] = rig{pOr}; }
-
-  pOr = {R0->Origin.x + lod, R0->Origin.y, R0->Origin.z};   // +X
-  R1 = get({R0->Origin.x + lod, R0->Origin.y, R0->Origin.z});
-  if(nullptr != R1)
-  {
-    if(!R1->SideYp.empty())
-    {
-      if((R0y2 < R1y3) && (R0y1 > R1y0)) R0y2 = R1y3;
-      if((R0y1 < R1y0) && (R0y2 > R1y3)) R0y1 = R1y0;
-    }
-  } else { if(R0->SideXp.empty()) MapRigs[pOr] = rig{pOr}; }
-
-  pOr = {R0->Origin.x - lod, R0->Origin.y, R0->Origin.z};   // -X
-  R1 = get({R0->Origin.x - lod, R0->Origin.y, R0->Origin.z});
-  if(nullptr != R1)
-  {
-    if(!R1->SideYp.empty())
-    {
-      if((R0y0 < R1y1) && (R0y3 > R1y2)) R0y0 = R1y1;
-      if((R0y3 < R1y2) && (R0y0 > R1y1)) R0y3 = R1y2;
-    }
-  } else { if(R0->SideXn.empty()) MapRigs[pOr] = rig{pOr}; }
-
-  set_Zp( R0, get({R0->Origin.x, R0->Origin.y, R0->Origin.z + lod}) );
-  set_Zn( R0, get({R0->Origin.x, R0->Origin.y, R0->Origin.z - lod}) );
-  set_Xp( R0, get({R0->Origin.x + lod, R0->Origin.y, R0->Origin.z}) );
-  set_Xn( R0, get({R0->Origin.x - lod, R0->Origin.y, R0->Origin.z}) );
-}
-
-
-///
 /// \brief rdb::append_rig_Yp
 /// \param Pt
 /// \brief Добавить сверху новый риг
 ///
 void rdb::append_rig_Yp(const i3d& Pt)
 {
-  MapRigs.emplace(std::pair(Pt, rig{}));
-  MapRigs[Pt].Origin = Pt;
-  snip S = {};
-  for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = 0.25f;
+  MapRigs[Pt] = rig{ Pt };
+  rig* R = get(Pt);
+
+  snip S {};                        // нормали в дефолтном снипе направлены вверх
+                                    // настроить положение стороны SideYp на четверть высоты
+  for (size_t i = tr::Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = 0.25f * lod;
   S.texture_set(AppWin.texYp.u, AppWin.texYp.v);
 
-  MapRigs[Pt].SideYp.push_back(S);
-  sides_set(&MapRigs[Pt]);
-  rig_display(&MapRigs[Pt]);
+  R->SideYp.push_back(S);
+
+  set_Zp(R);
+  set_Zn(R);
+  set_Xp(R);
+  set_Xn(R);
+
+  rig_display(R);
 }
 
 
@@ -741,31 +775,31 @@ void rdb::append_rig_Yp(const i3d& Pt)
 void rdb::add_yp(const i3d& Pt)
 {
   rig *R = get(Pt);         //1. Выбрать целевой риг
+
+#ifndef NDEBUG
   if(nullptr == R)
   {
     info ("Error: call rdb::add_y for nullptr point: "
           + std::to_string(Pt.x) + ", " + std::to_string(Pt.y) + ", " + std::to_string(Pt.y) );
     return;
   }
-
+#endif
   if(R->SideYp.empty()) return;
-  rig_wipeoff(R); // убрать риг из графического буфера
 
-  snip &S = R->SideYp.front();
-  if((S.data[Y + ROW_SIZE * 0] == 1.00f) &&
-     (S.data[Y + ROW_SIZE * 1] == 1.00f) &&
-     (S.data[Y + ROW_SIZE * 2] == 1.00f) &&
-     (S.data[Y + ROW_SIZE * 3] == 1.00f))
-  {
+  rig_wipeoff(R);              // убрать риг из графического буфера
+
+  if(is_top(R->SideYp, tr::Y)) // Если SideYp в верхнем положении, то она
+  {                            // удаляется и создается новый риг сверху
     R->SideYp.clear();
     append_rig_Yp({Pt.x, Pt.y + lod, Pt.z});
     rig_display(R);
     return;
   }
 
+  snip &S = R->SideYp.front(); // ссылка на верхний снип
   float y = 0.f;
   // найти вершину с максимальным значением Y
-  for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) y = std::max(y, S.data[i]);
+  for (size_t i = tr::Y; i < digits_per_snip; i += ROW_SIZE) y = std::max(y, S.data[i]);
 
   // округлить до ближайшей сверху четверти
   if(y >= 0.75f) y = 1.00f;
@@ -774,7 +808,7 @@ void rdb::add_yp(const i3d& Pt)
   else y = 0.25f;
 
   // выровнять все вершины по выбранной высоте
-  for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = y;
+  for (size_t i = tr::Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = y;
 
   // настроить нормали
   for(size_t i = 0; i < 4; ++i)
@@ -785,10 +819,14 @@ void rdb::add_yp(const i3d& Pt)
     S.data[ROW_SIZE * i + NW] = 0.f;
   }
 
-  sides_set(R);   // настроить боковые стороны
+  // настроить боковые стороны
+  set_Zp(R);
+  set_Zn(R);
+  set_Xp(R);
+  set_Xn(R);
+
   rig_display(R);   // записать модифицированый риг в графический буфер
 }
-
 
 void rdb::add_yn(const i3d&) { info("add YP"); }
 void rdb::add_xn(const i3d&) { info("add XN"); }
@@ -973,7 +1011,12 @@ void rdb::sub_yp(const i3d& Pt)
 
   // выровнять все вершины по выбранной высоте
   for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = y;
-  sides_set(R);       // настроить боковые стороны
+
+  set_Zp(R); // настроить боковые стороны
+  set_Zn(R);
+  set_Xp(R);
+  set_Xn(R);
+
   rig_display(R);     // записать модифицированый риг в графический буфер
 }
 

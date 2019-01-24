@@ -47,12 +47,11 @@ class rdb
     int lod = 1; // размер стороны элементов в LOD = 1
 
     void _load_16x16_obj(void);
-    void sides_set(rig*);                                        // настройка боковых сторон
     void side_make_snip(const std::array<glm::vec4, 4>&, snip&, const glm::vec3&); // настройка боковой стороны
-    void set_Zp(rig*, rig*);
-    void set_Zn(rig*, rig*);
-    void set_Xp(rig*, rig*);
-    void set_Xn(rig*, rig*);
+    void set_Zp(rig*);
+    void set_Zn(rig*);
+    void set_Xp(rig*);
+    void set_Xn(rig*);
     void make_Yp(std::vector<snip>&);
     void make_Yn(std::vector<snip>&);
     void make_Zn(std::vector<snip>&, std::vector<snip>&, float, float);
@@ -65,7 +64,8 @@ class rdb
     void side_display(std::vector<snip>& Side, const f3d& Point);
     void side_wipeoff(std::vector<snip>&); // убрать сторону рига из VBO
     LAY_NAME lay_direction(const glm::vec4&);
-    bool is_top(const std::array<glm::vec4, 4>& V, size_t n);
+    bool is_top(const std::array<glm::vec4, 4>&, size_t);
+    bool is_top(std::vector<snip>&, size_t);
     void snip_analyze(snip_ext& S);
 
     //void snip_update(GLfloat* s_data, const f3d &Point, GLsizeiptr dist); // код метода в конце файла .cpp
