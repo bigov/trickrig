@@ -25,6 +25,8 @@ const float down_max = -up_max;    // Максимальный угол вниз
 ///
 space::space(void)
 {
+  light_direction = glm::normalize(glm::vec4(0.2f, 0.9f, 0.5f, 0.0));
+
   glClearColor(0.5f, 0.69f, 1.0f, 1.0f);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glFrontFace(GL_CCW);
@@ -380,13 +382,12 @@ void space::render_3d_space(void)
 
   Prog3d.use();   // включить шейдерную программу
   Prog3d.set_uniform("mvp", MatMVP);
-  Prog3d.set_uniform("light_direction", glm::vec4(0.2f, 0.9f, 0.5f, 0.0));
-  Prog3d.set_uniform("light_bright", glm::vec4(0.5f, 0.5f, 0.5f, 0.0));
+  Prog3d.set_uniform("light_direction", light_direction);
+  Prog3d.set_uniform("light_bright", glm::vec4(0.75f, 0.75f, 0.75f, 0.0));
 
-  // можно все нарисовать за один проход
+  // можно, если потребуется, все нарисовать за один проход
   //glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_points), GL_UNSIGNED_INT, nullptr);
 
-  // а можно, если потребуется, то "поснипно":
   GLsizei max = (RigsDb0.render_points / indices_per_snip) * vertices_per_snip;
   for (GLsizei i = 0; i < max; i += vertices_per_snip)
   {

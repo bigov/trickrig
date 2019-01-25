@@ -28,6 +28,7 @@ namespace tr
       frame_buffer FrBuffer {};      // Фрейм-буфер рендера
       glsl Prog3d {};                // GLSL программа шейдеров
 
+      glm::vec4 light_direction {};  // направление освещения
       const int g1 = 1;              // масштаб элементов в RigsDb0
       GLuint vao_id = 0;             // VAO ID
 
