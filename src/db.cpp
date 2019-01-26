@@ -103,7 +103,7 @@ void db::load_template(int level, const std::string& fname)
 ///
 rig db::load_rig(const i3d &P, const std::string& file_name)
 {
-  rig Rig {};
+  rig Rig {{0,0,0}};
 
   if(!file_name.empty()) SqlDb.open(file_name);
 

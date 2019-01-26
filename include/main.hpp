@@ -59,6 +59,9 @@ using u_long = unsigned long;
 using v_str  = std::vector<std::string>;
 using v_ch   = std::vector<char>;
 using v_uch  = std::vector<unsigned char>;
+using v_fl   = std::vector<float>;
+using ar_f3  = std::array<float, 3>;
+using ar_f2  = std::array<float, 2>;
 
 enum APP_INIT {      // вначале списка идут названия файлов
   PNG_TEXTURE0,
