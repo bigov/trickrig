@@ -123,7 +123,7 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
   // число индексов в одном снипе
   static const u_int indices_per_snip = 6;
   // количество чисел (GLfloat) в блоке данных одной вершины
-  static const size_t digits_per_vertex = 14;
+  static const size_t digits_per_vertex = 12;
   // количество чисел (GLfloat) в блоке данных снипа
   static const size_t digits_per_snip = digits_per_vertex * vertices_per_snip;
   // число элементов в поле shift элемента rig

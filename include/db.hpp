@@ -16,6 +16,8 @@
 namespace tr {
 
 
+struct texture_coord {float u=0.0f, v=0.0f;};
+
 // Параметры и режимы окна приложения
 struct main_window {
   u_int width = 400;                    // ширина окна
@@ -38,8 +40,7 @@ struct main_window {
   int fps = 120;        // частота кадров (для коррекции скорости движения)
   glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина прицела
 
-  struct texture_coord {float u=0.f, v=4.f;};
-  texture_coord texYp { 0.f, 3.f };
+  texture_coord texYp { 0.0f, 0.0f };
   texture_coord texYn {};
   texture_coord texXp {};
   texture_coord texXn {};

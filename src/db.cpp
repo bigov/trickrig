@@ -128,7 +128,12 @@ rig db::load_rig(const i3d &P, const std::string& file_name)
     snip Snip {};
     BufVector.clear();
     BufVector = std::any_cast<std::vector<unsigned char>>(Row[0]);
+
+    // x, y, z, #, r, g, b, a, nx, ny, nz, #, u, v
+    // x, y, z, r, g, b, a, nx, ny, nz, u, v
+
     memcpy(Snip.data, BufVector.data(), tr::bytes_per_snip);
+
     Rig.SideYp.insert(Rig.SideYp.begin(), Snip);
   }
 

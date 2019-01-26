@@ -67,6 +67,7 @@ class rdb
     bool is_top(const std::array<glm::vec4, 4>&, size_t);
     bool is_top(std::vector<snip>&, size_t);
     void snip_analyze(snip_ext& S);
+    void gen_rig(const i3d&);
 
     //void snip_update(GLfloat* s_data, const f3d &Point, GLsizeiptr dist); // код метода в конце файла .cpp
 

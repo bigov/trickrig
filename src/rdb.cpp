@@ -359,12 +359,10 @@ void rdb::side_make_snip(const std::array<glm::vec4, 4>& v, snip& S, const glm::
     S.data[ROW_SIZE * i + X] = v[i].x;
     S.data[ROW_SIZE * i + Y] = v[i].y;
     S.data[ROW_SIZE * i + Z] = v[i].z;
-    S.data[ROW_SIZE * i + W] = 1.0f;
 
     S.data[ROW_SIZE * i + NX] = n.x;
     S.data[ROW_SIZE * i + NY] = n.y;
     S.data[ROW_SIZE * i + NZ] = n.z;
-    S.data[ROW_SIZE * i + NW] = 0.0f;
   }
 }
 
@@ -816,7 +814,6 @@ void rdb::add_yp(const i3d& Pt)
     S.data[ROW_SIZE * i + NX] = 0.f;
     S.data[ROW_SIZE * i + NY] = 1.f;
     S.data[ROW_SIZE * i + NZ] = 0.f;
-    S.data[ROW_SIZE * i + NW] = 0.f;
   }
 
   // настроить боковые стороны
@@ -982,7 +979,10 @@ void rdb::sub_yp(const i3d& Pt)
 
   if(nullptr == R)
   {
-    info("Error: call rdb::sub_yp for nullptr point");
+    info("Error: call rdb::sub_yp for nullptr point: "
+         + std::to_string(Pt.x) + ", "
+         + std::to_string(Pt.y) + ", "
+         + std::to_string(Pt.z));
     return;
   }
 
@@ -1043,9 +1043,32 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
   VisibleSnips.clear();
   render_points = 0;
 
-  cfg::DataBase.rigs_loader(MapRigs, From, To);
+  // Загрузка из базы данных
+  //cfg::DataBase.rigs_loader(MapRigs, From, To);
+
+  for (int x = -4; x < 4; ++x)
+    for (int z = -4; z < 4; ++z)
+  {
+      gen_rig({x, 0, z});
+  }
 }
 
+
+///
+/// \brief rdb::gen_rig
+/// \param P
+///
+void rdb::gen_rig(const i3d& P)
+{
+  MapRigs[P] = rig{P};
+  rig* R = get(P);
+  snip S {};
+
+  for(int i = 0; i < 4; ++i) S.data[Y + digits_per_vertex*i] = 1.0f;
+
+  S.texture_set(AppWin.texYp.u, AppWin.texYp.v);
+  R->SideYp.push_back(S);
+}
 
 ///
 /// \brief rdb::search_down

@@ -25,7 +25,8 @@ const float down_max = -up_max;    // Максимальный угол вниз
 ///
 space::space(void)
 {
-  light_direction = glm::normalize(glm::vec4(0.2f, 0.9f, 0.5f, 0.0));
+  light_direction = glm::normalize(glm::vec3(0.3f, 0.45f, 0.4f)); // направление (x,y,z)
+  light_bright = glm::vec3(0.99f, 0.99f, 1.00f);                 // цвет        (r,g,b)
 
   glClearColor(0.5f, 0.69f, 1.0f, 1.0f);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -77,16 +78,16 @@ void space::init_vao(void)
 
   // настройка положения атрибутов
   VBO.attrib(Prog3d.Atrib["position"],
-    4, GL_FLOAT, GL_FALSE, bytes_per_vertex, 0 * sizeof(GLfloat));
+    3, GL_FLOAT, GL_FALSE, bytes_per_vertex, 0 * sizeof(GLfloat));
 
   VBO.attrib(Prog3d.Atrib["color"],
-    4, GL_FLOAT, GL_TRUE, bytes_per_vertex, 4 * sizeof(GLfloat));
+    4, GL_FLOAT, GL_TRUE, bytes_per_vertex, 3 * sizeof(GLfloat));
 
   VBO.attrib(Prog3d.Atrib["normal"],
-    4, GL_FLOAT, GL_TRUE, bytes_per_vertex, 8 * sizeof(GLfloat));
+    3, GL_FLOAT, GL_TRUE, bytes_per_vertex, 7 * sizeof(GLfloat));
 
   VBO.attrib(Prog3d.Atrib["fragment"],
-    2, GL_FLOAT, GL_TRUE, bytes_per_vertex, 12 * sizeof(GLfloat));
+    2, GL_FLOAT, GL_TRUE, bytes_per_vertex, 10 * sizeof(GLfloat));
 
   //
   // Так как все четырехугольники в снипах индексируются одинаково, то индексный массив
@@ -382,10 +383,10 @@ void space::render_3d_space(void)
 
   Prog3d.use();   // включить шейдерную программу
   Prog3d.set_uniform("mvp", MatMVP);
-  Prog3d.set_uniform("light_direction", light_direction);
-  Prog3d.set_uniform("light_bright", glm::vec4(0.75f, 0.75f, 0.75f, 0.0));
+  Prog3d.set_uniform("light_direction", light_direction);  // направление
+  Prog3d.set_uniform("light_bright", light_bright);        // цвет/яркость
 
-  // можно, если потребуется, все нарисовать за один проход
+  // Нарисовать все за один проход можно так:
   //glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_points), GL_UNSIGNED_INT, nullptr);
 
   GLsizei max = (RigsDb0.render_points / indices_per_snip) * vertices_per_snip;
