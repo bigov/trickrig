@@ -1,4 +1,12 @@
 /*
+ yz
+ xyz
+ xy
+ y
+ z
+ xz
+ x
+ 0
        0-----------1
       /|          /|
      / 4---------/-5
@@ -27,43 +35,37 @@ public:
 class box
 {
 private:
-public:
-  box(std::vector<ar_f3>&);
-  ~box() {}
+  void init_arrays(void);
 
-  struct side {
-    v_uch Indexes {};  // индексы вершин для построения плоскости стороны
-    ar_f3 Normal  {};  // нормаль к стороне
-    ar_f2 Texture {};  // текстура
-    splice Splice {};  // коорднаты стыка с соседним ригом
-  };
+public:
+  box(f3d&, float l=1.0f);
+  box(std::vector<f3d>&);
+  ~box() {}
 
   enum SIDES {SIDE_XP, SIDE_XN, SIDE_YP, SIDE_YN, SIDE_ZP, SIDE_ZN, SIDES_COUNT};
 
-  std::vector<ar_f3> vertex {}; // массив координат вершин
-  std::array<side, 6> Sides {
-    side{ v_uch{ 2, 1, 5, 5, 6, 2 }, ar_f3{ 1.0f, 0.0f, 0.0f }, ar_f2{0.0f, 0.0f}},
-    side{ v_uch{ 0, 3, 7, 7, 4, 0 }, ar_f3{-1.0f, 0.0f, 0.0f }, ar_f2{0.0f, 0.0f}},
-    side{ v_uch{ 0, 1, 2, 2, 3, 0 }, ar_f3{ 0.0f, 1.0f, 0.0f }, ar_f2{0.0f, 0.0f}},
-    side{ v_uch{ 7, 6, 5, 5, 4, 7 }, ar_f3{ 0.0f,-1.0f, 0.0f }, ar_f2{0.0f, 0.0f}},
-    side{ v_uch{ 1, 0, 4, 4, 5, 1 }, ar_f3{ 0.0f, 0.0f, 1.0f }, ar_f2{0.0f, 0.0f}},
-    side{ v_uch{ 3, 2, 6, 6, 7, 3 }, ar_f3{ 0.0f, 0.0f,-1.0f }, ar_f2{0.0f, 0.0f}}
-  };
+  GLfloat u_sz = 0.125f; // размер ячейки текстуры по U
+  GLfloat v_sz = 0.125f; // размер ячейки текстуры по V
+  float lod = 1.0f;
+
+  std::vector<f3d> Vertex {};                    // массив координат вершин
+  std::vector<a_f4> Color {};                    // Цвет вершин бокса.
+  std::array<a_f2, 4> Texture {};                // координаты текстуры
+  std::array<a_uch4, SIDES_COUNT> Indexes {};    // индексы вершин для построения плоскости стороны
+  std::array<a_f3, SIDES_COUNT> Normals {};      // Направление нормалей по сторонам
+  std::array<splice, SIDES_COUNT> Splice {};     // коорднаты стыка с соседним ригом
+  std::array<GLsizeiptr, SIDES_COUNT> offset {}; // положение блока данных в буфере GPU
 
   // расчет стыков для каждой из сторон
-  void splice_side_xp(void);
-  void splice_side_xn(void);
-  void splice_side_yp(void);
-  void splice_side_yn(void);
-  void splice_side_zp(void);
-  void splice_side_zn(void);
+  void splice_side_xp(SIDES s);
+  void splice_side_xn(SIDES s);
+  void splice_side_yp(SIDES s);
+  void splice_side_yn(SIDES s);
+  void splice_side_zp(SIDES s);
+  void splice_side_zn(SIDES s);
 
   bool visible(SIDES s, splice& V1);
 };
-
-/*
-TODO: расчет стыков (сплайсов) для каждой стороны
-*/
 
 }
 #endif // BOX_HPP

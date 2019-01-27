@@ -45,19 +45,8 @@ void rig::copy_data(const rig &Other)
   Origin = Other.Origin;
   for(int i = 0; i < SHIFT_DIGITS; i++) shift[i] = Other.shift[i];
 
-  SideXp.clear();
-  SideXn.clear();
-  SideYp.clear();
-  SideYn.clear();
-  SideZp.clear();
-  SideZn.clear();
-
-  SideXp = Other.SideXp;
-  SideXn = Other.SideXn;
-  SideYp = Other.SideYp;
-  SideYn = Other.SideYn;
-  SideZp = Other.SideZp;
-  SideZn = Other.SideZn;
+  Boxes.clear();
+  Boxes = Other.Boxes;
 }
 
 } //tr

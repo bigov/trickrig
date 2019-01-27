@@ -130,36 +130,4 @@ namespace tr
                        0.0f };
   }
 
-
-
-
-  ///
-  /// \brief shift
-  /// \param V
-  ///
-  void snip::shift(const glm::vec3 &V)
-  {
-    for(size_t n = 0; n < 4; ++n)
-    {
-      data[ROW_SIZE * n + X] += V.x;
-      data[ROW_SIZE * n + Y] += V.y;
-      data[ROW_SIZE * n + Z] += V.z;
-    }
-  }
-
-
-  ///
-  /// \brief snip::flip_y
-  ///
-  void snip::flip_y(void)
-  {
-    GLfloat tmp[digits_per_snip] = {0.0f};
-    memcpy(tmp, data, bytes_per_snip);
-
-    memcpy(&data[0 * digits_per_vertex], &tmp[2 * digits_per_vertex], 4 * sizeof(GLfloat));
-    memcpy(&data[1 * digits_per_vertex], &tmp[3 * digits_per_vertex], 4 * sizeof(GLfloat));
-    memcpy(&data[2 * digits_per_vertex], &tmp[0 * digits_per_vertex], 4 * sizeof(GLfloat));
-    memcpy(&data[3 * digits_per_vertex], &tmp[1 * digits_per_vertex], 4 * sizeof(GLfloat));
-  }
-
 } //namespace

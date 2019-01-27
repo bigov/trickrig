@@ -28,11 +28,32 @@ bool splice::operator== (splice& Other)
   return true;
 }
 
+
+///
+/// \brief box::box
+/// \param V
+/// \param l
+///
+box::box(f3d& V, float l)
+{
+  lod = l;
+  Vertex.push_back(f3d{ V.x    , V.y + l, V.z + l });
+  Vertex.push_back(f3d{ V.x + l, V.y + l, V.z + l });
+  Vertex.push_back(f3d{ V.x + l, V.y + l, V.z     });
+  Vertex.push_back(f3d{ V.x    , V.y + l, V.z     });
+  Vertex.push_back(f3d{ V.x    , V.y    , V.z + l });
+  Vertex.push_back(f3d{ V.x + l, V.y    , V.z + l });
+  Vertex.push_back(f3d{ V.x + l, V.y    , V.z     });
+  Vertex.push_back(f3d{ V.x    , V.y    , V.z     });
+  init_arrays();
+}
+
+
 ///
 /// \brief box::box
 /// \param V
 ///
-box::box(std::vector<ar_f3>& V)
+box::box(std::vector<f3d>& V)
 {
   size_t n = V.size();
   if( n != 8 )
@@ -40,14 +61,44 @@ box::box(std::vector<ar_f3>& V)
     std::cout << "ERR: Box require 8 verices\n";
     return;
   }
-  vertex = V;
+  Vertex = V;
+  init_arrays();
+}
 
-  splice_side_xp();
-  splice_side_xn();
-  splice_side_yp();
-  splice_side_yn();
-  splice_side_zp();
-  splice_side_zn();
+
+///
+/// \brief box::init_arrays
+///
+void box::init_arrays(void)
+{
+  Indexes = { // индексы вершин, образующих сторону
+    a_uch4{ 2, 1, 5, 6 },
+    a_uch4{ 0, 3, 7, 4 },
+    a_uch4{ 0, 1, 2, 3 },
+    a_uch4{ 7, 6, 5, 4 },
+    a_uch4{ 1, 0, 4, 5 },
+    a_uch4{ 3, 2, 6, 7 }
+  };
+
+  Normals = { // Направление нормалей по сторонам
+    a_f3{ 1.0f, 0.0f, 0.0f },
+    a_f3{-1.0f, 0.0f, 0.0f },
+    a_f3{ 0.0f, 1.0f, 0.0f },
+    a_f3{ 0.0f,-1.0f, 0.0f },
+    a_f3{ 0.0f, 0.0f, 1.0f },
+    a_f3{ 0.0f, 0.0f,-1.0f }
+  };
+
+  Color = {{1.0f, 1.0f, 1.0f, 1.0f}}; //Если Color.size() > 1, то цвета вершин различаются
+  // Если Texture.size() = 1, то у всех сторон одинаковая текстура
+  Texture = { a_f2{0.0f, 0.0f}, a_f2{u_sz, 0.0f}, a_f2{u_sz, u_sz}, a_f2{0.0f, u_sz} };
+
+  splice_side_xp(SIDE_XP);
+  splice_side_xn(SIDE_XN);
+  splice_side_yp(SIDE_YP);
+  splice_side_yn(SIDE_YN);
+  splice_side_zp(SIDE_ZP);
+  splice_side_zn(SIDE_ZN);
 }
 
 
@@ -61,160 +112,147 @@ box::box(std::vector<ar_f3>& V)
 ///
 bool box::visible(SIDES s, splice& V1)
 {
-  return (Sides[s].Splice != V1);
+  return (Splice[s] != V1);
 }
 
 
 ///
 /// \brief box::splice_side_xp
 ///
-void box::splice_side_xp(void)
+void box::splice_side_xp(SIDES s)
 {
-  side S = Sides[SIDE_XP];
-
-  // Индексы вершин, используемых для расчета сплайса
-  v_uch id = { S.Indexes[0], S.Indexes[1], S.Indexes[2], S.Indexes[4] };
+  a_uch4 id = Indexes[s]; // Индексы вершин для расчета сплайса
 
   size_t n = id.size();
-  S.Splice.clear();
-  S.Splice.resize(n);
+  Splice[s].clear();
+  Splice[s].resize(n);
 
   bool all_top = true;
   for(u_char i = 0; i < n; ++i)
   {
-    if(vertex[id[i]][X] != 1.0f)  all_top = false;
-    S.Splice[i*2]   = &vertex[id[i]][Y];
-    S.Splice[i*2+1] = &vertex[id[i]][Z];
+    if(Vertex[id[i]].x != 1.0f)  all_top = false;
+    Splice[s][i*2]   = &Vertex[id[i]].y;
+    Splice[s][i*2+1] = &Vertex[id[i]].z;
   }
-  if(!all_top) S.Splice.clear();
+  if(!all_top) Splice[s].clear();
 }
 
 
 ///
 /// \brief box::splice_side_xn
 ///
-void box::splice_side_xn(void)
+void box::splice_side_xn(SIDES s)
 {
-  side S = Sides[SIDE_XN];
-
-  // Индексы вершин, используемых для расчета сплайса обратной стороны
-  // выбираются в обратном направлении
-  v_uch id = { S.Indexes[1], S.Indexes[0], S.Indexes[4], S.Indexes[2] };
+  // Индексы вершин, используемых для расчета сплайса
+  // обратной стороны выбираются в обратном направлении
+  a_uch4 id = { Indexes[s][1], Indexes[s][0], Indexes[s][3], Indexes[s][2] };
 
   size_t n = id.size();
-  S.Splice.clear();
-  S.Splice.resize(n);
+  Splice[s].clear();
+  Splice[s].resize(n);
 
   bool all_top = true;
   for(u_char i = 0; i < n; ++i)
   {
-    if(vertex[id[i]][X] !=-1.0f)  all_top = false;
-    S.Splice[i*2]   = &vertex[id[i]][Y];
-    S.Splice[i*2+1] = &vertex[id[i]][Z];
+    if(Vertex[id[i]].x !=-1.0f)  all_top = false;
+    Splice[s][i*2]   = &Vertex[id[i]].y;
+    Splice[s][i*2+1] = &Vertex[id[i]].z;
   }
-  if(!all_top) S.Splice.clear();
+  if(!all_top) Splice[s].clear();
 }
 
 
 ///
 /// \brief box::splice_side_yp
 ///
-void box::splice_side_yp(void)
+void box::splice_side_yp(SIDES s)
 {
-  side S = Sides[SIDE_YP];
-
   // Индексы вершин, используемых для расчета сплайса
-  v_uch id = { S.Indexes[0], S.Indexes[1], S.Indexes[2], S.Indexes[4] };
+  a_uch4 id = Indexes[s];
 
   size_t n = id.size();
-  S.Splice.clear();
-  S.Splice.resize(n);
+  Splice[s].clear();
+  Splice[s].resize(n);
 
   bool all_top = true;
   for(u_char i = 0; i < n; ++i)
   {
-    if(vertex[id[i]][Y] != 1.0f)  all_top = false;
-    S.Splice[i*2]   = &vertex[id[i]][X];
-    S.Splice[i*2+1] = &vertex[id[i]][Z];
+    if(Vertex[id[i]].y != 1.0f)  all_top = false;
+    Splice[s][i*2]   = &Vertex[id[i]].x;
+    Splice[s][i*2+1] = &Vertex[id[i]].z;
   }
-  if(!all_top) S.Splice.clear();
+  if(!all_top) Splice[s].clear();
 }
 
 
 ///
 /// \brief box::splice_side_yn
 ///
-void box::splice_side_yn(void)
+void box::splice_side_yn(SIDES s)
 {
-  side S = Sides[SIDE_YN];
-
   // Индексы вершин, используемых для расчета сплайса обратной стороны
   // выбираются в обратном направлении
-  v_uch id = { S.Indexes[1], S.Indexes[0], S.Indexes[4], S.Indexes[2] };
+  a_uch4 id = { Indexes[s][1], Indexes[s][0], Indexes[s][3], Indexes[s][2] };
 
   size_t n = id.size();
-  S.Splice.clear();
-  S.Splice.resize(n);
+  Splice[s].clear();
+  Splice[s].resize(n);
 
   bool all_top = true;
   for(u_char i = 0; i < n; ++i)
   {
-    if(vertex[id[i]][Y] !=-1.0f)  all_top = false;
-    S.Splice[i*2]   = &vertex[id[i]][X];
-    S.Splice[i*2+1] = &vertex[id[i]][Z];
+    if(Vertex[id[i]].y !=-1.0f)  all_top = false;
+    Splice[s][i*2]   = &Vertex[id[i]].x;
+    Splice[s][i*2+1] = &Vertex[id[i]].z;
   }
-  if(!all_top) S.Splice.clear();
+  if(!all_top) Splice[s].clear();
 }
 
 
 ///
 /// \brief box::splice_side_zp
 ///
-void box::splice_side_zp(void)
+void box::splice_side_zp(SIDES s)
 {
-  side S = Sides[SIDE_ZP];
-
   // Индексы вершин, используемых для расчета сплайса
-  v_uch id = { S.Indexes[0], S.Indexes[1], S.Indexes[2], S.Indexes[4] };
+  a_uch4 id = Indexes[s];
 
   size_t n = id.size();
-  S.Splice.clear();
-  S.Splice.resize(n);
+  Splice[s].clear();
+  Splice[s].resize(n);
 
   bool all_top = true;
   for(u_char i = 0; i < n; ++i)
   {
-    if(vertex[id[i]][Z] != 1.0f) all_top = false;
-    S.Splice[i*2]   = &vertex[id[i]][X];
-    S.Splice[i*2+1] = &vertex[id[i]][Y];
+    if(Vertex[id[i]].z != 1.0f) all_top = false;
+    Splice[s][i*2]   = &Vertex[id[i]].x;
+    Splice[s][i*2+1] = &Vertex[id[i]].y;
   }
-  if(!all_top) S.Splice.clear();
+  if(!all_top) Splice[s].clear();
 }
 
 
 ///
 /// \brief box::splice_side_zn
 ///
-void box::splice_side_zn(void)
+void box::splice_side_zn(SIDES s)
 {
-  side S = Sides[SIDE_ZN];
-
   // Индексы вершин, используемых для расчета сплайса обратной стороны
   // выбираются в обратном направлении
-  v_uch id = { S.Indexes[1], S.Indexes[0], S.Indexes[4], S.Indexes[2] };
+  a_uch4 id = { Indexes[s][1], Indexes[s][0], Indexes[s][3], Indexes[s][2] };
 
   size_t n = id.size();
-  S.Splice.clear();
-  S.Splice.resize(n);
+  Splice[s].clear();
+  Splice[s].resize(n);
 
   bool all_top = true;
   for(u_char i = 0; i < n; ++i)
   {
-    if(vertex[id[i]][Z] !=-1.0f) all_top = false;
-    S.Splice[i*2]   = &vertex[id[i]][X];
-    S.Splice[i*2+1] = &vertex[id[i]][Y];
+    if(Vertex[id[i]].z !=-1.0f) all_top = false;
+    Splice[s][i*2]   = &Vertex[id[i]].x;
+    Splice[s][i*2+1] = &Vertex[id[i]].y;
   }
-  if(!all_top) S.Splice.clear();
+  if(!all_top) Splice[s].clear();
 }
 
 } //tr

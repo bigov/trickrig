@@ -8,6 +8,7 @@
 
 #include "io.hpp"
 #include "snip.hpp"
+#include "box.hpp"
 
 namespace tr
 {
@@ -32,15 +33,8 @@ class rig // группа элементов, образующих объект 
       1.0f                             // размер (масштабирование)
     };
 
-    std::vector<snip> SideYp {};       // список поверхностей (снипов)
-    std::vector<snip> SideYn {};       // список поверхностей (снипов)
-    std::vector<snip> SideXp {};       // список поверхностей (снипов)
-    std::vector<snip> SideXn {};       // список поверхностей (снипов)
-    std::vector<snip> SideZp {};       // список поверхностей (снипов)
-    std::vector<snip> SideZn {};       // список поверхностей (снипов)
-
+    std::vector<box> Boxes {};
     bool in_vbo = false;               // данные помещены в VBO
-
     rig(void): born(tr::get_msec()) {} // конструктор по-умолчанию
     rig(const i3d& Or): born(tr::get_msec()), Origin(Or) {}
     rig(const rig &);                  // дублирующий конструктор

@@ -61,8 +61,10 @@ using v_ch   = std::vector<char>;
 using v_uch  = std::vector<unsigned char>;
 using v_fl   = std::vector<float>;
 using v_flp  = std::vector<float*>;
-using ar_f3  = std::array<float, 3>;
-using ar_f2  = std::array<float, 2>;
+using a_f2   = std::array<float, 2>;
+using a_f3   = std::array<float, 3>;
+using a_f4   = std::array<float, 4>;
+using a_uch4 = std::array<unsigned char, 4>;
 
 enum APP_INIT {      // вначале списка идут названия файлов
   PNG_TEXTURE0,
@@ -185,7 +187,7 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
                               y(static_cast<float>(y)),
                               z(static_cast<float>(z)) {}
 
-    f3d(glm::vec3 v): x(v[0]), y(v[1]), z(v[2]) {}
+    f3d(glm::vec3 v): x(v.x), y(v.y), z(v.z) {}
   };
 
 }

@@ -37,8 +37,6 @@ namespace tr
 
     snip& operator=(const snip &);      // оператор присваивания
     void copy_data(const snip &);       // копирование данных из другого снипа
-    void shift(const glm::vec3&);       // сдвиг снипа на вектор
-    void flip_y(void);                  // переворот по вертикали
     void texture_set(GLfloat u, GLfloat v); // установка текстур
     void texture_fragment(GLfloat, GLfloat, const std::array<float, 8>&);
     glm::vec4 vertex_coord(size_t);

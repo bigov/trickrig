@@ -61,7 +61,7 @@ class rdb
     void append_rig_Yp(const i3d&);
     void remove_rig(const i3d&);
     void init_vbo(void);
-    void side_display(std::vector<snip>& Side, const f3d& Point);
+    void box_display(box&, const f3d&);
     void side_wipeoff(std::vector<snip>&); // убрать сторону рига из VBO
     LAY_NAME lay_direction(const glm::vec4&);
     bool is_top(const std::array<glm::vec4, 4>&, size_t);

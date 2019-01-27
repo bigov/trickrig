@@ -233,13 +233,7 @@ void rdb::rig_display(rig* R)
     static_cast<float>(R->Origin.z) + R->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
   };
 
-  side_display(R->SideXp, Point);
-  side_display(R->SideXn, Point);
-  side_display(R->SideYp, Point);
-  side_display(R->SideYn, Point);
-  side_display(R->SideZp, Point);
-  side_display(R->SideZn, Point);
-
+  for(box& B: R->Boxes) box_display(B, Point);
   R->in_vbo = true;
 }
 
@@ -259,7 +253,7 @@ void rdb::rig_display(rig* R)
 /// поворота рига-контейнера), после чего данные записываются в VBO.
 /// Адрес смещения блока данных в VBO запоминается в переменной снипа.
 ///
-void rdb::side_display(std::vector<snip>& Side, const f3d& Point)
+void rdb::box_display(box& Side, const f3d& Point)
 {
   for(snip& Snip: Side)
   {
@@ -319,7 +313,7 @@ void rdb::side_wipeoff(std::vector<snip>& Side)
   for(auto& Snip: Side)
   {
     target = Snip.data_offset;                    // адрес снипа, подлежащий удалению
-    moving = VBO->remove(target, bytes_per_snip); // убрать снип из VBO и получить адрес крайнего
+    moving = VBO->remove(target, bytes_per_snip); // убрать снип из VBO и получить адрес перенесенного
 
     if(moving == 0)                               // Если VBO пустой
     {
@@ -885,7 +879,7 @@ void rdb::remove_rig(const i3d& pRm)
     }
     side_wipeoff(RigTst->SideYn);            // Очистить изображение стороны(если есть)
     make_Yn(RigTst->SideYn);                 // Построить нижнюю стенку
-    side_display(RigTst->SideYp, pTst);      // Записать в графический буфер
+    box_display(RigTst->SideYp, pTst);      // Записать в графический буфер
     RigTst->in_vbo = true;
   }
   else // Если у удаляемого рига есть вверху стенка, то проверить наличие соседа,
@@ -894,7 +888,7 @@ void rdb::remove_rig(const i3d& pRm)
     {
       side_wipeoff(RigTst->SideYn);          // Очистить изображение стороны(если есть)
       make_Yn(RigTst->SideYn);               // Построить нижнюю стенку
-      side_display(RigTst->SideYp, pTst);    // Записать в графический буфер
+      box_display(RigTst->SideYp, pTst);    // Записать в графический буфер
       RigTst->in_vbo = true;
     }
   }
@@ -911,7 +905,7 @@ void rdb::remove_rig(const i3d& pRm)
     }
     side_wipeoff(RigTst->SideYp);                  // Очистить изображение стороны(если есть)
     make_Yp(RigTst->SideYp);                       // Построить нижнюю стенку
-    side_display(RigTst->SideYp, pTst);            // Записать в графический буфер
+    box_display(RigTst->SideYp, pTst);            // Записать в графический буфер
     RigTst->in_vbo = true;
   }
   else // Если у удаляемого рига есть вверху стенка, то проверить наличие соседа,
@@ -920,7 +914,7 @@ void rdb::remove_rig(const i3d& pRm)
     {
       side_wipeoff(RigTst->SideYp);                 // Очистить изображение стороны(если есть)
       make_Yp(RigTst->SideYp);                      // Построить нижнюю стенку
-      side_display(RigTst->SideYp, pTst);           // Записать в графический буфер
+      box_display(RigTst->SideYp, pTst);           // Записать в графический буфер
       RigTst->in_vbo = true;
     }
   }
@@ -1049,7 +1043,7 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
   for (int x = -4; x < 4; ++x)
     for (int z = -4; z < 4; ++z)
   {
-      gen_rig({x, 0, z});
+    gen_rig({x, 0, z});
   }
 }
 
@@ -1062,12 +1056,11 @@ void rdb::gen_rig(const i3d& P)
 {
   MapRigs[P] = rig{P};
   rig* R = get(P);
-  snip S {};
 
-  for(int i = 0; i < 4; ++i) S.data[Y + digits_per_vertex*i] = 1.0f;
-
-  S.texture_set(AppWin.texYp.u, AppWin.texYp.v);
-  R->SideYp.push_back(S);
+  f3d fP {0.0f, 0.0f, 0.0f};             // базовый бокс
+  box B { fP, static_cast<float>(lod)};  // на полный объем рига
+  //B.texture_set(AppWin.texYp.u, AppWin.texYp.v);
+  R->Boxes.push_back(B);
 }
 
 ///
