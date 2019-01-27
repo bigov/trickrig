@@ -16,6 +16,14 @@
 namespace tr {
 
 
+class splice: public std::vector<float*>
+{
+public:
+  bool operator== (splice& Other);
+  bool operator!= (splice& Other);
+};
+
+
 class box
 {
 private:
@@ -24,10 +32,10 @@ public:
   ~box() {}
 
   struct side {
-    v_uch indexes {};  // индексы вершин для построения плоскости стороны
-    ar_f3 normal  {};  // нормаль к стороне
-    ar_f2 texture {};  // текстура
-    v_fl  splice  {};  // стык
+    v_uch Indexes {};  // индексы вершин для построения плоскости стороны
+    ar_f3 Normal  {};  // нормаль к стороне
+    ar_f2 Texture {};  // текстура
+    splice Splice {};  // коорднаты стыка с соседним ригом
   };
 
   enum SIDES {SIDE_XP, SIDE_XN, SIDE_YP, SIDE_YN, SIDE_ZP, SIDE_ZN, SIDES_COUNT};
@@ -42,7 +50,15 @@ public:
     side{ v_uch{ 3, 2, 6, 6, 7, 3 }, ar_f3{ 0.0f, 0.0f,-1.0f }, ar_f2{0.0f, 0.0f}}
   };
 
-  v_fl splice_calc(size_t);
+  // расчет стыков для каждой из сторон
+  void splice_side_xp(void);
+  void splice_side_xn(void);
+  void splice_side_yp(void);
+  void splice_side_yn(void);
+  void splice_side_zp(void);
+  void splice_side_zn(void);
+
+  bool visible(SIDES s, splice& V1);
 };
 
 /*

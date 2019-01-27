@@ -60,6 +60,7 @@ using v_str  = std::vector<std::string>;
 using v_ch   = std::vector<char>;
 using v_uch  = std::vector<unsigned char>;
 using v_fl   = std::vector<float>;
+using v_flp  = std::vector<float*>;
 using ar_f3  = std::array<float, 3>;
 using ar_f2  = std::array<float, 2>;
 
@@ -80,7 +81,7 @@ enum APP_INIT {      // вначале списка идут названия ф
   APP_INIT_SIZE
 };
 
-enum MAP_INIT {      // вначале списка идут названия файлов
+enum MAP_INIT {
   VIEW_FROM_X,
   VIEW_FROM_Y,
   VIEW_FROM_Z,
@@ -89,6 +90,9 @@ enum MAP_INIT {      // вначале списка идут названия ф
   MAP_NAME,              // имя карты, присвоеное при создании
   MAP_INIT_SIZE
 };
+
+// структура для обращения в тексте программы к индексам данных вершин по названиям
+enum SNIP_DATA_ID { X, Y, Z, R, G, B, A, NX, NY, NZ, U, V, ROW_SIZE };
 
 extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
 extern glm::mat4 MatMVP;        // Матрица преобразования
