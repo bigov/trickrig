@@ -49,4 +49,5 @@ void rig::copy_data(const rig &Other)
   Boxes = Other.Boxes;
 }
 
+
 } //tr

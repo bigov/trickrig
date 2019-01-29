@@ -34,17 +34,16 @@ bool splice::operator== (splice& Other)
 /// \param V
 /// \param l
 ///
-box::box(f3d& V, float l)
+box::box(f3d B, float lx, float ly, float lz)
 {
-  lod = l;
-  Vertex.push_back(f3d{ V.x    , V.y + l, V.z + l });
-  Vertex.push_back(f3d{ V.x + l, V.y + l, V.z + l });
-  Vertex.push_back(f3d{ V.x + l, V.y + l, V.z     });
-  Vertex.push_back(f3d{ V.x    , V.y + l, V.z     });
-  Vertex.push_back(f3d{ V.x    , V.y    , V.z + l });
-  Vertex.push_back(f3d{ V.x + l, V.y    , V.z + l });
-  Vertex.push_back(f3d{ V.x + l, V.y    , V.z     });
-  Vertex.push_back(f3d{ V.x    , V.y    , V.z     });
+  Vertex.push_back(f3d{ B.x     , B.y + ly, B.z + lz });
+  Vertex.push_back(f3d{ B.x + lx, B.y + ly, B.z + lz });
+  Vertex.push_back(f3d{ B.x + lx, B.y + ly, B.z      });
+  Vertex.push_back(f3d{ B.x     , B.y + ly, B.z      });
+  Vertex.push_back(f3d{ B.x     , B.y     , B.z + lz });
+  Vertex.push_back(f3d{ B.x + lx, B.y     , B.z + lz });
+  Vertex.push_back(f3d{ B.x + lx, B.y     , B.z      });
+  Vertex.push_back(f3d{ B.x     , B.y     , B.z      });
   init_arrays();
 }
 
@@ -52,16 +51,12 @@ box::box(f3d& V, float l)
 ///
 /// \brief box::box
 /// \param V
+/// \details Конструктор бокса по готовому набору из 8 вершин
 ///
-box::box(std::vector<f3d>& V)
+box::box(const std::array<f3d, 8>& Arr)
 {
-  size_t n = V.size();
-  if( n != 8 )
-  {
-    std::cout << "ERR: Box require 8 verices\n";
-    return;
-  }
-  Vertex = V;
+  Vertex.clear();
+  for(f3d Coord: Arr) Vertex.push_back(Coord);
   init_arrays();
 }
 
@@ -71,7 +66,7 @@ box::box(std::vector<f3d>& V)
 ///
 void box::init_arrays(void)
 {
-  Indexes = { // индексы вершин, образующих сторону
+  SideIdx = { // индексы вершин, образующих сторону
     a_uch4{ 2, 1, 5, 6 },
     a_uch4{ 0, 3, 7, 4 },
     a_uch4{ 0, 1, 2, 3 },
@@ -89,7 +84,7 @@ void box::init_arrays(void)
     a_f3{ 0.0f, 0.0f,-1.0f }
   };
 
-  Color = {{1.0f, 1.0f, 1.0f, 1.0f}}; //Если Color.size() > 1, то цвета вершин различаются
+  //Color = {{1.0f, 1.0f, 1.0f, 1.0f}}; //Если Color.size() > 1, то цвета вершин различаются
   // Если Texture.size() = 1, то у всех сторон одинаковая текстура
   Texture = { a_f2{0.0f, 0.0f}, a_f2{u_sz, 0.0f}, a_f2{u_sz, u_sz}, a_f2{0.0f, u_sz} };
 
@@ -103,6 +98,34 @@ void box::init_arrays(void)
 
 
 ///
+/// \brief box::side_data
+/// \param s
+/// \details Заполнение массива данными
+///
+void box::side_data(SIDES s, std::array<GLfloat, digits_per_snip>& data)
+{
+  for(size_t n = 0; n < vertices_per_snip; n++)
+  {
+    f3d V = Vertex[SideIdx[s][n]];
+    auto N = Normals[s][n];
+    auto C = Color[s][n];
+
+    data[ROW_SIZE * n + X] = V.x;
+    data[ROW_SIZE * n + Y] = V.y;
+    data[ROW_SIZE * n + Z] = V.x;
+
+    data[ROW_SIZE * n + R] = C[0];
+    data[ROW_SIZE * n + G] = C[1];
+    data[ROW_SIZE * n + B] = C[2];
+    data[ROW_SIZE * n + A] = C[3];
+
+  }
+
+
+}
+
+
+///
 /// \brief box::visible
 /// \param s
 /// \param V1
@@ -110,7 +133,7 @@ void box::init_arrays(void)
 ///
 /// \details сторона отображается если сплайсы не совпадют
 ///
-bool box::visible(SIDES s, splice& V1)
+bool box::is_visible(SIDES s, splice& V1)
 {
   return (Splice[s] != V1);
 }
@@ -121,7 +144,7 @@ bool box::visible(SIDES s, splice& V1)
 ///
 void box::splice_side_xp(SIDES s)
 {
-  a_uch4 id = Indexes[s]; // Индексы вершин для расчета сплайса
+  a_uch4 id = SideIdx[s]; // Индексы вершин для расчета сплайса
 
   size_t n = id.size();
   Splice[s].clear();
@@ -145,7 +168,7 @@ void box::splice_side_xn(SIDES s)
 {
   // Индексы вершин, используемых для расчета сплайса
   // обратной стороны выбираются в обратном направлении
-  a_uch4 id = { Indexes[s][1], Indexes[s][0], Indexes[s][3], Indexes[s][2] };
+  a_uch4 id = { SideIdx[s][1], SideIdx[s][0], SideIdx[s][3], SideIdx[s][2] };
 
   size_t n = id.size();
   Splice[s].clear();
@@ -168,7 +191,7 @@ void box::splice_side_xn(SIDES s)
 void box::splice_side_yp(SIDES s)
 {
   // Индексы вершин, используемых для расчета сплайса
-  a_uch4 id = Indexes[s];
+  a_uch4 id = SideIdx[s];
 
   size_t n = id.size();
   Splice[s].clear();
@@ -192,7 +215,7 @@ void box::splice_side_yn(SIDES s)
 {
   // Индексы вершин, используемых для расчета сплайса обратной стороны
   // выбираются в обратном направлении
-  a_uch4 id = { Indexes[s][1], Indexes[s][0], Indexes[s][3], Indexes[s][2] };
+  a_uch4 id = { SideIdx[s][1], SideIdx[s][0], SideIdx[s][3], SideIdx[s][2] };
 
   size_t n = id.size();
   Splice[s].clear();
@@ -215,7 +238,7 @@ void box::splice_side_yn(SIDES s)
 void box::splice_side_zp(SIDES s)
 {
   // Индексы вершин, используемых для расчета сплайса
-  a_uch4 id = Indexes[s];
+  a_uch4 id = SideIdx[s];
 
   size_t n = id.size();
   Splice[s].clear();
@@ -239,7 +262,7 @@ void box::splice_side_zn(SIDES s)
 {
   // Индексы вершин, используемых для расчета сплайса обратной стороны
   // выбираются в обратном направлении
-  a_uch4 id = { Indexes[s][1], Indexes[s][0], Indexes[s][3], Indexes[s][2] };
+  a_uch4 id = { SideIdx[s][1], SideIdx[s][0], SideIdx[s][3], SideIdx[s][2] };
 
   size_t n = id.size();
   Splice[s].clear();

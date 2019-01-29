@@ -69,20 +69,21 @@ class rdb
     void snip_analyze(snip_ext& S);
     void gen_rig(const i3d&);
 
+    void recalc_visibility(rig*);
+
     //void snip_update(GLfloat* s_data, const f3d &Point, GLsizeiptr dist); // код метода в конце файла .cpp
 
   public:
     rdb(void) {}
     ~rdb(void) {}
 
-    u_int render_points = 0;          // число точек передаваемых в рендер
-    vbo_ext* VBO = nullptr;           // VBO вершин поверхности
+    u_int render_points = 0;            // число точек передаваемых в рендер
+    vbo_ext* VBO = nullptr;             // VBO вершин поверхности
 
-    void rig_display(rig*);             // разместить данные в VBO буфере
+    void rig_display(rig*);            // разместить данные в VBO буфере
     void rig_wipeoff(rig*);            // убрать риг из VBO
-
-    void increase(unsigned int);      // добавить объем по индексу снипа
-    void decrease(unsigned int);        // удалить объем по индексу снипа
+    void increase(unsigned int);       // добавить объем по индексу снипа
+    void decrease(unsigned int);       // удалить объем по индексу снипа
 
     void add_yp(const i3d &);
     void add_yn(const i3d&);

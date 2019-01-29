@@ -32,13 +32,13 @@ class rig // группа элементов, образующих объект 
       0.f, 0.f, 0.f,                   // поворот по трем осям
       1.0f                             // размер (масштабирование)
     };
-
-    std::vector<box> Boxes {};
+    std::vector<box> Boxes {};         // массив боксов
     bool in_vbo = false;               // данные помещены в VBO
-    rig(void): born(tr::get_msec()) {} // конструктор по-умолчанию
-    rig(const i3d& Or): born(tr::get_msec()), Origin(Or) {}
-    rig(const rig &);                  // дублирующий конструктор
-    rig& operator= (const rig &);      // копирующее присваивание
+
+    rig(void): born(tr::get_msec()) {}                      // конструктор по-умолчанию
+    rig(const i3d& Or): born(tr::get_msec()), Origin(Or) {} // конструктор с указанием Origin
+    rig(const rig &);                                       // дублирующий конструктор
+    rig& operator= (const rig &);                           // копирующее присваивание
 
   private:
     void copy_data(const rig &);

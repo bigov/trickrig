@@ -253,8 +253,24 @@ void rdb::rig_display(rig* R)
 /// поворота рига-контейнера), после чего данные записываются в VBO.
 /// Адрес смещения блока данных в VBO запоминается в переменной снипа.
 ///
-void rdb::box_display(box& Side, const f3d& Point)
+void rdb::box_display(box& B, const f3d& P)
 {
+  //для каждой стороны надо построить свой снип и разместить его в VBO
+  std::array <GLfloat, digits_per_snip> data{};
+
+  B.side_data(SIDE_XP, data);
+  SIDES S = SIDE_XP;
+
+  for(size_t n = 0; n < vertices_per_snip; n++)
+  {
+    f3d V = B.Vertex[B.SideIdx[S][n]];
+    f3d N = B.Normals
+    cache[ROW_SIZE * n + X] = V.x + P.x;
+    cache[ROW_SIZE * n + Y] = V.y + P.y;
+    cache[ROW_SIZE * n + Z] = V.x + P.z;
+  }
+
+
   for(snip& Snip: Side)
   {
     GLfloat cache[digits_per_snip] = {0.0f};
@@ -1057,11 +1073,61 @@ void rdb::gen_rig(const i3d& P)
   MapRigs[P] = rig{P};
   rig* R = get(P);
 
-  f3d fP {0.0f, 0.0f, 0.0f};             // базовый бокс
-  box B { fP, static_cast<float>(lod)};  // на полный объем рига
+  box B {f3d{0.0f, 0.0f, 0.0f}, 1.f, 0.2f};
+
   //B.texture_set(AppWin.texYp.u, AppWin.texYp.v);
-  R->Boxes.push_back(B);
+
+  R->Boxes.push_back(B);                 // разместить в риг
+
+  // после построения рига необходимо выполнить пересчет видимости сторон
+  recalc_visibility(R);
 }
+
+
+///
+/// \brief rdb::recalc_visibility
+/// \param R0
+///
+void rdb::recalc_visibility(rig* R0)
+{
+  rig* R1 = get({R0->Origin.x + lod, R0->Origin.y, R0->Origin.z});
+  for(box B0: R0->Boxes) for(box B1: R1->Boxes)
+  {
+    if(B0.Splice[SIDE_XP] == B1.Splice[SIDE_XN]) B0.visible[SIDE_XP] = true;
+  }
+
+  R1 = get({R0->Origin.x - lod, R0->Origin.y, R0->Origin.z});
+  for(box B0: R0->Boxes) for(box B1: R1->Boxes)
+  {
+    if(B0.Splice[SIDE_XN] == B1.Splice[SIDE_XP]) B0.visible[SIDE_XN] = false;
+  }
+
+  R1 = get({R0->Origin.x, R0->Origin.y + lod, R0->Origin.z});
+  for(box B0: R0->Boxes) for(box B1: R1->Boxes)
+  {
+    if(B0.Splice[SIDE_YP] == B1.Splice[SIDE_YN]) B0.visible[SIDE_YP] = true;
+  }
+
+  R1 = get({R0->Origin.x, R0->Origin.y - lod, R0->Origin.z});
+  for(box B0: R0->Boxes) for(box B1: R1->Boxes)
+  {
+    if(B0.Splice[SIDE_YN] == B1.Splice[SIDE_YP]) B0.visible[SIDE_YN] = false;
+  }
+
+  R1 = get({R0->Origin.x, R0->Origin.y, R0->Origin.z + lod});
+  for(box B0: R0->Boxes) for(box B1: R1->Boxes)
+  {
+    if(B0.Splice[SIDE_ZP] == B1.Splice[SIDE_ZN]) B0.visible[SIDE_ZP] = true;
+  }
+
+  R1 = get({R0->Origin.x, R0->Origin.y, R0->Origin.z - lod});
+  for(box B0: R0->Boxes) for(box B1: R1->Boxes)
+  {
+    if(B0.Splice[SIDE_ZN] == B1.Splice[SIDE_ZP]) B0.visible[SIDE_ZN] = false;
+  }
+
+}
+
 
 ///
 /// \brief rdb::search_down
