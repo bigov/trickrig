@@ -152,6 +152,24 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
     scancode, mods, mouse, action, key;
   };
 
+  struct texture {
+      float u = 0.0f;
+      float v = 0.0f;
+  };
+
+  struct normal {
+      float nx = 0.0f;
+      float ny = 0.0f;
+      float nz = 0.0f;
+  };
+
+  struct color {
+      float r = 1.0f;
+      float g = 1.0f;
+      float b = 1.0f;
+      float a = 1.0f;
+  };
+
   // структуры для оперирования опорными точками в пространстве трехмерных координат
   struct i3d
   {
@@ -172,6 +190,7 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
   {
     float x = 0.f, y = 0.f, z = 0.f;
 
+    f3d(void) {};
     // конструкторы для обеспечения инициализации разными типами данных
     f3d(float x, float y, float z): x(x), y(y), z(z) {}
 

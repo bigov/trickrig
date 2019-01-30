@@ -2,25 +2,29 @@
 #include <array>
 #include <vector>
 
-struct v_color {float r=1.0f, g=1.1f, b=1.2f, a=0.f;};  // цвет вершины - 4 числа
-using s_color = std::array <v_color, 4>;                // сторона - 4 вершины по 4 числа
+#define S_XP 0
+#define S_XN 1
+#define S_YP 2
+#define S_YN 3
+#define S_ZP 4
+#define S_ZN 5
+
+
+struct color {float r=1.0f, g=1.1f, b=1.2f, a=0.f;};  // цвет вершины - 4 числа
+using side = std::array <color, 4>;            // сторона - 4 вершины по 4 числа
+using u_char = unsigned char;
 
 int main(int, char**)
 {
-  s_color Side0 {v_color{}, {}, {}, {}}; // цвет стороны - цвета 4-х вершин
-  s_color s[6] = {Side0};                // шесть сторон
-  std::array <s_color*, 6> aSides  { &s[0], &s[0], &s[0], &s[0] };
+  std::vector<side> Box {};
+  Box.push_back({color{}, {}, {}, {}});            // одна сторона - 4 вершины
+  std::array<u_char, 6> side_cursor {0,0,0,0,0,0}; // шесть сторон одного цвета
 
-  int side_id = 2;
   int vertex_id = 3;
 
-  s_color* mySide = aSides[side_id]; // цвета стороны
-  s_color Vertex_array = mySide[3];
-  float c = Vertex_array[vertex_id].r;
+  float c = Box[side_cursor[S_XN]][vertex_id].g ; // сторона
 
-  std::cout
-     //<< aSides[1][Side][Vert].b
-     << "\n ok \n";
+  std::cout << c << "\n ok \n";
 
   return EXIT_SUCCESS;
 }

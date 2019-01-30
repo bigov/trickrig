@@ -23,7 +23,16 @@
 
 namespace tr {
 
-enum SIDES {SIDE_XP, SIDE_XN, SIDE_YP, SIDE_YN, SIDE_ZP, SIDE_ZN, SIDES_COUNT};
+#define SIDE_XP      0
+#define SIDE_XN      1
+#define SIDE_YP      2
+#define SIDE_YN      3
+#define SIDE_ZP      4
+#define SIDE_ZN      5
+#define SIDES_COUNT  6
+#
+#define VERT_PER_BOX 8
+#
 
 class splice: public std::vector<float*>
 {
@@ -32,22 +41,37 @@ public:
   bool operator!= (splice& Other);
 };
 
-struct color {
-    float r = 0.0f;
-    float g = 0.0f;
-    float b = 0.0f;
-    float a = 0.0f;
-};
-
-using side_color = std::array<color, vertices_per_snip>;
-
 class box
 {
 private:
+  GLfloat u_sz = 0.125f; // размер ячейки текстуры по U
+  GLfloat v_sz = 0.125f; // размер ячейки текстуры по V
+
+  // AllCoords - массив координат вершин. CursorCoord - массив
+  // из 6 массивов (по числу сторон бокса) по 4 индекса (по числу вершин
+  // для плоскости снипа) для получения 3d координат из AllCoords.
+  // Благодаря этому (24*4) 4-й байтовых (float) координаты хранятся в массиве
+  // из (8*4) float, плюс 24 однобайтовых индекса. Кроме того, это позволяет
+  // проще изменять форму бокса перемещая меньшее число вершин, чем если-бы
+  // они хранились отдельно для каждой стороны.
+  std::array<f3d, VERT_PER_BOX>   AllCoords   {}; // координаты 8 вершин
+  std::array<a_uch4, SIDES_COUNT> CursorCoord {}; // курсор на координаты
+
+  // AllColors - массив цветов вершин позволяет задавать цвета каждой вершины
+  // каждой из сторон отдельно, но инициализируется одним цветом по-умолчанию.
+  // После инициализации CursorColor указывает на один цвет для всех вершин.
+  std::vector<color>              AllColors    {};  // цвета вершин
+  std::array<a_uch4, SIDES_COUNT> CursorColor  {};  // указатель цветов вершин
+
+  std::vector<normal>             AllNormals   {}; // Направления нормалей вершин
+  std::array<a_uch4, SIDES_COUNT> CursorNormal {}; // курсор на нормали каждой вершины
+
+  std::vector<texture>            AllTextures  {}; // координаты текстур
+  std::array<a_uch4, SIDES_COUNT> CursorTexture{}; // курсор на коорд. текстуры вершин
+
   void init_arrays(void);
 
 public:
-
   // конструктор с генератором вершин и значениями по-умолчанию
   box(f3d Base={0.f, 0.f, 0.f}, float lx=1.f, float ly=1.f, float lz=1.f);
 
@@ -55,35 +79,24 @@ public:
   box(const std::array<f3d, 8>&);
   ~box() {}
 
-  GLfloat u_sz = 0.125f; // размер ячейки текстуры по U
-  GLfloat v_sz = 0.125f; // размер ячейки текстуры по V
+  std::array<splice, SIDES_COUNT> Splice  {};     // коорднаты стыка с соседним ригом
 
-  std::vector<f3d>                Vertex  {}; // массив координат вершин
-  std::vector<side_color> _SC {};             // цвета вершин одной стороны
-
-  std::array<const side_color&, SIDES_COUNT>  Colors {_SC.front{}};
-
-  std::array<a_f2, 4>             Texture {}; // координаты текстуры
-  std::array<a_uch4, SIDES_COUNT> SideIdx {}; // индексы вершин для построения плоскости стороны
-  std::array<a_f3, SIDES_COUNT>   Normals {}; // Направление нормалей по сторонам
-  std::array<splice, SIDES_COUNT> Splice  {}; // коорднаты стыка с соседним ригом
-
-  // Положение блока данных в буфере GPU
-  std::array<GLsizeiptr, SIDES_COUNT> offset {NULL,NULL,NULL,NULL,NULL,NULL};
+  // Положения блоков данных по каждой из сторон в буфере GPU
+  std::array<GLsizeiptr, SIDES_COUNT> offset { NULL, NULL, NULL, NULL, NULL, NULL };
 
   // Видимость сторон по умолчанию включена. Для выключения необходимо сравнить с боксами соседних ригов
   std::array<bool, SIDES_COUNT> visible {1, 1, 1, 1, 1, 1};
 
   // расчет стыков для каждой из сторон
-  void splice_side_xp(SIDES s);
-  void splice_side_xn(SIDES s);
-  void splice_side_yp(SIDES s);
-  void splice_side_yn(SIDES s);
-  void splice_side_zp(SIDES s);
-  void splice_side_zn(SIDES s);
+  void splice_side_xp(u_char s);
+  void splice_side_xn(u_char s);
+  void splice_side_yp(u_char s);
+  void splice_side_yn(u_char s);
+  void splice_side_zp(u_char s);
+  void splice_side_zn(u_char s);
 
-  void side_data(SIDES, std::array<GLfloat, digits_per_snip>&);
-  bool is_visible(SIDES, splice&);
+  void fill_side_data(u_char, std::array<GLfloat, digits_per_snip>&);
+  bool is_visible(u_char, splice&);
 };
 
 }

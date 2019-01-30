@@ -256,38 +256,25 @@ void rdb::rig_display(rig* R)
 void rdb::box_display(box& B, const f3d& P)
 {
   //для каждой стороны надо построить свой снип и разместить его в VBO
-  std::array <GLfloat, digits_per_snip> data{};
+  std::array <GLfloat, digits_per_snip> buffer{};
 
-  B.side_data(SIDE_XP, data);
-  SIDES S = SIDE_XP;
+  u_char side_id = SIDE_XP;
+
+  B.fill_side_data(side_id, buffer);
 
   for(size_t n = 0; n < vertices_per_snip; n++)
   {
-    f3d V = B.Vertex[B.SideIdx[S][n]];
-    f3d N = B.Normals
-    cache[ROW_SIZE * n + X] = V.x + P.x;
-    cache[ROW_SIZE * n + Y] = V.y + P.y;
-    cache[ROW_SIZE * n + Z] = V.x + P.z;
+    buffer[ROW_SIZE * n + X] += P.x;
+    buffer[ROW_SIZE * n + Y] += P.y;
+    buffer[ROW_SIZE * n + Z] += P.z;
   }
+  auto offset = VBO->data_append(buffer.data(),  bytes_per_snip); // записать в VBO
+  render_points += indices_per_snip;                             // увеличить число точек рендера
 
+  B.offset[side_id] = offset;
 
-  for(snip& Snip: Side)
-  {
-    GLfloat cache[digits_per_snip] = {0.0f};
-    memcpy(cache, Snip.data, bytes_per_snip);
-
-    // Расчитать абсолютные координаты всех вершин снипа
-    for(size_t n = 0; n < vertices_per_snip; n++)
-    {
-      cache[ROW_SIZE * n + X] += Point.x;
-      cache[ROW_SIZE * n + Y] += Point.y;
-      cache[ROW_SIZE * n + Z] += Point.z;
-    }
-
-    Snip.data_offset = VBO->data_append(cache,  bytes_per_snip); // записать расположение в VBO
-    render_points += indices_per_snip;                           // увеличить число точек рендера
-    VisibleSnips[Snip.data_offset] = &Snip;                      // добавить ссылку
-  }
+  //VisibleSnips[Snip.data_offset] = &Snip;                      // добавить ссылку
+  VisibleSnips[offset] = B;
 }
 
 
