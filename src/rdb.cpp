@@ -330,12 +330,9 @@ void rdb::side_wipeoff(std::vector<snip>& Side)
     }
     else                                           // Если удаляемый снип не в конце, то на его место
     {                                              // ставится крайний снип в конце VBO:
+      VisibleSnips[moving]->data_offset = target;  // - изменить адрес размещения в VBO у перемещенного снипа,
       VisibleSnips[target] = VisibleSnips[moving]; // - заменить блок в карте снипов,
-#ifndef NDEBUG
-      if(VisibleSnips[target]->data_offset != moving) info("Err data_offset on rdb::side_vbo_remove");
-#endif
-      VisibleSnips[target]->data_offset = target;  // - изменить адрес размещения в VBO у перемещенного снипа,
-      VisibleSnips.erase(moving);                  // - удалить освободившийся элемент
+      VisibleSnips.erase(moving);                  // - удалить освободившийся элемент массива
     }
     render_points -= indices_per_snip;             // Уменьшить число точек рендера
   }
