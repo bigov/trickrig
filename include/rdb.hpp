@@ -17,11 +17,11 @@
 namespace tr
 {
 
-enum LAY_NAME { LAY_XP, LAY_XN, LAY_YP, LAY_YN, LAY_ZP, LAY_ZN, LAYS_COUNT };
+//enum LAY_NAME { SIDE_XP, SIDE_XN, SIDE_YP, SIDE_YN, SIDE_ZP, SIDE_ZN, SIDES_COUNT };
 
 struct snip_ext: public snip
 {
-   LAY_NAME lay = LAYS_COUNT;
+   u_char lay = SIDES_COUNT;
    i3d Origin {0, 0, 0};
 };
 
@@ -38,7 +38,7 @@ class rdb
     // Карта размещения cнипов по адресам в VBO. Необходима для того,
     // чтобы при перемещениях данных снипов в VBO было проще вносить
     // изменения адреса смещения в буфере.
-    std::unordered_map<GLsizeiptr, snip*> VisibleSnips {};
+    std::unordered_map<GLsizeiptr, box*> Visible {};
 
     int yMin = -100;  // временное ограничение рабочего пространства
     int yMax = 100;
@@ -48,28 +48,28 @@ class rdb
 
     void _load_16x16_obj(void);
     void side_make_snip(const std::array<glm::vec4, 4>&, snip&, const glm::vec3&); // настройка боковой стороны
-    void set_Zp(rig*);
-    void set_Zn(rig*);
-    void set_Xp(rig*);
-    void set_Xn(rig*);
-    void make_Yp(std::vector<snip>&);
-    void make_Yn(std::vector<snip>&);
-    void make_Zn(std::vector<snip>&, std::vector<snip>&, float, float);
-    void make_Zp(std::vector<snip>&, std::vector<snip>&, float, float);
-    void make_Xn(std::vector<snip>&, std::vector<snip>&, float, float);
-    void make_Xp(std::vector<snip>&, std::vector<snip>&, float, float);
+    //void set_Zp(rig*);
+    //void set_Zn(rig*);
+    //void set_Xp(rig*);
+    //void set_Xn(rig*);
+    //void make_Yp(std::vector<snip>&);
+    //void make_Yn(std::vector<snip>&);
+    //void make_Zn(std::vector<snip>&, std::vector<snip>&, float, float);
+    //void make_Zp(std::vector<snip>&, std::vector<snip>&, float, float);
+    //void make_Xn(std::vector<snip>&, std::vector<snip>&, float, float);
+    //void make_Xp(std::vector<snip>&, std::vector<snip>&, float, float);
     void append_rig_Yp(const i3d&);
     void remove_rig(const i3d&);
     void init_vbo(void);
     void box_display(box&, const f3d&);
-    void side_wipeoff(std::vector<snip>&); // убрать сторону рига из VBO
-    LAY_NAME lay_direction(const glm::vec4&);
+    void box_wipeoff(box&);
+    u_char lay_direction(const glm::vec4&);
     bool is_top(const std::array<glm::vec4, 4>&, size_t);
     bool is_top(std::vector<snip>&, size_t);
     void snip_analyze(snip_ext& S);
     void gen_rig(const i3d&);
 
-    void recalc_visibility(rig*);
+    //void recalc_visibility(rig*);
 
     //void snip_update(GLfloat* s_data, const f3d &Point, GLsizeiptr dist); // код метода в конце файла .cpp
 

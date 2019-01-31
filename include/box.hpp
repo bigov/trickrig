@@ -20,6 +20,7 @@
 #define BOX_HPP
 
 #include "main.hpp"
+#include "io.hpp"
 
 namespace tr {
 
@@ -34,7 +35,7 @@ namespace tr {
 #define VERT_PER_BOX 8
 #
 
-class splice: public std::vector<float*>
+class splice: public std::vector<GLfloat*>
 {
 public:
   bool operator== (splice& Other);
@@ -69,34 +70,36 @@ private:
   std::vector<texture>            AllTextures  {}; // координаты текстур
   std::array<a_uch4, SIDES_COUNT> CursorTexture{}; // курсор на коорд. текстуры вершин
 
+  std::array<splice, SIDES_COUNT>      Splice {}; // коорднаты стыка с соседним ригом
+  // Положения блоков данных по каждой из сторон в буфере GPU
+  GLsizeiptr  offset[SIDES_COUNT] = {0, 0, 0, 0, 0, 0};
+  // Видимость сторон по умолчанию включена. Для выключения необходимо сравнить с боксами соседних ригов
+  bool visible [SIDES_COUNT] = {true, true, true, true, true, true};
+
   void init_arrays(void);
+
+  // расчет стыков для каждой из сторон
+  void splice_side_xp(void);
+  void splice_side_xn(void);
+  void splice_side_yp(void);
+  void splice_side_yn(void);
+  void splice_side_zp(void);
+  void splice_side_zn(void);
 
 public:
   // конструктор с генератором вершин и значениями по-умолчанию
   box(f3d Base={0.f, 0.f, 0.f}, float lx=1.f, float ly=1.f, float lz=1.f);
-
   // Конструктор бокса из массива вершин
   box(const std::array<f3d, 8>&);
   ~box() {}
 
-  std::array<splice, SIDES_COUNT> Splice  {};     // коорднаты стыка с соседним ригом
-
-  // Положения блоков данных по каждой из сторон в буфере GPU
-  std::array<GLsizeiptr, SIDES_COUNT> offset { NULL, NULL, NULL, NULL, NULL, NULL };
-
-  // Видимость сторон по умолчанию включена. Для выключения необходимо сравнить с боксами соседних ригов
-  std::array<bool, SIDES_COUNT> visible {1, 1, 1, 1, 1, 1};
-
-  // расчет стыков для каждой из сторон
-  void splice_side_xp(u_char s);
-  void splice_side_xn(u_char s);
-  void splice_side_yp(u_char s);
-  void splice_side_yn(u_char s);
-  void splice_side_zp(u_char s);
-  void splice_side_zn(u_char s);
-
-  void fill_side_data(u_char, std::array<GLfloat, digits_per_snip>&);
-  bool is_visible(u_char, splice&);
+  void splice_calc(u_char side_id);
+  void side_fill_data(u_char side_id, std::array<GLfloat, digits_per_snip>& data);
+  bool is_visible(u_char side_id, splice& S);
+  void offset_write(u_char side_id, GLsizeiptr n);
+  GLsizeiptr offset_read(u_char side_id);
+  void offset_replace(GLsizeiptr old_n, GLsizeiptr new_n);
+  u_char side_id_by_offset(GLsizeiptr);
 };
 
 }

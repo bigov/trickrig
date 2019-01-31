@@ -121,12 +121,7 @@ void box::init_arrays(void)
     a_uch4{ 0, 1, 2, 3 }, //z-
   };
 
-  splice_side_xp(SIDE_XP);
-  splice_side_xn(SIDE_XN);
-  splice_side_yp(SIDE_YP);
-  splice_side_yn(SIDE_YN);
-  splice_side_zp(SIDE_ZP);
-  splice_side_zn(SIDE_ZN);
+  for(u_char id = 0; id < SIDES_COUNT; ++id) splice_calc(id);
 }
 
 
@@ -135,7 +130,7 @@ void box::init_arrays(void)
 /// \param s
 /// \details Заполнение массива стороны данными
 ///
-void box::fill_side_data(u_char side, std::array<GLfloat, digits_per_snip>& data)
+void box::side_fill_data(u_char side, std::array<GLfloat, digits_per_snip>& data)
 {
   for(size_t n = 0; n < vertices_per_snip; n++)
   {
@@ -164,6 +159,67 @@ void box::fill_side_data(u_char side, std::array<GLfloat, digits_per_snip>& data
 
 
 ///
+/// \brief box::offset_write
+/// \param side_id
+/// \param n
+///
+void box::offset_write(u_char side_id, GLsizeiptr n)
+{
+#ifndef NDEBUG
+  if(side_id >= SIDES_COUNT) info("box::offset_write ERR: side_id >= SIDES_COUNT");
+#endif
+  offset[side_id] = n;
+  visible[side_id] = true;
+}
+
+
+///
+/// \brief box::offset_read
+/// \param side_id
+/// \return offset for side
+///
+GLsizeiptr box::offset_read(u_char side_id)
+{
+#ifndef NDEBUG
+  if(side_id >= SIDES_COUNT) info("box::offset_read ERR: side_id >= SIDES_COUNT");
+#endif
+  return offset[side_id];
+}
+
+
+///
+/// \brief box::offset_replace
+/// \param old_n
+/// \param new_n
+///
+void box::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
+{
+  u_char side_id;
+  for (side_id = 0; side_id < SIDES_COUNT; ++side_id) {
+    if(offset[side_id] == old_n) offset[side_id] = new_n;
+  }
+#ifndef NDEBUG
+  if(!visible[side_id]) info("box::offset_replace for unvisible side.");
+  if(side_id == SIDES_COUNT) info("box::offset_replace ERR.");
+#endif
+}
+
+
+///
+/// \brief box::side_id_by_offset
+/// \param n
+/// \return side_id
+///
+u_char box::side_id_by_offset(GLsizeiptr n)
+{
+  for (u_char id = 0; id < SIDES_COUNT; ++id) {
+    if(offset[id] == n) return id;
+  }
+  return  SIDES_COUNT;
+}
+
+
+///
 /// \brief box::visible
 /// \param s
 /// \param V1
@@ -178,10 +234,42 @@ bool box::is_visible(u_char s, splice& V1)
 
 
 ///
+/// \brief box::splice_side
+/// \param side_id
+///
+void box::splice_calc(u_char side_id)
+{
+  switch (side_id) {
+    case SIDE_XP:
+      splice_side_xp();
+      break;
+    case SIDE_XN:
+      splice_side_xn();
+      break;
+    case SIDE_YP:
+      splice_side_yp();
+      break;
+    case SIDE_YN:
+      splice_side_yn();
+      break;
+    case SIDE_ZP:
+      splice_side_zp();
+      break;
+    case SIDE_ZN:
+      splice_side_zn();
+      break;
+    default:
+      info("Err side_id on " + std::string(__func__));
+
+  }
+}
+
+///
 /// \brief box::splice_side_xp
 ///
-void box::splice_side_xp(u_char s)
+void box::splice_side_xp(void)
 {
+  u_char s = SIDE_XP;
   a_uch4 id = CursorCoord[s]; // Индексы вершин для расчета сплайса
 
   size_t n = id.size();
@@ -202,8 +290,9 @@ void box::splice_side_xp(u_char s)
 ///
 /// \brief box::splice_side_xn
 ///
-void box::splice_side_xn(u_char s)
+void box::splice_side_xn(void)
 {
+  u_char s = SIDE_XN;
   // Индексы вершин, используемых для расчета сплайса
   // обратной стороны выбираются в обратном направлении
   a_uch4 id = { CursorCoord[s][1], CursorCoord[s][0], CursorCoord[s][3], CursorCoord[s][2] };
@@ -226,8 +315,9 @@ void box::splice_side_xn(u_char s)
 ///
 /// \brief box::splice_side_yp
 ///
-void box::splice_side_yp(u_char s)
+void box::splice_side_yp(void)
 {
+  u_char s = SIDE_YP;
   // Индексы вершин, используемых для расчета сплайса
   a_uch4 id = CursorCoord[s];
 
@@ -249,8 +339,9 @@ void box::splice_side_yp(u_char s)
 ///
 /// \brief box::splice_side_yn
 ///
-void box::splice_side_yn(u_char s)
+void box::splice_side_yn(void)
 {
+  u_char s = SIDE_YN;
   // Индексы вершин, используемых для расчета сплайса обратной стороны
   // выбираются в обратном направлении
   a_uch4 id = { CursorCoord[s][1], CursorCoord[s][0], CursorCoord[s][3], CursorCoord[s][2] };
@@ -273,8 +364,9 @@ void box::splice_side_yn(u_char s)
 ///
 /// \brief box::splice_side_zp
 ///
-void box::splice_side_zp(u_char s)
+void box::splice_side_zp(void)
 {
+  u_char s = SIDE_ZP;
   // Индексы вершин, используемых для расчета сплайса
   a_uch4 id = CursorCoord[s];
 
@@ -296,8 +388,9 @@ void box::splice_side_zp(u_char s)
 ///
 /// \brief box::splice_side_zn
 ///
-void box::splice_side_zn(u_char s)
+void box::splice_side_zn(void)
 {
+  u_char s = SIDE_ZN;
   // Индексы вершин, используемых для расчета сплайса обратной стороны
   // выбираются в обратном направлении
   a_uch4 id = { CursorCoord[s][1], CursorCoord[s][0], CursorCoord[s][3], CursorCoord[s][2] };

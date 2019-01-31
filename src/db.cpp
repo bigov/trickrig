@@ -134,7 +134,8 @@ rig db::load_rig(const i3d &P, const std::string& file_name)
 
     memcpy(Snip.data, BufVector.data(), tr::bytes_per_snip);
 
-    Rig.SideYp.insert(Rig.SideYp.begin(), Snip);
+//NEW_VER
+//    Rig.SideYp.insert(Rig.SideYp.begin(), Snip);
   }
 
   if(!file_name.empty()) SqlDb.close();
@@ -160,6 +161,8 @@ void db::save_rig(const i3d &P, const rig *R)
   int id_area = 0;
   SqlDb.open(MapPFName);
 
+//NEW_VER
+/*
   for(auto & Snip: R->SideYp)
   {
     // Запись снипа
@@ -172,6 +175,7 @@ void db::save_rig(const i3d &P, const rig *R)
       // Обновить номер группы в записи первого снипа
     }
   }
+*/
   // Запись рига
   SqlDb.insert_rig( P.x, P.y, P.z, R->born, id_area, R->shift, SHIFT_DIGITS);
   //DB.request_put(query_buf, R->shift, SHIFT_DIGITS);
@@ -207,6 +211,8 @@ void db::save_rigs_block(const i3d &From, const i3d &To, rdb &RDB )
         if(nullptr != R)
         {
           id_area = 0;
+//NEW_VER
+          /*
           for(auto & Snip: R->SideYp)
           {
             // Запись снипа
@@ -219,6 +225,7 @@ void db::save_rigs_block(const i3d &From, const i3d &To, rdb &RDB )
               // Обновить номер группы в записи первого снипа
             }
           }
+*/
           // Записать риг
           SqlDb.insert_rig( x, y, z, R->born, id_area, R->shift, SHIFT_DIGITS);
         }

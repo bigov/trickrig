@@ -30,21 +30,21 @@ namespace tr
 /// \param N
 /// \return направление вектора
 ///
-LAY_NAME rdb::lay_direction(const glm::vec4& N)
+u_char rdb::lay_direction(const glm::vec4& N)
 {
   if (( abs(N.x) > abs(N.y) ) && ( abs(N.x) > abs(N.z) ) &&
-         ( (N.x) >= 0.0f )) return LAY_XP;
+         ( (N.x) >= 0.0f )) return SIDE_XP;
   else if (( abs(N.x) > abs(N.y) ) && ( abs(N.x) > abs(N.z) ) &&
-         ( (N.x) < 0.0f )) return LAY_XN;
+         ( (N.x) < 0.0f )) return SIDE_XN;
   else if (( abs(N.y) > abs(N.x) ) && ( abs(N.y) > abs(N.z) ) &&
-         ( (N.y) >= 0.0f )) return LAY_YP;
+         ( (N.y) >= 0.0f )) return SIDE_YP;
   else if (( abs(N.y) > abs(N.x) ) && ( abs(N.y) > abs(N.z) ) &&
-         ( (N.y) < 0.0f )) return LAY_YN;
+         ( (N.y) < 0.0f )) return SIDE_YN;
   else if (( abs(N.z) > abs(N.x) ) && ( abs(N.z) > abs(N.y) ) &&
-         ( (N.z) >= 0.0f )) return LAY_ZP;
+         ( (N.z) >= 0.0f )) return SIDE_ZP;
   else if (( abs(N.z) > abs(N.x) ) && ( abs(N.z) > abs(N.y) ) &&
-         ( (N.z) < 0.0f )) return LAY_ZN;
-  else return LAYS_COUNT;
+         ( (N.z) < 0.0f )) return SIDE_ZN;
+  else return SIDES_COUNT;
 }
 
 
@@ -104,28 +104,28 @@ void rdb::snip_analyze(snip_ext& S)
   S.lay = lay_direction(NS);
   switch (S.lay)
   {
-    case LAY_XP:
+    case SIDE_XP:
       S.Origin = V[3];
       if(is_top(V, 0)) S.Origin.y -= lod;
       break;
-    case LAY_XN:
+    case SIDE_XN:
       S.Origin = V[2];
       break;
-    case LAY_YP:
+    case SIDE_YP:
       S.Origin = V[3];
       if(is_top(V, 1)) S.Origin.y -= lod;
       break;
-    case LAY_YN:
+    case SIDE_YN:
       S.Origin = V[0];
       break;
-    case LAY_ZP:
+    case SIDE_ZP:
       S.Origin = V[2];
       if(is_top(V, 2)) S.Origin.y -= lod;
       break;
-    case LAY_ZN:
+    case SIDE_ZN:
       S.Origin = V[3];
       break;
-    case LAYS_COUNT:
+    case SIDES_COUNT:
 #ifndef NDEBUG
       info("Undefined LAY direction.");
 #endif
@@ -153,29 +153,32 @@ void rdb::increase(unsigned int i)
   VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
 
   snip_analyze(S);
+
+  /*
   switch (S.lay)
   {
-    case LAY_XP:
+    case SIDE_XP:
       add_xp(S.Origin);
       break;
-    case LAY_XN:
+    case SIDE_XN:
       add_xn(S.Origin);
       break;
-    case LAY_YP:
+    case SIDE_YP:
       add_yp(S.Origin);
       break;
-    case LAY_YN:
+    case SIDE_YN:
       add_yn(S.Origin);
       break;
-    case LAY_ZP:
+    case SIDE_ZP:
       add_zp(S.Origin);
       break;
-    case LAY_ZN:
+    case SIDE_ZN:
       add_zn(S.Origin);
       break;
-    case LAYS_COUNT:
+    case SIDES_COUNT:
       break;
   }
+  */
 }
 
 
@@ -193,29 +196,32 @@ void rdb::decrease(unsigned int i)
   snip_ext S{};
   VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
   snip_analyze(S);                               //
+
+  /*
   switch (S.lay)
   {
-    case LAY_XP:
+    case SIDE_XP:
       sub_xp(S.Origin);
       break;
-    case LAY_XN:
+    case SIDE_XN:
       sub_xn(S.Origin);
       break;
-    case LAY_YP:
+    case SIDE_YP:
       sub_yp(S.Origin);
       break;
-    case LAY_YN:
+    case SIDE_YN:
       sub_yn(S.Origin);
       break;
-    case LAY_ZP:
+    case SIDE_ZP:
       sub_zp(S.Origin);
       break;
-    case LAY_ZN:
+    case SIDE_ZN:
       sub_zn(S.Origin);
       break;
-    case LAYS_COUNT:
+    case SIDES_COUNT:
       break;
   }
+  */
 }
 
 
@@ -256,11 +262,10 @@ void rdb::rig_display(rig* R)
 void rdb::box_display(box& B, const f3d& P)
 {
   //для каждой стороны надо построить свой снип и разместить его в VBO
-  std::array <GLfloat, digits_per_snip> buffer{};
-
   u_char side_id = SIDE_XP;
 
-  B.fill_side_data(side_id, buffer);
+  std::array <GLfloat, digits_per_snip> buffer{};
+  B.side_fill_data(side_id, buffer);
 
   for(size_t n = 0; n < vertices_per_snip; n++)
   {
@@ -268,13 +273,10 @@ void rdb::box_display(box& B, const f3d& P)
     buffer[ROW_SIZE * n + Y] += P.y;
     buffer[ROW_SIZE * n + Z] += P.z;
   }
-  auto offset = VBO->data_append(buffer.data(),  bytes_per_snip); // записать в VBO
+  auto offset = VBO->data_append(buffer.data(),  bytes_per_snip);// записать в VBO
   render_points += indices_per_snip;                             // увеличить число точек рендера
-
-  B.offset[side_id] = offset;
-
-  //VisibleSnips[Snip.data_offset] = &Snip;                      // добавить ссылку
-  VisibleSnips[offset] = B;
+  B.offset_write(side_id, offset);                               // записать адрес смещения в VBO
+  Visible[offset] = &B;                                     // добавить ссылку на бокс
 }
 
 
@@ -289,14 +291,7 @@ void rdb::rig_wipeoff(rig* Rig)
 {
   if(nullptr == Rig) return;
   if(!Rig->in_vbo) return;
-
-  side_wipeoff(Rig->SideYp);
-  side_wipeoff(Rig->SideYn);
-  side_wipeoff(Rig->SideZp);
-  side_wipeoff(Rig->SideZn);
-  side_wipeoff(Rig->SideXp);
-  side_wipeoff(Rig->SideXn);
-
+  for(box& B: Rig->Boxes) box_wipeoff(B);
   Rig->in_vbo = false;
 }
 
@@ -307,32 +302,32 @@ void rdb::rig_wipeoff(rig* Rig)
 ///
 /// \details Удаление из VBO данных указанной стороны
 ///
-void rdb::side_wipeoff(std::vector<snip>& Side)
+void rdb::box_wipeoff(box& Box)
 {
   GLsizeiptr target = 0;         // адрес смещения, где данные будут перезаписаны
   GLsizeiptr moving = 0;         // адрес снипа с "хвоста" VBO, который будет перемещен на target
 
-  if(Side.empty()) return;
-  for(auto& Snip: Side)
+  for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
-    target = Snip.data_offset;                    // адрес снипа, подлежащий удалению
-    moving = VBO->remove(target, bytes_per_snip); // убрать снип из VBO и получить адрес перенесенного
+    target = Box.offset_read(side_id);            // адрес снипа, подлежащий удалению
+    moving = VBO->remove(target, bytes_per_snip); // убрать снип из VBO и получить адрес смещения
+                                                  // данных в VBO который изменился на target
 
     if(moving == 0)                               // Если VBO пустой
     {
-      VisibleSnips.clear();
+      Visible.clear();
       render_points = 0;
       return;
     }
     else if (moving == target)                     // Если удаляемый снип оказался в конце активной
     {                                              // части VBO, то только удалить его с карты
-      VisibleSnips.erase(target);
+      Visible.erase(target);
     }
-    else                                           // Если удаляемый снип не в конце, то на его место
-    {                                              // ставится крайний снип в конце VBO:
-      VisibleSnips[moving]->data_offset = target;  // - изменить адрес размещения в VBO у перемещенного снипа,
-      VisibleSnips[target] = VisibleSnips[moving]; // - заменить блок в карте снипов,
-      VisibleSnips.erase(moving);                  // - удалить освободившийся элемент массива
+    else                                           // Если удаляемый блок данных не в конце, то на его
+    {                                              // место записаны данные с адреса moving:
+      Visible[moving]->offset_replace(moving, target);  // - изменить адрес размещения в VBO у перемещенного блока,
+      Visible[target] = Visible[moving];           // - заменить блок в карте снипов,
+      Visible.erase(moving);                       // - удалить освободившийся элемент массива
     }
     render_points -= indices_per_snip;             // Уменьшить число точек рендера
   }
@@ -360,7 +355,7 @@ void rdb::side_make_snip(const std::array<glm::vec4, 4>& v, snip& S, const glm::
   }
 }
 
-
+/*
 ///
 /// \brief rdb::make_Yn
 /// \param SideYn
@@ -847,6 +842,7 @@ void rdb::make_Yp(std::vector<snip>& SideYp)
 }
 
 
+
 ///
 /// \brief rdb::remove_rig_Yp
 /// \param Pt
@@ -877,7 +873,7 @@ void rdb::remove_rig(const i3d& pRm)
       MapRigs[pTst] = rig{pTst};             //  то его следует создать
       RigTst = get(pTst);                    // Получить указатель на созданного соседа
     }
-    side_wipeoff(RigTst->SideYn);            // Очистить изображение стороны(если есть)
+    box_wipeoff(RigTst->SideYn);            // Очистить изображение стороны(если есть)
     make_Yn(RigTst->SideYn);                 // Построить нижнюю стенку
     box_display(RigTst->SideYp, pTst);      // Записать в графический буфер
     RigTst->in_vbo = true;
@@ -886,7 +882,7 @@ void rdb::remove_rig(const i3d& pRm)
   {    // если сосед присутствует, то обновить его нижнюю стенку
     if(nullptr != RigTst)
     {
-      side_wipeoff(RigTst->SideYn);          // Очистить изображение стороны(если есть)
+      box_wipeoff(RigTst->SideYn);          // Очистить изображение стороны(если есть)
       make_Yn(RigTst->SideYn);               // Построить нижнюю стенку
       box_display(RigTst->SideYp, pTst);    // Записать в графический буфер
       RigTst->in_vbo = true;
@@ -903,7 +899,7 @@ void rdb::remove_rig(const i3d& pRm)
       MapRigs[pTst] = rig{pTst};                   //  то его следует создать
       RigTst = get(pTst);                          // Получить указатель на созданного соседа
     }
-    side_wipeoff(RigTst->SideYp);                  // Очистить изображение стороны(если есть)
+    box_wipeoff(RigTst->SideYp);                  // Очистить изображение стороны(если есть)
     make_Yp(RigTst->SideYp);                       // Построить нижнюю стенку
     box_display(RigTst->SideYp, pTst);            // Записать в графический буфер
     RigTst->in_vbo = true;
@@ -912,7 +908,7 @@ void rdb::remove_rig(const i3d& pRm)
   {    // если сосед присутствует, то обновить его нижнюю стенку
     if(nullptr != RigTst)
     {
-      side_wipeoff(RigTst->SideYp);                 // Очистить изображение стороны(если есть)
+      box_wipeoff(RigTst->SideYp);                 // Очистить изображение стороны(если есть)
       make_Yp(RigTst->SideYp);                      // Построить нижнюю стенку
       box_display(RigTst->SideYp, pTst);           // Записать в графический буфер
       RigTst->in_vbo = true;
@@ -959,6 +955,7 @@ void rdb::remove_rig(const i3d& pRm)
   rig_wipeoff(RigRm);
   MapRigs.erase(pRm);             // Удалить риг из БД
 }
+
 
 
 ///
@@ -1014,6 +1011,7 @@ void rdb::sub_yp(const i3d& Pt)
   rig_display(R);     // записать модифицированый риг в графический буфер
 }
 
+*/
 
 ///
 /// \brief Загрузка из базы данных в оперативную память блока пространства
@@ -1034,7 +1032,7 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
 
   VBO->clear();
   MapRigs.clear();
-  VisibleSnips.clear();
+  Visible.clear();
   render_points = 0;
 
   // Загрузка из базы данных
@@ -1064,10 +1062,10 @@ void rdb::gen_rig(const i3d& P)
   R->Boxes.push_back(B);                 // разместить в риг
 
   // после построения рига необходимо выполнить пересчет видимости сторон
-  recalc_visibility(R);
+  //recalc_visibility(R);
 }
 
-
+/*
 ///
 /// \brief rdb::recalc_visibility
 /// \param R0
@@ -1111,7 +1109,7 @@ void rdb::recalc_visibility(rig* R0)
   }
 
 }
-
+*/
 
 ///
 /// \brief rdb::search_down
