@@ -5,7 +5,7 @@ in vec2 vFragment; // 2D коодината в текстурной карте
 in vec4 vColor;    // цвет вершины (r,g,b,a)
 
 uniform sampler2D texture_0;  // координаты текстуры
-//uniform float tex_transp;     // прозрачность текстуры
+//uniform float tex_transp;   // прозрачность текстуры
 uniform uint Xid;             // индекс вершины для определения выделенного фрагмента
 
 layout(location = 0) out vec4 FragColor;

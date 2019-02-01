@@ -199,8 +199,20 @@ GLsizeiptr vbo_ext::data_append(const GLvoid* data, GLsizeiptr data_size)
   glBindBuffer(gl_buffer_type, 0);
   GLsizeiptr res = hem;
   hem += data_size;
-  //glFlush();
-  //glFinish();
+
+/*
+//DEBUG
+  size_t j = 0;
+  std::array<GLfloat, digits_per_snip> ArrDebug;
+  memcpy(ArrDebug.data(), data, data_size);
+  for (size_t i = 0; i < 4; i ++) {
+    for (size_t k = 0; k < digits_per_vertex; ++k) {
+      std::printf("%3.2f, ", ArrDebug[j++]);
+    }
+    std::cout << "\n";
+  }
+  std::cout << "\n";
+*/
 
   return res;
 }

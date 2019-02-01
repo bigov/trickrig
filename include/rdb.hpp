@@ -69,7 +69,7 @@ class rdb
     void snip_analyze(snip_ext& S);
     void gen_rig(const i3d&);
 
-    //void recalc_visibility(rig*);
+    void recalc_visibility(rig*);
 
     //void snip_update(GLfloat* s_data, const f3d &Point, GLsizeiptr dist); // код метода в конце файла .cpp
 

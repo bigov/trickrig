@@ -33,13 +33,29 @@ namespace tr {
 #define SIDES_COUNT  6
 #
 #define VERT_PER_BOX 8
+#define VERT_PER_SIDE 4
 #
+#define SPLICE_SIZE 8
+#
+//#define UCH_MAX 255
 
-class splice: public std::vector<GLfloat*>
+
+struct splice
 {
-public:
-  bool operator== (splice& Other);
+  splice(void);
+  bool on = false;
+  u_char data[SPLICE_SIZE];
   bool operator!= (splice& Other);
+};
+
+///
+/// \brief The uch3 struct
+/// \details Максимальное значение координаты = 255
+///
+struct uch3
+{
+  u_char
+  x = 0, y = 0, z = 0;
 };
 
 class box
@@ -55,14 +71,14 @@ private:
   // из (8*4) float, плюс 24 однобайтовых индекса. Кроме того, это позволяет
   // проще изменять форму бокса перемещая меньшее число вершин, чем если-бы
   // они хранились отдельно для каждой стороны.
-  std::array<f3d, VERT_PER_BOX>   AllCoords   {}; // координаты 8 вершин
-  std::array<a_uch4, SIDES_COUNT> CursorCoord {}; // курсор на координаты
+  std::array<uch3, VERT_PER_BOX>   AllCoords   {}; // отностичельные координаты 8 вершин внутри бокса
+  std::array<a_uch4, SIDES_COUNT> CursorCoord  {}; // курсор на координаты
 
   // AllColors - массив цветов вершин позволяет задавать цвета каждой вершины
   // каждой из сторон отдельно, но инициализируется одним цветом по-умолчанию.
   // После инициализации CursorColor указывает на один цвет для всех вершин.
-  std::vector<color>              AllColors    {};  // цвета вершин
-  std::array<a_uch4, SIDES_COUNT> CursorColor  {};  // указатель цветов вершин
+  std::vector<color>              AllColors;   // цвета вершин
+  std::array<a_uch4, SIDES_COUNT> CursorColor; // указатель цветов вершин
 
   std::vector<normal>             AllNormals   {}; // Направления нормалей вершин
   std::array<a_uch4, SIDES_COUNT> CursorNormal {}; // курсор на нормали каждой вершины
@@ -71,12 +87,10 @@ private:
   std::array<a_uch4, SIDES_COUNT> CursorTexture{}; // курсор на коорд. текстуры вершин
 
   std::array<splice, SIDES_COUNT>      Splice {}; // коорднаты стыка с соседним ригом
-  // Положения блоков данных по каждой из сторон в буфере GPU
-  GLsizeiptr  offset[SIDES_COUNT] = {0, 0, 0, 0, 0, 0};
-  // Видимость сторон по умолчанию включена. Для выключения необходимо сравнить с боксами соседних ригов
-  bool visible [SIDES_COUNT] = {true, true, true, true, true, true};
 
+  GLsizeiptr offset[SIDES_COUNT];  // Положения блоков данных по каждой из сторон в буфере GPU
   void init_arrays(void);
+  bool visible[SIDES_COUNT];       // Видимость сторон
 
   // расчет стыков для каждой из сторон
   void splice_side_xp(void);
@@ -88,14 +102,16 @@ private:
 
 public:
   // конструктор с генератором вершин и значениями по-умолчанию
-  box(f3d Base={0.f, 0.f, 0.f}, float lx=1.f, float ly=1.f, float lz=1.f);
+  box(uch3 Base={0, 0, 0}, u_char lx = UCHAR_MAX, u_char ly = UCHAR_MAX, u_char lz = UCHAR_MAX);
   // Конструктор бокса из массива вершин
-  box(const std::array<f3d, 8>&);
-  ~box() {}
+  box(const std::array<uch3, VERT_PER_BOX>&);
+  ~box(void) {}
 
+  void visible_check(u_char side_id, box&);
+  void visible_recheck(u_char side_id, box&);
+  splice splice_get(u_char side_id);
   void splice_calc(u_char side_id);
-  void side_fill_data(u_char side_id, std::array<GLfloat, digits_per_snip>& data);
-  bool is_visible(u_char side_id, splice& S);
+  bool side_fill_data(u_char side_id, std::array<GLfloat, digits_per_snip>& data);
   void offset_write(u_char side_id, GLsizeiptr n);
   GLsizeiptr offset_read(u_char side_id);
   void offset_replace(GLsizeiptr old_n, GLsizeiptr new_n);

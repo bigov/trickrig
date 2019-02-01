@@ -4,27 +4,53 @@ namespace tr
 {
 
 ///
-/// \brief splice::operator !=
+/// \brief cross
+/// \param s
+/// \return
+///
+u_char opposite(u_char s)
+{
+  switch (s) {
+    case SIDE_XP:
+      return SIDE_XN;
+      break;
+    case SIDE_XN:
+      return SIDE_XP;
+      break;
+    case SIDE_YP:
+      return SIDE_YN;
+      break;
+    case SIDE_YN:
+      return SIDE_YP;
+      break;
+    case SIDE_ZP:
+      return SIDE_ZN;
+      break;
+    case SIDE_ZN:
+      return SIDE_ZP;
+      break;
+    default: return UCHAR_MAX;
+  }
+}
+
+
+///
+/// \brief splice::splice
+///
+splice::splice(void)
+{
+  for (size_t i = 0; i < SPLICE_SIZE; ++i) data[i] = 0;
+}
+
+
+///
+/// \brief splice::operator!=
 /// \param Other
 /// \return
 ///
 bool splice::operator!= (splice& Other)
 {
-  return (!(*this == Other));
-}
-
-
-///
-/// \brief splice::operator ==
-/// \param Other
-/// \return
-///
-bool splice::operator== (splice& Other)
-{
-  size_t n = this->size();
-  if(Other.size() != n) return false;
-
-  for(size_t i=0; i<n; ++i) if( *((*this)[i]) != *Other[i] ) return false;
+  for(size_t i = 0; i < SPLICE_SIZE; ++i) if( data[i] == Other.data[i] ) return false;
   return true;
 }
 
@@ -34,17 +60,17 @@ bool splice::operator== (splice& Other)
 /// \param V
 /// \param l
 ///
-box::box(f3d B, float lx, float ly, float lz)
+box::box(uch3 B, u_char lx, u_char ly, u_char lz)
 {
   AllCoords = {
-    f3d{ B.x     , B.y + ly, B.z + lz },
-    f3d{ B.x + lx, B.y + ly, B.z + lz },
-    f3d{ B.x + lx, B.y + ly, B.z      },
-    f3d{ B.x     , B.y + ly, B.z      },
-    f3d{ B.x     , B.y     , B.z + lz },
-    f3d{ B.x + lx, B.y     , B.z + lz },
-    f3d{ B.x + lx, B.y     , B.z      },
-    f3d{ B.x     , B.y     , B.z      }
+    uch3{ B.x             , u_char(B.y + ly), u_char(B.z + lz) },
+    uch3{ u_char(B.x + lx), u_char(B.y + ly), u_char(B.z + lz) },
+    uch3{ u_char(B.x + lx), u_char(B.y + ly), B.z              },
+    uch3{ B.x             , u_char(B.y + ly), B.z              },
+    uch3{ B.x             , B.y             , u_char(B.z + lz) },
+    uch3{ u_char(B.x + lx), B.y             , u_char(B.z + lz) },
+    uch3{ u_char(B.x + lx), B.y             , B.z              },
+    uch3{ B.x             , B.y             , B.z              }
   };
   init_arrays();
 }
@@ -55,7 +81,7 @@ box::box(f3d B, float lx, float ly, float lz)
 /// \param V
 /// \details Конструктор бокса по готовому набору из 8 вершин
 ///
-box::box(const std::array<f3d, 8>& Arr)
+box::box(const std::array<uch3, VERT_PER_BOX>& Arr)
 {
   AllCoords = Arr;
   init_arrays();
@@ -67,7 +93,15 @@ box::box(const std::array<f3d, 8>& Arr)
 ///
 void box::init_arrays(void)
 {
-  AllColors = { color{} }; // цвет по-умолчанию для всех вершин
+  //offset   = {0, 0, 0, 0, 0, 0};
+  for (auto i = 0; i < SIDES_COUNT; ++i)
+  {
+    offset[i] = 0;
+    // Видимость сторон по умолчанию включена. Для выключения необходимо сравнить с боксами соседних ригов
+    visible[i] = true;
+  }
+
+  AllColors = { color{1.f, 1.f, 1.f, 1.f} }; // цвет по-умолчанию для всех вершин
 
   AllNormals = { // Направление нормалей по сторонам
     { 1.0f, 0.0f, 0.0f }, //xp
@@ -130,31 +164,41 @@ void box::init_arrays(void)
 /// \param s
 /// \details Заполнение массива стороны данными
 ///
-void box::side_fill_data(u_char side, std::array<GLfloat, digits_per_snip>& data)
+bool box::side_fill_data(u_char side, std::array<GLfloat, digits_per_snip>& data)
 {
-  for(size_t n = 0; n < vertices_per_snip; n++)
+  if(!visible[side]) return false;
+
+  uch3 Coord;
+  color Color;
+  normal Normal;
+  texture Texture;
+  size_t i = 0;
+
+  for(size_t n = 0; n < vertices_per_snip; ++n)
   {
-    auto Coord   = AllCoords  [CursorCoord  [side][n]];
-    auto Color   = AllColors  [CursorColor  [side][n]];
-    auto Normal  = AllNormals [CursorNormal [side][n]];
-    auto Texture = AllTextures[CursorTexture[side][n]];
+    Coord   = AllCoords  [(CursorCoord  [side][n])];
+    Color   = AllColors  [(CursorColor  [side][n])];
+    Normal  = AllNormals [(CursorNormal [side][n])];
+    Texture = AllTextures[(CursorTexture[side][n])];
 
-    data[ROW_SIZE * n + X] = Coord.x;
-    data[ROW_SIZE * n + Y] = Coord.y;
-    data[ROW_SIZE * n + Z] = Coord.x;
+    data[i++] = Coord.x/255.f;
+    data[i++] = Coord.y/255.f;
+    data[i++] = Coord.z/255.f;
 
-    data[ROW_SIZE * n + R] = Color.r;
-    data[ROW_SIZE * n + G] = Color.g;
-    data[ROW_SIZE * n + B] = Color.b;
-    data[ROW_SIZE * n + A] = Color.a;
+    data[i++] = Color.r;
+    data[i++] = Color.g;
+    data[i++] = Color.b;
+    data[i++] = Color.a;
 
-    data[ROW_SIZE * n + NX] = Normal.nx;
-    data[ROW_SIZE * n + NY] = Normal.ny;
-    data[ROW_SIZE * n + NZ] = Normal.nz;
+    data[i++] = Normal.nx;
+    data[i++] = Normal.ny;
+    data[i++] = Normal.nz;
 
-    data[ROW_SIZE * n + U] = Texture.u;
-    data[ROW_SIZE * n + V] = Texture.v;
+    data[i++] = Texture.u;
+    data[i++] = Texture.v;
   }
+
+  return true;
 }
 
 
@@ -195,12 +239,17 @@ GLsizeiptr box::offset_read(u_char side_id)
 void box::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
 {
   u_char side_id;
-  for (side_id = 0; side_id < SIDES_COUNT; ++side_id) {
-    if(offset[side_id] == old_n) offset[side_id] = new_n;
+  for (side_id = 0; side_id < SIDES_COUNT; ++side_id)
+  {
+    if(offset[side_id] == old_n)
+    {
+      offset[side_id] = new_n;
+      return;
+    }
   }
 #ifndef NDEBUG
   if(!visible[side_id]) info("box::offset_replace for unvisible side.");
-  if(side_id == SIDES_COUNT) info("box::offset_replace ERR.");
+  info("box::offset_replace ERR.");
 #endif
 }
 
@@ -220,16 +269,39 @@ u_char box::side_id_by_offset(GLsizeiptr n)
 
 
 ///
-/// \brief box::visible
-/// \param s
-/// \param V1
-/// \return Отображать сторону или нет
+/// \brief box::splice_get
+/// \param side_id
+/// \return
 ///
-/// \details сторона отображается если сплайсы не совпадют
-///
-bool box::is_visible(u_char s, splice& V1)
+splice box::splice_get(u_char side_id)
 {
-  return (Splice[s] != V1);
+  return Splice[side_id];
+}
+
+
+///
+/// \brief box::visible_check
+/// \param side_id
+/// \param Sp
+///
+void box::visible_check(u_char side_id, box& B1)
+{
+  visible_recheck(side_id, B1);
+  B1.visible_recheck(opposite(side_id), *this);
+}
+
+
+///
+/// \brief box::visible_recheck
+/// \param side_id
+/// \param B1
+///
+void box::visible_recheck(u_char side_id, box& B1)
+{
+  splice Sp1 = B1.splice_get(opposite(side_id));
+  visible[side_id] = (Splice[side_id] != Sp1);
+  if(!Sp1.on) visible[side_id] = true;
+  if(!Splice[side_id].on) visible[side_id] = true;
 }
 
 
@@ -264,6 +336,7 @@ void box::splice_calc(u_char side_id)
   }
 }
 
+
 ///
 /// \brief box::splice_side_xp
 ///
@@ -272,18 +345,13 @@ void box::splice_side_xp(void)
   u_char s = SIDE_XP;
   a_uch4 id = CursorCoord[s]; // Индексы вершин для расчета сплайса
 
-  size_t n = id.size();
-  Splice[s].clear();
-  Splice[s].resize(n);
-
-  bool all_top = true;
-  for(u_char i = 0; i < n; ++i)
+  Splice[s].on = true;
+  for(u_char i = 0; i < VERT_PER_SIDE; ++i)
   {
-    if(AllCoords[id[i]].x != 1.0f)  all_top = false;
-    Splice[s][i*2]   = &AllCoords[id[i]].y;
-    Splice[s][i*2+1] = &AllCoords[id[i]].z;
+    if(AllCoords[id[i]].x != UCHAR_MAX)  Splice[s].on = false;
+    Splice[s].data[i*2]    = AllCoords[id[i]].y;
+    Splice[s].data[i*2+1]  = AllCoords[id[i]].z;
   }
-  if(!all_top) Splice[s].clear();
 }
 
 
@@ -297,18 +365,13 @@ void box::splice_side_xn(void)
   // обратной стороны выбираются в обратном направлении
   a_uch4 id = { CursorCoord[s][1], CursorCoord[s][0], CursorCoord[s][3], CursorCoord[s][2] };
 
-  size_t n = id.size();
-  Splice[s].clear();
-  Splice[s].resize(n);
-
-  bool all_top = true;
-  for(u_char i = 0; i < n; ++i)
+  Splice[s].on = true;
+  for(u_char i = 0; i < VERT_PER_SIDE; ++i)
   {
-    if(AllCoords[id[i]].x !=-1.0f)  all_top = false;
-    Splice[s][i*2]   = &AllCoords[id[i]].y;
-    Splice[s][i*2+1] = &AllCoords[id[i]].z;
+    if(AllCoords[id[i]].x != 0)  Splice[s].on = false;
+    Splice[s].data[i*2]   = AllCoords[id[i]].y;
+    Splice[s].data[i*2+1] = AllCoords[id[i]].z;
   }
-  if(!all_top) Splice[s].clear();
 }
 
 
@@ -321,18 +384,13 @@ void box::splice_side_yp(void)
   // Индексы вершин, используемых для расчета сплайса
   a_uch4 id = CursorCoord[s];
 
-  size_t n = id.size();
-  Splice[s].clear();
-  Splice[s].resize(n);
-
-  bool all_top = true;
-  for(u_char i = 0; i < n; ++i)
+  Splice[s].on = true;
+  for(u_char i = 0; i < VERT_PER_SIDE; ++i)
   {
-    if(AllCoords[id[i]].y != 1.0f)  all_top = false;
-    Splice[s][i*2]   = &AllCoords[id[i]].x;
-    Splice[s][i*2+1] = &AllCoords[id[i]].z;
+    if(AllCoords[id[i]].y != UCHAR_MAX)  Splice[s].on = false;
+    Splice[s].data[i*2]   = AllCoords[id[i]].x;
+    Splice[s].data[i*2+1] = AllCoords[id[i]].z;
   }
-  if(!all_top) Splice[s].clear();
 }
 
 
@@ -346,18 +404,13 @@ void box::splice_side_yn(void)
   // выбираются в обратном направлении
   a_uch4 id = { CursorCoord[s][1], CursorCoord[s][0], CursorCoord[s][3], CursorCoord[s][2] };
 
-  size_t n = id.size();
-  Splice[s].clear();
-  Splice[s].resize(n);
-
-  bool all_top = true;
-  for(u_char i = 0; i < n; ++i)
+  Splice[s].on = true;
+  for(u_char i = 0; i < VERT_PER_SIDE; ++i)
   {
-    if(AllCoords[id[i]].y !=-1.0f)  all_top = false;
-    Splice[s][i*2]   = &AllCoords[id[i]].x;
-    Splice[s][i*2+1] = &AllCoords[id[i]].z;
+    if(AllCoords[id[i]].y != 0) Splice[s].on = false;
+    Splice[s].data[i*2]   = AllCoords[id[i]].x;
+    Splice[s].data[i*2+1] = AllCoords[id[i]].z;
   }
-  if(!all_top) Splice[s].clear();
 }
 
 
@@ -370,18 +423,13 @@ void box::splice_side_zp(void)
   // Индексы вершин, используемых для расчета сплайса
   a_uch4 id = CursorCoord[s];
 
-  size_t n = id.size();
-  Splice[s].clear();
-  Splice[s].resize(n);
-
-  bool all_top = true;
-  for(u_char i = 0; i < n; ++i)
+  Splice[s].on = true;
+  for(u_char i = 0; i < VERT_PER_SIDE; ++i)
   {
-    if(AllCoords[id[i]].z != 1.0f) all_top = false;
-    Splice[s][i*2]   = &AllCoords[id[i]].x;
-    Splice[s][i*2+1] = &AllCoords[id[i]].y;
+    if(AllCoords[id[i]].z != UCHAR_MAX) Splice[s].on = false;
+    Splice[s].data[i*2]   = AllCoords[id[i]].x;
+    Splice[s].data[i*2+1] = AllCoords[id[i]].y;
   }
-  if(!all_top) Splice[s].clear();
 }
 
 
@@ -395,18 +443,13 @@ void box::splice_side_zn(void)
   // выбираются в обратном направлении
   a_uch4 id = { CursorCoord[s][1], CursorCoord[s][0], CursorCoord[s][3], CursorCoord[s][2] };
 
-  size_t n = id.size();
-  Splice[s].clear();
-  Splice[s].resize(n);
-
-  bool all_top = true;
-  for(u_char i = 0; i < n; ++i)
+  Splice[s].on = true;
+  for(u_char i = 0; i < VERT_PER_SIDE; ++i)
   {
-    if(AllCoords[id[i]].z !=-1.0f) all_top = false;
-    Splice[s][i*2]   = &AllCoords[id[i]].x;
-    Splice[s][i*2+1] = &AllCoords[id[i]].y;
+    if(AllCoords[id[i]].z != 0) Splice[s].on = false;
+    Splice[s].data[i*2]   = AllCoords[id[i]].x;
+    Splice[s].data[i*2+1] = AllCoords[id[i]].y;
   }
-  if(!all_top) Splice[s].clear();
 }
 
 } //tr

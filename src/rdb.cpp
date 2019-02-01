@@ -262,21 +262,23 @@ void rdb::rig_display(rig* R)
 void rdb::box_display(box& B, const f3d& P)
 {
   //для каждой стороны надо построить свой снип и разместить его в VBO
-  u_char side_id = SIDE_XP;
-
-  std::array <GLfloat, digits_per_snip> buffer{};
-  B.side_fill_data(side_id, buffer);
-
-  for(size_t n = 0; n < vertices_per_snip; n++)
+  for (u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
-    buffer[ROW_SIZE * n + X] += P.x;
-    buffer[ROW_SIZE * n + Y] += P.y;
-    buffer[ROW_SIZE * n + Z] += P.z;
+    std::array <GLfloat, digits_per_snip> buffer{};
+    if(B.side_fill_data(side_id, buffer))
+    {
+      for(size_t n = 0; n < vertices_per_snip; n++)
+      {
+        buffer[ROW_SIZE * n + X] += P.x;
+        buffer[ROW_SIZE * n + Y] += P.y;
+        buffer[ROW_SIZE * n + Z] += P.z;
+      }
+      auto offset = VBO->data_append(buffer.data(),  bytes_per_snip); // записать в VBO
+      render_points += indices_per_snip;                              // увеличить число точек рендера
+      B.offset_write(side_id, offset);                                // записать адрес смещения в VBO
+      Visible[offset] = &B;                                           // добавить ссылку на бокс
+    }
   }
-  auto offset = VBO->data_append(buffer.data(),  bytes_per_snip);// записать в VBO
-  render_points += indices_per_snip;                             // увеличить число точек рендера
-  B.offset_write(side_id, offset);                               // записать адрес смещения в VBO
-  Visible[offset] = &B;                                     // добавить ссылку на бокс
 }
 
 
@@ -1043,6 +1045,7 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
   {
     gen_rig({x, 0, z});
   }
+
 }
 
 
@@ -1055,17 +1058,17 @@ void rdb::gen_rig(const i3d& P)
   MapRigs[P] = rig{P};
   rig* R = get(P);
 
-  box B {f3d{0.0f, 0.0f, 0.0f}, 1.f, 0.2f};
+  box B { {0, 0, 0}, 255, 50};
 
   //B.texture_set(AppWin.texYp.u, AppWin.texYp.v);
 
   R->Boxes.push_back(B);                 // разместить в риг
 
   // после построения рига необходимо выполнить пересчет видимости сторон
-  //recalc_visibility(R);
+  recalc_visibility(R);
 }
 
-/*
+
 ///
 /// \brief rdb::recalc_visibility
 /// \param R0
@@ -1073,43 +1076,24 @@ void rdb::gen_rig(const i3d& P)
 void rdb::recalc_visibility(rig* R0)
 {
   rig* R1 = get({R0->Origin.x + lod, R0->Origin.y, R0->Origin.z});
-  for(box B0: R0->Boxes) for(box B1: R1->Boxes)
-  {
-    if(B0.Splice[SIDE_XP] == B1.Splice[SIDE_XN]) B0.visible[SIDE_XP] = true;
-  }
+  if(nullptr != R1) for(box& B0: R0->Boxes) for(box& B1: R1->Boxes) B0.visible_check(SIDE_XP, B1);
 
   R1 = get({R0->Origin.x - lod, R0->Origin.y, R0->Origin.z});
-  for(box B0: R0->Boxes) for(box B1: R1->Boxes)
-  {
-    if(B0.Splice[SIDE_XN] == B1.Splice[SIDE_XP]) B0.visible[SIDE_XN] = false;
-  }
+  if(nullptr != R1) for(box& B0: R0->Boxes) for(box& B1: R1->Boxes) B0.visible_check(SIDE_XN, B1);
 
   R1 = get({R0->Origin.x, R0->Origin.y + lod, R0->Origin.z});
-  for(box B0: R0->Boxes) for(box B1: R1->Boxes)
-  {
-    if(B0.Splice[SIDE_YP] == B1.Splice[SIDE_YN]) B0.visible[SIDE_YP] = true;
-  }
+  if(nullptr != R1) for(box& B0: R0->Boxes) for(box& B1: R1->Boxes) B0.visible_check(SIDE_YP, B1);
 
   R1 = get({R0->Origin.x, R0->Origin.y - lod, R0->Origin.z});
-  for(box B0: R0->Boxes) for(box B1: R1->Boxes)
-  {
-    if(B0.Splice[SIDE_YN] == B1.Splice[SIDE_YP]) B0.visible[SIDE_YN] = false;
-  }
+  if(nullptr != R1) for(box& B0: R0->Boxes) for(box& B1: R1->Boxes) B0.visible_check(SIDE_YN, B1);
 
-  R1 = get({R0->Origin.x, R0->Origin.y, R0->Origin.z + lod});
-  for(box B0: R0->Boxes) for(box B1: R1->Boxes)
-  {
-    if(B0.Splice[SIDE_ZP] == B1.Splice[SIDE_ZN]) B0.visible[SIDE_ZP] = true;
-  }
+  R1 = get({R0->Origin.x - lod, R0->Origin.y, R0->Origin.z + lod});
+  if(nullptr != R1) for(box& B0: R0->Boxes) for(box& B1: R1->Boxes) B0.visible_check(SIDE_ZP, B1);
 
-  R1 = get({R0->Origin.x, R0->Origin.y, R0->Origin.z - lod});
-  for(box B0: R0->Boxes) for(box B1: R1->Boxes)
-  {
-    if(B0.Splice[SIDE_ZN] == B1.Splice[SIDE_ZP]) B0.visible[SIDE_ZN] = false;
-  }
-
+  R1 = get({R0->Origin.x - lod, R0->Origin.y, R0->Origin.z - lod});
+  if(nullptr != R1) for(box& B0: R0->Boxes) for(box& B1: R1->Boxes) B0.visible_check(SIDE_ZN, B1);
 }
-*/
+
 
 ///
 /// \brief rdb::search_down
