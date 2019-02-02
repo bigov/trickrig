@@ -29,7 +29,11 @@ u_char opposite(u_char s)
     case SIDE_ZN:
       return SIDE_ZP;
       break;
-    default: return UCHAR_MAX;
+    default:
+#ifndef NDEBUG
+      info("no opposite for side = " + std::to_string(s));
+#endif
+      return UCHAR_MAX;
   }
 }
 
@@ -96,9 +100,9 @@ void box::init_arrays(void)
   //offset   = {0, 0, 0, 0, 0, 0};
   for (auto i = 0; i < SIDES_COUNT; ++i)
   {
-    offset[i] = 0;
-    // Видимость сторон по умолчанию включена. Для выключения необходимо сравнить с боксами соседних ригов
+    offset[i]  = 0;
     visible[i] = true;
+    tex_id[i]  = {0, 0};
   }
 
   AllColors = { color{1.f, 1.f, 1.f, 1.f} }; // цвет по-умолчанию для всех вершин
@@ -110,13 +114,6 @@ void box::init_arrays(void)
     { 0.0f,-1.0f, 0.0f }, //yn
     { 0.0f, 0.0f, 1.0f }, //zp
     { 0.0f, 0.0f,-1.0f }  //zn
-  };
-
-  AllTextures = { // текстура по-умолчанию для всех 6 сторон
-    {0.0f, 0.0f},
-    {u_sz, 0.0f},
-    {u_sz, u_sz},
-    {0.0f, u_sz}
   };
 
   CursorCoord = { // индексы координат из массива вершин, для построения сторон
@@ -146,16 +143,17 @@ void box::init_arrays(void)
     a_uch4{ 5, 5, 5, 5 }, //z-
   };
 
-  CursorTexture = {
-    a_uch4{ 0, 1, 2, 3 }, //x+
-    a_uch4{ 0, 1, 2, 3 }, //x-
-    a_uch4{ 0, 1, 2, 3 }, //y+
-    a_uch4{ 0, 1, 2, 3 }, //y-
-    a_uch4{ 0, 1, 2, 3 }, //z+
-    a_uch4{ 0, 1, 2, 3 }, //z-
-  };
-
-  for(u_char id = 0; id < SIDES_COUNT; ++id) splice_calc(id);
+  for(u_char s_id = 0; s_id < SIDES_COUNT; ++s_id)
+  {
+    splice_calc(s_id);
+    for(u_char v_i = 0; v_i < VERT_PER_SIDE; ++v_i)
+    {
+      Texture2d[VERT_PER_SIDE * s_id + v_i].u =
+          u_sz * (tex_id[s_id].u * 1.f + Splice[s_id].data[2*v_i]/255.f);
+      Texture2d[VERT_PER_SIDE * s_id + v_i].v =
+          v_sz * (tex_id[s_id].v * 1.f + (255-Splice[s_id].data[2*v_i+1])/255.f);
+    }
+  }
 }
 
 
@@ -171,15 +169,13 @@ bool box::side_fill_data(u_char side, std::array<GLfloat, digits_per_snip>& data
   uch3 Coord;
   color Color;
   normal Normal;
-  texture Texture;
   size_t i = 0;
 
   for(size_t n = 0; n < vertices_per_snip; ++n)
   {
-    Coord   = AllCoords  [(CursorCoord  [side][n])];
-    Color   = AllColors  [(CursorColor  [side][n])];
-    Normal  = AllNormals [(CursorNormal [side][n])];
-    Texture = AllTextures[(CursorTexture[side][n])];
+    Coord   = AllCoords [(CursorCoord  [side][n])];
+    Color   = AllColors [(CursorColor  [side][n])];
+    Normal  = AllNormals[(CursorNormal [side][n])];
 
     data[i++] = Coord.x/255.f;
     data[i++] = Coord.y/255.f;
@@ -194,10 +190,9 @@ bool box::side_fill_data(u_char side, std::array<GLfloat, digits_per_snip>& data
     data[i++] = Normal.ny;
     data[i++] = Normal.nz;
 
-    data[i++] = Texture.u;
-    data[i++] = Texture.v;
+    data[i++] = Texture2d[VERT_PER_SIDE * side + n].u;
+    data[i++] = Texture2d[VERT_PER_SIDE * side + n].v;
   }
-
   return true;
 }
 
@@ -402,7 +397,7 @@ void box::splice_side_yn(void)
   u_char s = SIDE_YN;
   // Индексы вершин, используемых для расчета сплайса обратной стороны
   // выбираются в обратном направлении
-  a_uch4 id = { CursorCoord[s][1], CursorCoord[s][0], CursorCoord[s][3], CursorCoord[s][2] };
+  a_uch4 id = { CursorCoord[s][3], CursorCoord[s][2], CursorCoord[s][1], CursorCoord[s][0] };
 
   Splice[s].on = true;
   for(u_char i = 0; i < VERT_PER_SIDE; ++i)

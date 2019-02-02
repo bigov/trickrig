@@ -265,19 +265,18 @@ void rdb::box_display(box& B, const f3d& P)
   for (u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
     std::array <GLfloat, digits_per_snip> buffer{};
-    if(B.side_fill_data(side_id, buffer))
+    if(!B.side_fill_data(side_id, buffer)) continue;
+
+    for(size_t n = 0; n < vertices_per_snip; n++)
     {
-      for(size_t n = 0; n < vertices_per_snip; n++)
-      {
-        buffer[ROW_SIZE * n + X] += P.x;
-        buffer[ROW_SIZE * n + Y] += P.y;
-        buffer[ROW_SIZE * n + Z] += P.z;
-      }
-      auto offset = VBO->data_append(buffer.data(),  bytes_per_snip); // записать в VBO
-      render_points += indices_per_snip;                              // увеличить число точек рендера
-      B.offset_write(side_id, offset);                                // записать адрес смещения в VBO
-      Visible[offset] = &B;                                           // добавить ссылку на бокс
+      buffer[ROW_SIZE * n + X] += P.x;
+      buffer[ROW_SIZE * n + Y] += P.y;
+      buffer[ROW_SIZE * n + Z] += P.z;
     }
+    auto offset = VBO->data_append(buffer.data(),  bytes_per_snip); // записать в VBO
+    render_points += indices_per_snip;                              // увеличить число точек рендера
+    B.offset_write(side_id, offset);                                // записать адрес смещения в VBO
+    Visible[offset] = &B;                                           // добавить ссылку на бокс
   }
 }
 
@@ -1045,7 +1044,6 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
   {
     gen_rig({x, 0, z});
   }
-
 }
 
 
@@ -1057,15 +1055,8 @@ void rdb::gen_rig(const i3d& P)
 {
   MapRigs[P] = rig{P};
   rig* R = get(P);
-
-  box B { {0, 0, 0}, 255, 50};
-
-  //B.texture_set(AppWin.texYp.u, AppWin.texYp.v);
-
-  R->Boxes.push_back(B);                 // разместить в риг
-
-  // после построения рига необходимо выполнить пересчет видимости сторон
-  recalc_visibility(R);
+  R->Boxes.push_back(box{ {0, 0, 0}, 255, 255, 255});
+  recalc_visibility(R); // после построения рига необходимо выполнить пересчет видимости сторон
 }
 
 

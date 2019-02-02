@@ -153,8 +153,8 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
   };
 
   struct texture {
-      float u = 0.0f;
-      float v = 0.0f;
+      GLfloat u = 0.0f;
+      GLfloat v = 0.0f;
   };
 
   struct normal {

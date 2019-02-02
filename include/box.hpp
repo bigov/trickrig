@@ -48,6 +48,15 @@ struct splice
   bool operator!= (splice& Other);
 };
 
+
+struct uch2
+{
+  u_char
+  u = 0, v = 0;
+};
+
+
+
 ///
 /// \brief The uch3 struct
 /// \details Максимальное значение координаты = 255
@@ -83,10 +92,10 @@ private:
   std::vector<normal>             AllNormals   {}; // Направления нормалей вершин
   std::array<a_uch4, SIDES_COUNT> CursorNormal {}; // курсор на нормали каждой вершины
 
-  std::vector<texture>            AllTextures  {}; // координаты текстур
-  std::array<a_uch4, SIDES_COUNT> CursorTexture{}; // курсор на коорд. текстуры вершин
+  uch2 tex_id[SIDES_COUNT];                           // индексы текстур сторон
+  texture Texture2d[SIDES_COUNT * vertices_per_snip]; // координаты текстуры
 
-  std::array<splice, SIDES_COUNT>      Splice {}; // коорднаты стыка с соседним ригом
+  std::array<splice, SIDES_COUNT>  Splice {}; // координаты стыка с соседним ригом
 
   GLsizeiptr offset[SIDES_COUNT];  // Положения блоков данных по каждой из сторон в буфере GPU
   void init_arrays(void);
