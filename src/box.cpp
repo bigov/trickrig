@@ -64,17 +64,17 @@ bool splice::operator!= (splice& Other)
 /// \param V
 /// \param l
 ///
-box::box(uch3 B, u_char lx, u_char ly, u_char lz)
+box::box(uch3 B, uch3 L, void* r): ParentRig(r)
 {
   AllCoords = {
-    uch3{ B.x             , u_char(B.y + ly), u_char(B.z + lz) },
-    uch3{ u_char(B.x + lx), u_char(B.y + ly), u_char(B.z + lz) },
-    uch3{ u_char(B.x + lx), u_char(B.y + ly), B.z              },
-    uch3{ B.x             , u_char(B.y + ly), B.z              },
-    uch3{ B.x             , B.y             , u_char(B.z + lz) },
-    uch3{ u_char(B.x + lx), B.y             , u_char(B.z + lz) },
-    uch3{ u_char(B.x + lx), B.y             , B.z              },
-    uch3{ B.x             , B.y             , B.z              }
+    uch3{ B.x              , u_char(B.y + L.y), u_char(B.z + L.z) },
+    uch3{ u_char(B.x + L.x), u_char(B.y + L.y), u_char(B.z + L.z) },
+    uch3{ u_char(B.x + L.x), u_char(B.y + L.y), B.z               },
+    uch3{ B.x              , u_char(B.y + L.y), B.z               },
+    uch3{ B.x              , B.y              , u_char(B.z + L.z) },
+    uch3{ u_char(B.x + L.x), B.y              , u_char(B.z + L.z) },
+    uch3{ u_char(B.x + L.x), B.y              , B.z               },
+    uch3{ B.x              , B.y              , B.z               }
   };
   init_arrays();
 }
@@ -85,7 +85,7 @@ box::box(uch3 B, u_char lx, u_char ly, u_char lz)
 /// \param V
 /// \details Конструктор бокса по готовому набору из 8 вершин
 ///
-box::box(const std::array<uch3, VERT_PER_BOX>& Arr)
+box::box(const std::array<uch3, VERT_PER_BOX>& Arr, void* r): ParentRig(r)
 {
   AllCoords = Arr;
   init_arrays();
@@ -146,12 +146,13 @@ void box::init_arrays(void)
   for(u_char s_id = 0; s_id < SIDES_COUNT; ++s_id)
   {
     splice_calc(s_id);
+
     for(u_char v_i = 0; v_i < VERT_PER_SIDE; ++v_i)
     {
       Texture2d[VERT_PER_SIDE * s_id + v_i].u =
-          u_sz * (tex_id[s_id].u * 1.f + Splice[s_id].data[2*v_i]/255.f);
+          u_sz * tex_id[s_id].u + u_sz * Splice[s_id].data[2*v_i]/255.f;
       Texture2d[VERT_PER_SIDE * s_id + v_i].v =
-          v_sz * (tex_id[s_id].v * 1.f + (255-Splice[s_id].data[2*v_i+1])/255.f);
+          v_sz * tex_id[s_id].v + v_sz * (255-Splice[s_id].data[2*v_i+1])/255.f;
     }
   }
 }
@@ -166,29 +167,21 @@ bool box::side_fill_data(u_char side, std::array<GLfloat, digits_per_snip>& data
 {
   if(!visible[side]) return false;
 
-  uch3 Coord;
-  color Color;
-  normal Normal;
   size_t i = 0;
-
   for(size_t n = 0; n < vertices_per_snip; ++n)
   {
-    Coord   = AllCoords [(CursorCoord  [side][n])];
-    Color   = AllColors [(CursorColor  [side][n])];
-    Normal  = AllNormals[(CursorNormal [side][n])];
+    data[i++] = AllCoords[(CursorCoord[side][n])].x/255.f;
+    data[i++] = AllCoords[(CursorCoord[side][n])].y/255.f;
+    data[i++] = AllCoords[(CursorCoord[side][n])].z/255.f;
 
-    data[i++] = Coord.x/255.f;
-    data[i++] = Coord.y/255.f;
-    data[i++] = Coord.z/255.f;
+    data[i++] = AllColors[(CursorColor[side][n])].r;
+    data[i++] = AllColors[(CursorColor[side][n])].g;
+    data[i++] = AllColors[(CursorColor[side][n])].b;
+    data[i++] = AllColors[(CursorColor[side][n])].a;
 
-    data[i++] = Color.r;
-    data[i++] = Color.g;
-    data[i++] = Color.b;
-    data[i++] = Color.a;
-
-    data[i++] = Normal.nx;
-    data[i++] = Normal.ny;
-    data[i++] = Normal.nz;
+    data[i++] = AllNormals[(CursorNormal[side][n])].nx;
+    data[i++] = AllNormals[(CursorNormal[side][n])].ny;
+    data[i++] = AllNormals[(CursorNormal[side][n])].nz;
 
     data[i++] = Texture2d[VERT_PER_SIDE * side + n].u;
     data[i++] = Texture2d[VERT_PER_SIDE * side + n].v;
@@ -206,9 +199,24 @@ void box::offset_write(u_char side_id, GLsizeiptr n)
 {
 #ifndef NDEBUG
   if(side_id >= SIDES_COUNT) info("box::offset_write ERR: side_id >= SIDES_COUNT");
+  if(!visible[side_id]) info("box::offset_write ERR: using unvisible side");
 #endif
+
   offset[side_id] = n;
-  visible[side_id] = true;
+}
+
+
+///
+/// \brief box::side_id_offset
+/// \return
+/// \details По указанному смещению определяет какая сторона там находится
+///
+u_char box::side_id_offset(GLsizeiptr p)
+{
+  for (u_char i = 0; i < SIDES_COUNT; ++i) {
+    if(offset[i] == p) return i;
+  }
+  return SIDES_COUNT;
 }
 
 
@@ -216,13 +224,15 @@ void box::offset_write(u_char side_id, GLsizeiptr n)
 /// \brief box::offset_read
 /// \param side_id
 /// \return offset for side
+/// \details Для указанной стороны возвращает записаный адрес размещения блока данных в VBO
 ///
 GLsizeiptr box::offset_read(u_char side_id)
 {
 #ifndef NDEBUG
   if(side_id >= SIDES_COUNT) info("box::offset_read ERR: side_id >= SIDES_COUNT");
 #endif
-  return offset[side_id];
+  if(visible[side_id]) return offset[side_id];
+  return -1;
 }
 
 

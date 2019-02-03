@@ -389,6 +389,7 @@ void space::render_3d_space(void)
   // Нарисовать все за один проход можно так:
   //glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_points), GL_UNSIGNED_INT, nullptr);
 
+  // Параметр "Xid" содержит порядковый номер группы данных из буфера
   GLsizei max = (RigsDb0.render_points / indices_per_snip) * vertices_per_snip;
   for (GLsizei i = 0; i < max; i += vertices_per_snip)
   {

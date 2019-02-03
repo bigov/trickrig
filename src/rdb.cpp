@@ -84,61 +84,6 @@ bool rdb::is_top(const std::array<glm::vec4, 4>& V, size_t n)
 
 
 ///
-/// \brief rdb::snip_analise
-/// \param S
-///
-/// \details Установка значений ".lay" и "Origin"
-/// на основе анализ положения снипа в пространстве
-///
-void rdb::snip_analyze(snip_ext& S)
-{
-  std::array<glm::vec4, 4> V {};
-  glm::vec4 NS { 0.0f, 0.0f, 0.0f, 0.0f };
-
-  for(size_t i = 0; i <4; i++)
-  {
-    V[i] = S.vertex_coord(i);
-    NS += S.vertex_normal(i);
-  }
-
-  S.lay = lay_direction(NS);
-  switch (S.lay)
-  {
-    case SIDE_XP:
-      S.Origin = V[3];
-      if(is_top(V, 0)) S.Origin.y -= lod;
-      break;
-    case SIDE_XN:
-      S.Origin = V[2];
-      break;
-    case SIDE_YP:
-      S.Origin = V[3];
-      if(is_top(V, 1)) S.Origin.y -= lod;
-      break;
-    case SIDE_YN:
-      S.Origin = V[0];
-      break;
-    case SIDE_ZP:
-      S.Origin = V[2];
-      if(is_top(V, 2)) S.Origin.y -= lod;
-      break;
-    case SIDE_ZN:
-      S.Origin = V[3];
-      break;
-    case SIDES_COUNT:
-#ifndef NDEBUG
-      info("Undefined LAY direction.");
-#endif
-      break;
-  }
-
-  S.Origin.x = floor(S.Origin.x);
-  S.Origin.y = floor(S.Origin.y);
-  S.Origin.z = floor(S.Origin.z);
-}
-
-
-///
 /// \brief rdb::increase
 /// \param i
 ///
@@ -148,43 +93,13 @@ void rdb::increase(unsigned int i)
 {
   if(i > (render_points/indices_per_snip) * bytes_per_snip) return;
 
-  GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip; // + bytes_per_vertex;
-  snip_ext S{};
-  VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
-
-  snip_analyze(S);
-
-  /*
-  switch (S.lay)
-  {
-    case SIDE_XP:
-      add_xp(S.Origin);
-      break;
-    case SIDE_XN:
-      add_xn(S.Origin);
-      break;
-    case SIDE_YP:
-      add_yp(S.Origin);
-      break;
-    case SIDE_YN:
-      add_yn(S.Origin);
-      break;
-    case SIDE_ZP:
-      add_zp(S.Origin);
-      break;
-    case SIDE_ZN:
-      add_zn(S.Origin);
-      break;
-    case SIDES_COUNT:
-      break;
-  }
-  */
+  //GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip; // + bytes_per_vertex;
 }
 
 
 ///
 /// \brief rdb::decrease
-/// \param i
+/// \param i - порядковый номер группы данных из буфера
 ///
 /// \details Уменьшение объема с указанной стороны
 ///
@@ -192,36 +107,16 @@ void rdb::decrease(unsigned int i)
 {
   if(i > (render_points/indices_per_snip) * bytes_per_snip) return;
 
+  // При условии, что смещение данных в VBO начинается с нуля, по полученному
+  // через параметр номеру группы данных вычисляем адрес ее смещения в буфере
   GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip; // + bytes_per_vertex;
-  snip_ext S{};
-  VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
-  snip_analyze(S);                               //
 
-  /*
-  switch (S.lay)
-  {
-    case SIDE_XP:
-      sub_xp(S.Origin);
-      break;
-    case SIDE_XN:
-      sub_xn(S.Origin);
-      break;
-    case SIDE_YP:
-      sub_yp(S.Origin);
-      break;
-    case SIDE_YN:
-      sub_yn(S.Origin);
-      break;
-    case SIDE_ZP:
-      sub_zp(S.Origin);
-      break;
-    case SIDE_ZN:
-      sub_zn(S.Origin);
-      break;
-    case SIDES_COUNT:
-      break;
-  }
-  */
+  //VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
+
+  box* B = Visible[offset];             // По адресу смещения найдем бокс
+  //u_char s = B->side_id_offset(offset); // сторона в боксе
+  //rig_wipeoff(static_cast<rig*>(B->ParentRig));
+
 }
 
 
@@ -245,12 +140,12 @@ void rdb::rig_display(rig* R)
 
 
 ///
-/// \brief rdb::place_snip
-/// \param Side
+/// \brief rdb::box_display
+/// \param Box
 /// \param Point
 ///
 /// \brief
-/// Добавляет данные снипов указанной стороны в конец VBO
+/// Добавляет данные бокса в VBO
 ///
 /// \details
 /// Координаты вершин снипов хранятся в нормализованом виде, поэтому перед
@@ -275,7 +170,7 @@ void rdb::box_display(box& B, const f3d& P)
     }
     auto offset = VBO->data_append(buffer.data(),  bytes_per_snip); // записать в VBO
     render_points += indices_per_snip;                              // увеличить число точек рендера
-    B.offset_write(side_id, offset);                                // записать адрес смещения в VBO
+    B.offset_write(side_id, offset);                                // записать в бокс адрес смещения VBO
     Visible[offset] = &B;                                           // добавить ссылку на бокс
   }
 }
@@ -311,6 +206,7 @@ void rdb::box_wipeoff(box& Box)
   for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
     target = Box.offset_read(side_id);            // адрес снипа, подлежащий удалению
+    if(target < 0) continue;
     moving = VBO->remove(target, bytes_per_snip); // убрать снип из VBO и получить адрес смещения
                                                   // данных в VBO который изменился на target
 
@@ -757,78 +653,6 @@ void rdb::append_rig_Yp(const i3d& Pt)
 
 
 ///
-/// \brief rdb::add_y
-/// \details Увеличение размера по координате Y
-///
-void rdb::add_yp(const i3d& Pt)
-{
-  rig *R = get(Pt);         //1. Выбрать целевой риг
-
-#ifndef NDEBUG
-  if(nullptr == R)
-  {
-    info ("Error: call rdb::add_y for nullptr point: "
-          + std::to_string(Pt.x) + ", " + std::to_string(Pt.y) + ", " + std::to_string(Pt.y) );
-    return;
-  }
-#endif
-  if(R->SideYp.empty()) return;
-
-  rig_wipeoff(R);              // убрать риг из графического буфера
-
-  if(is_top(R->SideYp, tr::Y)) // Если SideYp в верхнем положении, то она
-  {                            // удаляется и создается новый риг сверху
-    R->SideYp.clear();
-    append_rig_Yp({Pt.x, Pt.y + lod, Pt.z});
-    rig_display(R);
-    return;
-  }
-
-  snip &S = R->SideYp.front(); // ссылка на верхний снип
-  float y = 0.f;
-  // найти вершину с максимальным значением Y
-  for (size_t i = tr::Y; i < digits_per_snip; i += ROW_SIZE) y = std::max(y, S.data[i]);
-
-  // округлить до ближайшей сверху четверти
-  if(y >= 0.75f) y = 1.00f;
-  else if (y >= 0.50f) y = 0.75f;
-  else if (y >= 0.25f) y = 0.50f;
-  else y = 0.25f;
-
-  // выровнять все вершины по выбранной высоте
-  for (size_t i = tr::Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = y;
-
-  // настроить нормали
-  for(size_t i = 0; i < 4; ++i)
-  {
-    S.data[ROW_SIZE * i + NX] = 0.f;
-    S.data[ROW_SIZE * i + NY] = 1.f;
-    S.data[ROW_SIZE * i + NZ] = 0.f;
-  }
-
-  // настроить боковые стороны
-  set_Zp(R);
-  set_Zn(R);
-  set_Xp(R);
-  set_Xn(R);
-
-  rig_display(R);   // записать модифицированый риг в графический буфер
-}
-
-void rdb::add_yn(const i3d&) { info("add YP"); }
-void rdb::add_xn(const i3d&) { info("add XN"); }
-void rdb::add_xp(const i3d&) { info("add XP"); }
-void rdb::add_zn(const i3d&) { info("add ZN"); }
-void rdb::add_zp(const i3d&) { info("add ZP"); }
-
-void rdb::sub_yn(const i3d&) { info("sub YP"); }
-void rdb::sub_xn(const i3d&) { info("sub XN"); }
-void rdb::sub_xp(const i3d&) { info("sub XP"); }
-void rdb::sub_zn(const i3d&) { info("sub ZN"); }
-void rdb::sub_zp(const i3d&) { info("sub ZP"); }
-
-
-///
 /// \brief rdb::make_Yp
 /// \param SideYp
 ///
@@ -958,60 +782,6 @@ void rdb::remove_rig(const i3d& pRm)
 }
 
 
-
-///
-/// \brief rdb::sub_yp
-///
-/// \details Уменьшение высоты рига на четверть. Если высота
-/// меньше четверти (0,25*lod), то этот риг удаляется.
-///
-void rdb::sub_yp(const i3d& Pt)
-{
-  rig *R = get(Pt);         //1. Выбрать целевой риг
-
-  if(nullptr == R)
-  {
-    info("Error: call rdb::sub_yp for nullptr point: "
-         + std::to_string(Pt.x) + ", "
-         + std::to_string(Pt.y) + ", "
-         + std::to_string(Pt.z));
-    return;
-  }
-
-  if(R->SideYp.empty()) return;
-
-  rig_wipeoff(R); // убрать риг из графического буфера
-
-  snip& S = R->SideYp.front();
-
-  if((S.data[Y + ROW_SIZE * 0] <= 0.25f) ||
-     (S.data[Y + ROW_SIZE * 1] <= 0.25f) ||
-     (S.data[Y + ROW_SIZE * 2] <= 0.25f) ||
-     (S.data[Y + ROW_SIZE * 3] <= 0.25f))
-  {                                         // Если одна из вершин данного рига
-    remove_rig(Pt);                         // расположена ниже у=0.25, то этот
-    return;                                 // риг просто удаляется из БД
-  }
-
-  float y = 1.f; // найти вершину с минимальным значением Y
-  for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) y = std::min(y, S.data[i]);
-
-  // выровнять по ближайшей снизу четверти
-  if(y > 0.75f) y = 0.75f;
-  else if (y > 0.50f) y = 0.50f;
-  else y = 0.25f;
-
-  // выровнять все вершины по выбранной высоте
-  for (size_t i = Y; i < digits_per_snip; i += ROW_SIZE) S.data[i] = y;
-
-  set_Zp(R); // настроить боковые стороны
-  set_Zn(R);
-  set_Xp(R);
-  set_Xn(R);
-
-  rig_display(R);     // записать модифицированый риг в графический буфер
-}
-
 */
 
 ///
@@ -1044,6 +814,10 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
   {
     gen_rig({x, 0, z});
   }
+
+  //rig* R = get({0,0,0});
+  //R->Boxes.push_back(box{ {100, 0, 100}, 64, 64, 64});
+  //recalc_visibility(R); // после построения рига необходимо выполнить пересчет видимости сторон
 }
 
 
@@ -1055,7 +829,7 @@ void rdb::gen_rig(const i3d& P)
 {
   MapRigs[P] = rig{P};
   rig* R = get(P);
-  R->Boxes.push_back(box{ {0, 0, 0}, 255, 255, 255});
+  R->Boxes.push_back(box{ {0, 0, 0}, {255, 255, 255}, R});
   recalc_visibility(R); // после построения рига необходимо выполнить пересчет видимости сторон
 }
 

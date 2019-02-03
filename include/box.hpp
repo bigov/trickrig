@@ -56,7 +56,6 @@ struct uch2
 };
 
 
-
 ///
 /// \brief The uch3 struct
 /// \details Максимальное значение координаты = 255
@@ -66,6 +65,7 @@ struct uch3
   u_char
   x = 0, y = 0, z = 0;
 };
+
 
 class box
 {
@@ -80,7 +80,7 @@ private:
   // из (8*4) float, плюс 24 однобайтовых индекса. Кроме того, это позволяет
   // проще изменять форму бокса перемещая меньшее число вершин, чем если-бы
   // они хранились отдельно для каждой стороны.
-  std::array<uch3, VERT_PER_BOX>   AllCoords   {}; // отностичельные координаты 8 вершин внутри бокса
+  std::array<uch3, VERT_PER_BOX>   AllCoords   {}; // относительные координаты 8 вершин внутри бокса
   std::array<a_uch4, SIDES_COUNT> CursorCoord  {}; // курсор на координаты
 
   // AllColors - массив цветов вершин позволяет задавать цвета каждой вершины
@@ -111,11 +111,13 @@ private:
 
 public:
   // конструктор с генератором вершин и значениями по-умолчанию
-  box(uch3 Base={0, 0, 0}, u_char lx = UCHAR_MAX, u_char ly = UCHAR_MAX, u_char lz = UCHAR_MAX);
+  box(uch3 Base={0, 0, 0}, uch3 Length={UCHAR_MAX, UCHAR_MAX, UCHAR_MAX}, void* p = nullptr);
   // Конструктор бокса из массива вершин
-  box(const std::array<uch3, VERT_PER_BOX>&);
+  box(const std::array<uch3, VERT_PER_BOX>&, void* p = nullptr);
   ~box(void) {}
 
+  void* ParentRig;
+  u_char side_id_offset(GLsizeiptr);
   void visible_check(u_char side_id, box&);
   void visible_recheck(u_char side_id, box&);
   splice splice_get(u_char side_id);

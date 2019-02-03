@@ -17,15 +17,6 @@
 namespace tr
 {
 
-//enum LAY_NAME { SIDE_XP, SIDE_XN, SIDE_YP, SIDE_YN, SIDE_ZP, SIDE_ZN, SIDES_COUNT };
-
-struct snip_ext: public snip
-{
-   u_char lay = SIDES_COUNT;
-   i3d Origin {0, 0, 0};
-};
-
-
 ///
 /// \brief The rdb class
 /// \details Управление кэшем ригов с поверхности одного уровня LOD
@@ -66,7 +57,6 @@ class rdb
     u_char lay_direction(const glm::vec4&);
     bool is_top(const std::array<glm::vec4, 4>&, size_t);
     bool is_top(std::vector<snip>&, size_t);
-    void snip_analyze(snip_ext& S);
     void gen_rig(const i3d&);
 
     void recalc_visibility(rig*);
@@ -84,19 +74,6 @@ class rdb
     void rig_wipeoff(rig*);            // убрать риг из VBO
     void increase(unsigned int);       // добавить объем по индексу снипа
     void decrease(unsigned int);       // удалить объем по индексу снипа
-
-    void add_yp(const i3d &);
-    void add_yn(const i3d&);
-    void add_xn(const i3d&);
-    void add_xp(const i3d&);
-    void add_zn(const i3d&);
-    void add_zp(const i3d&);
-    void sub_yn(const i3d&);
-    void sub_xn(const i3d&);
-    void sub_yp(const i3d &);
-    void sub_xp(const i3d&);
-    void sub_zn(const i3d&);
-    void sub_zp(const i3d&);
 
     //bool save(const i3d &, const i3d &);
     void load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position);    // загрузка уровня
