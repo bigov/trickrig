@@ -50,4 +50,20 @@ void rig::copy_data(const rig &Other)
 }
 
 
+///
+/// \brief rig::vector
+/// \return
+///
+/// TODO: еще есть поворот и zoom
+///
+f3d rig::vector(void)
+{
+  return f3d {
+    static_cast<float>(Origin.x) + shift[SHIFT_X],
+    static_cast<float>(Origin.y) + shift[SHIFT_Y],
+    static_cast<float>(Origin.z) + shift[SHIFT_Z]
+  };
+}
+
+
 } //tr

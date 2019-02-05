@@ -39,12 +39,12 @@ namespace tr {
 #
 //#define UCH_MAX 255
 
+extern u_char opposite(u_char side_id);
 
 struct splice
 {
-  splice(void);
   bool on = false;
-  u_char data[SPLICE_SIZE];
+  u_char data[SPLICE_SIZE] {0, 0, 0, 0, 0, 0, 0, 0};
   bool operator!= (splice& Other);
 };
 
@@ -66,6 +66,7 @@ struct uch3
   x = 0, y = 0, z = 0;
 };
 
+class rig;
 
 class box
 {
@@ -80,26 +81,26 @@ private:
   // из (8*4) float, плюс 24 однобайтовых индекса. Кроме того, это позволяет
   // проще изменять форму бокса перемещая меньшее число вершин, чем если-бы
   // они хранились отдельно для каждой стороны.
-  std::array<uch3, VERT_PER_BOX>   AllCoords   {}; // относительные координаты 8 вершин внутри бокса
-  std::array<a_uch4, SIDES_COUNT> CursorCoord  {}; // курсор на координаты
+  std::array<uch3, VERT_PER_BOX>  AllCoords {}; // относительные координаты 8 вершин внутри бокса
+  std::array<a_uch4, SIDES_COUNT> IdxCoord {}; // курсор на координаты
 
   // AllColors - массив цветов вершин позволяет задавать цвета каждой вершины
   // каждой из сторон отдельно, но инициализируется одним цветом по-умолчанию.
   // После инициализации CursorColor указывает на один цвет для всех вершин.
-  std::vector<color>              AllColors;   // цвета вершин
-  std::array<a_uch4, SIDES_COUNT> CursorColor; // указатель цветов вершин
+  std::vector<color>              AllColors {}; // цвета вершин
+  std::array<a_uch4, SIDES_COUNT> IdxColor {}; // указатель цветов вершин
 
-  std::vector<normal>             AllNormals   {}; // Направления нормалей вершин
-  std::array<a_uch4, SIDES_COUNT> CursorNormal {}; // курсор на нормали каждой вершины
+  std::vector<normal>             AllNormals {}; // Направления нормалей вершин
+  std::array<a_uch4, SIDES_COUNT> IdxNormal {}; // курсор на нормали каждой вершины
 
-  uch2 tex_id[SIDES_COUNT];                           // индексы текстур сторон
-  texture Texture2d[SIDES_COUNT * vertices_per_snip]; // координаты текстуры
+  uch2 tex_id[SIDES_COUNT]; // Индексы текстур сторон
+  // Координаты текстур вершин пересчитываются при смещении вершин
+  texture VertTexture[SIDES_COUNT * vertices_per_snip];
 
-  std::array<splice, SIDES_COUNT>  Splice {}; // координаты стыка с соседним ригом
+  std::array<splice, SIDES_COUNT> Splice {}; // координаты стыка с соседним ригом
 
-  GLsizeiptr offset[SIDES_COUNT];  // Положения блоков данных по каждой из сторон в буфере GPU
+  GLsizeiptr offset[SIDES_COUNT];  // Адреса смещения в буфере GPU массивов данных по каждой из сторон
   void init_arrays(void);
-  bool visible[SIDES_COUNT];       // Видимость сторон
 
   // расчет стыков для каждой из сторон
   void splice_side_xp(void);
@@ -108,25 +109,29 @@ private:
   void splice_side_yn(void);
   void splice_side_zp(void);
   void splice_side_zn(void);
+  splice& splice_get(u_char side_id);
+  void splice_calc(u_char side_id);
+  void texture_calc(u_char side_id);
+
 
 public:
   // конструктор с генератором вершин и значениями по-умолчанию
-  box(uch3 Base={0, 0, 0}, uch3 Length={UCHAR_MAX, UCHAR_MAX, UCHAR_MAX}, void* p = nullptr);
+  box(uch3 Base={0, 0, 0}, uch3 Length={UCHAR_MAX, UCHAR_MAX, UCHAR_MAX}, rig* p=nullptr);
   // Конструктор бокса из массива вершин
-  box(const std::array<uch3, VERT_PER_BOX>&, void* p = nullptr);
+  box(const std::array<uch3, VERT_PER_BOX>&, rig* p = nullptr);
   ~box(void) {}
 
-  void* ParentRig;
-  u_char side_id_offset(GLsizeiptr);
+  rig* ParentRig;
+  bool visible[SIDES_COUNT];       // Видимость сторон
+
+  u_char side_id_by_offset(GLsizeiptr dst);
   void visible_check(u_char side_id, box&);
-  void visible_recheck(u_char side_id, box&);
-  splice splice_get(u_char side_id);
-  void splice_calc(u_char side_id);
-  bool side_fill_data(u_char side_id, std::array<GLfloat, digits_per_snip>& data);
+  void side_visible_calc(u_char side_id, box&);
+  bool side_fill_data(u_char side_id, GLfloat* data, const f3d& P);
   void offset_write(u_char side_id, GLsizeiptr n);
   GLsizeiptr offset_read(u_char side_id);
   void offset_replace(GLsizeiptr old_n, GLsizeiptr new_n);
-  u_char side_id_by_offset(GLsizeiptr);
+  bool move_sub(GLsizeiptr offset);
 };
 
 }

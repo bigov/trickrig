@@ -7,13 +7,11 @@
  */
 
 #include "rdb.hpp"
-#include "config.hpp"
-
-#define DBG std::cout
 
 namespace tr
 {
 
+/*
 #define R0y0 R0->SideYp.front().data[Y + ROW_SIZE * 0]
 #define R0y1 R0->SideYp.front().data[Y + ROW_SIZE * 1]
 #define R0y2 R0->SideYp.front().data[Y + ROW_SIZE * 2]
@@ -23,30 +21,33 @@ namespace tr
 #define R1y1 R1->SideYp.front().data[Y + ROW_SIZE * 1]
 #define R1y2 R1->SideYp.front().data[Y + ROW_SIZE * 2]
 #define R1y3 R1->SideYp.front().data[Y + ROW_SIZE * 3]
+*/
 
-
-///
-/// \brief rdb::lay_direction
-/// \param N
-/// \return направление вектора
-///
-u_char rdb::lay_direction(const glm::vec4& N)
+i3d i3d_shift(i3d& P, u_char s, int l)
 {
-  if (( abs(N.x) > abs(N.y) ) && ( abs(N.x) > abs(N.z) ) &&
-         ( (N.x) >= 0.0f )) return SIDE_XP;
-  else if (( abs(N.x) > abs(N.y) ) && ( abs(N.x) > abs(N.z) ) &&
-         ( (N.x) < 0.0f )) return SIDE_XN;
-  else if (( abs(N.y) > abs(N.x) ) && ( abs(N.y) > abs(N.z) ) &&
-         ( (N.y) >= 0.0f )) return SIDE_YP;
-  else if (( abs(N.y) > abs(N.x) ) && ( abs(N.y) > abs(N.z) ) &&
-         ( (N.y) < 0.0f )) return SIDE_YN;
-  else if (( abs(N.z) > abs(N.x) ) && ( abs(N.z) > abs(N.y) ) &&
-         ( (N.z) >= 0.0f )) return SIDE_ZP;
-  else if (( abs(N.z) > abs(N.x) ) && ( abs(N.z) > abs(N.y) ) &&
-         ( (N.z) < 0.0f )) return SIDE_ZN;
-  else return SIDES_COUNT;
+  switch (s) {
+    case SIDE_XP:
+      return i3d{ P.x + l, P.y    , P.z     };
+      break;
+    case SIDE_XN:
+      return i3d{ P.x - l, P.y    , P.z     };
+      break;
+    case SIDE_YP:
+      return i3d{ P.x    , P.y + l, P.z     };
+      break;
+    case SIDE_YN:
+      return i3d{ P.x    , P.y - l, P.z     };
+      break;
+    case SIDE_ZP:
+      return i3d{ P.x    , P.y    , P.z + l };
+      break;
+    case SIDE_ZN:
+      return i3d{ P.x    , P.y    , P.z - l };
+      break;
+    default:
+      return P;
+  }
 }
-
 
 ///
 /// \brief rdb::is_top
@@ -105,17 +106,25 @@ void rdb::increase(unsigned int i)
 ///
 void rdb::decrease(unsigned int i)
 {
+
+//DEBUG
+//std::printf("before: render points=%i\n", render_points);
+
   if(i > (render_points/indices_per_snip) * bytes_per_snip) return;
 
   // При условии, что смещение данных в VBO начинается с нуля, по полученному
   // через параметр номеру группы данных вычисляем адрес ее смещения в буфере
   GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip; // + bytes_per_vertex;
 
-  //VBO->data_get(offset, bytes_per_snip, S.data); // считать из VBO данные снипа
+  box* B = Visible[offset];     // По адресу смещения найдем бокс
+  rig* R = B->ParentRig;        // по боксу - риг
+  i3d P = R->Origin;            // по ригу - опорную точку
+  rig_wipeoff(R);               // убрать риг из VBO рендера
+  MapRigs.erase(P);             // удалить риг из базы данных
+  visible_around(P);            // пересчитсть видимость сторон вокруг точки
 
-  box* B = Visible[offset];             // По адресу смещения найдем бокс
-  //u_char s = B->side_id_offset(offset); // сторона в боксе
-  //rig_wipeoff(static_cast<rig*>(B->ParentRig));
+//DEBUG
+//std::printf("after: render points=%i\n", render_points);
 
 }
 
@@ -128,13 +137,7 @@ void rdb::rig_display(rig* R)
   if(nullptr == R) return;   // TODO: тут можно подгружать или дебажить
   if(R->in_vbo) return;      // Если данные уже в VBO - ничего не делаем
 
-  f3d Point = {
-    static_cast<float>(R->Origin.x) + R->shift[SHIFT_X],
-    static_cast<float>(R->Origin.y) + R->shift[SHIFT_Y],
-    static_cast<float>(R->Origin.z) + R->shift[SHIFT_Z]  // TODO: еще есть поворот и zoom
-  };
-
-  for(box& B: R->Boxes) box_display(B, Point);
+  for(box& B: R->Boxes) box_display(B, R->vector());
   R->in_vbo = true;
 }
 
@@ -145,34 +148,37 @@ void rdb::rig_display(rig* R)
 /// \param Point
 ///
 /// \brief
-/// Добавляет данные бокса в VBO
+/// Добавляет данные в VBO
 ///
 /// \details
-/// Координаты вершин снипов хранятся в нормализованом виде, поэтому перед
-/// отправкой в VBO все данные снипа копируются во временный кэш, где
-/// координаты вершин пересчитываются с учетом координат (TODO: сдвига и
-/// поворота рига-контейнера), после чего данные записываются в VBO.
-/// Адрес смещения блока данных в VBO запоминается в переменной снипа.
+/// Координаты вершин хранятся в нормализованом виде, поэтому перед записью
+/// в VBO данные копируются во временный кэш, где координаты пересчитываются
+/// с учетом координат рига (TODO: сдвига и поворота рига-контейнера),
+/// после чего записываются в VBO. Адрес смещения данных в VBO запоминается.
 ///
 void rdb::box_display(box& B, const f3d& P)
 {
-  //для каждой стороны надо построить свой снип и разместить его в VBO
   for (u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
-    std::array <GLfloat, digits_per_snip> buffer{};
-    if(!B.side_fill_data(side_id, buffer)) continue;
-
-    for(size_t n = 0; n < vertices_per_snip; n++)
-    {
-      buffer[ROW_SIZE * n + X] += P.x;
-      buffer[ROW_SIZE * n + Y] += P.y;
-      buffer[ROW_SIZE * n + Z] += P.z;
-    }
-    auto offset = VBO->data_append(buffer.data(),  bytes_per_snip); // записать в VBO
-    render_points += indices_per_snip;                              // увеличить число точек рендера
-    B.offset_write(side_id, offset);                                // записать в бокс адрес смещения VBO
-    Visible[offset] = &B;                                           // добавить ссылку на бокс
+    side_display(B, side_id, P);
   }
+}
+
+
+///
+/// \brief rdb::side_display
+/// \param B
+/// \param side_id
+/// \param P
+///
+void rdb::side_display(box& B, u_char side_id, const f3d& P)
+{
+  GLfloat buffer[digits_per_snip];
+  if(!B.side_fill_data(side_id, buffer, P)) return;
+  auto offset = VBO->data_append(buffer, bytes_per_snip); // записать в VBO
+  render_points += indices_per_snip;                      // увеличить число точек рендера
+  B.offset_write(side_id, offset);                        // записать в бокс адрес смещения VBO
+  Visible[offset] = &B;                                   // добавить ссылку на бокс
 }
 
 
@@ -205,6 +211,7 @@ void rdb::box_wipeoff(box& Box)
 
   for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
+    if(!Box.visible[side_id]) continue;
     target = Box.offset_read(side_id);            // адрес снипа, подлежащий удалению
     if(target < 0) continue;
     moving = VBO->remove(target, bytes_per_snip); // убрать снип из VBO и получить адрес смещения
@@ -216,41 +223,21 @@ void rdb::box_wipeoff(box& Box)
       render_points = 0;
       return;
     }
-    else if (moving == target)                     // Если удаляемый снип оказался в конце активной
-    {                                              // части VBO, то только удалить его с карты
+    else if (moving == target)                // Если удаляемый снип оказался в конце активной
+    {                                         // части VBO, то только удалить его с карты
       Visible.erase(target);
     }
-    else                                           // Если удаляемый блок данных не в конце, то на его
-    {                                              // место записаны данные с адреса moving:
-      Visible[moving]->offset_replace(moving, target);  // - изменить адрес размещения в VBO у перемещенного блока,
-      Visible[target] = Visible[moving];           // - заменить блок в карте снипов,
-      Visible.erase(moving);                       // - удалить освободившийся элемент массива
+    else                                      // Если удаляемый блок данных не в конце, то на его
+    {                                         // место записаны данные с адреса moving:
+      box* B = Visible[moving];
+      B->offset_replace(moving, target);      // - изменить адрес размещения в VBO у перемещенного блока,
+      Visible[target] = B;                    // - заменить блок в карте снипов,
+      Visible.erase(moving);                  // - удалить освободившийся элемент массива
     }
-    render_points -= indices_per_snip;             // Уменьшить число точек рендера
+    render_points -= indices_per_snip;        // Уменьшить число точек рендера
   }
 }
 
-
-///
-/// \brief rdb::side_make_snip
-/// \param v координаты 4-х опорных точек
-/// \param S формируемый снип
-/// \param n направление нормали стороны
-/// \details Формирование снипа для боковой стороны рига
-///
-void rdb::side_make_snip(const std::array<glm::vec4, 4>& v, snip& S, const glm::vec3& n)
-{
-  for(size_t i = 0; i < v.size(); ++i)
-  {
-    S.data[ROW_SIZE * i + X] = v[i].x;
-    S.data[ROW_SIZE * i + Y] = v[i].y;
-    S.data[ROW_SIZE * i + Z] = v[i].z;
-
-    S.data[ROW_SIZE * i + NX] = n.x;
-    S.data[ROW_SIZE * i + NY] = n.y;
-    S.data[ROW_SIZE * i + NZ] = n.z;
-  }
-}
 
 /*
 ///
@@ -812,12 +799,10 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
   for (int x = -4; x < 4; ++x)
     for (int z = -4; z < 4; ++z)
   {
+    gen_rig({x, -1, z});
     gen_rig({x, 0, z});
+    gen_rig({x, 1, z});
   }
-
-  //rig* R = get({0,0,0});
-  //R->Boxes.push_back(box{ {100, 0, 100}, 64, 64, 64});
-  //recalc_visibility(R); // после построения рига необходимо выполнить пересчет видимости сторон
 }
 
 
@@ -829,36 +814,56 @@ void rdb::gen_rig(const i3d& P)
 {
   MapRigs[P] = rig{P};
   rig* R = get(P);
+
   R->Boxes.push_back(box{ {0, 0, 0}, {255, 255, 255}, R});
-  recalc_visibility(R); // после построения рига необходимо выполнить пересчет видимости сторон
+  visibility_recalc(R);
 }
 
 
 ///
-/// \brief rdb::recalc_visibility
+/// \brief rdb::visibility_recalc
 /// \param R0
+/// \details Пересчет параметра видимости сторон указанного
+/// рига с учетом наличия соседних с ним ригов
 ///
-void rdb::recalc_visibility(rig* R0)
+void rdb::visibility_recalc(rig* R0)
 {
-  rig* R1 = get({R0->Origin.x + lod, R0->Origin.y, R0->Origin.z});
-  if(nullptr != R1) for(box& B0: R0->Boxes) for(box& B1: R1->Boxes) B0.visible_check(SIDE_XP, B1);
+  if(nullptr == R0) return;
+  if(R0->zoom < 0) return;
+  i3d P0 = R0->Origin;
+  rig* R1 = nullptr;
 
-  R1 = get({R0->Origin.x - lod, R0->Origin.y, R0->Origin.z});
-  if(nullptr != R1) for(box& B0: R0->Boxes) for(box& B1: R1->Boxes) B0.visible_check(SIDE_XN, B1);
-
-  R1 = get({R0->Origin.x, R0->Origin.y + lod, R0->Origin.z});
-  if(nullptr != R1) for(box& B0: R0->Boxes) for(box& B1: R1->Boxes) B0.visible_check(SIDE_YP, B1);
-
-  R1 = get({R0->Origin.x, R0->Origin.y - lod, R0->Origin.z});
-  if(nullptr != R1) for(box& B0: R0->Boxes) for(box& B1: R1->Boxes) B0.visible_check(SIDE_YN, B1);
-
-  R1 = get({R0->Origin.x - lod, R0->Origin.y, R0->Origin.z + lod});
-  if(nullptr != R1) for(box& B0: R0->Boxes) for(box& B1: R1->Boxes) B0.visible_check(SIDE_ZP, B1);
-
-  R1 = get({R0->Origin.x - lod, R0->Origin.y, R0->Origin.z - lod});
-  if(nullptr != R1) for(box& B0: R0->Boxes) for(box& B1: R1->Boxes) B0.visible_check(SIDE_ZN, B1);
+  for(box& B0: R0->Boxes)
+  for (u_char side = 0; side < SIDES_COUNT; ++side)
+  {
+    R1 = get(i3d_shift(P0, side, lod));
+    if(nullptr == R1) continue;
+    for(box& B1: R1->Boxes) B0.visible_check(side, B1);
+  }
 }
 
+
+///
+/// \brief rdb::visible_on
+/// \param P0
+///
+void rdb::visible_around(i3d& P0)
+{
+  rig* R = nullptr;
+  u_char as = 0;
+
+  for (u_char side = 0; side < SIDES_COUNT; ++side)
+  {
+    R = get(i3d_shift(P0, side, lod));
+    if(nullptr == R) continue;
+    as = opposite(side);
+    for(box& B1: R->Boxes)
+    {
+      B1.visible[as] = true;
+      side_display(B1, as, R->vector());
+    }
+  }
+}
 
 ///
 /// \brief rdb::search_down

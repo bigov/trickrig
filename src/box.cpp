@@ -1,4 +1,5 @@
 #include "box.hpp"
+#include "rig.hpp"
 
 namespace tr
 {
@@ -39,22 +40,22 @@ u_char opposite(u_char s)
 
 
 ///
-/// \brief splice::splice
-///
-splice::splice(void)
-{
-  for (size_t i = 0; i < SPLICE_SIZE; ++i) data[i] = 0;
-}
-
-
-///
 /// \brief splice::operator!=
 /// \param Other
 /// \return
 ///
 bool splice::operator!= (splice& Other)
 {
-  for(size_t i = 0; i < SPLICE_SIZE; ++i) if( data[i] == Other.data[i] ) return false;
+  if(!on) return true;
+  if(!Other.on) return true;
+
+  u_char buf = 0;
+  for(size_t i = 0; i < SPLICE_SIZE; ++i)
+  {
+    if( data[i] == Other.data[i] ) buf += 1;
+  }
+  if(buf == SPLICE_SIZE) return false;
+
   return true;
 }
 
@@ -64,7 +65,7 @@ bool splice::operator!= (splice& Other)
 /// \param V
 /// \param l
 ///
-box::box(uch3 B, uch3 L, void* r): ParentRig(r)
+box::box(uch3 B, uch3 L, rig* r): ParentRig(r)
 {
   AllCoords = {
     uch3{ B.x              , u_char(B.y + L.y), u_char(B.z + L.z) },
@@ -85,7 +86,7 @@ box::box(uch3 B, uch3 L, void* r): ParentRig(r)
 /// \param V
 /// \details Конструктор бокса по готовому набору из 8 вершин
 ///
-box::box(const std::array<uch3, VERT_PER_BOX>& Arr, void* r): ParentRig(r)
+box::box(const std::array<uch3, VERT_PER_BOX>& Arr, rig* r): ParentRig(r)
 {
   AllCoords = Arr;
   init_arrays();
@@ -97,7 +98,6 @@ box::box(const std::array<uch3, VERT_PER_BOX>& Arr, void* r): ParentRig(r)
 ///
 void box::init_arrays(void)
 {
-  //offset   = {0, 0, 0, 0, 0, 0};
   for (auto i = 0; i < SIDES_COUNT; ++i)
   {
     offset[i]  = 0;
@@ -116,7 +116,7 @@ void box::init_arrays(void)
     { 0.0f, 0.0f,-1.0f }  //zn
   };
 
-  CursorCoord = { // индексы координат из массива вершин, для построения сторон
+  IdxCoord = { // индексы координат из массива вершин, для построения сторон
     a_uch4{ 2, 1, 5, 6 }, //x+
     a_uch4{ 0, 3, 7, 4 }, //x-
     a_uch4{ 0, 1, 2, 3 }, //y+
@@ -125,7 +125,7 @@ void box::init_arrays(void)
     a_uch4{ 3, 2, 6, 7 }  //z-
   };
 
-  CursorColor = { // указатель на цвета всех вершин всех 6 сторон
+  IdxColor = { // индексы для цветов всех вершин всех 6 сторон
     a_uch4{ 0, 0, 0, 0 }, //x+
     a_uch4{ 0, 0, 0, 0 }, //x-
     a_uch4{ 0, 0, 0, 0 }, //y+
@@ -134,7 +134,7 @@ void box::init_arrays(void)
     a_uch4{ 0, 0, 0, 0 }, //z-
   };
 
-  CursorNormal = { // указатель на нормали вершин
+  IdxNormal = { // индексы на нормали вершин
     a_uch4{ 0, 0, 0, 0 }, //x+
     a_uch4{ 1, 1, 1, 1 }, //x-
     a_uch4{ 2, 2, 2, 2 }, //y+
@@ -146,14 +146,23 @@ void box::init_arrays(void)
   for(u_char s_id = 0; s_id < SIDES_COUNT; ++s_id)
   {
     splice_calc(s_id);
+    texture_calc(s_id);
+  }
+}
 
-    for(u_char v_i = 0; v_i < VERT_PER_SIDE; ++v_i)
-    {
-      Texture2d[VERT_PER_SIDE * s_id + v_i].u =
-          u_sz * tex_id[s_id].u + u_sz * Splice[s_id].data[2*v_i]/255.f;
-      Texture2d[VERT_PER_SIDE * s_id + v_i].v =
-          v_sz * tex_id[s_id].v + v_sz * (255-Splice[s_id].data[2*v_i+1])/255.f;
-    }
+
+///
+/// \brief box::texture_calc
+/// \param s_id
+///
+void box::texture_calc(u_char s_id)
+{
+  for(u_char v_i = 0; v_i < VERT_PER_SIDE; ++v_i)
+  {
+    VertTexture[VERT_PER_SIDE * s_id + v_i].u =
+        u_sz * tex_id[s_id].u + u_sz * Splice[s_id].data[2*v_i]/255.f;
+    VertTexture[VERT_PER_SIDE * s_id + v_i].v =
+        v_sz * tex_id[s_id].v + v_sz * (255-Splice[s_id].data[2*v_i+1])/255.f;
   }
 }
 
@@ -161,34 +170,49 @@ void box::init_arrays(void)
 ///
 /// \brief box::side_data
 /// \param s
-/// \details Заполнение массива стороны данными
+/// \details Заполнение массива стороны данными. Если сторона
+/// скрытая, то данные не записываются и возвращается false
 ///
-bool box::side_fill_data(u_char side, std::array<GLfloat, digits_per_snip>& data)
+bool box::side_fill_data(u_char side, GLfloat* data, const f3d& P)
 {
   if(!visible[side]) return false;
 
   size_t i = 0;
   for(size_t n = 0; n < vertices_per_snip; ++n)
   {
-    data[i++] = AllCoords[(CursorCoord[side][n])].x/255.f;
-    data[i++] = AllCoords[(CursorCoord[side][n])].y/255.f;
-    data[i++] = AllCoords[(CursorCoord[side][n])].z/255.f;
+    data[i++] = AllCoords[(IdxCoord[side][n])].x/255.f + P.x;
+    data[i++] = AllCoords[(IdxCoord[side][n])].y/255.f + P.y;
+    data[i++] = AllCoords[(IdxCoord[side][n])].z/255.f + P.z;
 
-    data[i++] = AllColors[(CursorColor[side][n])].r;
-    data[i++] = AllColors[(CursorColor[side][n])].g;
-    data[i++] = AllColors[(CursorColor[side][n])].b;
-    data[i++] = AllColors[(CursorColor[side][n])].a;
+    data[i++] = AllColors[(IdxColor[side][n])].r;
+    data[i++] = AllColors[(IdxColor[side][n])].g;
+    data[i++] = AllColors[(IdxColor[side][n])].b;
+    data[i++] = AllColors[(IdxColor[side][n])].a;
 
-    data[i++] = AllNormals[(CursorNormal[side][n])].nx;
-    data[i++] = AllNormals[(CursorNormal[side][n])].ny;
-    data[i++] = AllNormals[(CursorNormal[side][n])].nz;
+    data[i++] = AllNormals[(IdxNormal[side][n])].nx;
+    data[i++] = AllNormals[(IdxNormal[side][n])].ny;
+    data[i++] = AllNormals[(IdxNormal[side][n])].nz;
 
-    data[i++] = Texture2d[VERT_PER_SIDE * side + n].u;
-    data[i++] = Texture2d[VERT_PER_SIDE * side + n].v;
+    data[i++] = VertTexture[VERT_PER_SIDE * side + n].u;
+    data[i++] = VertTexture[VERT_PER_SIDE * side + n].v;
   }
   return true;
 }
 
+
+///
+/// \brief box::move_sub
+/// \param offset
+/// \return
+/// \details Сдвинуть стенку в сторону уменьшения размера бокса. Индекс
+/// стенки определяется по записанному а массиве адресу смещения в VBO
+///
+bool box::move_sub(GLsizeiptr offset)
+{
+  u_char side_id = side_id_by_offset(offset);
+  if(side_id > SIDES_COUNT) return true;
+   return false;
+}
 
 ///
 /// \brief box::offset_write
@@ -207,14 +231,14 @@ void box::offset_write(u_char side_id, GLsizeiptr n)
 
 
 ///
-/// \brief box::side_id_offset
+/// \brief box::side_id_by_offset
 /// \return
 /// \details По указанному смещению определяет какая сторона там находится
 ///
-u_char box::side_id_offset(GLsizeiptr p)
+u_char box::side_id_by_offset(GLsizeiptr dst)
 {
-  for (u_char i = 0; i < SIDES_COUNT; ++i) {
-    if(offset[i] == p) return i;
+  for (u_char side_id = 0; side_id < SIDES_COUNT; ++side_id) {
+    if(offset[side_id] == dst) return side_id;
   }
   return SIDES_COUNT;
 }
@@ -254,22 +278,8 @@ void box::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
   }
 #ifndef NDEBUG
   if(!visible[side_id]) info("box::offset_replace for unvisible side.");
-  info("box::offset_replace ERR.");
+  info("box::offset_replace ERR - not found offset.");
 #endif
-}
-
-
-///
-/// \brief box::side_id_by_offset
-/// \param n
-/// \return side_id
-///
-u_char box::side_id_by_offset(GLsizeiptr n)
-{
-  for (u_char id = 0; id < SIDES_COUNT; ++id) {
-    if(offset[id] == n) return id;
-  }
-  return  SIDES_COUNT;
 }
 
 
@@ -278,7 +288,7 @@ u_char box::side_id_by_offset(GLsizeiptr n)
 /// \param side_id
 /// \return
 ///
-splice box::splice_get(u_char side_id)
+splice& box::splice_get(u_char side_id)
 {
   return Splice[side_id];
 }
@@ -291,8 +301,8 @@ splice box::splice_get(u_char side_id)
 ///
 void box::visible_check(u_char side_id, box& B1)
 {
-  visible_recheck(side_id, B1);
-  B1.visible_recheck(opposite(side_id), *this);
+  side_visible_calc(side_id, B1);
+  B1.side_visible_calc(opposite(side_id), *this);
 }
 
 
@@ -301,12 +311,9 @@ void box::visible_check(u_char side_id, box& B1)
 /// \param side_id
 /// \param B1
 ///
-void box::visible_recheck(u_char side_id, box& B1)
+void box::side_visible_calc(u_char side_id, box& B1)
 {
-  splice Sp1 = B1.splice_get(opposite(side_id));
-  visible[side_id] = (Splice[side_id] != Sp1);
-  if(!Sp1.on) visible[side_id] = true;
-  if(!Splice[side_id].on) visible[side_id] = true;
+  visible[side_id] = ( Splice[side_id] != B1.splice_get(opposite(side_id)) );
 }
 
 
@@ -348,7 +355,7 @@ void box::splice_calc(u_char side_id)
 void box::splice_side_xp(void)
 {
   u_char s = SIDE_XP;
-  a_uch4 id = CursorCoord[s]; // Индексы вершин для расчета сплайса
+  a_uch4 id = IdxCoord[s]; // Индексы вершин для расчета сплайса
 
   Splice[s].on = true;
   for(u_char i = 0; i < VERT_PER_SIDE; ++i)
@@ -368,7 +375,7 @@ void box::splice_side_xn(void)
   u_char s = SIDE_XN;
   // Индексы вершин, используемых для расчета сплайса
   // обратной стороны выбираются в обратном направлении
-  a_uch4 id = { CursorCoord[s][1], CursorCoord[s][0], CursorCoord[s][3], CursorCoord[s][2] };
+  a_uch4 id = { IdxCoord[s][1], IdxCoord[s][0], IdxCoord[s][3], IdxCoord[s][2] };
 
   Splice[s].on = true;
   for(u_char i = 0; i < VERT_PER_SIDE; ++i)
@@ -386,8 +393,7 @@ void box::splice_side_xn(void)
 void box::splice_side_yp(void)
 {
   u_char s = SIDE_YP;
-  // Индексы вершин, используемых для расчета сплайса
-  a_uch4 id = CursorCoord[s];
+  a_uch4 id = IdxCoord[s]; // Индексы вершин для расчета сплайса
 
   Splice[s].on = true;
   for(u_char i = 0; i < VERT_PER_SIDE; ++i)
@@ -407,7 +413,7 @@ void box::splice_side_yn(void)
   u_char s = SIDE_YN;
   // Индексы вершин, используемых для расчета сплайса обратной стороны
   // выбираются в обратном направлении
-  a_uch4 id = { CursorCoord[s][3], CursorCoord[s][2], CursorCoord[s][1], CursorCoord[s][0] };
+  a_uch4 id = { IdxCoord[s][3], IdxCoord[s][2], IdxCoord[s][1], IdxCoord[s][0] };
 
   Splice[s].on = true;
   for(u_char i = 0; i < VERT_PER_SIDE; ++i)
@@ -426,7 +432,7 @@ void box::splice_side_zp(void)
 {
   u_char s = SIDE_ZP;
   // Индексы вершин, используемых для расчета сплайса
-  a_uch4 id = CursorCoord[s];
+  a_uch4 id = IdxCoord[s];
 
   Splice[s].on = true;
   for(u_char i = 0; i < VERT_PER_SIDE; ++i)
@@ -446,7 +452,7 @@ void box::splice_side_zn(void)
   u_char s = SIDE_ZN;
   // Индексы вершин, используемых для расчета сплайса обратной стороны
   // выбираются в обратном направлении
-  a_uch4 id = { CursorCoord[s][1], CursorCoord[s][0], CursorCoord[s][3], CursorCoord[s][2] };
+  a_uch4 id = { IdxCoord[s][1], IdxCoord[s][0], IdxCoord[s][3], IdxCoord[s][2] };
 
   Splice[s].on = true;
   for(u_char i = 0; i < VERT_PER_SIDE; ++i)

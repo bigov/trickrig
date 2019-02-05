@@ -166,15 +166,6 @@ void space::init3d(void)
     for(int y = yMin; y<= yMax; y += g1)
       for(int z = zMin; z<= zMax; z += g1)
         RigsDb0.rig_display(RigsDb0.get({x, y, z}));
-
-  try {
-    MoveFrom = RigsDb0.search_down(Eye.ViewFrom); // ближайший к камере снизу блок
-  }
-  catch(...)
-  {
-    //TODO: установить точку обзора над поверхностью
-    info("Fail setup 3d coordinates for ViewFrom point.");
-  }
 }
 
 

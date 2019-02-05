@@ -11,6 +11,7 @@
 #include "main.hpp"
 #include "glsl.hpp"
 #include "vbo.hpp"
+//#include "config.hpp"
 
 //#include "objl.hpp"
 
@@ -38,7 +39,6 @@ class rdb
     int lod = 1; // размер стороны элементов в LOD = 1
 
     void _load_16x16_obj(void);
-    void side_make_snip(const std::array<glm::vec4, 4>&, snip&, const glm::vec3&); // настройка боковой стороны
     //void set_Zp(rig*);
     //void set_Zn(rig*);
     //void set_Xp(rig*);
@@ -53,13 +53,13 @@ class rdb
     void remove_rig(const i3d&);
     void init_vbo(void);
     void box_display(box&, const f3d&);
+    void side_display(box& B, u_char side_id, const f3d& P);
     void box_wipeoff(box&);
-    u_char lay_direction(const glm::vec4&);
     bool is_top(const std::array<glm::vec4, 4>&, size_t);
     bool is_top(std::vector<snip>&, size_t);
     void gen_rig(const i3d&);
-
-    void recalc_visibility(rig*);
+    void visibility_recalc(rig* R0);
+    void visible_around(i3d&);
 
     //void snip_update(GLfloat* s_data, const f3d &Point, GLsizeiptr dist); // код метода в конце файла .cpp
 
