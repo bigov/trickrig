@@ -39,29 +39,13 @@ class rdb
     int lod = 1; // размер стороны элементов в LOD = 1
 
     void _load_16x16_obj(void);
-    //void set_Zp(rig*);
-    //void set_Zn(rig*);
-    //void set_Xp(rig*);
-    //void set_Xn(rig*);
-    //void make_Yp(std::vector<snip>&);
-    //void make_Yn(std::vector<snip>&);
-    //void make_Zn(std::vector<snip>&, std::vector<snip>&, float, float);
-    //void make_Zp(std::vector<snip>&, std::vector<snip>&, float, float);
-    //void make_Xn(std::vector<snip>&, std::vector<snip>&, float, float);
-    //void make_Xp(std::vector<snip>&, std::vector<snip>&, float, float);
-    void append_rig_Yp(const i3d&);
-    void remove_rig(const i3d&);
     void init_vbo(void);
     void box_display(box&, const f3d&);
     void side_display(box& B, u_char side_id, const f3d& P);
     void box_wipeoff(box&);
-    bool is_top(const std::array<glm::vec4, 4>&, size_t);
-    bool is_top(std::vector<snip>&, size_t);
-    void gen_rig(const i3d&);
-    void visibility_recalc(rig* R0);
-    void visible_around(i3d&);
-
-    //void snip_update(GLfloat* s_data, const f3d &Point, GLsizeiptr dist); // код метода в конце файла .cpp
+    rig* gen_rig(const i3d&);
+    void visibility_recalc_rigs(rig* R0);
+    void visibility_recalc(i3d P0);
 
   public:
     rdb(void) {}
