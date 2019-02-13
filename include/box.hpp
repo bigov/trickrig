@@ -99,7 +99,7 @@ private:
 
   std::array<splice, SIDES_COUNT> Splice {}; // координаты стыка с соседним ригом
 
-  GLsizeiptr offset[SIDES_COUNT];  // Адреса смещения в буфере GPU массивов данных по каждой из сторон
+  GLsizeiptr vbo_addr[SIDES_COUNT];  // Адреса смещения в буфере GPU массивов данных по каждой из сторон
   void init_arrays(void);
 
   // расчет стыков для каждой из сторон
@@ -131,7 +131,7 @@ public:
   void offset_write(u_char side_id, GLsizeiptr n);
   GLsizeiptr offset_read(u_char side_id);
   void offset_replace(GLsizeiptr old_n, GLsizeiptr new_n);
-  bool move_sub(GLsizeiptr offset);
+  bool move_sub(GLsizeiptr vbo_addr);
 };
 
 }

@@ -56,14 +56,14 @@ void rdb::increase(unsigned int i)
   P0 = i3d_shift(P0, s0, lod);              // Точка генерации нового рига.
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера риги
-    rig_wipeoff(get(i3d_shift(P0, side, lod)));     // вокруг точки создания нового
+    rig_wipe(get(i3d_shift(P0, side, lod)));     // вокруг точки создания нового
 
   // Нарисовать в опорной точке новый риг (автоматически производится пересчет
   // видимости сторон соседних ригов вокруг только что созданного)
-  rig_display(gen_rig(P0));
+  rig_draw(gen_rig(P0));
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние риги
-    rig_display(get(i3d_shift(P0, side, lod)));
+    rig_draw(get(i3d_shift(P0, side, lod)));
 }
 
 
@@ -86,68 +86,46 @@ void rdb::decrease(unsigned int i)
   i3d P0 = R->Origin;           // по ригу - опорную точку
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера риги
-    rig_wipeoff(get(i3d_shift(P0, side, lod)));     // вокруг точки удаления
+    rig_wipe(get(i3d_shift(P0, side, lod)));        // вокруг точки удаления
 
-  rig_wipeoff(R);                                   // убрать риг из VBO рендера
+  rig_wipe(R);                                      // убрать риг из VBO рендера
+
   MapRigs.erase(R->Origin);                         // удалить риг из базы данных
   visibility_recalc(P0);                            // пересчитать видимость ригов вокруг
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние риги
-    rig_display(get(i3d_shift(P0, side, lod)));
+    rig_draw(get(i3d_shift(P0, side, lod)));
 }
 
 
 ///
-/// Добавление в графический буфер элементов рига
+/// \brief rdb::rig_display
 ///
-void rdb::rig_display(rig* R)
-{
-  if(nullptr == R) return;   // TODO: тут можно подгружать или дебажить
-  if(R->in_vbo) return;      // Если данные уже в VBO - ничего не делаем
-
-  for(box& B: R->Boxes) box_display(B, R->vector());
-  R->in_vbo = true;
-}
-
-
+/// \details Добавление в графический буфер элементов рига
 ///
-/// \brief rdb::box_display
-/// \param Box
-/// \param Point
-///
-/// \brief
-/// Добавляет данные в VBO
-///
-/// \details
 /// Координаты вершин хранятся в нормализованом виде, поэтому перед записью
 /// в VBO данные копируются во временный кэш, где координаты пересчитываются
 /// с учетом координат рига (TODO: сдвига и поворота рига-контейнера),
 /// после чего записываются в VBO. Адрес смещения данных в VBO запоминается.
 ///
-void rdb::box_display(box& B, const f3d& P)
+void rdb::rig_draw(rig* R)
 {
-  for (u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
-  {
-    side_display(B, side_id, P);
-  }
-}
+  if(nullptr == R) return;   // TODO: тут можно подгружать или дебажить
+  if(R->in_vbo) return;      // Если данные уже в VBO - ничего не делаем
 
-
-///
-/// \brief rdb::side_display
-/// \param B
-/// \param side_id
-/// \param P
-/// \details Размещение данных стороны в VBO для рендера
-///
-void rdb::side_display(box& B, u_char side_id, const f3d& P)
-{
+  GLsizeiptr vbo_addr = 0;
   GLfloat buffer[digits_per_snip];
-  if(!B.side_fill_data(side_id, buffer, P)) return;
-  auto offset = VBO->data_append(buffer, bytes_per_snip); // записать в VBO
-  render_points += indices_per_snip;                      // увеличить число точек рендера
-  B.offset_write(side_id, offset);                        // записать в бокс адрес смещения VBO
-  Visible[offset] = &B;                                   // добавить ссылку на бокс
+  f3d P = R->vector();
+
+  for(box& B0: R->Boxes) for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
+  {
+    if(!B0.side_fill_data(side_id, buffer, P)) continue;
+    vbo_addr = VBO->append(buffer, bytes_per_snip);
+    B0.offset_write(side_id, vbo_addr);                // записать в бокс адрес смещения VBO
+    Visible[vbo_addr] = &B0;                           // добавить ссылку на бокс
+    render_points += indices_per_snip;              // увеличить число точек рендера
+  }
+  R->in_vbo = true;
 }
 
 
@@ -158,52 +136,39 @@ void rdb::side_display(box& B, u_char side_id, const f3d& P)
 /// \param z
 /// \details Стереть риг в рендере
 ///
-void rdb::rig_wipeoff(rig* Rig)
+void rdb::rig_wipe(rig* Rig)
 {
   if(nullptr == Rig) return;
   if(!Rig->in_vbo) return;
-  for(box& B: Rig->Boxes) box_wipeoff(B);
   Rig->in_vbo = false;
-}
 
+  GLsizeiptr dest = 0;         // адрес смещения, где данные будут перезаписаны
+  GLsizeiptr free = 0;         // адрес блока в "хвоста" VBO, который будет освобожден
 
-///
-/// \brief side_wipeoff
-/// \param Side
-///
-/// \details Удаление из VBO данных указанной стороны
-///
-void rdb::box_wipeoff(box& Box)
-{
-  GLsizeiptr target = 0;         // адрес смещения, где данные будут перезаписаны
-  GLsizeiptr moving = 0;         // адрес снипа с "хвоста" VBO, который будет перемещен на target
-
-  for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
+  for(box& B: Rig->Boxes) for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
-    if(!Box.visible[side_id]) continue;
-    target = Box.offset_read(side_id);            // адрес снипа, подлежащий удалению
-    if(target < 0) continue;
-    moving = VBO->remove(target, bytes_per_snip); // убрать снип из VBO и получить адрес смещения
-                                                  // данных в VBO который изменился на target
+    dest = B.offset_read(side_id);             // адрес данных, которые будут перезаписаны
+    if(dest < 0) continue;                     // -1 если сторона невидима - пропустить цикл
+    if(dest < 0) ERR("NO loop");
+    free = VBO->remove(dest, bytes_per_snip);  // убрать снип из VBO и получить адрес смещения
+                                               // в VBO с которого данные были перенесены на dest
 
-    if(moving == 0)                               // Если VBO пустой
+    if(free == 0)                              // Если VBO пустой
     {
       Visible.clear();
       render_points = 0;
       return;
     }
-    else if (moving == target)                // Если удаляемый снип оказался в конце активной
-    {                                         // части VBO, то только удалить его с карты
-      Visible.erase(target);
+
+    if (free != dest)                     // Если удаляемый блок данных не в конце, то на его
+    {                                     // место переписываются данные с адреса free.
+      box* BMoved = Visible[free];        // Адрес бокса, чьи данные переносятся.
+      BMoved->offset_replace(free, dest); // изменить хранимый в боксе адрес размещения данных в VBO;
+      Visible[dest] = BMoved;             // заменить адрес блока в карте снипов.
     }
-    else                                      // Если удаляемый блок данных не в конце, то на его
-    {                                         // место записаны данные с адреса moving:
-      box* B = Visible[moving];
-      B->offset_replace(moving, target);      // - изменить адрес размещения в VBO у перемещенного блока,
-      Visible[target] = B;                    // - заменить блок в карте снипов,
-      Visible.erase(moving);                  // - удалить освободившийся элемент массива
-    }
-    render_points -= indices_per_snip;        // Уменьшить число точек рендера
+                                          // Если free == dest, то только удалить адрес с карты
+    Visible.erase(free);                  // удалить освободившийся элемент массива;
+    render_points -= indices_per_snip;    // Уменьшить число точек рендера
   }
 }
 
@@ -230,11 +195,12 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
   Visible.clear();
   render_points = 0;
 
-  // Загрузка из базы данных
+  //Загрузка из базы данных
   //cfg::DataBase.rigs_loader(MapRigs, From, To);
 
-  for (int x = -4; x < 4; ++x)
-    for (int z = -4; z < 4; ++z)
+  int side_length = 1;
+  for (int x = -side_length; x < side_length+1; ++x)
+    for (int z = -side_length; z < side_length+1; ++z)
   {
     gen_rig({x,-1, z});
     gen_rig({x, 0, z});
@@ -302,77 +268,6 @@ void rdb::visibility_recalc(i3d P0)
     if(nullptr == Rig) continue;
     for(box& B: Rig->Boxes) B.visible[opposite(side)] = true;
   }
-}
-
-///
-/// \brief rdb::search_down
-/// \param V
-/// \return
-/// \details Поиск по координатам ближайшего блока снизу
-///
-i3d rdb::search_down(const glm::vec3& V)
-{
-  return search_down(V.x, V.y, V.z);
-}
-
-
-///
-/// \brief rdb::search_down
-/// \param x
-/// \param y
-/// \param z
-/// \return
-/// \details Поиск по координатам ближайшего блока снизу
-///
-i3d rdb::search_down(float x, float y, float z)
-{
-  return search_down(
-        static_cast<double>(x),
-        static_cast<double>(y),
-        static_cast<double>(z)
-  );
-}
-
-
-///
-/// \brief rdb::search_down
-/// \param x
-/// \param y
-/// \param z
-/// \return
-/// \details Поиск по координатам ближайшего блока снизу
-///
-i3d rdb::search_down(double x, double y, double z)
-{
-  return search_down(
-    static_cast<int>(floor(x)),
-    static_cast<int>(floor(y)),
-    static_cast<int>(floor(z))
-  );
-}
-
-
-///
-/// \brief rdb::search_down
-/// \param x
-/// \param y
-/// \param z
-/// \return
-/// \default Поиск по координатам ближайшего блока снизу
-///
-i3d rdb::search_down(int x, int y, int z)
-{
-  if(y < yMin) ERR("Y downflow"); if(y > yMax) ERR("Y overflow");
-  while(y > yMin)
-  {
-    try
-    { 
-      MapRigs.at(i3d {x, y, z});
-      return i3d {x, y, z};
-    } catch (...)
-    { y -= lod; }
-  }
-  ERR("Rigs::search_down() failure. We need to use try/catch in this case.");
 }
 
 

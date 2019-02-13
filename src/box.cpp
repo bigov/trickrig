@@ -100,7 +100,7 @@ void box::init_arrays(void)
 {
   for (auto i = 0; i < SIDES_COUNT; ++i)
   {
-    offset[i]  = 0;
+    vbo_addr[i]  = -1;
     visible[i] = true;
     tex_id[i]  = {0, 0};
   }
@@ -211,7 +211,7 @@ bool box::move_sub(GLsizeiptr offset)
 {
   u_char side_id = side_id_by_offset(offset);
   if(side_id > SIDES_COUNT) return true;
-   return false;
+  return false;
 }
 
 ///
@@ -222,11 +222,15 @@ bool box::move_sub(GLsizeiptr offset)
 void box::offset_write(u_char side_id, GLsizeiptr n)
 {
 #ifndef NDEBUG
-  if(side_id >= SIDES_COUNT) info("box::offset_write ERR: side_id >= SIDES_COUNT");
+  if(side_id >= SIDES_COUNT)
+  {
+    info("box::offset_write ERR: side_id >= SIDES_COUNT");
+    return;
+  }
   if(!visible[side_id]) info("box::offset_write ERR: using unvisible side");
 #endif
 
-  offset[side_id] = n;
+  vbo_addr[side_id] = n;
 }
 
 
@@ -238,7 +242,7 @@ void box::offset_write(u_char side_id, GLsizeiptr n)
 u_char box::side_id_by_offset(GLsizeiptr dst)
 {
   for (u_char side_id = 0; side_id < SIDES_COUNT; ++side_id) {
-    if(offset[side_id] == dst) return side_id;
+    if(vbo_addr[side_id] == dst) return side_id;
   }
   return SIDES_COUNT;
 }
@@ -248,14 +252,15 @@ u_char box::side_id_by_offset(GLsizeiptr dst)
 /// \brief box::offset_read
 /// \param side_id
 /// \return offset for side
-/// \details Для указанной стороны возвращает записаный адрес размещения блока данных в VBO
+/// \details Для указанной стороны, если она видимая, то возвращает записаный адрес
+/// размещения блока данных в VBO. Если не видимая, то -1.
 ///
 GLsizeiptr box::offset_read(u_char side_id)
 {
 #ifndef NDEBUG
-  if(side_id >= SIDES_COUNT) info("box::offset_read ERR: side_id >= SIDES_COUNT");
+  if(side_id >= SIDES_COUNT) ERR ("box::offset_read ERR: side_id >= SIDES_COUNT");
 #endif
-  if(visible[side_id]) return offset[side_id];
+  if(visible[side_id]) return vbo_addr[side_id];
   return -1;
 }
 
@@ -270,15 +275,18 @@ void box::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
   u_char side_id;
   for (side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
-    if(offset[side_id] == old_n)
+    if(vbo_addr[side_id] == old_n)
     {
-      offset[side_id] = new_n;
+      #ifndef NDEBUG
+        if(!visible[side_id]) info("box::offset_replace for unvisible side.");
+      #endif
+      vbo_addr[side_id] = new_n;
       return;
     }
   }
+
 #ifndef NDEBUG
-  if(!visible[side_id]) info("box::offset_replace for unvisible side.");
-  info("box::offset_replace ERR - not found offset.");
+  info("box::offset_replace ERR - not found offset " + std::to_string(new_n) + "\n");
 #endif
 }
 

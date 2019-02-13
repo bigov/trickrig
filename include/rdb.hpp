@@ -40,9 +40,6 @@ class rdb
 
     void _load_16x16_obj(void);
     void init_vbo(void);
-    void box_display(box&, const f3d&);
-    void side_display(box& B, u_char side_id, const f3d& P);
-    void box_wipeoff(box&);
     rig* gen_rig(const i3d&);
     void visibility_recalc_rigs(rig* R0);
     void visibility_recalc(i3d P0);
@@ -51,11 +48,11 @@ class rdb
     rdb(void) {}
     ~rdb(void) {}
 
-    u_int render_points = 0;            // число точек передаваемых в рендер
-    vbo_ext* VBO = nullptr;             // VBO вершин поверхности
+    u_int render_points = 0;           // число точек передаваемых в рендер
+    vbo_ext* VBO = nullptr;            // VBO вершин поверхности
 
-    void rig_display(rig*);            // разместить данные в VBO буфере
-    void rig_wipeoff(rig*);            // убрать риг из VBO
+    void rig_draw(rig*);               // разместить данные в VBO буфере
+    void rig_wipe(rig*);               // убрать риг из VBO
     void increase(unsigned int);       // добавить объем по индексу снипа
     void decrease(unsigned int);       // удалить объем по индексу снипа
 
@@ -63,10 +60,6 @@ class rdb
     void load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position);    // загрузка уровня
     rig* get(const i3d &);
 
-    i3d search_down(int, int, int);
-    i3d search_down(double, double, double);
-    i3d search_down(float, float, float);
-    i3d search_down(const glm::vec3 &);
 };
 
 } //namespace tr

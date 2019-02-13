@@ -116,39 +116,15 @@ vbo_ext::vbo_ext(GLenum type): vbo_base(type)
 
 
 ///
-/// \brief vbo::move_data
-/// \param src
-/// \param dst
-/// \param d_size
-///
-/// \details Сжатие буфера VBO за счет перемещения блока данных из конца
-/// на свободное место ближе к началу буфера. Адрес начала свободного блока
-/// берется из кэша.
-///
-/// После перемещения активная граница VBO сдвигается к началу на размер
-/// перемещеного блока данных.
-///
-void vbo_ext::move_data(GLintptr src, GLintptr dst, GLsizeiptr data_size)
-{
-#ifndef NDEBUG // контроль направления переноса - только крайний в конце блок
-  if((src + data_size) != hem) ERR("vbo::move_data got err src address");
-  if(dst > (src - data_size))  ERR("vbo::move_data: dst + size > src");
-#endif
-
-  glBindBuffer(gl_buffer_type, id);
-  glCopyBufferSubData(gl_buffer_type, gl_buffer_type, src, dst, data_size);
-  glBindBuffer(gl_buffer_type, 0);
-  hem = src;
-}
-
-
-///
 /// \brief vbo_ext::remove
 /// \param dest
 /// \return
 /// \details Для удаления данных из VBO используется перемещение: на место
 /// удаляемого блока перемещаются данные из конца буфера, заменяя их. Длина
 /// активной части буфера уменьшается на размер удаленного блока.
+///
+/// Возвращается значение границы VBO после переноса данных. Она равна
+/// предыдущему значению адреса блока данных, которые были перемещены.
 ///
 GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
 {
@@ -157,23 +133,28 @@ GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
 
 #ifndef NDEBUG
   if((dest + data_size) > hem)
-    std::printf("vbo_ext::remove error: dest=%li, data_size=%li, hem=%li\n",
+    std::printf("vbo_ext::remove error: dest %li + data_size %li  > hem %li\n",
                 static_cast<long>(dest), static_cast<long>(data_size), static_cast<long>(hem));
 #endif
   auto src = hem - data_size; // Адрес крайнего на хвосте блока данных, которые будут перемещены.
-  if(src != dest)
-  {
-    move_data(src, dest, data_size);
+
+  if(src == dest)
+  {             // Если удаляемый блок оказался в конце буфера, то только
+    hem = src;  // сдвигаем гранцу зоны на размер блока (без перемещения данных).
   }
   else
-  {                            // Если удаляемый блок оказался в конце буфера, то только
-    hem = src;                 // сдвигаем гранцу зоны на размер блока (без перемещения данных).
+  {
+    glBindBuffer(gl_buffer_type, id);
+    glCopyBufferSubData(gl_buffer_type, gl_buffer_type, src, dest, data_size);
+    glBindBuffer(gl_buffer_type, 0);
+    hem = src;
   }
   return hem;
 }
 
+
 ///
-/// \brief vbo::data_append
+/// \brief vbo::append
 /// \param d_size
 /// \param data
 /// \return
@@ -184,7 +165,7 @@ GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
 /// сдвигает границу указателя на размер внесенных данных для приема
 /// следующеего блока данных
 ///
-GLsizeiptr vbo_ext::data_append(const GLvoid* data, GLsizeiptr data_size)
+GLsizeiptr vbo_ext::append(const GLvoid* data, GLsizeiptr data_size)
 {
   #ifndef NDEBUG // проверка свободного места в буфере----------------------
   if((allocated - hem) < data_size) ERR("VBO::SubDataAppend got overflow buffer");
@@ -192,30 +173,10 @@ GLsizeiptr vbo_ext::data_append(const GLvoid* data, GLsizeiptr data_size)
   #endif //------------------------------------------------------------------
 
   glBindBuffer(gl_buffer_type, id);
-
   glBufferSubData(gl_buffer_type, hem, data_size, data);
-  //GLvoid* ptr = glMapBufferRange(gl_buffer_type, hem, data_size, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
-  //memcpy(ptr, data, data_size);
-  //glUnmapBuffer(gl_buffer_type);
-
   glBindBuffer(gl_buffer_type, 0);
   GLsizeiptr res = hem;
   hem += data_size;
-
-/*
-//DEBUG
-  size_t j = 0;
-  std::array<GLfloat, digits_per_snip> ArrDebug;
-  memcpy(ArrDebug.data(), data, data_size);
-  for (size_t i = 0; i < 4; i ++) {
-    for (size_t k = 0; k < digits_per_vertex; ++k) {
-      std::printf("%3.2f, ", ArrDebug[j++]);
-    }
-    std::cout << "\n";
-  }
-  std::cout << "\n";
-*/
-
   return res;
 }
 
