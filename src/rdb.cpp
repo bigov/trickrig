@@ -149,7 +149,7 @@ void rdb::rig_wipe(rig* Rig)
   {
     dest = B.offset_read(side_id);             // адрес данных, которые будут перезаписаны
     if(dest < 0) continue;                     // -1 если сторона невидима - пропустить цикл
-    if(dest < 0) ERR("NO loop");
+    B.offset_write(side_id, -1);
     free = VBO->remove(dest, bytes_per_snip);  // убрать снип из VBO и получить адрес смещения
                                                // в VBO с которого данные были перенесены на dest
 
