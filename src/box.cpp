@@ -358,6 +358,64 @@ void box::splice_calc(u_char side_id)
 
 
 ///
+/// \brief box::side_is_full
+/// \param side_id
+/// \return
+///
+bool box::side_is_full(u_char side_id)
+{
+  return Splice[side_id].on;
+}
+
+
+///
+/// \brief box::fill_side
+/// \param side_id
+///
+void box::fill_side(u_char side_id)
+{
+  switch (side_id)
+  {
+    case SIDE_YP:
+      fill_side_yp();
+      break;
+    case SIDE_XP:
+    case SIDE_XN:
+    case SIDE_YN:
+    case SIDE_ZP:
+    case SIDE_ZN:
+    default:
+      break;
+  }
+}
+
+
+///
+/// \brief box::fill_side_yp
+///
+void box::fill_side_yp(void)
+{
+  u_char s = SIDE_YP;
+  a_uch4 id = IdxCoord[s]; // Индексы вершин
+
+  Splice[s].on = true;
+  for(u_char i = 0; i < VERT_PER_SIDE; ++i) AllCoords[id[i]].y = UCHAR_MAX;
+}
+
+
+///
+/// \brief box::side_fill
+/// \param side_id
+///
+void box::side_fill(u_char side_id)
+{
+  if(side_is_full(side_id)) return;
+  fill_side(side_id);
+  for(u_char s_id = 0; s_id < SIDES_COUNT; ++s_id) splice_calc(s_id);
+}
+
+
+///
 /// \brief box::splice_side_xp
 ///
 void box::splice_side_xp(void)

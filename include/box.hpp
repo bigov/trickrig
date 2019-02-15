@@ -112,6 +112,8 @@ private:
   splice& splice_get(u_char side_id);
   void splice_calc(u_char side_id);
   void texture_calc(u_char side_id);
+  void fill_side(u_char side_id);
+  void fill_side_yp(void);
 
 
 public:
@@ -132,6 +134,8 @@ public:
   GLsizeiptr offset_read(u_char side_id);
   void offset_replace(GLsizeiptr old_n, GLsizeiptr new_n);
   bool move_sub(GLsizeiptr vbo_addr);
+  bool side_is_full(u_char side_id);
+  void side_fill(u_char side_id);
 };
 
 }

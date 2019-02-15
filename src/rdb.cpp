@@ -53,13 +53,21 @@ void rdb::increase(unsigned int i)
   u_char s0 = B->side_id_by_offset(offset); // Направление стороны бокса;
   rig* Rig = B->ParentRig;                  // по боксу - риг;
   i3d P0 = Rig->Origin;                     // по ригу - опорную точку;
-  P0 = i3d_shift(P0, s0, lod);              // Точка генерации нового рига.
+
+  if(B->side_is_full(s0)) P0 = i3d_shift(P0, s0, lod);  // Точка генерации нового рига.
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера риги
-    rig_wipe(get(i3d_shift(P0, side, lod)));     // вокруг точки создания нового
+    rig_wipe(get(i3d_shift(P0, side, lod)));        // вокруг точки создания нового
 
-  // Нарисовать в опорной точке новый риг (автоматически производится пересчет
-  // видимости сторон соседних ригов вокруг только что созданного)
+  if(!B->side_is_full(s0))
+  {                              // Если сторона не полная, то
+    rig_wipe(Rig);               // стереть риг
+    B->side_fill(s0);            // заполнить сторону
+    visibility_recalc_rigs(Rig); // пересчитать видимость
+  }
+  // Нарисовать в опорной точке риг. Если сторона была полная и создается новый риг, то
+  // автоматически производится пересчет видимости сторон соседних ригов вокруг только
+  // что созданного. Если риг уже существует, то он просто рисуется.
   rig_draw(gen_rig(P0));
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние риги
@@ -197,14 +205,15 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
 
   //Загрузка из базы данных
   //cfg::DataBase.rigs_loader(MapRigs, From, To);
+  std::srand(std::time(nullptr));
 
-  int side_length = 1;
+  int side_length = 20;
   for (int x = -side_length; x < side_length+1; ++x)
     for (int z = -side_length; z < side_length+1; ++z)
   {
     gen_rig({x,-1, z});
     gen_rig({x, 0, z});
-    gen_rig({x, 1, z});
+    gen_rig({x, 1, z}, 255, 255 - static_cast<u_char>(std::rand() % 30), 255);
   }
 }
 
@@ -213,15 +222,23 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
 /// \brief rdb::gen_rig
 /// \param P
 ///
-rig* rdb::gen_rig(const i3d& P)
+/// \details В указанной точке генерирует однобоксовый риг. Можно указать
+/// размеры сторон бокса. По-умолчанию они устанавливаются = 255
+///
+rig* rdb::gen_rig(const i3d& P, u_char lx, u_char ly, u_char lz)
 {
-  MapRigs[P] = rig{P};
-  rig* R = get(P);
+  rig* R = get(P);            // Если в этой точке уже есть риг,
+  if(nullptr != R) return R;  // то возвращается ссылка на него
 
-  R->Boxes.push_back(box{ {0, 0, 0}, {255, 255, 255}, R});
+  MapRigs[P] = rig{P};
+  R = get(P);
+
+  R->Boxes.push_back(box{ {0, 0, 0}, {lx, ly, lz}, R});
   visibility_recalc_rigs(R);
   return R;
 }
+
+
 
 
 ///

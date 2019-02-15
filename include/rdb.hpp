@@ -40,7 +40,7 @@ class rdb
 
     void _load_16x16_obj(void);
     void init_vbo(void);
-    rig* gen_rig(const i3d&);
+    rig* gen_rig(const i3d&, u_char lx = 255, u_char ly = 255, u_char lz = 255);
     void visibility_recalc_rigs(rig* R0);
     void visibility_recalc(i3d P0);
 
