@@ -411,7 +411,12 @@ void box::side_fill(u_char side_id)
 {
   if(side_is_full(side_id)) return;
   fill_side(side_id);
-  for(u_char s_id = 0; s_id < SIDES_COUNT; ++s_id) splice_calc(s_id);
+
+  for(u_char s_id = 0; s_id < SIDES_COUNT; ++s_id)
+  {
+    splice_calc(s_id);
+    texture_calc(s_id);
+  }
 }
 
 
