@@ -362,7 +362,7 @@ void box::splice_calc(u_char side_id)
 /// \param side_id
 /// \return
 ///
-bool box::side_is_full(u_char side_id)
+bool box::side_is_max(u_char side_id)
 {
   return Splice[side_id].on;
 }
@@ -409,7 +409,7 @@ void box::fill_side_yp(void)
 ///
 void box::side_fill(u_char side_id)
 {
-  if(side_is_full(side_id)) return;
+  if(side_is_max(side_id)) return;
   fill_side(side_id);
 
   for(u_char s_id = 0; s_id < SIDES_COUNT; ++s_id)
@@ -417,6 +417,83 @@ void box::side_fill(u_char side_id)
     splice_calc(s_id);
     texture_calc(s_id);
   }
+}
+
+
+///
+/// \brief box::reduce
+/// \param side
+/// \param len
+/// \return
+/// \details Уменьшить бокс на указанную длину с указанной стороны
+///
+bool box::reduce(u_char side_id, u_char len)
+{
+  bool result = false;
+
+  switch (side_id)
+  {
+    case SIDE_YP:
+      result = reduce_yp(len);
+      break;
+    case SIDE_YN:
+      //return reduce_yn(len);
+      break;
+    case SIDE_XP:
+      //return reduce_(len);
+      break;
+    case SIDE_XN:
+      //return reduce_(len);
+      break;
+    case SIDE_ZP:
+      //return reduce_(len);
+      break;
+    case SIDE_ZN:
+      //return reduce_(len);
+      break;
+    default:
+      result = false;
+  }
+
+  for(u_char s_id = 0; s_id < SIDES_COUNT; ++s_id)
+  {
+    splice_calc(s_id);
+    texture_calc(s_id);
+  }
+
+  return result;
+
+}
+
+
+///
+/// \brief box::reduce_yp
+/// \param len
+/// \return
+///
+/// \details сдвинуть в направлении уменьшния сторону Y+
+///
+/// Если хоть одна вершина выше 1, то результат - true.
+/// Если все вершины на минимальной высоте (y == 1), то сдвинуть
+/// уже ничего больше нельзя. Следовательно и результат - false.
+///
+bool box::reduce_yp(u_char len)
+{
+  a_uch4 Idx = IdxCoord[SIDE_YP]; // Поверхность Y+ это вершины с номерами 0,1,2,3.
+
+  bool rezult = false;
+  for(size_t i = 0; i < VERT_PER_SIDE; ++i)
+  {
+   u_char& y =  AllCoords[Idx[i]].y;
+
+    if( y == 1 ) continue;    // уменьшать меньше 1 нельзя
+    else rezult = true;
+
+    if(y > len) y -= len;
+    else y = 1;
+  }
+
+  return rezult;
 }
 
 

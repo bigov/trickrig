@@ -39,6 +39,16 @@ i3d i3d_shift(const i3d& P, u_char s, int l)
 
 
 ///
+/// \brief rdb::caps_lock_toggle
+/// \details переключить положение caps_lock
+///
+void rdb::caps_lock_toggle(void)
+{
+  caps_lock = !caps_lock;
+}
+
+
+///
 /// \brief rdb::increase
 /// \param i
 ///
@@ -54,20 +64,21 @@ void rdb::increase(unsigned int i)
   rig* Rig = B->ParentRig;                  // по боксу - риг;
   i3d P0 = Rig->Origin;                     // по ригу - опорную точку;
 
-  if(B->side_is_full(s0)) P0 = i3d_shift(P0, s0, lod);  // Точка генерации нового рига.
+  if(B->side_is_max(s0))         // Если бокс имеет максимальный размер с это стороны,
+    P0 = i3d_shift(P0, s0, lod);  // получим точку для генерации нового рига рядом с ним.
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера риги
-    rig_wipe(get(i3d_shift(P0, side, lod)));        // вокруг точки создания нового
+    rig_wipe(get(i3d_shift(P0, side, lod)));        // вокруг изменяемого (или нового) рига
 
-  if(!B->side_is_full(s0))
+  if(!B->side_is_max(s0))
   {                              // Если сторона не полная, то
     rig_wipe(Rig);               // стереть риг
     B->side_fill(s0);            // заполнить сторону
-    visibility_recalc_rigs(Rig); // пересчитать видимость
+    visibility_recalc_rigs(Rig); // пересчитать видимость всех ригов вокруг
   }
-  // Нарисовать в опорной точке риг. Если сторона была полная и создается новый риг, то
+  // Нарисовать в опорной точке риг. Если сторона была полная, то создается новый риг и
   // автоматически производится пересчет видимости сторон соседних ригов вокруг только
-  // что созданного. Если риг уже существует, то он просто рисуется.
+  // что созданного. Если риг уже существует, то "gen_rig" выдает ссылку на него и он рисуется.
   rig_draw(gen_rig(P0));
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние риги
@@ -89,17 +100,50 @@ void rdb::decrease(unsigned int i)
   // через параметр номеру группы данных вычисляем адрес ее смещения в буфере
   GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip;
 
-  box* B = Visible[offset];     // По адресу смещения найдем бокс
-  rig* R = B->ParentRig;        // по боксу - риг
-  i3d P0 = R->Origin;           // по ригу - опорную точку
+  box* B = Visible[offset];                 // По адресу смещения найдем бокс
+  rig* R = B->ParentRig;                    // по боксу - риг
+  i3d P0 = R->Origin;                       // по ригу - опорную точку
+  u_char s0 = B->side_id_by_offset(offset); // Направление стороны бокса;
 
-  for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера риги
-    rig_wipe(get(i3d_shift(P0, side, lod)));        // вокруг точки удаления
+  for (u_char side = 0; side < SIDES_COUNT; ++side) // Убрать из рендера риги вокруг
+    rig_wipe(get(i3d_shift(P0, side, lod)));
 
-  rig_wipe(R);                                      // убрать риг из VBO рендера
+  rig_wipe(R);                               // убрать из рендера выбранный риг
 
-  MapRigs.erase(R->Origin);                         // удалить риг из базы данных
-  visibility_recalc(P0);                            // пересчитать видимость ригов вокруг
+  if(!caps_lock)
+  {
+    MapRigs.erase(R->Origin); // удалить риг из базы данных
+    visibility_recalc(P0);    // пересчитать видимость ригов вокруг
+    for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние риги
+      rig_draw(get(i3d_shift(P0, side, lod)));
+    return;
+  }
+
+  u_char step = 50; // шаг уменьшения размера бокса
+  if(B->reduce(s0, step))       // Попробовать уменьшить бокс.
+  {                             // Если удачно, то
+    visibility_recalc_rigs(R);  // пересчитать видимость
+    rig_draw(R);                // и вернуть на экран.
+  }
+  else
+  { // Если уменьшить не удалось (уже минимальный размер), то удалить его.
+    for(size_t i = 0; i < R->Boxes.size(); ++i) if(B == &(R->Boxes[i]))
+    {
+      R->Boxes.erase(R->Boxes.begin() + i);
+      i = R->Boxes.size();
+    }
+
+    if(R->Boxes.empty())        // В каждом риге может быть несколько боксов.
+    {                           // Если их не осталость, то
+      MapRigs.erase(R->Origin); // удалить риг из базы данных
+      visibility_recalc(P0);    // пересчитать видимость ригов вокруг
+    }
+    else
+    {                             // Если в риге еще остались боксы,
+      visibility_recalc_rigs(R);  // то пересчитать видимость
+      rig_draw(R);                // и вернуть риг на экран.
+    }
+  }
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние риги
     rig_draw(get(i3d_shift(P0, side, lod)));

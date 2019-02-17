@@ -35,6 +35,8 @@ class rdb
     int yMin = -100;  // временное ограничение рабочего пространства
     int yMax = 100;
 
+    bool caps_lock = false; // ключ поступеньчатого изменения размера боксов
+
     // --Level--Of--Details--
     int lod = 1; // размер стороны элементов в LOD = 1
 
@@ -51,6 +53,7 @@ class rdb
     u_int render_points = 0;           // число точек передаваемых в рендер
     vbo_ext* VBO = nullptr;            // VBO вершин поверхности
 
+    void caps_lock_toggle(void);       // переключить положение caps_lock
     void rig_draw(rig*);               // разместить данные в VBO буфере
     void rig_wipe(rig*);               // убрать риг из VBO
     void increase(unsigned int);       // добавить объем по индексу снипа

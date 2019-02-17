@@ -95,6 +95,8 @@ wglfw::wglfw(void)
   glfwSetCursorPosCallback(win_ptr, cursor_position_callback);
   glfwSetFramebufferSizeCallback(win_ptr, framebuffer_size_callback);
   glfwSetWindowPosCallback(win_ptr, window_pos_callback);
+
+
   if(!ogl_LoadFunctions()) ERR("Can't load OpenGl finctions");
 }
 

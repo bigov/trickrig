@@ -100,7 +100,12 @@ private:
   std::array<splice, SIDES_COUNT> Splice {}; // координаты стыка с соседним ригом
 
   GLsizeiptr vbo_addr[SIDES_COUNT];  // Адреса смещения в буфере GPU массивов данных по каждой из сторон
+
   void init_arrays(void);
+  splice& splice_get(u_char side_id);
+  void splice_calc(u_char side_id);
+  void texture_calc(u_char side_id);
+  void fill_side(u_char side_id);
 
   // расчет стыков для каждой из сторон
   void splice_side_xp(void);
@@ -109,12 +114,22 @@ private:
   void splice_side_yn(void);
   void splice_side_zp(void);
   void splice_side_zn(void);
-  splice& splice_get(u_char side_id);
-  void splice_calc(u_char side_id);
-  void texture_calc(u_char side_id);
-  void fill_side(u_char side_id);
-  void fill_side_yp(void);
 
+  // заполнение стороны до максимума
+  void fill_side_xp(void);
+  void fill_side_xn(void);
+  void fill_side_yp(void);
+  void fill_side_yn(void);
+  void fill_side_zp(void);
+  void fill_side_zn(void);
+
+  // сдвиг стороны в направлении уменьшения на указанное расстояние
+  bool reduce_xp(u_char len);
+  bool reduce_xn(u_char len);
+  bool reduce_yp(u_char len);
+  bool reduce_yn(u_char len);
+  bool reduce_zp(u_char len);
+  bool reduce_zn(u_char len);
 
 public:
   // конструктор с генератором вершин и значениями по-умолчанию
@@ -134,8 +149,10 @@ public:
   GLsizeiptr offset_read(u_char side_id);
   void offset_replace(GLsizeiptr old_n, GLsizeiptr new_n);
   bool move_sub(GLsizeiptr vbo_addr);
-  bool side_is_full(u_char side_id);
+  bool side_is_max(u_char side_id);
   void side_fill(u_char side_id);
+  bool reduce(u_char side, u_char len);
+
 };
 
 }

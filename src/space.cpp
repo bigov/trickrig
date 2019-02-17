@@ -320,10 +320,17 @@ void space::calc_position(evInput & ev)
 /// Функция, вызываемая из цикла окна для рендера сцены
 ///
 /// S == 31; C == 46
-void space::draw(evInput & ev)
+void space::draw(evInput& ev)
 {
   calc_position(ev);
   recalc_borders();
+
+  if((ev.key == GLFW_KEY_CAPS_LOCK) && (ev.action == RELEASE))
+  {
+    ev.key = -1;
+    ev.action = -1;
+    RigsDb0.caps_lock_toggle();
+  }
 
   if((46 == ev.scancode) && (ev.action == PRESS))
   {
