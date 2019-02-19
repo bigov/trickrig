@@ -40,6 +40,7 @@ namespace tr {
 //#define UCH_MAX 255
 
 extern u_char opposite(u_char side_id);
+extern u_char opposite_idx(u_char side_id, u_char idx);
 
 struct splice
 {

@@ -7,7 +7,7 @@ namespace tr
 ///
 /// \brief cross
 /// \param s
-/// \return
+/// \return номер стороны, противоположной указанной в параметре
 ///
 u_char opposite(u_char s)
 {
@@ -36,6 +36,61 @@ u_char opposite(u_char s)
 #endif
       return UCHAR_MAX;
   }
+}
+
+
+///
+/// \brief opposite_idx
+/// \param side_id
+/// \param idx
+/// \return номер вершины, противовположной указанной для указанной стороны
+///
+u_char opposite_idx(u_char side_id, u_char i)
+{
+  switch (side_id)
+  {
+    case SIDE_XP:
+      if(i == 2) return 3;
+      if(i == 1) return 0;
+      if(i == 5) return 4;
+      if(i == 6) return 7;
+      break;
+    case SIDE_XN:
+      if(i == 0) return 1;
+      if(i == 3) return 2;
+      if(i == 7) return 6;
+      if(i == 4) return 5;
+      break;
+    case SIDE_YP:
+      if(i == 0) return 4;
+      if(i == 1) return 5;
+      if(i == 2) return 6;
+      if(i == 3) return 7;
+      break;
+    case SIDE_YN:
+      if(i == 7) return 3;
+      if(i == 6) return 2;
+      if(i == 5) return 1;
+      if(i == 4) return 0;
+      break;
+    case SIDE_ZP:
+      if(i == 1) return 2;
+      if(i == 0) return 3;
+      if(i == 4) return 7;
+      if(i == 5) return 6;
+      break;
+    case SIDE_ZN:
+      if(i == 3) return 0;
+      if(i == 2) return 1;
+      if(i == 6) return 5;
+      if(i == 7) return 4;
+      break;
+    default:
+#ifndef NDEBUG
+      info("no opposite_idx for side = " + std::to_string(side_id));
+#endif
+  }
+  return UCHAR_MAX;
 }
 
 
@@ -161,6 +216,7 @@ void box::texture_calc(u_char s_id)
   {
     VertTexture[VERT_PER_SIDE * s_id + v_i].u =
         u_sz * tex_id[s_id].u + u_sz * Splice[s_id].data[2*v_i]/255.f;
+
     VertTexture[VERT_PER_SIDE * s_id + v_i].v =
         v_sz * tex_id[s_id].v + v_sz * (255-Splice[s_id].data[2*v_i+1])/255.f;
   }
@@ -437,19 +493,19 @@ bool box::reduce(u_char side_id, u_char len)
       result = reduce_yp(len);
       break;
     case SIDE_YN:
-      //return reduce_yn(len);
+      result = reduce_yn(len);
       break;
     case SIDE_XP:
-      //return reduce_(len);
+      result = reduce_xp(len);
       break;
     case SIDE_XN:
-      //return reduce_(len);
+      result = reduce_xn(len);
       break;
     case SIDE_ZP:
-      //return reduce_(len);
+      result = reduce_zp(len);
       break;
     case SIDE_ZN:
-      //return reduce_(len);
+      result = reduce_zn(len);
       break;
     default:
       result = false;
@@ -467,11 +523,44 @@ bool box::reduce(u_char side_id, u_char len)
 
 
 ///
+/// \brief box::reduce_xp
+/// \param len
+/// \return
+///
+/// \details сдвинуть в направлении уменьшения сторону X+
+///
+/// Если хоть одна вершина выше 1, то результат - true.
+/// Если все вершины на минимальной высоте (y == 1), то сдвинуть
+/// уже ничего больше нельзя. Следовательно и результат - false.
+///
+bool box::reduce_xp(u_char len)
+{
+  u_char side = SIDE_XP;         // Поверхность X+
+  a_uch4 Idx = IdxCoord[side];
+
+  bool rezult = false;
+  for(size_t i = 0; i < VERT_PER_SIDE; ++i)
+  {
+    u_char& var = AllCoords[Idx[i]].x;
+    u_char  opp = AllCoords[opposite_idx(side, Idx[i])].x;
+
+    if((var - opp) == 1 ) continue;     // уменьшать меньше 1 нельзя
+    else rezult = true;
+
+    if((var - opp) > len) var -= len;
+    else var = opp + 1;
+  }
+
+  return rezult;
+}
+
+
+///
 /// \brief box::reduce_yp
 /// \param len
 /// \return
 ///
-/// \details сдвинуть в направлении уменьшния сторону Y+
+/// \details сдвинуть в направлении уменьшения сторону Y+
 ///
 /// Если хоть одна вершина выше 1, то результат - true.
 /// Если все вершины на минимальной высоте (y == 1), то сдвинуть
@@ -479,18 +568,152 @@ bool box::reduce(u_char side_id, u_char len)
 ///
 bool box::reduce_yp(u_char len)
 {
-  a_uch4 Idx = IdxCoord[SIDE_YP]; // Поверхность Y+ это вершины с номерами 0,1,2,3.
+  u_char side = SIDE_YP;         // Поверхность Y+
+  a_uch4 Idx = IdxCoord[side];
 
   bool rezult = false;
   for(size_t i = 0; i < VERT_PER_SIDE; ++i)
   {
-   u_char& y =  AllCoords[Idx[i]].y;
+    u_char& var = AllCoords[Idx[i]].y;
+    u_char  opp = AllCoords[opposite_idx(side, Idx[i])].y;
 
-    if( y == 1 ) continue;    // уменьшать меньше 1 нельзя
+    if((var - opp) == 1 ) continue;     // уменьшать меньше 1 нельзя
     else rezult = true;
 
-    if(y > len) y -= len;
-    else y = 1;
+    if((var - opp) > len) var -= len;
+    else var = opp + 1;
+  }
+
+  return rezult;
+}
+
+
+///
+/// \brief box::reduce_zp
+/// \param len
+/// \return
+///
+/// \details сдвинуть в направлении уменьшения сторону Z+
+///
+/// Если хоть одна вершина выше 1, то результат - true.
+/// Если все вершины на минимальной высоте (y == 1), то сдвинуть
+/// уже ничего больше нельзя. Следовательно и результат - false.
+///
+bool box::reduce_zp(u_char len)
+{
+  u_char side = SIDE_ZP;         // Поверхность Y+
+  a_uch4 Idx = IdxCoord[side];
+
+  bool rezult = false;
+  for(size_t i = 0; i < VERT_PER_SIDE; ++i)
+  {
+    u_char& var = AllCoords[Idx[i]].z;
+    u_char  opp = AllCoords[opposite_idx(side, Idx[i])].z;
+
+    if((var - opp) == 1 ) continue;     // уменьшать меньше 1 нельзя
+    else rezult = true;
+
+    if((var - opp) > len) var -= len;
+    else var = opp + 1;
+  }
+
+  return rezult;
+}
+
+
+///
+/// \brief box::reduce_xn
+/// \param len
+/// \return
+///
+/// \details сдвинуть в направлении уменьшения сторону X-
+///
+/// Если хоть одна вершина ниже 254, то результат - true.
+/// Если все вершины на максимальной высоте (y == 254), то сдвинуть
+/// уже ничего больше нельзя. Следовательно и результат - false.
+///
+bool box::reduce_xn(u_char len)
+{
+  u_char side = SIDE_XN;         // Поверхность Y-
+  a_uch4 Idx = IdxCoord[side];
+
+  bool rezult = false;
+  for(size_t i = 0; i < VERT_PER_SIDE; ++i)
+  {
+    u_char& var = AllCoords[Idx[i]].x;
+    u_char  opp = AllCoords[opposite_idx(side, Idx[i])].x;
+
+    if((opp - var) == 1 ) continue;     // уменьшать меньше 1 нельзя
+    else rezult = true;
+
+    if((opp - var) > len) var += len;
+    else var = opp - 1;
+  }
+
+  return rezult;
+}
+
+
+///
+/// \brief box::reduce_yn
+/// \param len
+/// \return
+///
+/// \details сдвинуть в направлении уменьшения сторону Y-
+///
+/// Если хоть одна вершина ниже 254, то результат - true.
+/// Если все вершины на максимальной высоте (y == 254), то сдвинуть
+/// уже ничего больше нельзя. Следовательно и результат - false.
+///
+bool box::reduce_yn(u_char len)
+{
+  u_char side = SIDE_YN;         // Поверхность Y-
+  a_uch4 Idx = IdxCoord[side];
+
+  bool rezult = false;
+  for(size_t i = 0; i < VERT_PER_SIDE; ++i)
+  {
+    u_char& var = AllCoords[Idx[i]].y;
+    u_char  opp = AllCoords[opposite_idx(side, Idx[i])].y;
+
+    if((opp - var) == 1 ) continue;     // уменьшать меньше 1 нельзя
+    else rezult = true;
+
+    if((opp - var) > len) var += len;
+    else var = opp - 1;
+  }
+
+  return rezult;
+}
+
+
+///
+/// \brief box::reduce_zn
+/// \param len
+/// \return
+///
+/// \details сдвинуть в направлении уменьшения сторону Z-
+///
+/// Если хоть одна вершина ниже 254, то результат - true.
+/// Если все вершины на максимальной высоте (y == 254), то сдвинуть
+/// уже ничего больше нельзя. Следовательно и результат - false.
+///
+bool box::reduce_zn(u_char len)
+{
+  u_char side = SIDE_ZN;         // Поверхность Y-
+  a_uch4 Idx = IdxCoord[side];
+
+  bool rezult = false;
+  for(size_t i = 0; i < VERT_PER_SIDE; ++i)
+  {
+    u_char& var = AllCoords[Idx[i]].z;
+    u_char  opp = AllCoords[opposite_idx(side, Idx[i])].z;
+
+    if((opp - var) == 1 ) continue;     // уменьшать меньше 1 нельзя
+    else rezult = true;
+
+    if((opp - var) > len) var += len;
+    else var = opp - 1;
   }
 
   return rezult;
