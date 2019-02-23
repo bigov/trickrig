@@ -1,4 +1,4 @@
-#version 330
+#version 330 core
 
 in vec4 position;
 //in vec4 color;     // цвет точки
