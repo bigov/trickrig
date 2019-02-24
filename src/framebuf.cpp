@@ -14,7 +14,7 @@ namespace tr
 /// \param texture_id
 /// \return
 ///
-bool frame_buffer::init(GLsizei w, GLsizei h, GLint gl_tex_color, GLint gl_tex_ident)
+bool frame_buffer::init(GLsizei w, GLsizei h, GLenum gl_tex_color, GLenum gl_tex_ident)
 {
   //gl_tex_color = GL_TEXTURE1;
   //gl_tex_ident = GL_TEXTURE2;

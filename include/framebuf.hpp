@@ -33,7 +33,7 @@ public:
   frame_buffer(void) {}
   ~frame_buffer(void);
 
-  bool init(GLsizei w, GLsizei h, GLint t0, GLint t1);
+  bool init(GLsizei w, GLsizei h, GLenum t0, GLenum t1);
   void resize(GLsizei w, GLsizei h);
   pixel_info read_pixel(GLint x, GLint y);
   void bind(void);
