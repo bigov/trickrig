@@ -10,6 +10,16 @@
 namespace tr
 {
 
+void vbo_base::bind(void)
+{
+  glBindBuffer(gl_buffer_type, id);
+}
+
+void vbo_base::unbind(void)
+{
+  glBindBuffer(gl_buffer_type, 0);
+}
+
 ///
 /// \brief vbo::allocate
 /// \param al

@@ -1,4 +1,4 @@
-#version 330 core
+#version 330
 
 out uvec3 FragColor;
 //uniform uint DrawIndex;

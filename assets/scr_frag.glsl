@@ -1,4 +1,4 @@
-#version 330 core
+#version 330
 
 in vec2 Texcoord;
 uniform sampler2D texFramebuffer;

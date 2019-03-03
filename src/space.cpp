@@ -26,7 +26,7 @@ const float down_max = -up_max;    // Максимальный угол вниз
 space::space(void)
 {
   light_direction = glm::normalize(glm::vec3(0.3f, 0.45f, 0.4f)); // направление (x,y,z)
-  light_bright = glm::vec3(0.99f, 0.99f, 1.00f);                 // цвет        (r,g,b)
+  light_bright = glm::vec3(0.99f, 0.99f, 1.00f);                  // цвет        (r,g,b)
 
   glClearColor(0.5f, 0.69f, 1.0f, 1.0f);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -41,10 +41,13 @@ space::space(void)
   // компиляция GLSL программы
   Prog3d.attach_shaders( cfg::app_key(SHADER_VERT_SCENE), cfg::app_key(SHADER_FRAG_SCENE) );
   Prog3d.use();
-  Prog3d.Atrib["position"] = Prog3d.attrib_location_get("position");
-  Prog3d.Atrib["color"]    = Prog3d.attrib_location_get("color");
-  Prog3d.Atrib["normal"]   = Prog3d.attrib_location_get("normal");
-  Prog3d.Atrib["fragment"] = Prog3d.attrib_location_get("fragment");
+
+  // Заполнить карту атрибутов для более быстрого доступа
+  Prog3d.attrib_location_get("position");
+  Prog3d.attrib_location_get("color");
+  Prog3d.attrib_location_get("normal");
+  Prog3d.attrib_location_get("fragment");
+
   Prog3d.unuse();
 
   // настройка VAO
@@ -102,7 +105,6 @@ void space::init_vao(void)
     for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
     stride += 4;                                                 // по 4 вершины на снип
   }
-  vbo_base VBOindex = { GL_ELEMENT_ARRAY_BUFFER };               // Создать индексный буфер
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data);   // и заполнить данными.
   delete[] idx_data;                                             // Удалить исходный массив.
   glBindVertexArray(0);
@@ -384,6 +386,13 @@ void space::render_3d_space(void)
   Prog3d.set_uniform("light_direction", light_direction);  // направление
   Prog3d.set_uniform("light_bright", light_bright);        // цвет/яркость
 
+  VBO.bind();
+  VBOindex.bind();
+  glEnableVertexAttribArray(Prog3d.Atrib["position"]);
+  glEnableVertexAttribArray(Prog3d.Atrib["color"]);
+  glEnableVertexAttribArray(Prog3d.Atrib["normal"]);
+  glEnableVertexAttribArray(Prog3d.Atrib["fragment"]);
+
   // Нарисовать все за один проход можно так:
   //glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_points), GL_UNSIGNED_INT, nullptr);
 
@@ -394,7 +403,25 @@ void space::render_3d_space(void)
     Prog3d.set_uniform1ui("Xid", static_cast<unsigned int>(i));
     glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT, nullptr, i);
 
+    //auto
+    //p = i * bytes_per_vertex + 0 * sizeof(GLfloat);
+    //glVertexAttribPointer(Prog3d.Atrib["position"], 3, GL_FLOAT, GL_FALSE, bytes_per_vertex, reinterpret_cast<void*>(p));
+    //p = i * bytes_per_vertex + 3 * sizeof(GLfloat);
+    //glVertexAttribPointer(Prog3d.Atrib["color"],    4, GL_FLOAT, GL_TRUE,  bytes_per_vertex, reinterpret_cast<void*>(p));
+    //p = i * bytes_per_vertex + 7 * sizeof(GLfloat);
+    //glVertexAttribPointer(Prog3d.Atrib["normal"],   3, GL_FLOAT, GL_TRUE,  bytes_per_vertex, reinterpret_cast<void*>(p));
+    //p = i * bytes_per_vertex + 10 * sizeof(GLfloat);
+    //glVertexAttribPointer(Prog3d.Atrib["fragment"], 2, GL_FLOAT, GL_TRUE,  bytes_per_vertex, reinterpret_cast<void*>(p));
+    //glDrawElements(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT, nullptr);
+
   }
+
+  glDisableVertexAttribArray(Prog3d.Atrib["position"]);
+  glDisableVertexAttribArray(Prog3d.Atrib["color"]);
+  glDisableVertexAttribArray(Prog3d.Atrib["normal"]);
+  glDisableVertexAttribArray(Prog3d.Atrib["fragment"]);
+  VBO.unbind();
+  VBOindex.unbind();
 
   Prog3d.unuse(); // отключить шейдерную программу
   FrBuffer.unbind();

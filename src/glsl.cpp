@@ -138,8 +138,10 @@ namespace tr {
       msg += name;
       ERR(msg);
     }
-  
-    return static_cast<GLuint>( l );
+
+    auto result = static_cast<GLuint>( l );
+    Atrib[name] = result;
+    return result;
   }
   
   ////////
@@ -277,6 +279,7 @@ namespace tr {
     return;
   }
   
+/*
   //## Считывание из файлов и подключение шейдеров
   //
   void glsl::attach_shaders(
@@ -290,5 +293,6 @@ namespace tr {
     attach_shader(GL_FRAGMENT_SHADER, frag_fn);
     return;
   }
-  
+*/
+
 } // namespace tr

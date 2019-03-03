@@ -34,7 +34,8 @@ namespace tr
       const int g1 = 1;              // масштаб элементов в RigsDb0
       GLuint vao_id = 0;             // VAO ID
 
-      vbo_ext VBO {GL_ARRAY_BUFFER}; // VBO вершин поверхности
+      vbo_ext VBO {GL_ARRAY_BUFFER};                   // VBO вершин поверхности
+      vbo_base VBOindex = { GL_ELEMENT_ARRAY_BUFFER }; // индексный буфер
       rdb RigsDb0 {};                // структура 3D пространства LOD-0
       GLuint texture_id = 0;
       float rl=0.f, ud=0.f, fb=0.f; // скорость движения по направлениям

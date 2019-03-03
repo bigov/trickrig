@@ -33,7 +33,8 @@
 #include <utility>
 #include <filesystem>
 
-#include "gl_core33.h"
+//#include "gl_core33.h"
+#include "glad.h"
 #define GLM_FORCE_RADIANS
 #include "glm/glm.hpp"
 #include "glm/gtc/constants.hpp"

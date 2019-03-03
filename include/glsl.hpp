@@ -21,10 +21,10 @@ namespace tr
       void attach_shader(GLenum shader_type, 
         const std::string& file_name);
 
-      void attach_shaders(
-        const std::string& vertex_shader_filename,
-        const std::string& geometric_shader_filename,
-        const std::string& fragment_shader_filename);
+      //void attach_shaders(
+      //  const std::string& vertex_shader_filename,
+      //  const std::string& geometric_shader_filename,
+      //  const std::string& fragment_shader_filename);
 
       void attach_shaders(
         const std::string& vertex_shader_filename,

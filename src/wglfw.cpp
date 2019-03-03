@@ -65,7 +65,7 @@ wglfw::wglfw(void)
   if (!glfwInit()) ERR("Error init GLFW lib.");
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 0);
 
@@ -97,7 +97,10 @@ wglfw::wglfw(void)
   glfwSetWindowPosCallback(win_ptr, window_pos_callback);
 
 
-  if(!ogl_LoadFunctions()) ERR("Can't load OpenGl finctions");
+  //if(!ogl_LoadFunctions()) ERR("Can't load OpenGl finctions");
+  if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
+  if(!gladLoadGL()) { ERR("FAILURE: can't load GLAD."); }
+
 }
 
 
