@@ -31,8 +31,9 @@ space::space(void)
   glClearColor(0.5f, 0.69f, 1.0f, 1.0f);
   glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
   glFrontFace(GL_CCW);
+  glEnable(GL_CULL_FACE);    // отключить отображение обратных поверхностей
+  //glDisable(GL_CULL_FACE); // не отключать отображение обратных поверхностей
   glCullFace(GL_BACK);
-  glDisable(GL_CULL_FACE); // включить отображение обратных поверхностей
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_LINE_SMOOTH);
   glEnable(GL_BLEND);      // поддержка прозрачности
