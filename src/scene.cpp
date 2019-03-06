@@ -11,37 +11,42 @@ namespace tr
 {
 
 ///
-/// \brief scene::scene
+/// \brief scene::~scene
 ///
-scene::scene()
+scene::~scene(void)
 {
-  program2d_init();
+  WinGui = nullptr;
+  screenShaderProgram = nullptr;
 }
 
 
 ///
+/// \brief scene::scene
+/// \details
 /// Инициализация GLSL программы обработки текстуры фреймбуфера.
 ///
-/// \details
 /// Текстура фрейм-буфера за счет измения порядка следования координат
 /// вершин с 1-2-3-4 на 3-4-1-2 перевернута - верх и низ в сцене
 /// меняются местами. Благодаря этому, нулевой координатой (0,0) окна
 /// становится более привычный верхний-левый угол, и загруженные из файла
 /// изображения текстур применяются без дополнительного переворота.
 ///
-void scene::program2d_init(void)
+scene::scene(void)
 {
+  screenShaderProgram = std::make_unique<glsl>();
+  WinGui = std::make_unique<gui>();
+
   glGenVertexArrays(1, &vao_quad_id);
   glBindVertexArray(vao_quad_id);
 
-  screenShaderProgram.attach_shaders(
+  screenShaderProgram->attach_shaders(
         cfg::app_key(SHADER_VERT_SCREEN), cfg::app_key(SHADER_FRAG_SCREEN) );
-  screenShaderProgram.use();
+  screenShaderProgram->use();
 
   vbo_base VboPosition { GL_ARRAY_BUFFER };
   GLfloat Position[8] = { -1.f, -1.f, 1.f, -1.f, -1.f, 1.f, 1.f, 1.f };
   VboPosition.allocate( sizeof(Position), Position );
-  VboPosition.attrib( screenShaderProgram.attrib_location_get("position"),
+  VboPosition.attrib( screenShaderProgram->attrib_location_get("position"),
       2, GL_FLOAT, GL_FALSE, 0, 0);
 
   vbo_base VboTexcoord { GL_ARRAY_BUFFER };
@@ -53,15 +58,15 @@ void scene::program2d_init(void)
   };
 
   VboTexcoord.allocate( sizeof(Texcoord), Texcoord );
-  VboTexcoord.attrib( screenShaderProgram.attrib_location_get("texcoord"),
+  VboTexcoord.attrib( screenShaderProgram->attrib_location_get("texcoord"),
       2, GL_FLOAT, GL_FALSE, 0, 0);
 
   // GL_TEXTURE1
-  glUniform1i(screenShaderProgram.uniform_location_get("texFramebuffer"), 1);
+  glUniform1i(screenShaderProgram->uniform_location_get("texFramebuffer"), 1);
   // GL_TEXTURE2
-  glUniform1i(screenShaderProgram.uniform_location_get("texHUD"), 2);
+  glUniform1i(screenShaderProgram->uniform_location_get("texHUD"), 2);
 
-  screenShaderProgram.unuse();
+  screenShaderProgram->unuse();
   glBindVertexArray(0);
 }
 
@@ -77,15 +82,15 @@ void scene::program2d_init(void)
 ///
 void scene::draw(evInput &ev)
 {
-  WinGui.draw(ev);
+  WinGui->draw(ev);
 
   // Рендер окна с текстурами фреймбуфера и GIU
   glBindVertexArray(vao_quad_id);
   glDisable(GL_DEPTH_TEST);
-  screenShaderProgram.use();
-  screenShaderProgram.set_uniform("Cursor", AppWin.Cursor);
+  screenShaderProgram->use();
+  screenShaderProgram->set_uniform("Cursor", AppWin.Cursor);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-  screenShaderProgram.unuse();
+  screenShaderProgram->unuse();
 }
 
 } // namespace tr

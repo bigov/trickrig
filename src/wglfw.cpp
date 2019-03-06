@@ -64,9 +64,9 @@ wglfw::wglfw(void)
   glfwSetErrorCallback(error_callback);
   if (!glfwInit()) ERR("Error init GLFW lib.");
 
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 0);
 
   #ifndef NDEBUG
@@ -96,10 +96,10 @@ wglfw::wglfw(void)
   glfwSetFramebufferSizeCallback(win_ptr, framebuffer_size_callback);
   glfwSetWindowPosCallback(win_ptr, window_pos_callback);
 
-
-  //if(!ogl_LoadFunctions()) ERR("Can't load OpenGl finctions");
   if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
   if(!gladLoadGL()) { ERR("FAILURE: can't load GLAD."); }
+
+  Scene = std::make_unique<tr::scene>();
 
 }
 
@@ -109,6 +109,7 @@ wglfw::wglfw(void)
 ///
 wglfw::~wglfw()
 {
+  Scene = nullptr; // destruct Scene
   glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
   glfwTerminate();
 }
@@ -247,7 +248,7 @@ void wglfw::cursor_position_callback(GLFWwindow* ptWin, double x, double y)
 ///
 /// \brief Main loop for the app-window show
 ///
-void wglfw::show(tr::scene & Scene)
+void wglfw::show(void)
 {
   glfwSetInputMode(win_ptr, GLFW_STICKY_KEYS, 0);
   int fps = 0;
@@ -265,7 +266,7 @@ void wglfw::show(tr::scene & Scene)
       AppWin.fps = fps;
       fps = 0;
     }
-    Scene.draw(keys);
+    Scene->draw(keys);
     if(AppWin.set_mouse_ptr != 0) set_cursor();
     glfwSwapBuffers(win_ptr);
     glfwPollEvents();

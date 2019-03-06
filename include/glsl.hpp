@@ -49,6 +49,7 @@ namespace tr
     private:
       GLuint id = 0;
       GLint isLinked = 0;
+      std::vector<GLuint> Shaders {};
       glsl(const glsl &);
       glsl operator= (const glsl &);
 

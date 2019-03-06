@@ -17,10 +17,11 @@ class wglfw
   public:
       wglfw(void);
       ~wglfw(void);
-      void show(tr::scene&);
+      void show(void);
 
     private:
       GLFWwindow * win_ptr = nullptr;
+      std::unique_ptr<tr::scene> Scene = nullptr;   // Сборка сцены
 
       // переменная для запроса положения курсора в окне
       double mouse_x = 0.0,

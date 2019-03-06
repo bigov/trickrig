@@ -74,7 +74,7 @@ class gui
     img Font18l { "../assets/font_10x18_lt.png", f_len }; //шрифт 10x18 (светл)
 
     std::string user_input {};  // строка ввода пользователя
-    space Space {};
+    std::unique_ptr<space> Space = nullptr;
 
     void hud_load(void);
     void obscure_screen(void);
@@ -104,6 +104,7 @@ class gui
 
   public:
     gui(void);
+    ~gui(void);
     void draw(evInput &);      // формирование изображения GIU окна
 };
 

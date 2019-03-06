@@ -20,11 +20,21 @@ const float down_max = -up_max;    // Максимальный угол вниз
 
 
 ///
+/// \brief space::~space
+///
+space::~space(void)
+{
+  Prog3d = nullptr;
+}
+
+
+///
 /// \brief space::space
 /// \details Формирование 3D пространства
 ///
 space::space(void)
 {
+  Prog3d = std::make_unique<glsl>();
   light_direction = glm::normalize(glm::vec3(0.3f, 0.45f, 0.4f)); // направление (x,y,z)
   light_bright = glm::vec3(0.99f, 0.99f, 1.00f);                  // цвет        (r,g,b)
 
@@ -40,16 +50,16 @@ space::space(void)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   // компиляция GLSL программы
-  Prog3d.attach_shaders( cfg::app_key(SHADER_VERT_SCENE), cfg::app_key(SHADER_FRAG_SCENE) );
-  Prog3d.use();
+  Prog3d->attach_shaders( cfg::app_key(SHADER_VERT_SCENE), cfg::app_key(SHADER_FRAG_SCENE) );
+  Prog3d->use();
 
   // Заполнить карту атрибутов для более быстрого доступа
-  Prog3d.attrib_location_get("position");
-  Prog3d.attrib_location_get("color");
-  Prog3d.attrib_location_get("normal");
-  Prog3d.attrib_location_get("fragment");
+  Prog3d->attrib_location_get("position");
+  Prog3d->attrib_location_get("color");
+  Prog3d->attrib_location_get("normal");
+  Prog3d->attrib_location_get("fragment");
 
-  Prog3d.unuse();
+  Prog3d->unuse();
 
   // настройка VAO
   init_vao();
@@ -81,16 +91,16 @@ void space::init_vao(void)
   VBO.allocate(n * bytes_per_snip);
 
   // настройка положения атрибутов
-  VBO.attrib(Prog3d.Atrib["position"],
+  VBO.attrib(Prog3d->Atrib["position"],
     3, GL_FLOAT, GL_FALSE, bytes_per_vertex, 0 * sizeof(GLfloat));
 
-  VBO.attrib(Prog3d.Atrib["color"],
+  VBO.attrib(Prog3d->Atrib["color"],
     4, GL_FLOAT, GL_TRUE, bytes_per_vertex, 3 * sizeof(GLfloat));
 
-  VBO.attrib(Prog3d.Atrib["normal"],
+  VBO.attrib(Prog3d->Atrib["normal"],
     3, GL_FLOAT, GL_TRUE, bytes_per_vertex, 7 * sizeof(GLfloat));
 
-  VBO.attrib(Prog3d.Atrib["fragment"],
+  VBO.attrib(Prog3d->Atrib["fragment"],
     2, GL_FLOAT, GL_TRUE, bytes_per_vertex, 10 * sizeof(GLfloat));
 
   //
@@ -382,17 +392,17 @@ void space::render_3d_space(void)
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
-  Prog3d.use();   // включить шейдерную программу
-  Prog3d.set_uniform("mvp", MatMVP);
-  Prog3d.set_uniform("light_direction", light_direction);  // направление
-  Prog3d.set_uniform("light_bright", light_bright);        // цвет/яркость
+  Prog3d->use();   // включить шейдерную программу
+  Prog3d->set_uniform("mvp", MatMVP);
+  Prog3d->set_uniform("light_direction", light_direction);  // направление
+  Prog3d->set_uniform("light_bright", light_bright);        // цвет/яркость
 
   VBO.bind();
   VBOindex.bind();
-  glEnableVertexAttribArray(Prog3d.Atrib["position"]);
-  glEnableVertexAttribArray(Prog3d.Atrib["color"]);
-  glEnableVertexAttribArray(Prog3d.Atrib["normal"]);
-  glEnableVertexAttribArray(Prog3d.Atrib["fragment"]);
+  glEnableVertexAttribArray(Prog3d->Atrib["position"]);
+  glEnableVertexAttribArray(Prog3d->Atrib["color"]);
+  glEnableVertexAttribArray(Prog3d->Atrib["normal"]);
+  glEnableVertexAttribArray(Prog3d->Atrib["fragment"]);
 
   // Нарисовать все за один проход можно так:
   //glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_points), GL_UNSIGNED_INT, nullptr);
@@ -401,30 +411,30 @@ void space::render_3d_space(void)
   GLsizei max = (RigsDb0.render_points / indices_per_snip) * vertices_per_snip;
   for (GLsizei i = 0; i < max; i += vertices_per_snip)
   {
-    Prog3d.set_uniform1ui("Xid", static_cast<unsigned int>(i));
+    Prog3d->set_uniform1ui("Xid", static_cast<unsigned int>(i));
     glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT, nullptr, i);
 
     //auto
     //p = i * bytes_per_vertex + 0 * sizeof(GLfloat);
-    //glVertexAttribPointer(Prog3d.Atrib["position"], 3, GL_FLOAT, GL_FALSE, bytes_per_vertex, reinterpret_cast<void*>(p));
+    //glVertexAttribPointer(Prog3d->Atrib["position"], 3, GL_FLOAT, GL_FALSE, bytes_per_vertex, reinterpret_cast<void*>(p));
     //p = i * bytes_per_vertex + 3 * sizeof(GLfloat);
-    //glVertexAttribPointer(Prog3d.Atrib["color"],    4, GL_FLOAT, GL_TRUE,  bytes_per_vertex, reinterpret_cast<void*>(p));
+    //glVertexAttribPointer(Prog3d->Atrib["color"],    4, GL_FLOAT, GL_TRUE,  bytes_per_vertex, reinterpret_cast<void*>(p));
     //p = i * bytes_per_vertex + 7 * sizeof(GLfloat);
-    //glVertexAttribPointer(Prog3d.Atrib["normal"],   3, GL_FLOAT, GL_TRUE,  bytes_per_vertex, reinterpret_cast<void*>(p));
+    //glVertexAttribPointer(Prog3d->Atrib["normal"],   3, GL_FLOAT, GL_TRUE,  bytes_per_vertex, reinterpret_cast<void*>(p));
     //p = i * bytes_per_vertex + 10 * sizeof(GLfloat);
-    //glVertexAttribPointer(Prog3d.Atrib["fragment"], 2, GL_FLOAT, GL_TRUE,  bytes_per_vertex, reinterpret_cast<void*>(p));
+    //glVertexAttribPointer(Prog3d->Atrib["fragment"], 2, GL_FLOAT, GL_TRUE,  bytes_per_vertex, reinterpret_cast<void*>(p));
     //glDrawElements(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT, nullptr);
 
   }
 
-  glDisableVertexAttribArray(Prog3d.Atrib["position"]);
-  glDisableVertexAttribArray(Prog3d.Atrib["color"]);
-  glDisableVertexAttribArray(Prog3d.Atrib["normal"]);
-  glDisableVertexAttribArray(Prog3d.Atrib["fragment"]);
+  glDisableVertexAttribArray(Prog3d->Atrib["position"]);
+  glDisableVertexAttribArray(Prog3d->Atrib["color"]);
+  glDisableVertexAttribArray(Prog3d->Atrib["normal"]);
+  glDisableVertexAttribArray(Prog3d->Atrib["fragment"]);
   VBO.unbind();
   VBOindex.unbind();
 
-  Prog3d.unuse(); // отключить шейдерную программу
+  Prog3d->unuse(); // отключить шейдерную программу
   FrBuffer.unbind();
   glBindVertexArray(0);
  }

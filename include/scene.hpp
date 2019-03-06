@@ -19,14 +19,12 @@ class scene
     scene operator=(const tr::scene&);
 
     GLuint vao_quad_id  = 0;
-    gui WinGui {};               // Интерфейс окна
-    glsl screenShaderProgram {}; // шейдерная программа обработки текстуры рендера
-
-    void program2d_init(void);
+    std::unique_ptr<gui> WinGui = nullptr;               // Интерфейс окна
+    std::unique_ptr<glsl> screenShaderProgram = nullptr; // шейдерная программа обработки текстуры рендера
 
   public:
     scene(void);
-    ~scene(void){}
+    ~scene(void);
     void draw(evInput&);
 };
 

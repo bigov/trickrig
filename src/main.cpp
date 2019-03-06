@@ -33,10 +33,9 @@ int main(int, char* argv[])
 
   try
   {
-    tr::wglfw Win {};     // Настройка OpenGL окна
-    tr::scene Scene {};   // Сборка сцены
-    Win.show(Scene);      // Цикл рендера
-    tr::cfg::save_app();  // Сохранение конфигурации
+    tr::wglfw Win {};    // Создать OpenGL окно
+    Win.show();          // Цикл рендера
+    tr::cfg::save_app(); // Сохранение конфигурации
   }
   catch(std::exception & e)
   {

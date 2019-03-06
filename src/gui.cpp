@@ -5,8 +5,14 @@
 
 namespace tr {
 
+
+///
+/// \brief gui::gui
+///
 gui::gui(void)
 {
+  Space = std::make_unique<space>();
+
   FontMap1_len = static_cast<u_int>(FontMap1.length());
   TimeStart = std::chrono::system_clock::now();
 
@@ -25,6 +31,15 @@ gui::gui(void)
 
   WinGui.resize(AppWin.width, AppWin.height);
   AppWin.pWinGui = &WinGui;
+}
+
+
+///
+/// \brief gui::~gui
+///
+gui::~gui(void)
+{
+  Space = nullptr;
 }
 
 
@@ -406,7 +421,7 @@ void gui::button_click(ELEMENT_ID id)
       AppWin.set_mouse_ptr = -1;
       WinGui.resize(AppWin.width, AppWin.height); // для очистки элементов GUI окна
       hud_load();
-      Space.init3d();
+      Space->init3d();
       break;
     case BTN_CONFIG:
       GuiMode = GUI_MENU_CONFIG;
@@ -756,7 +771,7 @@ void gui::show_menu(evInput &ev)
 ///
 void gui::draw(evInput &ev)
 {
-  if(GuiMode == GUI_HUD3D) Space.draw(ev); // Рендер фреймбуфера
+  if(GuiMode == GUI_HUD3D) Space->draw(ev); // Рендер фреймбуфера
 
   if((ev.key == KEY_ESCAPE) && (ev.action == RELEASE))
   {

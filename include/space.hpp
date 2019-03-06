@@ -17,7 +17,7 @@ namespace tr
   {
     public:
       space(void);
-      ~space(void) {}
+      ~space(void);
       void init3d(void);
       void draw(evInput &);
 
@@ -26,7 +26,7 @@ namespace tr
       space operator=(const space &);
 
       frame_buffer FrBuffer {};      // Фрейм-буфер рендера
-      glsl Prog3d {};                // GLSL программа шейдеров
+      std::unique_ptr<glsl> Prog3d = nullptr;                // GLSL программа шейдеров
 
       glm::vec3 light_direction {};  // направление освещения
       glm::vec3 light_bright {};     // яркость света
