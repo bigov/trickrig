@@ -14,9 +14,8 @@ int main(int, char**)
   try
   {
     window_create();
-
     if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
-    if(!gladLoadGL()) { ERR("FAILURE: can't load GLAD."); }
+    { ERR("FAILURE: can't load GLAD."); }
 
     gl_init_program();
     gl_init_scene();

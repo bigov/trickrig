@@ -29,7 +29,8 @@ void window_create(void)
   if (!glfwInit()) throw std::runtime_error("Error init GLFW lib.");
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
   pWin = glfwCreateWindow(500, 400, "OpenGL learn", NULL, NULL);
   if (nullptr == pWin) throw std::runtime_error("Creating Window fail.");

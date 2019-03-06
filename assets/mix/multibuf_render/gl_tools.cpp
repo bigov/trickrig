@@ -144,7 +144,10 @@ void gl_draw_arrays(void)
 {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glBindVertexArray(hdl_VAO);
+
   glDrawArrays(GL_TRIANGLES, 0, 3);
+  //glDrawElementsBaseVertex(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr, 0);
+
   glBindVertexArray(0);
   return;
 }
