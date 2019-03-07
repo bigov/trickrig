@@ -10,6 +10,7 @@ Intel: создает окно по 4.2-core включительно
 
 */
 
+
 ///
 /// \brief app
 ///
@@ -24,13 +25,6 @@ void app(void)
   glfwMakeContextCurrent(win_ptr);
   glfwSwapInterval(0);
   if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress))) ERR("FAILURE: can't load GLAD.");
-
-
-
-  int k;
-  std::cin >> k;
-  glfwTerminate();
-
 }
 
 ///
@@ -53,5 +47,9 @@ int main(int, char**)
     std::cout << "FAILURE: undefined exception.\n";
     return EXIT_FAILURE;
   }
+
+  int k;
+  std::cin >> k;
+  glfwTerminate();
   return EXIT_SUCCESS;
 }
