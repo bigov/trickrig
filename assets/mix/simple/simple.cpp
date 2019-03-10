@@ -1,15 +1,19 @@
-#include "gl_tools.hpp"
+/* Intel: создает окно по 4.2-core включительно; профиль compatibility c Intel не создается ни с одной из весий. */
 
+#include <iostream>
+#include <thread>
+#include <sys/stat.h>
+#include <fstream>
+
+#include "glad.h"
+#include <GLFW/glfw3.h>
+
+#define ERR throw std::runtime_error
 static GLuint hdl_VAO = 0;
 static GLuint pos_Buf = 0;
 static GLuint col_Buf = 0;
 
-///
-/// \brief read_file
-/// \param FNname
-/// \return Указатель на массив считанных данных
-/// \details Чтение содержимого текстового файла
-///
+//## File read
 std::unique_ptr<char[]> read_file(const std::string &FNname)
 {
   // проверка наличия файла
@@ -33,8 +37,37 @@ std::unique_ptr<char[]> read_file(const std::string &FNname)
   return data;
 }
 
+//## GLFW
+void key_callback(GLFWwindow* window, int, int, int, int)
+{
+  glfwSetWindowShouldClose(window, GLFW_TRUE);
+}
 
-//## компиялция шейдера с контролем результата
+//## GLFW
+void error_callback(int error, const char* description)
+{
+  ERR("GLFW error " + std::to_string(error) + ": " + description);
+}
+
+//## GLFW
+GLFWwindow* glfw_win(void)
+{
+  glfwSetErrorCallback(error_callback);
+  if(!glfwInit()) ERR("Error init GLFW lib.");
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  auto win_ptr = glfwCreateWindow(640, 480, "test", nullptr, nullptr);
+  if (nullptr == win_ptr) ERR("Creating Window fail\n");
+  glfwSetKeyCallback(win_ptr, key_callback);
+  glfwMakeContextCurrent(win_ptr);
+  glfwSwapInterval(0);
+  if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress))) ERR("FAILURE: can't load GLAD.");
+  return win_ptr;
+}
+
+//## OpenGL
 void compile_shader(GLuint shader)
 {
   glCompileShader(shader);
@@ -58,9 +91,8 @@ void compile_shader(GLuint shader)
   return;
 }
 
-
-//### Компиляция и запуск GLSL программы
-void gl_init_program(void)
+//## OpenGL
+void create_program(void)
 {
   GLuint vertShader = glCreateShader(GL_VERTEX_SHADER);
   if (!vertShader) ERR("Error create GL_VERTEX_SHADER");
@@ -68,12 +100,12 @@ void gl_init_program(void)
   GLuint fragShader = glCreateShader(GL_FRAGMENT_SHADER);
   if (!fragShader) ERR("Error create GL_FRAGMENT_SHADER");
 
-  auto Buff = read_file("../vert.glsl");
+  auto Buff = read_file("vert.glsl");
   auto b = Buff.get();
   glShaderSource(vertShader, 1, &b, nullptr);
   compile_shader(vertShader);
 
-  Buff = read_file("../frag.glsl");
+  Buff = read_file("frag.glsl");
   b = Buff.get();
   glShaderSource(fragShader, 1, &b, nullptr);
   compile_shader(fragShader);
@@ -101,27 +133,19 @@ void gl_init_program(void)
     ERR("Failed to link GLSL program.\n");
   }
   glUseProgram(program);
-
-  return;
 }
 
-//### Загрузка данных, установка начальных параметров
-void gl_init_scene(void)
+//## ---
+void init_scene(void)
 {
+  float pos_Data[] = { -0.8f, -0.8f, 0.0f,
+                        0.8f, -0.8f, 0.0f,
+                        0.0f, 0.8f, 0.0f};
+  float col_Data[] = {  0.4f, 1.0f, 0.4f,
+                        1.0f, 0.4f, 0.4f,
+                        1.0f, 1.0f, 0.4f };
+
   glClearColor(0.5f, 0.69f, 1.0f, 1.0f);
-
-  float pos_Data[] = {
-    -0.8f, -0.8f, 0.0f,
-     0.8f, -0.8f, 0.0f,
-     0.0f,  0.8f, 0.0f,
-  };
-
-  float col_Data[] = {
-    0.4f, 1.0f, 0.4f,
-    1.0f, 0.4f, 0.4f,
-    1.0f, 1.0f, 0.4f,
-  };
-
   glGenVertexArrays(1, &hdl_VAO);
   glBindVertexArray(hdl_VAO);
   glEnableVertexAttribArray(0);
@@ -141,15 +165,44 @@ void gl_init_scene(void)
   return;
 }
 
-void gl_draw_arrays(void)
+//## ---
+void show(GLFWwindow* win_ptr)
 {
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glBindVertexArray(hdl_VAO);
+  create_program();
+  init_scene();
 
-  glDrawArrays(GL_TRIANGLES, 0, 3);
-  //glDrawElementsBaseVertex(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr, 0);
+  std::chrono::milliseconds pause { 20 };
+  while (!glfwWindowShouldClose(win_ptr))
+  {
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glBindVertexArray(hdl_VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    //glDrawElementsBaseVertex(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr, 0);
+    glBindVertexArray(0);
 
-  glBindVertexArray(0);
-  return;
+    glfwSwapBuffers(win_ptr);
+    glfwPollEvents();
+    std::this_thread::sleep_for(pause);
+  }
+  glfwDestroyWindow(win_ptr);
+  glfwTerminate();
 }
 
+
+///
+/// \brief main
+/// \return
+///
+int main(int, char**)
+{
+  try {
+    show(glfw_win());
+  } catch(std::exception & e) {
+    std::cout << e.what() << "\n";
+    return EXIT_FAILURE;
+  } catch(...) {
+    std::cout << "FAILURE: undefined exception.\n";
+    return EXIT_FAILURE;
+  }
+  return EXIT_SUCCESS;
+}
