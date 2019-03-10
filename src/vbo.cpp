@@ -26,10 +26,10 @@ void vbo_base::unbind(void)
 ///
 /// \details Cоздание нового буфера указанного в параметре размера
 ///
-void vbo_base::allocate(GLsizeiptr al)
+void vbo_base::allocate(GLsizeiptr need_size)
 {
   if(0 != id) ERR("VBO::Allocate trying to re-init exist object.");
-  allocated = al;
+  allocated = need_size;
   glGenBuffers(1, &id);
   glBindBuffer(gl_buffer_type, id);
   glBufferData(gl_buffer_type, allocated, nullptr, GL_STATIC_DRAW); // GL_STREAM_DRAW

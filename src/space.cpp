@@ -112,7 +112,7 @@ void space::init_vao(void)
   GLuint *idx_data = new GLuint[idx_size];                       // данные для заполнения
   GLuint idx[6] = {0, 1, 2, 2, 3, 0};                            // шаблон четырехугольника
   GLuint stride = 0;                                             // число описаных вершин
-  for(size_t i=0; i < idx_size; i += 6) {                        // заполнить массив для VBO
+  for(size_t i = 0; i < idx_size; i += 6) {                        // заполнить массив для VBO
     for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
     stride += 4;                                                 // по 4 вершины на снип
   }

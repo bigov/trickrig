@@ -9,9 +9,14 @@
 #include <GLFW/glfw3.h>
 
 #define ERR throw std::runtime_error
-static GLuint hdl_VAO = 0;
-static GLuint pos_Buf = 0;
-static GLuint col_Buf = 0;
+
+GLuint
+  vao_id = 0,
+  data_buf = 0,
+  index_buf = 0,
+  attr_position = 0,
+  attr_color = 0,
+  program = 0;
 
 //## File read
 std::unique_ptr<char[]> read_file(const std::string &FNname)
@@ -56,8 +61,10 @@ GLFWwindow* glfw_win(void)
   if(!glfwInit()) ERR("Error init GLFW lib.");
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+
   //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
   auto win_ptr = glfwCreateWindow(640, 480, "test", nullptr, nullptr);
   if (nullptr == win_ptr) ERR("Creating Window fail\n");
   glfwSetKeyCallback(win_ptr, key_callback);
@@ -110,7 +117,7 @@ void create_program(void)
   glShaderSource(fragShader, 1, &b, nullptr);
   compile_shader(fragShader);
 
-  GLuint program = glCreateProgram();
+  program = glCreateProgram();
   if (!program) ERR("Error creating GLSL program\n");
   glAttachShader(program, vertShader);
   glAttachShader(program, fragShader);
@@ -133,33 +140,36 @@ void create_program(void)
     ERR("Failed to link GLSL program.\n");
   }
   glUseProgram(program);
+  attr_position = glGetAttribLocation(program, "VertexPosition");
+  attr_color = glGetAttribLocation(program, "VertexColor");
+  glUseProgram(0);
 }
 
 //## ---
 void init_scene(void)
-{
-  float pos_Data[] = { -0.8f, -0.8f, 0.0f,
-                        0.8f, -0.8f, 0.0f,
-                        0.0f, 0.8f, 0.0f};
-  float col_Data[] = {  0.4f, 1.0f, 0.4f,
-                        1.0f, 0.4f, 0.4f,
-                        1.0f, 1.0f, 0.4f };
+{                           //  x      y     z     r     g     b
+  float pos_and_color[18] = { -0.8f, -0.8f, 0.0f, 0.4f, 1.0f, 0.4f,
+                               0.8f, -0.8f, 0.0f, 1.0f, 0.4f, 0.4f,
+                               0.0f,  0.8f, 0.0f, 1.0f, 1.0f, 0.4f };
+  GLsizei stride = 6 * sizeof(GLfloat);
+  GLsizei data_size = 3 * stride;
 
   glClearColor(0.5f, 0.69f, 1.0f, 1.0f);
-  glGenVertexArrays(1, &hdl_VAO);
-  glBindVertexArray(hdl_VAO);
-  glEnableVertexAttribArray(0);
-  glEnableVertexAttribArray(1);
+  glGenVertexArrays(1, &vao_id);
+  glBindVertexArray(vao_id);
 
-  glGenBuffers(1, &pos_Buf);
-  glBindBuffer(GL_ARRAY_BUFFER, pos_Buf);
-  glBufferData(GL_ARRAY_BUFFER, 9*sizeof(float), pos_Data, GL_STATIC_DRAW);
-  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glGenBuffers(1, &data_buf);
+  glBindBuffer(GL_ARRAY_BUFFER, data_buf);
+  glBufferData(GL_ARRAY_BUFFER, data_size, pos_and_color, GL_STATIC_DRAW);
+  glVertexAttribPointer(attr_position, 3, GL_FLOAT, GL_FALSE, stride, reinterpret_cast<void*>(0*sizeof(GLfloat)));
+  glVertexAttribPointer(attr_color, 3, GL_FLOAT, GL_TRUE, stride, reinterpret_cast<void*>(3*sizeof(GLfloat)));
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-  glGenBuffers(1, &col_Buf);
-  glBindBuffer(GL_ARRAY_BUFFER, col_Buf);
-  glBufferData(GL_ARRAY_BUFFER, 9*sizeof(float), col_Data, GL_STATIC_DRAW);
-  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+  glGenBuffers(1, &index_buf);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buf);
+  GLuint idx[3] = {0, 1, 2};
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, 3 * sizeof(float), idx, GL_STATIC_DRAW);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
   glBindVertexArray(0);
   return;
@@ -175,9 +185,20 @@ void show(GLFWwindow* win_ptr)
   while (!glfwWindowShouldClose(win_ptr))
   {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glBindVertexArray(hdl_VAO);
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindVertexArray(vao_id);
+    glBindBuffer(GL_ARRAY_BUFFER, data_buf);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buf);
+    glEnableVertexAttribArray(attr_position);
+    glEnableVertexAttribArray(attr_color);
+
+    glUseProgram(program);
+    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
     //glDrawElementsBaseVertex(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr, 0);
+
+    glDisableVertexAttribArray(attr_color);
+    glDisableVertexAttribArray(attr_position);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
     glfwSwapBuffers(win_ptr);
@@ -188,11 +209,7 @@ void show(GLFWwindow* win_ptr)
   glfwTerminate();
 }
 
-
-///
-/// \brief main
-/// \return
-///
+//## ---
 int main(int, char**)
 {
   try {
