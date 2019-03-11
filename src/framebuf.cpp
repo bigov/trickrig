@@ -14,10 +14,10 @@ namespace tr
 /// \param texture_id
 /// \return
 ///
-bool frame_buffer::init(GLsizei w, GLsizei h, GLenum gl_tex_color, GLenum gl_tex_ident)
+bool frame_buffer::init(GLsizei w, GLsizei h)
 {
-  //gl_tex_color = GL_TEXTURE1;
-  //gl_tex_ident = GL_TEXTURE2;
+  GLenum gl_tex_color = GL_TEXTURE1;
+  GLenum gl_tex_ident = GL_TEXTURE2;
 
   glGenFramebuffers(1, &id);
   glBindFramebuffer(GL_FRAMEBUFFER, id);
@@ -48,6 +48,7 @@ bool frame_buffer::init(GLsizei w, GLsizei h, GLenum gl_tex_color, GLenum gl_tex
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
+  resize(w, h);
   return glGetError() == GL_NO_ERROR;
 }
 
