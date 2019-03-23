@@ -192,8 +192,8 @@ void show(GLFWwindow* win_ptr)
     glEnableVertexAttribArray(attr_color);
 
     glUseProgram(program);
-    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
-    //glDrawElementsBaseVertex(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr, 0);
+    //glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr);
+    glDrawElementsBaseVertex(GL_TRIANGLES, 3, GL_UNSIGNED_INT, nullptr, 0);
 
     glDisableVertexAttribArray(attr_color);
     glDisableVertexAttribArray(attr_position);
