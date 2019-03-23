@@ -55,6 +55,7 @@ build
 /.qmake.stash
 CMakeLists.txt.user
 Makefile*
+!Makefile
 Thumbs.db
 core
 moc_*.cpp

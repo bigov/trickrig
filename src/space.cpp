@@ -68,10 +68,11 @@ space::space(void)
   load_texture(GL_TEXTURE0, cfg::app_key(PNG_TEXTURE0));
 
   // настройка рендер-буфера с двумя текстурами
-  if(!FrBuffer.init(AppWin.width, AppWin.height, GL_TEXTURE1, GL_TEXTURE2))
+
+  AppWin.RenderBuffer = std::make_unique<frame_buffer> ();
+
+  if(!AppWin.RenderBuffer->init(AppWin.width, AppWin.height))
     ERR("Error on creating Render Buffer.");
-  AppWin.pFrBuffer = &FrBuffer;
-  FrBuffer.resize(AppWin.width, AppWin.height);
 }
 
 
@@ -349,21 +350,21 @@ void space::draw(evInput& ev)
   {
     ev.action = -1;
     ev.scancode = -1;
-    pixel_info Pixel = FrBuffer.read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
+    pixel_info Pixel = AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
     std::cout << "ID=" << Pixel.Xid << " ";
   }
 
   if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
   {
     ev.action = -1;
-    pixel_info Pixel = FrBuffer.read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
+    pixel_info Pixel = AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
     RigsDb0.increase(Pixel.Xid);
   }
 
   if((ev.mouse == MOUSE_BUTTON_RIGHT) && (ev.action == PRESS))
   {
     ev.action = -1;
-    pixel_info Pixel = FrBuffer.read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
+    pixel_info Pixel = AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
     RigsDb0.decrease(Pixel.Xid);
   }
 
@@ -388,7 +389,7 @@ void space::draw(evInput& ev)
 void space::render_3d_space(void)
 {
   glBindVertexArray(vao_id);
-  FrBuffer.bind();
+  AppWin.RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
@@ -435,7 +436,7 @@ void space::render_3d_space(void)
   VBOindex.unbind();
 
   Prog3d->unuse(); // отключить шейдерную программу
-  FrBuffer.unbind();
+  AppWin.RenderBuffer->unbind();
   glBindVertexArray(0);
  }
 
