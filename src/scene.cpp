@@ -33,6 +33,20 @@ scene::~scene(void)
 ///
 scene::scene(void)
 {
+  GLfloat Position[8] = { // XY координаты вершин
+    -1.f,-1.f,
+     1.f,-1.f,
+    -1.f, 1.f,
+     1.f, 1.f
+  };
+
+  GLfloat Texcoord[8] = { // UV координаты текстуры
+    0.f, 1.f, //3
+    1.f, 1.f, //4
+    0.f, 0.f, //1
+    1.f, 0.f, //2
+  };
+
   screenShaderProgram = std::make_unique<glsl>();
   WinGui = std::make_unique<gui>();
 
@@ -44,18 +58,12 @@ scene::scene(void)
   screenShaderProgram->use();
 
   vbo_base VboPosition { GL_ARRAY_BUFFER };
-  GLfloat Position[8] = { -1.f, -1.f, 1.f, -1.f, -1.f, 1.f, 1.f, 1.f };
+
   VboPosition.allocate( sizeof(Position), Position );
   VboPosition.attrib( screenShaderProgram->attrib_location_get("position"),
       2, GL_FLOAT, GL_FALSE, 0, 0);
 
   vbo_base VboTexcoord { GL_ARRAY_BUFFER };
-  GLfloat Texcoord[8] = {
-    0.f, 1.f, //3
-    1.f, 1.f, //4
-    0.f, 0.f, //1
-    1.f, 0.f, //2
-  };
 
   VboTexcoord.allocate( sizeof(Texcoord), Texcoord );
   VboTexcoord.attrib( screenShaderProgram->attrib_location_get("texcoord"),
