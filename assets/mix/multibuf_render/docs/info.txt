@@ -1,5 +1,0 @@
-Первоисточник по использованию OpenGL
-    https://www.khronos.org/opengl/wiki
-
-Библиотеку расширений берем со страницы
-    https://glad.dav1d.de/
