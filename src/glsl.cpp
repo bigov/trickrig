@@ -27,15 +27,11 @@ namespace tr {
   glsl::~glsl()
   {
     unuse();
-
     for(auto shader_id: Shaders)
     {
       glDetachShader(id, shader_id);
       glDeleteShader(shader_id);
     }
-
-    std::cout <<"try delete prog\n";
-
     glDeleteProgram(id);
     id = 0;
     return;

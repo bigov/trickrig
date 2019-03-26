@@ -26,8 +26,8 @@ class frame_buffer
 private:
   GLuint id = 0;
   GLuint rbuf_id = 0;
-  GLuint tex_color = 0;  // тектура рендера пространства
-  GLuint tex_ident = 0;  // тектуры идентификации объетов
+  GLuint tex_color = 0;  // текстура рендера пространства
+  GLuint tex_ident = 0;  // текстура идентификации объетов
 
 public:
   frame_buffer(void) {}
