@@ -225,8 +225,7 @@ namespace tr {
   //
   void glsl::set_uniform1ui(const char* name, GLuint u)
   {
-    GLint loc;
-    loc = uniform_location_get(name);
+    GLint loc = uniform_location_get(name);
     glUniform1ui(loc, u);
     return;
   }
