@@ -346,26 +346,28 @@ void space::draw(evInput& ev)
     RigsDb0.caps_lock_toggle();
   }
 
+  unsigned int pixel_data = 0;
+
   if((46 == ev.scancode) && (ev.action == PRESS))
   {
     ev.action = -1;
     ev.scancode = -1;
-    pixel_info Pixel = AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
-    std::cout << "ID=" << Pixel.Xid << " ";
+    AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &pixel_data);
+    std::cout << "ID=" << pixel_data << " ";
   }
 
   if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
   {
     ev.action = -1;
-    pixel_info Pixel = AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
-    RigsDb0.increase(Pixel.Xid);
+    AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &pixel_data);
+    RigsDb0.increase(pixel_data);
   }
 
   if((ev.mouse == MOUSE_BUTTON_RIGHT) && (ev.action == PRESS))
   {
     ev.action = -1;
-    pixel_info Pixel = AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y);
-    RigsDb0.decrease(Pixel.Xid);
+    AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &pixel_data);
+    RigsDb0.decrease(pixel_data);
   }
 
   // Запись в базу данных: Ctrl+S (285, 31).

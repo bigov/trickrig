@@ -16,14 +16,15 @@ namespace tr
 ///
 bool frame_buffer::init(GLsizei w, GLsizei h)
 {
-  GLenum gl_tex_color = GL_TEXTURE1;
-  GLenum gl_tex_ident = GL_TEXTURE2;
+#ifndef NDEBUG
+  fb_w = w; fb_h = h;
+#endif
 
   glGenFramebuffers(1, &id);
   glBindFramebuffer(GL_FRAMEBUFFER, id);
 
   // настройка текстуры для рендера 3D пространства
-  glActiveTexture(gl_tex_color);
+  glActiveTexture(GL_TEXTURE1);
   glGenTextures(1, &tex_color);
   glBindTexture(GL_TEXTURE_2D, tex_color);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -31,10 +32,10 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_color, 0);
 
-  glActiveTexture(gl_tex_ident);
+  glActiveTexture(GL_TEXTURE2);
   glGenTextures(1, &tex_ident);
   glBindTexture(GL_TEXTURE_2D, tex_ident);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32UI, w, h, 0, GL_RGB_INTEGER, GL_UNSIGNED_INT, nullptr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, w, h, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, tex_ident, 0);
 
   GLenum  b[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
@@ -60,12 +61,16 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
 ///
 void frame_buffer::resize(GLsizei w, GLsizei h)
 {
+#ifndef NDEBUG
+  fb_w = w; fb_h = h;
+#endif
+
   GLint lod = 0, frame = 0;
   img Blue{static_cast<u_long>(w), static_cast<u_long>(h), {0x7F, 0xB0, 0xFF, 0xFF}};  // голубой цвет
 
   // Настройка размера текстуры рендера идентификации
   glBindTexture(GL_TEXTURE_2D, tex_ident);
-  glTexImage2D(GL_TEXTURE_2D, lod, GL_RGB32UI, w, h, frame, GL_RGB_INTEGER, GL_UNSIGNED_INT, nullptr);
+  glTexImage2D(GL_TEXTURE_2D, lod, GL_R32UI, w, h, frame, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
   glBindTexture(GL_TEXTURE_2D, 0);
 
   // Настройка размера и заливка фоновым цветом текстуры рендера фреймбуфера
@@ -96,17 +101,26 @@ void frame_buffer::bind(void)
 /// \param y
 /// \return
 ///
-pixel_info frame_buffer::read_pixel(GLint x, GLint y)
+void frame_buffer::read_pixel(GLint x, GLint y, void* pixel_data)
 {
+#ifndef NDEBUG
+  if((x > fb_w) || (y > fb_h))
+  {
+    info("frame_buffer::read_pixel - overflow size of frame!");
+    x = fb_w; y = fb_h;
+  }
+  if((x < 0) || (y < 0))
+  {
+    info("frame_buffer::read_pixel - negative coordinates!");
+    x = 0; y = 0;
+  }
+#endif
+
   glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
   glReadBuffer(GL_COLOR_ATTACHMENT1);
-  pixel_info Pixel;
-  glReadPixels(x, y, 1, 1, GL_RGB_INTEGER, GL_UNSIGNED_INT, &Pixel);
-
+  glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, pixel_data);
   glReadBuffer(GL_NONE);
   glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-
-  return Pixel;
 }
 
 

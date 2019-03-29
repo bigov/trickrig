@@ -9,7 +9,7 @@ uniform sampler2D texture_0;  // координаты текстуры
 uniform uint Xid;             // индекс вершины для определения выделенного фрагмента
 
 layout(location = 0) out vec4 FragColor;
-layout(location = 1) out uvec3 FragData;
+layout(location = 1) out uint FragData;
 
 void main(void)
 {
@@ -30,7 +30,7 @@ void main(void)
   if(!gl_FrontFacing) FragColor =
       vec4(FragColor.r * 0.5f, FragColor.g * 0.5f, FragColor.b * 0.5f, FragColor.a);
 
-  FragData = uvec3(Xid, 0, 0);
+  FragData = Xid;
 
   //DEBUG
   //FragData = uvec3(vId, gl_PrimitiveID, 4222111000);
