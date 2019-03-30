@@ -54,11 +54,11 @@ void rdb::caps_lock_toggle(void)
 ///
 /// \details Добавление объема к указанной стороне
 ///
-void rdb::increase(unsigned int i)
+void rdb::increase(int id)
 {
-  if(i > (render_points/indices_per_snip) * bytes_per_snip) return;
+  if(id > (render_indices/indices_per_quad) * bytes_per_snip) return;
 
-  GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip;
+  GLsizeiptr offset = (id/vertices_per_quad) * bytes_per_snip;
   box* B = Visible[offset];                 // По адресу смещения найдем бокс;
   u_char s0 = B->side_id_by_offset(offset); // Направление стороны бокса;
   rig* Rig = B->ParentRig;                  // по боксу - риг;
@@ -92,13 +92,13 @@ void rdb::increase(unsigned int i)
 ///
 /// \details Уменьшение объема с указанной стороны
 ///
-void rdb::decrease(unsigned int i)
+void rdb::decrease(int i)
 {
-  if(i > (render_points/indices_per_snip) * bytes_per_snip) return;
+  if(i > (render_indices/indices_per_quad) * bytes_per_snip) return;
 
   // При условии, что смещение данных в VBO начинается с нуля, по полученному
   // через параметр номеру группы данных вычисляем адрес ее смещения в буфере
-  GLsizeiptr offset = (i/vertices_per_snip) * bytes_per_snip;
+  GLsizeiptr offset = (i/vertices_per_quad) * bytes_per_snip;
 
   box* B = Visible[offset];                 // По адресу смещения найдем бокс
   rig* R = B->ParentRig;                    // по боксу - риг
@@ -173,9 +173,9 @@ void rdb::rig_draw(rig* R)
   {
     if(!B0.side_fill_data(side_id, buffer, P)) continue;
     vbo_addr = VBO->append(buffer, bytes_per_snip);
-    B0.offset_write(side_id, vbo_addr);                // записать в бокс адрес смещения VBO
-    Visible[vbo_addr] = &B0;                           // добавить ссылку на бокс
-    render_points += indices_per_snip;              // увеличить число точек рендера
+    B0.offset_write(side_id, vbo_addr);             // записать в бокс адрес смещения VBO
+    Visible[vbo_addr] = &B0;                        // добавить ссылку на бокс
+    render_indices += indices_per_quad;             // увеличить число точек рендера
   }
   R->in_vbo = true;
 }
@@ -208,7 +208,7 @@ void rdb::rig_wipe(rig* Rig)
     if(free == 0)                              // Если VBO пустой
     {
       Visible.clear();
-      render_points = 0;
+      render_indices = 0;
       return;
     }
 
@@ -220,7 +220,7 @@ void rdb::rig_wipe(rig* Rig)
     }
                                           // Если free == dest, то только удалить адрес с карты
     Visible.erase(free);                  // удалить освободившийся элемент массива;
-    render_points -= indices_per_snip;    // Уменьшить число точек рендера
+    render_indices -= indices_per_quad;    // Уменьшить число точек рендера
   }
 }
 
@@ -245,7 +245,7 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
   VBO->clear();
   MapRigs.clear();
   Visible.clear();
-  render_points = 0;
+  render_indices = 0;
 
   //Загрузка из базы данных
   //cfg::DataBase.rigs_loader(MapRigs, From, To);

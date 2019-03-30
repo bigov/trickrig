@@ -27,3 +27,7 @@ gl_FragData[1] = color; // основной текстурный буфер
 // Декодирование в целое:
 int ID = r + (g + b * 255) * 255;
 
+---------------------------------------------------------------------------
+// Корректное С++ приведение к типу (void*)
+auto p = i * bytes_per_vertex + 0 * sizeof(GLfloat);
+glVertexAttribPointer(Prog3d->Atrib["position"], 3, GL_FLOAT, GL_FALSE, bytes_per_vertex, reinterpret_cast<void*>(p));

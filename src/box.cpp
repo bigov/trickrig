@@ -234,7 +234,7 @@ bool box::side_fill_data(u_char side, GLfloat* data, const f3d& P)
   if(!visible[side]) return false;
 
   size_t i = 0;
-  for(size_t n = 0; n < vertices_per_snip; ++n)
+  for(size_t n = 0; n < vertices_per_quad; ++n)
   {
     data[i++] = AllCoords[(IdxCoord[side][n])].x/255.f + P.x;
     data[i++] = AllCoords[(IdxCoord[side][n])].y/255.f + P.y;

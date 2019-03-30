@@ -35,7 +35,7 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
   glActiveTexture(GL_TEXTURE2);
   glGenTextures(1, &tex_ident);
   glBindTexture(GL_TEXTURE_2D, tex_ident);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, w, h, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, w, h, 0, GL_RED_INTEGER, GL_INT, nullptr);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, tex_ident, 0);
 
   GLenum  b[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
@@ -70,7 +70,7 @@ void frame_buffer::resize(GLsizei w, GLsizei h)
 
   // Настройка размера текстуры рендера идентификации
   glBindTexture(GL_TEXTURE_2D, tex_ident);
-  glTexImage2D(GL_TEXTURE_2D, lod, GL_R32UI, w, h, frame, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
+  glTexImage2D(GL_TEXTURE_2D, lod, GL_R32I, w, h, frame, GL_RED_INTEGER, GL_INT, nullptr);
   glBindTexture(GL_TEXTURE_2D, 0);
 
   // Настройка размера и заливка фоновым цветом текстуры рендера фреймбуфера
@@ -118,7 +118,7 @@ void frame_buffer::read_pixel(GLint x, GLint y, void* pixel_data)
 
   glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
   glReadBuffer(GL_COLOR_ATTACHMENT1);
-  glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_UNSIGNED_INT, pixel_data);
+  glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_INT, pixel_data);
   glReadBuffer(GL_NONE);
   glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 }

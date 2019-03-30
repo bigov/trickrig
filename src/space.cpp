@@ -346,28 +346,28 @@ void space::draw(evInput& ev)
     RigsDb0.caps_lock_toggle();
   }
 
-  unsigned int pixel_data = 0;
+  int vertex_id = 0;
 
   if((46 == ev.scancode) && (ev.action == PRESS))
   {
     ev.action = -1;
     ev.scancode = -1;
-    AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &pixel_data);
-    std::cout << "ID=" << pixel_data << " ";
+    AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &vertex_id);
+    std::cout << "ID=" << vertex_id << " ";
   }
 
   if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
   {
     ev.action = -1;
-    AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &pixel_data);
-    RigsDb0.increase(pixel_data);
+    AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &vertex_id);
+    RigsDb0.increase(vertex_id);
   }
 
   if((ev.mouse == MOUSE_BUTTON_RIGHT) && (ev.action == PRESS))
   {
     ev.action = -1;
-    AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &pixel_data);
-    RigsDb0.decrease(pixel_data);
+    AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &vertex_id);
+    RigsDb0.decrease(vertex_id);
   }
 
   // Запись в базу данных: Ctrl+S (285, 31).
@@ -400,42 +400,26 @@ void space::render_3d_space(void)
   Prog3d->set_uniform("light_direction", light_direction);  // направление
   Prog3d->set_uniform("light_bright", light_bright);        // цвет/яркость
 
-  VBO.bind();
-  VBOindex.bind();
   glEnableVertexAttribArray(Prog3d->Atrib["position"]);
   glEnableVertexAttribArray(Prog3d->Atrib["color"]);
   glEnableVertexAttribArray(Prog3d->Atrib["normal"]);
   glEnableVertexAttribArray(Prog3d->Atrib["fragment"]);
 
-  // Нарисовать все за один проход можно так:
-  //glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_points), GL_UNSIGNED_INT, nullptr);
+  // Нарисовать все за один проход:
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_indices), GL_UNSIGNED_INT, nullptr);
 
-  // Параметр "Xid" содержит порядковый номер группы данных из буфера
-  GLsizei max = (RigsDb0.render_points / indices_per_snip) * vertices_per_snip;
-  for (GLsizei i = 0; i < max; i += vertices_per_snip)
-  {
-    Prog3d->set_uniform1ui("Xid", static_cast<unsigned int>(i));
-    glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT, nullptr, i);
-
-    //auto
-    //p = i * bytes_per_vertex + 0 * sizeof(GLfloat);
-    //glVertexAttribPointer(Prog3d->Atrib["position"], 3, GL_FLOAT, GL_FALSE, bytes_per_vertex, reinterpret_cast<void*>(p));
-    //p = i * bytes_per_vertex + 3 * sizeof(GLfloat);
-    //glVertexAttribPointer(Prog3d->Atrib["color"],    4, GL_FLOAT, GL_TRUE,  bytes_per_vertex, reinterpret_cast<void*>(p));
-    //p = i * bytes_per_vertex + 7 * sizeof(GLfloat);
-    //glVertexAttribPointer(Prog3d->Atrib["normal"],   3, GL_FLOAT, GL_TRUE,  bytes_per_vertex, reinterpret_cast<void*>(p));
-    //p = i * bytes_per_vertex + 10 * sizeof(GLfloat);
-    //glVertexAttribPointer(Prog3d->Atrib["fragment"], 2, GL_FLOAT, GL_TRUE,  bytes_per_vertex, reinterpret_cast<void*>(p));
-    //glDrawElements(GL_TRIANGLES, indices_per_snip, GL_UNSIGNED_INT, nullptr);
-
-  }
+  // Xid содержит порядковый номер от начала VBO для первой вершины рисуемого прямоугольника
+  //GLsizei max = (RigsDb0.render_indices / indices_per_quad) * vertices_per_quad;
+  //for (GLsizei i = 0; i < max; i += vertices_per_quad)
+  //{
+  //  Prog3d->set_uniform1ui("Xid", static_cast<unsigned int>(i));
+  //  glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_quad, GL_UNSIGNED_INT, nullptr, i);
+  //}
 
   glDisableVertexAttribArray(Prog3d->Atrib["position"]);
   glDisableVertexAttribArray(Prog3d->Atrib["color"]);
   glDisableVertexAttribArray(Prog3d->Atrib["normal"]);
   glDisableVertexAttribArray(Prog3d->Atrib["fragment"]);
-  VBO.unbind();
-  VBOindex.unbind();
 
   Prog3d->unuse(); // отключить шейдерную программу
   AppWin.RenderBuffer->unbind();

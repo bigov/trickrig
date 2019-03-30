@@ -96,7 +96,7 @@ private:
 
   uch2 tex_id[SIDES_COUNT]; // Индексы текстур сторон
   // Координаты текстур вершин пересчитываются при смещении вершин
-  texture VertTexture[SIDES_COUNT * vertices_per_snip];
+  texture VertTexture[SIDES_COUNT * vertices_per_quad];
 
   std::array<splice, SIDES_COUNT> Splice {}; // координаты стыка с соседним ригом
 

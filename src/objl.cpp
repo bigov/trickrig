@@ -73,7 +73,7 @@ void obj_load::get_f(char *line)
 
   tr::snip Snip {};
 
-  for(size_t n = 0; n < tr::vertices_per_snip; n++)
+  for(size_t n = 0; n < tr::vertices_per_quad; n++)
   {
     Snip.data[n*ROW_SIZE + X] = Places[i[n][0]][0];
     Snip.data[n*ROW_SIZE + Y] = Places[i[n][0]][1];

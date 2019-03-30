@@ -10,8 +10,9 @@ uniform vec3 light_direction; // направление света
 uniform vec3 light_bright;    // яркость света по цветам
 
 // выходные параметры
-out vec2 vFragment;  // 2D коодината в текстурной карте
-out vec4 vColor;     // цвет (r,g,b,a)
+out vec2 vFragment;   // 2D коодината в текстурной карте
+out vec4 vColor;      // цвет (r,g,b,a)
+flat out int vertId;  // индекс вершины
 
 void main(void)
 {
@@ -25,5 +26,6 @@ void main(void)
   vColor = color * vec4(light, 1.0f);
   gl_Position = mvp * vec4(position, 1.0f);
 
-  //vId = gl_VertexID; //DEBUG
+  vertId = gl_VertexID;
 }
+

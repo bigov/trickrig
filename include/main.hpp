@@ -129,13 +129,13 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
   static const int lod0_size = 25;
 
   // число вершин в одном снипе
-  static const u_int vertices_per_snip = 4;
+  static const u_int vertices_per_quad = 4;
   // число индексов в одном снипе
-  static const u_int indices_per_snip = 6;
+  static const u_int indices_per_quad = 6;
   // количество чисел (GLfloat) в блоке данных одной вершины
   static const size_t digits_per_vertex = 12;
   // количество чисел (GLfloat) в блоке данных снипа
-  static const size_t digits_per_snip = digits_per_vertex * vertices_per_snip;
+  static const size_t digits_per_snip = digits_per_vertex * vertices_per_quad;
   // число элементов в поле shift элемента rig
   //static const size_t digits_per_rig_shift = 7;
   // размер (число байт) блока данных снипа

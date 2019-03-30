@@ -32,13 +32,10 @@ class rdb
     // изменения адреса смещения в буфере.
     std::unordered_map<GLsizeiptr, box*> Visible {};
 
-    int yMin = -100;  // временное ограничение рабочего пространства
+    int yMin = -100;        // временное ограничение рабочего пространства
     int yMax = 100;
-
     bool caps_lock = false; // ключ поступеньчатого изменения размера боксов
-
-    // --Level--Of--Details--
-    int lod = 1; // размер стороны элементов в LOD = 1
+    int lod = 1;            // --Level--Of--Details-- размер стороны элементов в LOD = 1
 
     void _load_16x16_obj(void);
     void init_vbo(void);
@@ -50,14 +47,14 @@ class rdb
     rdb(void) {}
     ~rdb(void) {}
 
-    u_int render_points = 0;           // число точек передаваемых в рендер
-    vbo_ext* VBO = nullptr;            // VBO вершин поверхности
+    u_int render_indices = 0;      // сумма индексов, необходимых для рендера всех примитивов
+    vbo_ext* VBO = nullptr;        // VBO вершин поверхности
 
-    void caps_lock_toggle(void);       // переключить положение caps_lock
-    void rig_draw(rig*);               // разместить данные в VBO буфере
-    void rig_wipe(rig*);               // убрать риг из VBO
-    void increase(unsigned int);       // добавить объем по индексу снипа
-    void decrease(unsigned int);       // удалить объем по индексу снипа
+    void caps_lock_toggle(void);   // переключить положение caps_lock
+    void rig_draw(rig*);           // разместить данные в VBO буфере
+    void rig_wipe(rig*);           // убрать риг из VBO
+    void increase(int);   // добавить объем по индексу снипа
+    void decrease(int);   // удалить объем по индексу снипа
 
     //bool save(const i3d &, const i3d &);
     void load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position);    // загрузка уровня
