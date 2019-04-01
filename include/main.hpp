@@ -24,7 +24,6 @@
 #include <locale>
 #include <memory>
 #include <map>
-#include <random>
 #include <sstream>
 #include <string>
 #include <valarray>
@@ -33,7 +32,6 @@
 #include <utility>
 #include <filesystem>
 
-//#include "gl_core33.h"
 #include "glad.h"
 #define GLM_FORCE_RADIANS
 #include "glm/glm.hpp"

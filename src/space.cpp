@@ -25,6 +25,7 @@ const float down_max = -up_max;    // Максимальный угол вниз
 space::~space(void)
 {
   Prog3d = nullptr;
+  AppWin.RenderBuffer = nullptr;
 }
 
 

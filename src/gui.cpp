@@ -77,7 +77,6 @@ void gui::textstring_place(const img &FontImg, const std::string &TextString,
   #endif
 
   u_int row = 0;                        // номер строки в текстуре шрифта
-  size_t col = 0;                       // номер колонки в текстуре шрифта
   u_int n = 0;                          // номер буквы в выводимой строке
   size_t text_size = TextString.size(); // число байт в строке
 
@@ -86,13 +85,13 @@ void gui::textstring_place(const img &FontImg, const std::string &TextString,
     auto t = char_type(TextString[i]);
     if(t == SINGLE)
     {
-      col = FontMap1.find(TextString[i]);
+      size_t col = FontMap1.find(TextString[i]);
       if(col == std::string::npos) col = 0;
       FontImg.copy(col, row, Dst, x + (n++) * FontImg.w_cell, y);
     }
     else if(t == UTF8_FIRST)
     {
-      col = FontMap2.find(TextString.substr(i,2));
+      size_t col = FontMap2.find(TextString.substr(i,2));
       if(col == std::string::npos) col = 0;
       else col = FontMap1_len + col/2;
       FontImg.copy(col, row, Dst, x + (n++) * FontImg.w_cell, y);
@@ -398,7 +397,6 @@ void gui::remove_map(void)
 void gui::button_click(ELEMENT_ID id)
 {
   static ELEMENT_ID double_id = NONE;
-  static size_t row_id = 0;
 
   AppWin.pInputBuffer = nullptr; // Во всех режимах, кроме GUI_MENU_CREATE,
                                  // строка ввода отключена
@@ -407,6 +405,7 @@ void gui::button_click(ELEMENT_ID id)
 
   if(id == ROW_MAP_NAME)
   { // В списке карт первый клик выбирает карту, второй открывает.
+    static size_t row_id = 0;
     if(double_id == id && row_id == row_selected) id = BTN_OPEN;
     row_id = row_selected;
     double_id = id;

@@ -103,7 +103,10 @@ void frame_buffer::resize(GLsizei w, GLsizei h)
   fb_w = w; fb_h = h;
 #endif
 
+  // Текстура индентификации примитивов (канал RED)
   TexIdent->resize(w, h);
+
+  // Текстура рендера (формат RGBA)
   img Blue{static_cast<u_long>(w), static_cast<u_long>(h), {0x7F, 0xB0, 0xFF, 0xFF}};  // голубой цвет
   TexColor->resize(w, h, Blue.uchar());
 

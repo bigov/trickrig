@@ -110,7 +110,12 @@ wglfw::wglfw(void)
 wglfw::~wglfw()
 {
   Scene = nullptr; // destruct Scene
+
   glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+
+  if(!glfwWindowShouldClose(win_ptr)) glfwSetWindowShouldClose(win_ptr, true);
+  glfwDestroyWindow(win_ptr);
+
   glfwTerminate();
 }
 
@@ -271,9 +276,6 @@ void wglfw::show(void)
     glfwSwapBuffers(win_ptr);
     glfwPollEvents();
   }
-
-  if(!glfwWindowShouldClose(win_ptr)) glfwSetWindowShouldClose(win_ptr, true);
-  glfwDestroyWindow(win_ptr);
 }
 
 } //namespace tr
