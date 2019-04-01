@@ -81,8 +81,7 @@ namespace tr
       void copy(u_int col, u_int row, img &dst, u_long dst_x, u_long dst_y) const;
   };
 
-  extern void read_chars_file(const std::string &FNname, std::vector<char> &Buffer);
-  extern int sh2int(short, short);
+  extern std::unique_ptr<char[]> read_chars_file(const std::string &FileName);
   extern void info(const std::string &);
   extern int get_msec(void);   // число миллисекунд от начала суток.
   extern int random_int(void);

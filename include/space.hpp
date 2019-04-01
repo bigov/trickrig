@@ -25,8 +25,7 @@ namespace tr
       space(const space &);
       space operator=(const space &);
 
-      //frame_buffer FrBuffer {};      // Фрейм-буфер рендера
-      std::unique_ptr<glsl> Prog3d = nullptr;                // GLSL программа шейдеров
+      std::unique_ptr<glsl> Prog3d = nullptr;  // GLSL программа шейдеров
 
       glm::vec3 light_direction {};  // направление освещения
       glm::vec3 light_bright {};     // яркость света

@@ -298,37 +298,39 @@ bool operator== (const px &A, const px &B)
     }
   }
 
-  //## Преобразователь типов
-  //
-  // Упаковывает два коротких в одно целое. Используется для формирования
-  // массива текстур в контенте OpenGL
-  //
-  int sh2int(short sh1, short sh2)
-  {
-    short sh_T[2] = {sh1, sh2};
-    int * int_T = reinterpret_cast<int*>(sh_T);
-    return *int_T;
-  }
 
-  //## Чтение содержимого текстового файла в буфер std::vector<char>
-  void read_chars_file(const std::string &FNname, std::vector<char> &Buffer)
+  ///
+  /// \brief read_chars_file
+  /// \param FNname
+  /// \param Buffer
+  /// \details Чтение в буфер содержимого текстового файла
+  ///
+  std::unique_ptr<char[]> read_chars_file(const std::string& FileName)
   {
     // проверка наличия файла
     struct stat Buf;
-    if (stat (FNname.c_str(), &Buf) != 0) ERR("Missing file: " + FNname);
-    // чтение файла
-    std::ifstream file(FNname, std::ios::in|std::ios::ate);
+    if (stat (FileName.c_str(), &Buf) != 0) ERR("Missing file: " + FileName);
+
+    // открытие файла
+    std::ifstream file(FileName, std::ios::in|std::ios::ate);
     file.exceptions(std::ios_base::badbit|std::ios_base::failbit);
-    if (!file.is_open()) ERR("Can't open " + FNname);
+    if (!file.is_open()) ERR("Can't open " + FileName);
+
     auto size = static_cast<long long>(file.tellg());
-    Buffer.clear();
-    Buffer.resize(static_cast<size_t>(size + 1), '\0');
+    if(size < 1) return nullptr;
+
+    auto data_size = static_cast<size_t>(size) + 1;
+    auto data = std::make_unique<char[]>(data_size);
+
     file.seekg(0, std::ios::beg);
-    file.read(Buffer.data(), size);
+    file.read(data.get(), size);
     file.close();
+
+    data[data_size - 1] = '\0';
+    return data;
   }
 
-  //## Вывод текстовой информацияя информации
+  //## Вывод текстовой информации
   void info(const std::string & info)
   {
     std::cout << info << std::endl;

@@ -13,13 +13,37 @@
 namespace tr
 {
 
+class gl_texture
+{
+  private:
+    GLuint texture_id = 0;
+
+    GLint level = 0, border = 0;
+    GLenum target = GL_TEXTURE_2D;
+    GLint internalformat;
+    GLenum format;
+    GLenum type;
+    GLsizei width, height;
+
+  public:
+    gl_texture(GLint internalformat, GLenum format, GLenum type,
+               GLsizei width = 0, GLsizei height = 0, const GLvoid* data = nullptr);
+    ~gl_texture() {};
+
+    void resize(GLsizei width, GLsizei height, const GLvoid* data = nullptr);
+    GLuint id(void) const;
+};
+
 class frame_buffer
 {
 private:
   GLuint id = 0;
   GLuint rbuf_id = 0;
-  GLuint tex_color = 0;     // текстура рендера пространства
-  GLuint tex_ident = 0;     // текстура идентификации объетов
+  std::unique_ptr<gl_texture> TexColor = nullptr;
+  std::unique_ptr<gl_texture> TexIdent = nullptr;
+
+  GLenum ident_format = 0;
+  GLenum ident_type = 0;
 
 #ifndef NDEBUG
   GLint fb_w = 0, fb_h = 0; // размеры буфера

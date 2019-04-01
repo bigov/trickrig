@@ -250,10 +250,11 @@ namespace tr {
     GLuint shader_id = glCreateShader(type);
     Shaders.push_back(shader_id);
     if(glGetError()) ERR("Can't glCreateShader");
-    std::vector<char> content {};
-    read_chars_file(fname, content);
-    if(content.empty()) ERR("Can't read file with shader content" + fname);
-    char * ch = content.data();
+
+    auto content = read_chars_file(fname);
+    if(content == nullptr) ERR("Can't read file with shader content" + fname);
+
+    char* ch = content.get();
     glShaderSource(shader_id, 1, &ch, nullptr);
     glCompileShader(shader_id);
   

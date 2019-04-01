@@ -8,10 +8,52 @@
 
 namespace tr
 {
+///
+/// \brief gl_texture::gl_texture
+/// \details
+///
+/// void glTexImage2D(GLenum target, GLint level, GLint internalformat,
+///                   GLsizei width, GLsizei height, GLint border,
+///                   GLenum format, GLenum type, const GLvoid * data);
+///
+gl_texture::gl_texture( GLint internalformat, GLenum format, GLenum type,
+                       GLsizei width, GLsizei height, const GLvoid* data)
+  : internalformat(internalformat), format(format), type(type), width(width), height(height)
+{
+  glGenTextures(1, &texture_id);
+  glBindTexture(target, texture_id);
+  glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexImage2D(target, level, internalformat, width, height, border, format, type, data);
+}
+
 
 ///
-/// \brief fb_ren::init
-/// \param texture_id
+/// \brief gl_texture::resize
+/// \param width
+/// \param height
+///
+void gl_texture::resize(GLsizei width, GLsizei height, const GLvoid* data)
+{
+  glBindTexture(target, texture_id);
+  glTexImage2D(target, level, internalformat, width, height, border, format, type, data);
+  glBindTexture(target, 0);
+}
+
+
+///
+/// \brief gl_texture::id
+/// \return
+///
+GLuint gl_texture::id(void) const
+{
+  return texture_id;
+}
+
+
+///
+/// \brief frame_buffer::init
+/// \param GLsizei w, GLsizei h
 /// \return
 ///
 bool frame_buffer::init(GLsizei w, GLsizei h)
@@ -25,18 +67,15 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
 
   // настройка текстуры для рендера 3D пространства
   glActiveTexture(GL_TEXTURE1);
-  glGenTextures(1, &tex_color);
-  glBindTexture(GL_TEXTURE_2D, tex_color);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_color, 0);
+  TexColor = std::make_unique<gl_texture>(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, TexColor->id(), 0);
 
+  // настройка текстуры для идентификации примитивов
   glActiveTexture(GL_TEXTURE2);
-  glGenTextures(1, &tex_ident);
-  glBindTexture(GL_TEXTURE_2D, tex_ident);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_R32I, w, h, 0, GL_RED_INTEGER, GL_INT, nullptr);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, tex_ident, 0);
+  ident_format = GL_RED_INTEGER;   // параметры format и type используются
+  ident_type = GL_INT;             // еще и в frame_buffer::read_pixel
+  TexIdent = std::make_unique<gl_texture>(GL_R32I, ident_format, ident_type);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, TexIdent->id(), 0);
 
   GLenum  b[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
   glDrawBuffers(2, b);
@@ -45,7 +84,6 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
   glBindRenderbuffer(GL_RENDERBUFFER, rbuf_id);
   glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbuf_id);
 
-  glBindTexture(GL_TEXTURE_2D, 0);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -65,18 +103,9 @@ void frame_buffer::resize(GLsizei w, GLsizei h)
   fb_w = w; fb_h = h;
 #endif
 
-  GLint lod = 0, frame = 0;
+  TexIdent->resize(w, h);
   img Blue{static_cast<u_long>(w), static_cast<u_long>(h), {0x7F, 0xB0, 0xFF, 0xFF}};  // голубой цвет
-
-  // Настройка размера текстуры рендера идентификации
-  glBindTexture(GL_TEXTURE_2D, tex_ident);
-  glTexImage2D(GL_TEXTURE_2D, lod, GL_R32I, w, h, frame, GL_RED_INTEGER, GL_INT, nullptr);
-  glBindTexture(GL_TEXTURE_2D, 0);
-
-  // Настройка размера и заливка фоновым цветом текстуры рендера фреймбуфера
-  glBindTexture(GL_TEXTURE_2D, tex_color);
-  glTexImage2D(GL_TEXTURE_2D, lod, GL_RGBA, w, h, frame, GL_RGBA, GL_UNSIGNED_BYTE, Blue.uchar());
-  glBindTexture(GL_TEXTURE_2D, 0);
+  TexColor->resize(w, h, Blue.uchar());
 
   // настройка размера рендербуфера
   glBindRenderbuffer(GL_RENDERBUFFER, rbuf_id);
@@ -118,7 +147,7 @@ void frame_buffer::read_pixel(GLint x, GLint y, void* pixel_data)
 
   glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
   glReadBuffer(GL_COLOR_ATTACHMENT1);
-  glReadPixels(x, y, 1, 1, GL_RED_INTEGER, GL_INT, pixel_data);
+  glReadPixels(x, y, 1, 1, ident_format, ident_type, pixel_data);
   glReadBuffer(GL_NONE);
   glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
 }
