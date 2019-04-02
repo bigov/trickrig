@@ -48,6 +48,11 @@ void rdb::caps_lock_toggle(void)
 }
 
 
+void rdb::join(void)
+{
+
+}
+
 ///
 /// \brief rdb::increase
 /// \param i
@@ -86,6 +91,12 @@ void rdb::increase(int id)
 }
 
 
+
+void rdb::cut(void)
+{
+
+}
+
 ///
 /// \brief rdb::decrease
 /// \param i - порядковый номер группы данных из буфера
@@ -96,8 +107,7 @@ void rdb::decrease(int i)
 {
   if(i > (render_indices/indices_per_quad) * bytes_per_snip) return;
 
-  // При условии, что смещение данных в VBO начинается с нуля, по полученному
-  // через параметр номеру группы данных вычисляем адрес ее смещения в буфере
+  // по номеру группы данных вычисляем ее адрес смещения в VBO
   GLsizeiptr offset = (i/vertices_per_quad) * bytes_per_snip;
 
   box* B = Visible[offset];                 // По адресу смещения найдем бокс
@@ -119,7 +129,7 @@ void rdb::decrease(int i)
     return;
   }
 
-  u_char step = 50; // шаг уменьшения размера бокса
+  u_char step = 50;             // шаг уменьшения размера бокса
   if(B->reduce(s0, step))       // Попробовать уменьшить бокс.
   {                             // Если удачно, то
     visibility_recalc_rigs(R);  // пересчитать видимость
@@ -194,18 +204,14 @@ void rdb::rig_wipe(rig* Rig)
   if(!Rig->in_vbo) return;
   Rig->in_vbo = false;
 
-  GLsizeiptr dest = 0;         // адрес смещения, где данные будут перезаписаны
-  GLsizeiptr free = 0;         // адрес блока в "хвоста" VBO, который будет освобожден
-
   for(box& B: Rig->Boxes) for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
-    dest = B.offset_read(side_id);             // адрес данных, которые будут перезаписаны
+    GLsizeiptr dest = B.offset_read(side_id);  // адрес данных, которые будут перезаписаны
     if(dest < 0) continue;                     // -1 если сторона невидима - пропустить цикл
     B.offset_write(side_id, -1);
-    free = VBO->remove(dest, bytes_per_snip);  // убрать снип из VBO и получить адрес смещения
-                                               // в VBO с которого данные были перенесены на dest
-
-    if(free == 0)                              // Если VBO пустой
+    GLsizeiptr free = VBO->remove(dest, bytes_per_snip); // убрать снип из VBO и сохранить его адрес смещения
+                                                         // в VBO с которого данные были перенесены на dest
+    if(free == 0) // Если VBO пустой
     {
       Visible.clear();
       render_indices = 0;
