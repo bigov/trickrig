@@ -401,13 +401,14 @@ void space::render_3d_space(void)
   Prog3d->set_uniform("light_direction", light_direction);  // направление
   Prog3d->set_uniform("light_bright", light_bright);        // цвет/яркость
 
-  glEnableVertexAttribArray(Prog3d->Atrib["position"]);
-  glEnableVertexAttribArray(Prog3d->Atrib["color"]);
-  glEnableVertexAttribArray(Prog3d->Atrib["normal"]);
-  glEnableVertexAttribArray(Prog3d->Atrib["fragment"]);
+  glEnableVertexAttribArray(Prog3d->Atrib["position"]);    // положение 3D
+  glEnableVertexAttribArray(Prog3d->Atrib["color"]);       // цвет
+  glEnableVertexAttribArray(Prog3d->Atrib["normal"]);      // нормаль
+  glEnableVertexAttribArray(Prog3d->Atrib["fragment"]);    // текстура
 
   // Нарисовать все за один проход:
   glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_indices), GL_UNSIGNED_INT, nullptr);
+  //glDrawElements(GL_LINES, static_cast<GLsizei>(RigsDb0.render_indices), GL_UNSIGNED_INT, nullptr);
 
   // Xid содержит порядковый номер от начала VBO для первой вершины рисуемого прямоугольника
   //GLsizei max = (RigsDb0.render_indices / indices_per_quad) * vertices_per_quad;
