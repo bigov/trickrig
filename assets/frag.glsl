@@ -8,8 +8,11 @@ flat in int vertId;
 uniform sampler2D texture_0;  // координаты текстуры
 //uniform float tex_transp;   // прозрачность текстуры
 
-layout(location = 0) out vec4 FragColor;
-layout(location = 1) out int FragData;
+uniform int MinId;
+uniform int MaxId;
+
+layout(location = 0) out vec4 FragColor; // рендер сцены
+layout(location = 1) out int FragData;   // для выбора объектов по ID первой вершины
 
 void main(void)
 {
@@ -27,8 +30,12 @@ void main(void)
   FragColor.z = texColor.z * vColor.z;
   FragColor.a = vColor.a;
 
-  if(!gl_FrontFacing) FragColor =
-      vec4(FragColor.r * 0.5f, FragColor.g * 0.5f, FragColor.b * 0.5f, FragColor.a);
+  if(!gl_FrontFacing)
+    FragColor = vec4(FragColor.r * 0.5f, FragColor.g * 0.5f, FragColor.b * 0.5f, FragColor.a);
+
+  // Подсветка поверхности текущего прямоугольника под курсором (в центре окна)
+  if((vertId >= MinId) && (vertId <= MaxId))
+    FragColor = vec4(FragColor.r * 1.15f, FragColor.g * 1.15f, FragColor.b * 1.15f, FragColor.a);
 
   FragData = vertId;
 }

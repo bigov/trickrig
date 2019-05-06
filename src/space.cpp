@@ -348,26 +348,26 @@ void space::draw(evInput& ev)
   }
 
   int vertex_id = 0;
+  AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &vertex_id);
+  id_point_0 = vertex_id - (vertex_id % vertices_per_quad);
+  id_point_8 = id_point_0 + vertices_per_quad - 1;
 
   if((46 == ev.scancode) && (ev.action == PRESS))
   {
     ev.action = -1;
     ev.scancode = -1;
-    AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &vertex_id);
     std::cout << "ID=" << vertex_id << " ";
   }
 
   if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
   {
     ev.action = -1;
-    AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &vertex_id);
     RigsDb0.increase(vertex_id);
   }
 
   if((ev.mouse == MOUSE_BUTTON_RIGHT) && (ev.action == PRESS))
   {
     ev.action = -1;
-    AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &vertex_id);
     RigsDb0.decrease(vertex_id);
   }
 
@@ -400,6 +400,9 @@ void space::render_3d_space(void)
   Prog3d->set_uniform("mvp", MatMVP);
   Prog3d->set_uniform("light_direction", light_direction);  // направление
   Prog3d->set_uniform("light_bright", light_bright);        // цвет/яркость
+
+  Prog3d->set_uniform("MinId", id_point_0);                 // начальная вершина активного вокселя
+  Prog3d->set_uniform("MaxId", id_point_8);                 // последняя вершина активного вокселя
 
   glEnableVertexAttribArray(Prog3d->Atrib["position"]);    // положение 3D
   glEnableVertexAttribArray(Prog3d->Atrib["color"]);       // цвет

@@ -77,7 +77,7 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
   TexIdent = std::make_unique<gl_texture>(GL_R32I, ident_format, ident_type);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, TexIdent->id(), 0);
 
-  GLenum  b[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+  GLenum b[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
   glDrawBuffers(2, b);
 
   glGenRenderbuffers(1, &rbuf_id);             // рендер-буфер (глубина и стенсил)

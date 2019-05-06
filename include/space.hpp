@@ -32,6 +32,8 @@ namespace tr
 
       const int g1 = 1;              // масштаб элементов в RigsDb0
       GLuint vao_id = 0;             // VAO ID
+      int id_point_0 = 0;            // индекс начальной вершины активного вокселя
+      int id_point_8 = 0;            // индекс последней вершины активного вокселя
 
       vbo_ext VBO {GL_ARRAY_BUFFER};                   // VBO вершин поверхности
       vbo_base VBOindex = { GL_ELEMENT_ARRAY_BUFFER }; // индексный буфер
