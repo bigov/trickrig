@@ -9,7 +9,7 @@
 #define DB_HPP
 
 #include "wsql.hpp"
-#include "box.hpp"
+#include "voxel.hpp"
 #include "rdb.hpp"
 #include "framebuf.hpp"
 
@@ -76,7 +76,7 @@ class db
 
     // == L-O-D 1 ==
 
-    std::map<i3d, rig> TplRigs_1 {};     // Шаблон карты - для создания новых элементов.
+    std::map<i3d, voxel> TplRigs_1 {};     // Шаблон карты - для создания новых элементов.
     int tpl_1_side = 16;                 // длина стороны шаблона
     void init_app_config(const std::string &);
     v_str load_config(size_t params_count, const std::string &file_name);

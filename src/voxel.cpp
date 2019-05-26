@@ -4,7 +4,7 @@
  *
  */
 
-#include "box.hpp"
+#include "voxel.hpp"
 
 namespace tr
 {
@@ -125,17 +125,17 @@ bool splice::operator!= (splice& Other)
 /// \param V
 /// \param l
 ///
-box::box(rig* r, u_char L ): born(tr::get_msec()), ParentRig(r)
+voxel::voxel(const i3d& Or): Origin(Or), born(tr::get_msec())
 {
   AllCoords = {
-    uch3{ 0, L, L },
-    uch3{ L, L, L },
-    uch3{ L, L, 0 },
-    uch3{ 0, L, 0 },
-    uch3{ 0, 0, L },
-    uch3{ L, 0, L },
-    uch3{ L, 0, 0 },
-    uch3{ 0, 0, 0 }
+    uch3{ 0,    size, size },
+    uch3{ size, size, size },
+    uch3{ size, size, 0    },
+    uch3{ 0,    size, 0    },
+    uch3{ 0,    0,    size },
+    uch3{ size, 0,    size },
+    uch3{ size, 0,    0    },
+    uch3{ 0,    0,    0    }
   };
   init_arrays();
 }
@@ -144,7 +144,7 @@ box::box(rig* r, u_char L ): born(tr::get_msec()), ParentRig(r)
 ///
 /// \brief box::init_arrays
 ///
-void box::init_arrays(void)
+void voxel::init_arrays(void)
 {
   for (auto i = 0; i < SIDES_COUNT; ++i)
   {
@@ -203,7 +203,7 @@ void box::init_arrays(void)
 /// \brief box::texture_calc
 /// \param s_id
 ///
-void box::texture_calc(u_char s_id)
+void voxel::texture_calc(u_char s_id)
 {
   for(u_char v_i = 0; v_i < VERT_PER_SIDE; ++v_i)
   {
@@ -222,7 +222,7 @@ void box::texture_calc(u_char s_id)
 /// \details Заполнение массива стороны данными. Если сторона
 /// скрытая, то данные не записываются и возвращается false
 ///
-bool box::side_fill_data(u_char side, GLfloat* data, const f3d& P)
+bool voxel::side_fill_data(u_char side, GLfloat* data, const f3d& P)
 {
   if(!visible[side]) return false;
 
@@ -254,7 +254,7 @@ bool box::side_fill_data(u_char side, GLfloat* data, const f3d& P)
 /// \param side_id
 /// \param n
 ///
-void box::offset_write(u_char side_id, GLsizeiptr n)
+void voxel::offset_write(u_char side_id, GLsizeiptr n)
 {
 #ifndef NDEBUG
   if(side_id >= SIDES_COUNT)
@@ -274,7 +274,7 @@ void box::offset_write(u_char side_id, GLsizeiptr n)
 /// \return
 /// \details По указанному смещению определяет какая сторона там находится
 ///
-u_char box::side_id_by_offset(GLsizeiptr dst)
+u_char voxel::side_id_by_offset(GLsizeiptr dst)
 {
   for (u_char side_id = 0; side_id < SIDES_COUNT; ++side_id) {
     if(vbo_addr[side_id] == dst) return side_id;
@@ -290,7 +290,7 @@ u_char box::side_id_by_offset(GLsizeiptr dst)
 /// \details Для указанной стороны, если она видимая, то возвращает записаный адрес
 /// размещения блока данных в VBO. Если не видимая, то -1.
 ///
-GLsizeiptr box::offset_read(u_char side_id)
+GLsizeiptr voxel::offset_read(u_char side_id)
 {
 #ifndef NDEBUG
   if(side_id >= SIDES_COUNT) ERR ("box::offset_read ERR: side_id >= SIDES_COUNT");
@@ -305,7 +305,7 @@ GLsizeiptr box::offset_read(u_char side_id)
 /// \param old_n
 /// \param new_n
 ///
-void box::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
+void voxel::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
 {
   u_char side_id;
   for (side_id = 0; side_id < SIDES_COUNT; ++side_id)
@@ -331,7 +331,7 @@ void box::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
 /// \param side_id
 /// \return
 ///
-splice& box::splice_get(u_char side_id)
+splice& voxel::splice_get(u_char side_id)
 {
   return Splice[side_id];
 }
@@ -342,10 +342,10 @@ splice& box::splice_get(u_char side_id)
 /// \param side_id
 /// \param Sp
 ///
-void box::visible_check(u_char side_id, box& B1)
+void voxel::visible_check(u_char side_id, voxel* B1)
 {
   side_visible_calc(side_id, B1);
-  B1.side_visible_calc(opposite(side_id), *this);
+  B1->side_visible_calc(opposite(side_id), this);
 }
 
 
@@ -354,9 +354,9 @@ void box::visible_check(u_char side_id, box& B1)
 /// \param side_id
 /// \param B1
 ///
-void box::side_visible_calc(u_char side_id, box& B1)
+void voxel::side_visible_calc(u_char side_id, voxel* B1)
 {
-  visible[side_id] = ( Splice[side_id] != B1.splice_get(opposite(side_id)) );
+  visible[side_id] = ( Splice[side_id] != B1->splice_get(opposite(side_id)) );
 }
 
 
@@ -364,7 +364,7 @@ void box::side_visible_calc(u_char side_id, box& B1)
 /// \brief box::splice_side
 /// \param side_id
 ///
-void box::splice_calc(u_char side_id)
+void voxel::splice_calc(u_char side_id)
 {
   switch (side_id) {
     case SIDE_XP:
@@ -395,7 +395,7 @@ void box::splice_calc(u_char side_id)
 ///
 /// \brief box::splice_side_xp
 ///
-void box::splice_side_xp(void)
+void voxel::splice_side_xp(void)
 {
   u_char s = SIDE_XP;
   a_uch4 id = IdxCoord[s]; // Индексы вершин для расчета сплайса
@@ -413,7 +413,7 @@ void box::splice_side_xp(void)
 ///
 /// \brief box::splice_side_xn
 ///
-void box::splice_side_xn(void)
+void voxel::splice_side_xn(void)
 {
   u_char s = SIDE_XN;
   // Индексы вершин, используемых для расчета сплайса
@@ -433,7 +433,7 @@ void box::splice_side_xn(void)
 ///
 /// \brief box::splice_side_yp
 ///
-void box::splice_side_yp(void)
+void voxel::splice_side_yp(void)
 {
   u_char s = SIDE_YP;
   a_uch4 id = IdxCoord[s]; // Индексы вершин для расчета сплайса
@@ -451,7 +451,7 @@ void box::splice_side_yp(void)
 ///
 /// \brief box::splice_side_yn
 ///
-void box::splice_side_yn(void)
+void voxel::splice_side_yn(void)
 {
   u_char s = SIDE_YN;
   // Индексы вершин, используемых для расчета сплайса обратной стороны
@@ -471,7 +471,7 @@ void box::splice_side_yn(void)
 ///
 /// \brief box::splice_side_zp
 ///
-void box::splice_side_zp(void)
+void voxel::splice_side_zp(void)
 {
   u_char s = SIDE_ZP;
   // Индексы вершин, используемых для расчета сплайса
@@ -490,7 +490,7 @@ void box::splice_side_zp(void)
 ///
 /// \brief box::splice_side_zn
 ///
-void box::splice_side_zn(void)
+void voxel::splice_side_zn(void)
 {
   u_char s = SIDE_ZN;
   // Индексы вершин, используемых для расчета сплайса обратной стороны

@@ -10,7 +10,7 @@
 #define VBO_HPP
 
 #include "main.hpp"
-#include "box.hpp"
+#include "voxel.hpp"
 
 namespace tr
 {

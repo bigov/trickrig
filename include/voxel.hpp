@@ -17,8 +17,8 @@
                     |/___ Xp
  */
 
-#ifndef BOX_HPP
-#define BOX_HPP
+#ifndef VOXEL_HPP
+#define VOXEL_HPP
 
 #include "main.hpp"
 #include "io.hpp"
@@ -68,9 +68,7 @@ struct uch3
   x = 0, y = 0, z = 0;
 };
 
-class rig;
-
-class box
+class voxel
 {
 private:
   GLfloat u_sz = 0.125f; // размер ячейки текстуры по U
@@ -117,42 +115,29 @@ private:
   void splice_side_zp(void);
   void splice_side_zn(void);
 
-  box(void)                   = delete; // конструктор без параметров
-  box(const box&)             = delete; // дублирующий конструктор
-  box& operator= (const box&) = delete; // копирующее присваивание
+  voxel(void)                   = delete; // конструктор без параметров
+  voxel(const voxel&)             = delete; // дублирующий конструктор
+  voxel& operator= (const voxel&) = delete; // копирующее присваивание
 
 public:
   // конструктор с генератором вершин и значениями по-умолчанию
-  box(rig* pRig, u_char Length = UCHAR_MAX);
-  ~box(void) {}
+  voxel(const i3d& Or);
+  ~voxel(void) {}
 
-  int born;                        // метка времени создания
-  rig* ParentRig;
-  bool visible[SIDES_COUNT];       // Видимость сторон
+  i3d Origin {0, 0, 0};           // координаты опорной точки
+  int born;                       // метка времени создания
+  bool visible[SIDES_COUNT];      // Видимость сторон
+  bool in_vbo = false;            // данные помещены в VBO
+  u_char size = UCHAR_MAX;
 
   u_char side_id_by_offset(GLsizeiptr dst);
-  void visible_check(u_char side_id, box&);
-  void side_visible_calc(u_char side_id, box&);
+  void visible_check(u_char side_id, voxel*);
+  void side_visible_calc(u_char side_id, voxel*);
   bool side_fill_data(u_char side_id, GLfloat* data, const f3d& P);
   void offset_write(u_char side_id, GLsizeiptr n);
   GLsizeiptr offset_read(u_char side_id);
   void offset_replace(GLsizeiptr old_n, GLsizeiptr new_n);
 
-};
-
-class rig // группа элементов, образующих объект пространства
-{
-  public:
-    rig(const i3d& Or): Origin(Or) {} // конструктор
-
-    i3d Origin {0, 0, 0};                 // координаты опорной точки
-    box Box254 {this, 255};               // воксель
-    bool in_vbo = false;                  // данные помещены в VBO
-
-  private:
-    rig(void)                   = delete; // конструктор без параметров
-    rig(const rig&)             = delete; // дублирующий конструктор
-    rig& operator= (const rig&) = delete; // копирующее присваивание
 };
 
 }
