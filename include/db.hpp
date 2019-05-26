@@ -64,10 +64,6 @@ class db
     v_ch map_name_read(const std::string & dbFile);
     void save(const camera_3d &Eye);
     void save(const main_window &AppWin);
-    rig load_rig(const i3d &, const std::string &file_name);
-    void rigs_loader(std::map<i3d, rig> &Map, i3d &Start, i3d &End);
-    void save_rig(const i3d &, const rig *);
-    void save_rigs_block(const i3d &, const i3d &, rdb &);
     void init_map_config(const std::string &);
     void load_template(int level, const std::string &fname);   // загрузка шаблона из файла БД
 

@@ -177,7 +177,7 @@ void rdb::rig_draw(rig* R)
 
   GLsizeiptr vbo_addr = 0;
   GLfloat buffer[digits_per_snip];
-  f3d P = R->vector();
+  f3d P = R->Origin;
 
   for(box& B0: R->Boxes) for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
@@ -278,17 +278,15 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
 rig* rdb::gen_rig(const i3d& P, u_char lx, u_char ly, u_char lz)
 {
   rig* R = get(P);            // Если в этой точке уже есть риг,
-  if(nullptr != R) return R;  // то возвращается ссылка на него
-
-  MapRigs[P] = rig{P};
+  if(nullptr != R) return R;  // то возвращается ссылка на него.
+                              // Иначе - создаетя новый риг
+  MapRigs.emplace(P, P);
   R = get(P);
 
   R->Boxes.push_back(box{ {0, 0, 0}, {lx, ly, lz}, R});
   visibility_recalc_rigs(R);
   return R;
 }
-
-
 
 
 ///
@@ -299,7 +297,6 @@ rig* rdb::gen_rig(const i3d& P, u_char lx, u_char ly, u_char lz)
 void rdb::visibility_recalc_rigs(rig* R0)
 {
   if(nullptr == R0) return;
-  if(R0->zoom < 0) return;
   i3d P0 = R0->Origin;
   rig* R1 = nullptr;
 
