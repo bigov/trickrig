@@ -7,7 +7,6 @@
 #define RIG_HPP
 
 #include "io.hpp"
-#include "snip.hpp"
 #include "box.hpp"
 
 namespace tr
@@ -20,7 +19,7 @@ class rig // группа элементов, образующих объект 
 
     int born;                             // метка времени создания
     i3d Origin {0, 0, 0};                 // координаты опорной точки
-    std::vector<box> Boxes {};            // массив боксов
+    box Box254 {this, 255};               // воксель
     bool in_vbo = false;                  // данные помещены в VBO
 
   private:

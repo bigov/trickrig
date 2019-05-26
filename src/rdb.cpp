@@ -48,11 +48,6 @@ void rdb::caps_lock_toggle(void)
 }
 
 
-void rdb::join(void)
-{
-
-}
-
 ///
 /// \brief rdb::increase
 /// \param i
@@ -68,19 +63,11 @@ void rdb::increase(int id)
   u_char s0 = B->side_id_by_offset(offset); // Направление стороны бокса;
   rig* Rig = B->ParentRig;                  // по боксу - риг;
   i3d P0 = Rig->Origin;                     // по ригу - опорную точку;
-
-  if(B->side_is_max(s0))         // Если бокс имеет максимальный размер с это стороны,
-    P0 = i3d_shift(P0, s0, lod);  // получим точку для генерации нового рига рядом с ним.
+  P0 = i3d_shift(P0, s0, lod);              // точка генерации нового рига рядом
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера риги
     rig_wipe(get(i3d_shift(P0, side, lod)));        // вокруг изменяемого (или нового) рига
 
-  if(!B->side_is_max(s0))
-  {                              // Если сторона не полная, то
-    rig_wipe(Rig);               // стереть риг
-    B->side_fill(s0);            // заполнить сторону
-    visibility_recalc_rigs(Rig); // пересчитать видимость всех ригов вокруг
-  }
   // Нарисовать в опорной точке риг. Если сторона была полная, то создается новый риг и
   // автоматически производится пересчет видимости сторон соседних ригов вокруг только
   // что созданного. Если риг уже существует, то "gen_rig" выдает ссылку на него и он рисуется.
@@ -90,12 +77,6 @@ void rdb::increase(int id)
     rig_draw(get(i3d_shift(P0, side, lod)));
 }
 
-
-
-void rdb::cut(void)
-{
-
-}
 
 ///
 /// \brief rdb::decrease
@@ -113,48 +94,14 @@ void rdb::decrease(int i)
   box* B = Visible[offset];                 // По адресу смещения найдем бокс
   rig* R = B->ParentRig;                    // по боксу - риг
   i3d P0 = R->Origin;                       // по ригу - опорную точку
-  u_char s0 = B->side_id_by_offset(offset); // Направление стороны бокса;
+  //u_char s0 = B->side_id_by_offset(offset); // Направление стороны бокса;
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Убрать из рендера риги вокруг
     rig_wipe(get(i3d_shift(P0, side, lod)));
 
   rig_wipe(R);                               // убрать из рендера выбранный риг
-
-  if(!caps_lock)
-  {
-    MapRigs.erase(R->Origin); // удалить риг из базы данных
-    visibility_recalc(P0);    // пересчитать видимость ригов вокруг
-    for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние риги
-      rig_draw(get(i3d_shift(P0, side, lod)));
-    return;
-  }
-
-  u_char step = 50;             // шаг уменьшения размера бокса
-  if(B->reduce(s0, step))       // Попробовать уменьшить бокс.
-  {                             // Если удачно, то
-    visibility_recalc_rigs(R);  // пересчитать видимость
-    rig_draw(R);                // и вернуть на экран.
-  }
-  else
-  { // Если уменьшить не удалось (уже минимальный размер), то удалить его.
-    for(size_t i = 0; i < R->Boxes.size(); ++i) if(B == &(R->Boxes[i]))
-    {
-      R->Boxes.erase(R->Boxes.begin() + i);
-      i = R->Boxes.size();
-    }
-
-    if(R->Boxes.empty())        // В каждом риге может быть несколько боксов.
-    {                           // Если их не осталость, то
-      MapRigs.erase(R->Origin); // удалить риг из базы данных
-      visibility_recalc(P0);    // пересчитать видимость ригов вокруг
-    }
-    else
-    {                             // Если в риге еще остались боксы,
-      visibility_recalc_rigs(R);  // то пересчитать видимость
-      rig_draw(R);                // и вернуть риг на экран.
-    }
-  }
-
+  MapRigs.erase(R->Origin);                  // удалить риг из базы данных
+  visibility_recalc(P0);                     // пересчитать видимость ригов вокруг
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние риги
     rig_draw(get(i3d_shift(P0, side, lod)));
 }
@@ -179,7 +126,8 @@ void rdb::rig_draw(rig* R)
   GLfloat buffer[digits_per_snip];
   f3d P = R->Origin;
 
-  for(box& B0: R->Boxes) for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
+  box& B0 = R->Box254;
+  for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
     if(!B0.side_fill_data(side_id, buffer, P)) continue;
     vbo_addr = VBO->append(buffer, bytes_per_snip);
@@ -204,7 +152,8 @@ void rdb::rig_wipe(rig* Rig)
   if(!Rig->in_vbo) return;
   Rig->in_vbo = false;
 
-  for(box& B: Rig->Boxes) for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
+  box& B = Rig->Box254;
+  for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
     GLsizeiptr dest = B.offset_read(side_id);  // адрес данных, которые будут перезаписаны
     if(dest < 0) continue;                     // -1 если сторона невидима - пропустить цикл
@@ -255,7 +204,7 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
 
   //Загрузка из базы данных
   //cfg::DataBase.rigs_loader(MapRigs, From, To);
-  std::srand(std::time(nullptr));
+  //std::srand(std::time(nullptr));
 
   int side_length = 20;
   for (int x = -side_length; x < side_length+1; ++x)
@@ -263,7 +212,7 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
   {
     gen_rig({x,-1, z});
     gen_rig({x, 0, z});
-    gen_rig({x, 1, z}, 255, 255 - static_cast<u_char>(std::rand() % 30), 255);
+    gen_rig({x, 1, z});
   }
 }
 
@@ -275,7 +224,7 @@ void rdb::load_space(vbo_ext* vbo, int l_o_d, const glm::vec3& Position)
 /// \details В указанной точке генерирует однобоксовый риг. Можно указать
 /// размеры сторон бокса. По-умолчанию они устанавливаются = 255
 ///
-rig* rdb::gen_rig(const i3d& P, u_char lx, u_char ly, u_char lz)
+rig* rdb::gen_rig(const i3d& P, u_char, u_char, u_char)
 {
   rig* R = get(P);            // Если в этой точке уже есть риг,
   if(nullptr != R) return R;  // то возвращается ссылка на него.
@@ -283,7 +232,7 @@ rig* rdb::gen_rig(const i3d& P, u_char lx, u_char ly, u_char lz)
   MapRigs.emplace(P, P);
   R = get(P);
 
-  R->Boxes.push_back(box{ {0, 0, 0}, {lx, ly, lz}, R});
+  //R->Box254.push_back(box{ {0, 0, 0}, {lx, ly, lz}, R});
   visibility_recalc_rigs(R);
   return R;
 }
@@ -300,12 +249,12 @@ void rdb::visibility_recalc_rigs(rig* R0)
   i3d P0 = R0->Origin;
   rig* R1 = nullptr;
 
-  for(box& B0: R0->Boxes)                                // Для всех боксов рига,
+  box& B0 = R0->Box254;                                // Для всех боксов рига,
   for (u_char side = 0; side < SIDES_COUNT; ++side)      // для их каждой стороны,
   {                                                      // получить
     R1 = get(i3d_shift(P0, side, lod));                  // ссылку на соседний риг.
     if(nullptr == R1) continue;                          // Если пусто - пропустить.
-    for(box& B1: R1->Boxes) B0.visible_check(side, B1);  // Проверить стыковку (видимость) стороны
+    B0.visible_check(side, R1->Box254);  // Проверить стыковку (видимость) стороны
   }                                                      // с каждым из боксов соседнего рига
 }
 
@@ -330,7 +279,7 @@ void rdb::visibility_recalc(i3d P0)
   {
     Rig = get(i3d_shift(P0, side, lod));
     if(nullptr == Rig) continue;
-    for(box& B: Rig->Boxes) B.visible[opposite(side)] = true;
+    Rig->Box254.visible[opposite(side)] = true;
   }
 }
 

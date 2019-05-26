@@ -82,6 +82,7 @@ private:
   // из (8*4) float, плюс 24 однобайтовых индекса. Кроме того, это позволяет
   // проще изменять форму бокса перемещая меньшее число вершин, чем если-бы
   // они хранились отдельно для каждой стороны.
+
   std::array<uch3, VERT_PER_BOX>  AllCoords {}; // относительные координаты 8 вершин внутри бокса
   std::array<a_uch4, SIDES_COUNT> IdxCoord {}; // курсор на координаты
 
@@ -106,7 +107,6 @@ private:
   splice& splice_get(u_char side_id);
   void splice_calc(u_char side_id);
   void texture_calc(u_char side_id);
-  void fill_side(u_char side_id);
 
   // расчет стыков для каждой из сторон
   void splice_side_xp(void);
@@ -116,27 +116,13 @@ private:
   void splice_side_zp(void);
   void splice_side_zn(void);
 
-  // заполнение стороны до максимума
-  void fill_side_xp(void);
-  void fill_side_xn(void);
-  void fill_side_yp(void);
-  void fill_side_yn(void);
-  void fill_side_zp(void);
-  void fill_side_zn(void);
-
-  // сдвиг стороны в направлении уменьшения на указанное расстояние
-  bool reduce_xp(u_char len);
-  bool reduce_xn(u_char len);
-  bool reduce_yp(u_char len);
-  bool reduce_yn(u_char len);
-  bool reduce_zp(u_char len);
-  bool reduce_zn(u_char len);
+  box(void)                   = delete; // конструктор без параметров
+  box(const box&)             = delete; // дублирующий конструктор
+  box& operator= (const box&) = delete; // копирующее присваивание
 
 public:
   // конструктор с генератором вершин и значениями по-умолчанию
-  box(uch3 Base={0, 0, 0}, uch3 Length={UCHAR_MAX, UCHAR_MAX, UCHAR_MAX}, rig* p=nullptr);
-  // Конструктор бокса из массива вершин
-  box(const std::array<uch3, VERT_PER_BOX>&, rig* p = nullptr);
+  box(rig* pRig, u_char Length = UCHAR_MAX);
   ~box(void) {}
 
   rig* ParentRig;
@@ -149,10 +135,6 @@ public:
   void offset_write(u_char side_id, GLsizeiptr n);
   GLsizeiptr offset_read(u_char side_id);
   void offset_replace(GLsizeiptr old_n, GLsizeiptr new_n);
-  bool move_sub(GLsizeiptr vbo_addr);
-  bool side_is_max(u_char side_id);
-  void side_fill(u_char side_id);
-  bool reduce(u_char side, u_char len);
 
 };
 

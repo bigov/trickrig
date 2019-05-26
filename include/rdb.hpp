@@ -43,8 +43,6 @@ class rdb
     void visibility_recalc_rigs(rig* R0);
     void visibility_recalc(i3d P0);
 
-    void join(void); // нарастить / увеличить толщину
-    void cut(void);  // обрезать  / снять слой
 
   public:
     rdb(void) {}
