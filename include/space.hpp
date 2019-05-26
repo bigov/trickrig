@@ -8,7 +8,7 @@
 #ifndef SPACE_HPP
 #define SPACE_HPP
 
-#include "rdb.hpp"
+#include "voxdb.hpp"
 #include "framebuf.hpp"
 
 namespace tr
@@ -37,7 +37,7 @@ namespace tr
 
       vbo_ext VBO {GL_ARRAY_BUFFER};                   // VBO вершин поверхности
       vbo_base VBOindex = { GL_ELEMENT_ARRAY_BUFFER }; // индексный буфер
-      rdb RigsDb0 {};                // структура 3D пространства LOD-0
+      voxdb RigsDb0 {};                // структура 3D пространства LOD-0
       GLuint texture_id = 0;
       float rl=0.f, ud=0.f, fb=0.f; // скорость движения по направлениям
 

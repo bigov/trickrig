@@ -1,12 +1,12 @@
-//=============================================================================
-//
-// file: rigs.hpp
-//
-// Элементы формирования пространства
-//
-//=============================================================================
-#ifndef RDB_HPP
-#define RDB_HPP
+/**
+ *
+ * file: voxdb.hpp
+ *
+ * Управление ллементами формирования пространства
+ */
+
+#ifndef VOXDB_HPP
+#define VOXDB_HPP
 
 #include "main.hpp"
 #include "glsl.hpp"
@@ -17,12 +17,12 @@ namespace tr
 
 ///
 /// \brief The rdb class
-/// \details Управление кэшем ригов с поверхности одного уровня LOD
+/// \details Управление картой вокселей
 ///
-class rdb
+class voxdb
 {
   private:
-    std::map<i3d, voxel> MapRigs {}; // карта поверхности
+    std::map<i3d, voxel> VoxMap {}; // карта поверхности
 
     // Карта размещения cнипов по адресам в VBO. Необходима для того,
     // чтобы при перемещениях данных снипов в VBO было проще вносить
@@ -36,21 +36,21 @@ class rdb
 
     void _load_16x16_obj(void);
     void init_vbo(void);
-    voxel* gen_rig(const i3d&, u_char lx = 255, u_char ly = 255, u_char lz = 255);
-    void visibility_recalc_rigs(voxel* R0);
-    void visibility_recalc(i3d P0);
+    voxel* add_voxel_on_map(const i3d&);
+    void visibility_voxel_recalc(voxel*);
+    void visibility_recalc(i3d);
 
 
   public:
-    rdb(void) {}
-    ~rdb(void) {}
+    voxdb(void) {}
+    ~voxdb(void) {}
 
     u_int render_indices = 0;      // сумма индексов, необходимых для рендера всех примитивов
     vbo_ext* VBO = nullptr;        // VBO вершин поверхности
 
     void caps_lock_toggle(void);   // переключить положение caps_lock
-    void rig_draw(voxel*);           // разместить данные в VBO буфере
-    void rig_wipe(voxel*);           // убрать риг из VBO
+    void voxel_draw(voxel*);           // разместить данные в VBO буфере
+    void voxel_wipe(voxel*);           // убрать риг из VBO
     void increase(int);   // добавить объем по индексу снипа
     void decrease(int);   // удалить объем по индексу снипа
 

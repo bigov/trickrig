@@ -183,7 +183,7 @@ void space::init3d(void)
   for(int x = xMin; x<= xMax; x += g1)
     for(int y = yMin; y<= yMax; y += g1)
       for(int z = zMin; z<= zMax; z += g1)
-        RigsDb0.rig_draw(RigsDb0.get({x, y, z}));
+        RigsDb0.voxel_draw(RigsDb0.get({x, y, z}));
 }
 
 
@@ -216,14 +216,14 @@ void space::redraw_borders_x()
   zMax = MoveFrom.z + clod_0;
   for(int y = yMin; y <= yMax; y += g1)
     for(int z = zMin; z <= zMax; z += g1)
-      RigsDb0.rig_wipe(RigsDb0.get({x_old, y, z}));
+      RigsDb0.voxel_wipe(RigsDb0.get({x_old, y, z}));
 
   // Добавить линию элементов по направлению движения
   zMin = vf_z - clod_0;
   zMax = vf_z + clod_0;
   for(int y = yMin; y <= yMax; y += g1)
     for(int z = zMin; z <= zMax; z += g1)
-      RigsDb0.rig_draw(RigsDb0.get({x_new, y, z}));
+      RigsDb0.voxel_draw(RigsDb0.get({x_new, y, z}));
 
   MoveFrom.x = vf_x;
 }
@@ -257,14 +257,14 @@ void space::redraw_borders_z()
   xMax = MoveFrom.x + clod_0;
   for(int y = yMin; y <= yMax; y += g1)
     for(int x = xMin; x <= xMax; x += g1)
-      RigsDb0.rig_wipe(RigsDb0.get({x, y, z_old}));
+      RigsDb0.voxel_wipe(RigsDb0.get({x, y, z_old}));
 
   // Добавить линию элементов по направлению движения
   xMin = vf_x - clod_0;
   xMax = vf_x + clod_0;
   for(int y = yMin; y <= yMax; y += g1)
     for(int x = xMin; x <= xMax; x += g1)
-      RigsDb0.rig_draw(RigsDb0.get({x, y, z_new}));
+      RigsDb0.voxel_draw(RigsDb0.get({x, y, z_new}));
 
   MoveFrom.z = vf_z;
 }

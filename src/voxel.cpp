@@ -121,7 +121,7 @@ bool splice::operator!= (splice& Other)
 
 
 ///
-/// \brief box::box
+/// \brief voxel::box
 /// \param V
 /// \param l
 ///
@@ -142,7 +142,7 @@ voxel::voxel(const i3d& Or): Origin(Or), born(tr::get_msec())
 
 
 ///
-/// \brief box::init_arrays
+/// \brief voxel::init_arrays
 ///
 void voxel::init_arrays(void)
 {
@@ -200,7 +200,7 @@ void voxel::init_arrays(void)
 
 
 ///
-/// \brief box::texture_calc
+/// \brief voxel::texture_calc
 /// \param s_id
 ///
 void voxel::texture_calc(u_char s_id)
@@ -217,7 +217,7 @@ void voxel::texture_calc(u_char s_id)
 
 
 ///
-/// \brief box::side_data
+/// \brief voxel::side_data
 /// \param s
 /// \details Заполнение массива стороны данными. Если сторона
 /// скрытая, то данные не записываются и возвращается false
@@ -250,7 +250,7 @@ bool voxel::side_fill_data(u_char side, GLfloat* data, const f3d& P)
 
 
 ///
-/// \brief box::offset_write
+/// \brief voxel::offset_write
 /// \param side_id
 /// \param n
 ///
@@ -259,10 +259,10 @@ void voxel::offset_write(u_char side_id, GLsizeiptr n)
 #ifndef NDEBUG
   if(side_id >= SIDES_COUNT)
   {
-    info("box::offset_write ERR: side_id >= SIDES_COUNT");
+    info("voxel::offset_write ERR: side_id >= SIDES_COUNT");
     return;
   }
-  if(!visible[side_id]) info("box::offset_write ERR: using unvisible side");
+  if(!visible[side_id]) info("voxel::offset_write ERR: using unvisible side");
 #endif
 
   vbo_addr[side_id] = n;
@@ -270,7 +270,7 @@ void voxel::offset_write(u_char side_id, GLsizeiptr n)
 
 
 ///
-/// \brief box::side_id_by_offset
+/// \brief voxel::side_id_by_offset
 /// \return
 /// \details По указанному смещению определяет какая сторона там находится
 ///
@@ -284,7 +284,7 @@ u_char voxel::side_id_by_offset(GLsizeiptr dst)
 
 
 ///
-/// \brief box::offset_read
+/// \brief voxel::offset_read
 /// \param side_id
 /// \return offset for side
 /// \details Для указанной стороны, если она видимая, то возвращает записаный адрес
@@ -293,7 +293,7 @@ u_char voxel::side_id_by_offset(GLsizeiptr dst)
 GLsizeiptr voxel::offset_read(u_char side_id)
 {
 #ifndef NDEBUG
-  if(side_id >= SIDES_COUNT) ERR ("box::offset_read ERR: side_id >= SIDES_COUNT");
+  if(side_id >= SIDES_COUNT) ERR ("voxel::offset_read ERR: side_id >= SIDES_COUNT");
 #endif
   if(visible[side_id]) return vbo_addr[side_id];
   return -1;
@@ -301,7 +301,7 @@ GLsizeiptr voxel::offset_read(u_char side_id)
 
 
 ///
-/// \brief box::offset_replace
+/// \brief voxel::offset_replace
 /// \param old_n
 /// \param new_n
 ///
@@ -313,7 +313,7 @@ void voxel::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
     if(vbo_addr[side_id] == old_n)
     {
       #ifndef NDEBUG
-        if(!visible[side_id]) info("box::offset_replace for unvisible side.");
+        if(!visible[side_id]) info("voxel::offset_replace for unvisible side.");
       #endif
       vbo_addr[side_id] = new_n;
       return;
@@ -321,13 +321,13 @@ void voxel::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
   }
 
 #ifndef NDEBUG
-  info("box::offset_replace ERR - not found offset " + std::to_string(new_n) + "\n");
+  info("voxel::offset_replace ERR - not found offset " + std::to_string(new_n) + "\n");
 #endif
 }
 
 
 ///
-/// \brief box::splice_get
+/// \brief voxel::splice_get
 /// \param side_id
 /// \return
 ///
@@ -338,7 +338,7 @@ splice& voxel::splice_get(u_char side_id)
 
 
 ///
-/// \brief box::visible_check
+/// \brief voxel::visible_check
 /// \param side_id
 /// \param Sp
 ///
@@ -350,7 +350,7 @@ void voxel::visible_check(u_char side_id, voxel* B1)
 
 
 ///
-/// \brief box::visible_recheck
+/// \brief voxel::visible_recheck
 /// \param side_id
 /// \param B1
 ///
@@ -361,7 +361,7 @@ void voxel::side_visible_calc(u_char side_id, voxel* B1)
 
 
 ///
-/// \brief box::splice_side
+/// \brief voxel::splice_side
 /// \param side_id
 ///
 void voxel::splice_calc(u_char side_id)
@@ -393,7 +393,7 @@ void voxel::splice_calc(u_char side_id)
 
 
 ///
-/// \brief box::splice_side_xp
+/// \brief voxel::splice_side_xp
 ///
 void voxel::splice_side_xp(void)
 {
@@ -411,7 +411,7 @@ void voxel::splice_side_xp(void)
 
 
 ///
-/// \brief box::splice_side_xn
+/// \brief voxel::splice_side_xn
 ///
 void voxel::splice_side_xn(void)
 {
@@ -431,7 +431,7 @@ void voxel::splice_side_xn(void)
 
 
 ///
-/// \brief box::splice_side_yp
+/// \brief voxel::splice_side_yp
 ///
 void voxel::splice_side_yp(void)
 {
@@ -449,7 +449,7 @@ void voxel::splice_side_yp(void)
 
 
 ///
-/// \brief box::splice_side_yn
+/// \brief voxel::splice_side_yn
 ///
 void voxel::splice_side_yn(void)
 {
@@ -469,7 +469,7 @@ void voxel::splice_side_yn(void)
 
 
 ///
-/// \brief box::splice_side_zp
+/// \brief voxel::splice_side_zp
 ///
 void voxel::splice_side_zp(void)
 {
@@ -488,7 +488,7 @@ void voxel::splice_side_zp(void)
 
 
 ///
-/// \brief box::splice_side_zn
+/// \brief voxel::splice_side_zn
 ///
 void voxel::splice_side_zn(void)
 {

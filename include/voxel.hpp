@@ -115,7 +115,7 @@ private:
   void splice_side_zp(void);
   void splice_side_zn(void);
 
-  voxel(void)                   = delete; // конструктор без параметров
+  voxel(void)                     = delete; // конструктор без параметров
   voxel(const voxel&)             = delete; // дублирующий конструктор
   voxel& operator= (const voxel&) = delete; // копирующее присваивание
 
@@ -141,4 +141,4 @@ public:
 };
 
 }
-#endif // BOX_HPP
+#endif // VOXEL_HPP
