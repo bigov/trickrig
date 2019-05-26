@@ -36,20 +36,8 @@ namespace tr {
 #define VERT_PER_BOX 8
 #define VERT_PER_SIDE 4
 #
-#define SPLICE_SIZE 8
-#
-//#define UCH_MAX 255
 
 extern u_char opposite(u_char side_id);
-extern u_char opposite_idx(u_char side_id, u_char idx);
-
-struct splice
-{
-  bool on = false;
-  u_char data[SPLICE_SIZE] {0, 0, 0, 0, 0, 0, 0, 0};
-  bool operator!= (splice& Other);
-};
-
 
 struct uch2
 {
@@ -59,12 +47,12 @@ struct uch2
 
 
 ///
-/// \brief The uch3 struct
-/// \details Максимальное значение координаты = 255
+/// \brief The int3 struct
+/// \details Структура для хранения относительных координат вершины
 ///
-struct uch3
+struct int3
 {
-  u_char
+  int
   x = 0, y = 0, z = 0;
 };
 
@@ -82,38 +70,24 @@ private:
   // проще изменять форму бокса перемещая меньшее число вершин, чем если-бы
   // они хранились отдельно для каждой стороны.
 
-  std::array<uch3, VERT_PER_BOX>  AllCoords {}; // относительные координаты 8 вершин внутри бокса
-  std::array<a_uch4, SIDES_COUNT> IdxCoord {}; // курсор на координаты
+  std::array<int3, VERT_PER_BOX>  AllCoords {};  // относительные координаты 8 вершин вокселя
+  std::array<a_uch4, SIDES_COUNT> IdxCoord {};   // курсор на координаты
 
   // AllColors - массив цветов вершин позволяет задавать цвета каждой вершины
   // каждой из сторон отдельно, но инициализируется одним цветом по-умолчанию.
   // После инициализации CursorColor указывает на один цвет для всех вершин.
-  std::vector<color>              AllColors {}; // цвета вершин
-  std::array<a_uch4, SIDES_COUNT> IdxColor {}; // указатель цветов вершин
+  std::vector<color>              AllColors {};  // цвета вершин
+  std::array<a_uch4, SIDES_COUNT> IdxColor {};   // указатель цветов вершин
 
   std::vector<normal>             AllNormals {}; // Направления нормалей вершин
-  std::array<a_uch4, SIDES_COUNT> IdxNormal {}; // курсор на нормали каждой вершины
+  std::array<a_uch4, SIDES_COUNT> IdxNormal {};  // курсор на нормали каждой вершины
 
-  uch2 tex_id[SIDES_COUNT]; // Индексы текстур сторон
-  // Координаты текстур вершин пересчитываются при смещении вершин
-  texture VertTexture[SIDES_COUNT * vertices_per_quad];
-
-  std::array<splice, SIDES_COUNT> Splice {}; // координаты стыка с соседним ригом
+  texture VertTexture[SIDES_COUNT * vertices_per_quad]; // Координаты текстур вершин
+  uch2 tex_id[SIDES_COUNT];                             // Индексы текстур сторон
 
   GLsizeiptr vbo_addr[SIDES_COUNT];  // Адреса смещения в буфере GPU массивов данных по каждой из сторон
 
   void init_arrays(void);
-  splice& splice_get(u_char side_id);
-  void splice_calc(u_char side_id);
-  void texture_calc(u_char side_id);
-
-  // расчет стыков для каждой из сторон
-  void splice_side_xp(void);
-  void splice_side_xn(void);
-  void splice_side_yp(void);
-  void splice_side_yn(void);
-  void splice_side_zp(void);
-  void splice_side_zn(void);
 
   voxel(void)                     = delete; // конструктор без параметров
   voxel(const voxel&)             = delete; // дублирующий конструктор
@@ -128,7 +102,7 @@ public:
   int born;                       // метка времени создания
   bool visible[SIDES_COUNT];      // Видимость сторон
   bool in_vbo = false;            // данные помещены в VBO
-  u_char size = UCHAR_MAX;
+  int size = 255;
 
   u_char side_id_by_offset(GLsizeiptr dst);
   void visible_check(u_char side_id, voxel*);

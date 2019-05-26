@@ -45,82 +45,6 @@ u_char opposite(u_char s)
 
 
 ///
-/// \brief opposite_idx
-/// \param side_id
-/// \param idx
-/// \return номер вершины, противовположной указанной для указанной стороны
-///
-u_char opposite_idx(u_char side_id, u_char i)
-{
-  switch (side_id)
-  {
-    case SIDE_XP:
-      if(i == 2) return 3;
-      if(i == 1) return 0;
-      if(i == 5) return 4;
-      if(i == 6) return 7;
-      break;
-    case SIDE_XN:
-      if(i == 0) return 1;
-      if(i == 3) return 2;
-      if(i == 7) return 6;
-      if(i == 4) return 5;
-      break;
-    case SIDE_YP:
-      if(i == 0) return 4;
-      if(i == 1) return 5;
-      if(i == 2) return 6;
-      if(i == 3) return 7;
-      break;
-    case SIDE_YN:
-      if(i == 7) return 3;
-      if(i == 6) return 2;
-      if(i == 5) return 1;
-      if(i == 4) return 0;
-      break;
-    case SIDE_ZP:
-      if(i == 1) return 2;
-      if(i == 0) return 3;
-      if(i == 4) return 7;
-      if(i == 5) return 6;
-      break;
-    case SIDE_ZN:
-      if(i == 3) return 0;
-      if(i == 2) return 1;
-      if(i == 6) return 5;
-      if(i == 7) return 4;
-      break;
-    default:
-#ifndef NDEBUG
-      info("no opposite_idx for side = " + std::to_string(side_id));
-#endif
-  }
-  return UCHAR_MAX;
-}
-
-
-///
-/// \brief splice::operator!=
-/// \param Other
-/// \return
-///
-bool splice::operator!= (splice& Other)
-{
-  if(!on) return true;
-  if(!Other.on) return true;
-
-  u_char buf = 0;
-  for(size_t i = 0; i < SPLICE_SIZE; ++i)
-  {
-    if( data[i] == Other.data[i] ) buf += 1;
-  }
-  if(buf == SPLICE_SIZE) return false;
-
-  return true;
-}
-
-
-///
 /// \brief voxel::box
 /// \param V
 /// \param l
@@ -128,14 +52,14 @@ bool splice::operator!= (splice& Other)
 voxel::voxel(const i3d& Or): Origin(Or), born(tr::get_msec())
 {
   AllCoords = {
-    uch3{ 0,    size, size },
-    uch3{ size, size, size },
-    uch3{ size, size, 0    },
-    uch3{ 0,    size, 0    },
-    uch3{ 0,    0,    size },
-    uch3{ size, 0,    size },
-    uch3{ size, 0,    0    },
-    uch3{ 0,    0,    0    }
+    int3{ 0,    size, size },
+    int3{ size, size, size },
+    int3{ size, size, 0    },
+    int3{ 0,    size, 0    },
+    int3{ 0,    0,    size },
+    int3{ size, 0,    size },
+    int3{ size, 0,    0    },
+    int3{ 0,    0,    0    }
   };
   init_arrays();
 }
@@ -150,7 +74,7 @@ void voxel::init_arrays(void)
   {
     vbo_addr[i]  = -1;
     visible[i] = true;
-    tex_id[i]  = {0, 0};
+    tex_id[i]  = {7, 5};
   }
 
   AllColors = { color{1.f, 1.f, 1.f, 1.f} }; // цвет по-умолчанию для всех вершин
@@ -193,25 +117,17 @@ void voxel::init_arrays(void)
 
   for(u_char s_id = 0; s_id < SIDES_COUNT; ++s_id)
   {
-    splice_calc(s_id);
-    texture_calc(s_id);
-  }
-}
+    VertTexture[VERT_PER_SIDE * s_id + 0].u = u_sz * tex_id[s_id].u;
+    VertTexture[VERT_PER_SIDE * s_id + 0].v = v_sz * tex_id[s_id].v;
 
+    VertTexture[VERT_PER_SIDE * s_id + 1].u = u_sz * tex_id[s_id].u;
+    VertTexture[VERT_PER_SIDE * s_id + 1].v = v_sz * tex_id[s_id].v + v_sz;
 
-///
-/// \brief voxel::texture_calc
-/// \param s_id
-///
-void voxel::texture_calc(u_char s_id)
-{
-  for(u_char v_i = 0; v_i < VERT_PER_SIDE; ++v_i)
-  {
-    VertTexture[VERT_PER_SIDE * s_id + v_i].u =
-        u_sz * tex_id[s_id].u + u_sz * Splice[s_id].data[2*v_i]/255.f;
+    VertTexture[VERT_PER_SIDE * s_id + 2].u = u_sz * tex_id[s_id].u + u_sz;
+    VertTexture[VERT_PER_SIDE * s_id + 2].v = v_sz * tex_id[s_id].v + v_sz;
 
-    VertTexture[VERT_PER_SIDE * s_id + v_i].v =
-        v_sz * tex_id[s_id].v + v_sz * (255-Splice[s_id].data[2*v_i+1])/255.f;
+    VertTexture[VERT_PER_SIDE * s_id + 3].u = u_sz * tex_id[s_id].u + u_sz;
+    VertTexture[VERT_PER_SIDE * s_id + 3].v = v_sz * tex_id[s_id].v;
   }
 }
 
@@ -327,17 +243,6 @@ void voxel::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
 
 
 ///
-/// \brief voxel::splice_get
-/// \param side_id
-/// \return
-///
-splice& voxel::splice_get(u_char side_id)
-{
-  return Splice[side_id];
-}
-
-
-///
 /// \brief voxel::visible_check
 /// \param side_id
 /// \param Sp
@@ -350,160 +255,15 @@ void voxel::visible_check(u_char side_id, voxel* B1)
 
 
 ///
-/// \brief voxel::visible_recheck
+/// \brief voxel::side_visible_calc
 /// \param side_id
 /// \param B1
 ///
-void voxel::side_visible_calc(u_char side_id, voxel* B1)
+void voxel::side_visible_calc(u_char side_id, voxel* pVox)
 {
-  visible[side_id] = ( Splice[side_id] != B1->splice_get(opposite(side_id)) );
+  if(nullptr != pVox) visible[side_id] = false;
+  else visible[side_id] = true;
 }
 
-
-///
-/// \brief voxel::splice_side
-/// \param side_id
-///
-void voxel::splice_calc(u_char side_id)
-{
-  switch (side_id) {
-    case SIDE_XP:
-      splice_side_xp();
-      break;
-    case SIDE_XN:
-      splice_side_xn();
-      break;
-    case SIDE_YP:
-      splice_side_yp();
-      break;
-    case SIDE_YN:
-      splice_side_yn();
-      break;
-    case SIDE_ZP:
-      splice_side_zp();
-      break;
-    case SIDE_ZN:
-      splice_side_zn();
-      break;
-    default:
-      info("Err side_id on " + std::string(__func__));
-
-  }
-}
-
-
-///
-/// \brief voxel::splice_side_xp
-///
-void voxel::splice_side_xp(void)
-{
-  u_char s = SIDE_XP;
-  a_uch4 id = IdxCoord[s]; // Индексы вершин для расчета сплайса
-
-  Splice[s].on = true;
-  for(u_char i = 0; i < VERT_PER_SIDE; ++i)
-  {
-    if(AllCoords[id[i]].x != UCHAR_MAX)  Splice[s].on = false;
-    Splice[s].data[i*2]    = AllCoords[id[i]].y;
-    Splice[s].data[i*2+1]  = AllCoords[id[i]].z;
-  }
-}
-
-
-///
-/// \brief voxel::splice_side_xn
-///
-void voxel::splice_side_xn(void)
-{
-  u_char s = SIDE_XN;
-  // Индексы вершин, используемых для расчета сплайса
-  // обратной стороны выбираются в обратном направлении
-  a_uch4 id = { IdxCoord[s][1], IdxCoord[s][0], IdxCoord[s][3], IdxCoord[s][2] };
-
-  Splice[s].on = true;
-  for(u_char i = 0; i < VERT_PER_SIDE; ++i)
-  {
-    if(AllCoords[id[i]].x != 0)  Splice[s].on = false;
-    Splice[s].data[i*2]   = AllCoords[id[i]].y;
-    Splice[s].data[i*2+1] = AllCoords[id[i]].z;
-  }
-}
-
-
-///
-/// \brief voxel::splice_side_yp
-///
-void voxel::splice_side_yp(void)
-{
-  u_char s = SIDE_YP;
-  a_uch4 id = IdxCoord[s]; // Индексы вершин для расчета сплайса
-
-  Splice[s].on = true;
-  for(u_char i = 0; i < VERT_PER_SIDE; ++i)
-  {
-    if(AllCoords[id[i]].y != UCHAR_MAX)  Splice[s].on = false;
-    Splice[s].data[i*2]   = AllCoords[id[i]].x;
-    Splice[s].data[i*2+1] = AllCoords[id[i]].z;
-  }
-}
-
-
-///
-/// \brief voxel::splice_side_yn
-///
-void voxel::splice_side_yn(void)
-{
-  u_char s = SIDE_YN;
-  // Индексы вершин, используемых для расчета сплайса обратной стороны
-  // выбираются в обратном направлении
-  a_uch4 id = { IdxCoord[s][3], IdxCoord[s][2], IdxCoord[s][1], IdxCoord[s][0] };
-
-  Splice[s].on = true;
-  for(u_char i = 0; i < VERT_PER_SIDE; ++i)
-  {
-    if(AllCoords[id[i]].y != 0) Splice[s].on = false;
-    Splice[s].data[i*2]   = AllCoords[id[i]].x;
-    Splice[s].data[i*2+1] = AllCoords[id[i]].z;
-  }
-}
-
-
-///
-/// \brief voxel::splice_side_zp
-///
-void voxel::splice_side_zp(void)
-{
-  u_char s = SIDE_ZP;
-  // Индексы вершин, используемых для расчета сплайса
-  a_uch4 id = IdxCoord[s];
-
-  Splice[s].on = true;
-  for(u_char i = 0; i < VERT_PER_SIDE; ++i)
-  {
-    if(AllCoords[id[i]].z != UCHAR_MAX) Splice[s].on = false;
-    Splice[s].data[i*2]   = AllCoords[id[i]].x;
-    Splice[s].data[i*2+1] = AllCoords[id[i]].y;
-  }
-}
-
-
-///
-/// \brief voxel::splice_side_zn
-///
-void voxel::splice_side_zn(void)
-{
-  u_char s = SIDE_ZN;
-  // Индексы вершин, используемых для расчета сплайса обратной стороны
-  // выбираются в обратном направлении
-  a_uch4 id = { IdxCoord[s][1], IdxCoord[s][0], IdxCoord[s][3], IdxCoord[s][2] };
-
-  Splice[s].on = true;
-  for(u_char i = 0; i < VERT_PER_SIDE; ++i)
-  {
-    if(AllCoords[id[i]].z != 0) Splice[s].on = false;
-    Splice[s].data[i*2]   = AllCoords[id[i]].x;
-    Splice[s].data[i*2+1] = AllCoords[id[i]].y;
-  }
-}
 
 } //tr

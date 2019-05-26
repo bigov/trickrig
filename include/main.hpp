@@ -64,6 +64,7 @@ using a_f2   = std::array<float, 2>;
 using a_f3   = std::array<float, 3>;
 using a_f4   = std::array<float, 4>;
 using a_uch4 = std::array<unsigned char, 4>;
+using a_int3 = std::array<int, 3>;
 
 enum APP_INIT {      // вначале списка идут названия файлов
   PNG_TEXTURE0,
@@ -126,7 +127,7 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
    */
   static const int lod0_size = 25;
 
-  // число вершин в одном снипе
+  // число вершин в прямоугольнике
   static const u_int vertices_per_quad = 4;
   // число индексов в одном снипе
   static const u_int indices_per_quad = 6;
