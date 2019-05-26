@@ -10,7 +10,7 @@
 #define VBO_HPP
 
 #include "main.hpp"
-#include "rig.hpp"
+#include "box.hpp"
 
 namespace tr
 {

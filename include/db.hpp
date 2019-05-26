@@ -9,7 +9,7 @@
 #define DB_HPP
 
 #include "wsql.hpp"
-#include "rig.hpp"
+#include "box.hpp"
 #include "rdb.hpp"
 #include "framebuf.hpp"
 

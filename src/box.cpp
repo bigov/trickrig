@@ -1,5 +1,10 @@
+/**
+ *
+ *
+ *
+ */
+
 #include "box.hpp"
-#include "rig.hpp"
 
 namespace tr
 {
@@ -120,7 +125,7 @@ bool splice::operator!= (splice& Other)
 /// \param V
 /// \param l
 ///
-box::box(rig* r, u_char L ): ParentRig(r)
+box::box(rig* r, u_char L ): born(tr::get_msec()), ParentRig(r)
 {
   AllCoords = {
     uch3{ 0, L, L },

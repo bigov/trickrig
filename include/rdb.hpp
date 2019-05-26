@@ -11,9 +11,6 @@
 #include "main.hpp"
 #include "glsl.hpp"
 #include "vbo.hpp"
-//#include "config.hpp"
-
-//#include "objl.hpp"
 
 namespace tr
 {

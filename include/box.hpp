@@ -16,6 +16,7 @@
    7-----------6    | /
                     |/___ Xp
  */
+
 #ifndef BOX_HPP
 #define BOX_HPP
 
@@ -125,6 +126,7 @@ public:
   box(rig* pRig, u_char Length = UCHAR_MAX);
   ~box(void) {}
 
+  int born;                        // метка времени создания
   rig* ParentRig;
   bool visible[SIDES_COUNT];       // Видимость сторон
 
@@ -136,6 +138,21 @@ public:
   GLsizeiptr offset_read(u_char side_id);
   void offset_replace(GLsizeiptr old_n, GLsizeiptr new_n);
 
+};
+
+class rig // группа элементов, образующих объект пространства
+{
+  public:
+    rig(const i3d& Or): Origin(Or) {} // конструктор
+
+    i3d Origin {0, 0, 0};                 // координаты опорной точки
+    box Box254 {this, 255};               // воксель
+    bool in_vbo = false;                  // данные помещены в VBO
+
+  private:
+    rig(void)                   = delete; // конструктор без параметров
+    rig(const rig&)             = delete; // дублирующий конструктор
+    rig& operator= (const rig&) = delete; // копирующее присваивание
 };
 
 }
