@@ -46,121 +46,174 @@ u_char opposite(u_char s)
 
 ///
 /// \brief voxel::box
-/// \param V
-/// \param l
+/// \param Origin point
+/// \param Side length
 ///
-voxel::voxel(const i3d& Or): Origin(Or), born(tr::get_msec())
+voxel::voxel(const i3d& Or, int sz)
+: Origin(Or), side_len(sz), born(tr::get_msec())
 {
-  AllCoords = {
-    int3{ 0,    size, size },
-    int3{ size, size, size },
-    int3{ size, size, 0    },
-    int3{ 0,    size, 0    },
-    int3{ 0,    0,    size },
-    int3{ size, 0,    size },
-    int3{ size, 0,    0    },
-    int3{ 0,    0,    0    }
-  };
-  init_arrays();
+  init_data();
 }
 
+
+///
+/// \brief voxel::side_color_set
+/// \param side
+/// \param C
+///
+void voxel::side_color_set(u_int side, color C)
+{
+  size_t i = side * digits_per_side;
+  for(u_int v = 0; v < vertices_per_side; ++v)
+  {
+    data[i + R] = C.r;
+    data[i + G] = C.g;
+    data[i + B] = C.b;
+    data[i + A] = C.a;
+    i += digits_per_vertex;
+  }
+}
+
+
+///
+/// \brief voxel::side_texture_set
+/// \param side
+/// \param texture
+///
+void voxel::side_texture_set(u_int side)
+{
+  uch2 texture = tex_id[side];
+
+  size_t i =  side * digits_per_side;
+  data[i + U] = u_sz * texture.u;
+  data[i + V] = v_sz * texture.v;
+
+  i += digits_per_vertex;
+  data[i + U] = u_sz * texture.u + u_sz;
+  data[i + V] = v_sz * texture.v;
+
+  i += digits_per_vertex;
+  data[i + U] = u_sz * texture.u + u_sz;
+  data[i + V] = v_sz * texture.v + v_sz;
+
+  i += digits_per_vertex;
+  data[i + U] = u_sz * texture.u;
+  data[i + V] = v_sz * texture.v + v_sz;
+}
+
+
+///
+/// \brief voxel::side_normals_set
+/// \param side
+///
+void voxel::side_normals_set(u_int side)
+{
+  GLfloat nx = 0.f, ny = 0.f, nz = 0.f;
+
+  switch (side) {
+    case SIDE_XP:
+      nx = 1.f;
+      break;
+    case SIDE_XN:
+      nx =-1.f;
+      break;
+    case SIDE_YP:
+      ny = 1.f;
+      break;
+    case SIDE_YN:
+      ny =-1.f;
+      break;
+    case SIDE_ZP:
+      nz = 1.f;
+      break;
+    case SIDE_ZN:
+      nz =-1.f;
+  }
+
+  size_t i =  side * digits_per_side;
+  for(u_int v = 0; v < vertices_per_side; ++v)
+  {
+    data[i + NX] = nx;
+    data[i + NY] = ny;
+    data[i + NZ] = nz;
+    i += digits_per_vertex;
+  }
+}
+
+
+///
+/// \brief voxel::side_position_set
+/// \param side
+///
+void voxel::side_position_set(u_int side)
+{
+  // относительные координаты всех вершин вокселя
+  f3d P[8] = {{side_len, side_len, 0}, {side_len, side_len, side_len}, {side_len, 0, side_len},
+              {side_len, 0, 0}, {0, side_len, side_len}, {0, side_len, 0}, {0, 0, 0}, {0, 0, side_len}};
+
+  f3d sh[4]; // смещения 4-х образующих вершин выбранной стороны вокселя
+  switch (side) {
+    case SIDE_XP:
+      sh[0] = P[0]; sh[1] = P[1]; sh[2] = P[2]; sh[3] = P[3];
+      break;
+    case SIDE_XN:
+      sh[0] = P[4]; sh[1] = P[5]; sh[2] = P[6]; sh[3] = P[7];
+      break;
+    case SIDE_YP:
+      sh[0] = P[4]; sh[1] = P[1]; sh[2] = P[0]; sh[3] = P[5];
+      break;
+    case SIDE_YN:
+      sh[0] = P[6]; sh[1] = P[3]; sh[2] = P[2]; sh[3] = P[7];
+      break;
+    case SIDE_ZP:
+      sh[0] = P[1]; sh[1] = P[4]; sh[2] = P[7]; sh[3] = P[2];
+      break;
+    case SIDE_ZN:
+      sh[0] = P[5]; sh[1] = P[0]; sh[2] = P[3]; sh[3] = P[6];
+  }
+
+  size_t i = side * digits_per_side;
+  for(u_int v = 0; v < vertices_per_side; ++v)
+  {
+    data[i + X] = sh[v].x + Origin.x;
+    data[i + Y] = sh[v].y + Origin.y;
+    data[i + Z] = sh[v].z + Origin.z;
+    i += digits_per_vertex;
+  }
+}
 
 ///
 /// \brief voxel::init_arrays
 ///
-void voxel::init_arrays(void)
+void voxel::init_data(void)
 {
-  for (auto i = 0; i < SIDES_COUNT; ++i)
+  color IniColor {1.f, 1.f, 1.f, 1.f};
+
+  for (u_int side = 0; side < SIDES_COUNT; ++side)
   {
-    vbo_addr[i]  = -1;
-    visible[i] = true;
-    tex_id[i]  = {7, 5};
-  }
+    vbo_addr[side]  = -1;
+    visible[side] = true;
+    tex_id[side]  = {7, 5};
 
-  AllColors = { color{1.f, 1.f, 1.f, 1.f} }; // цвет по-умолчанию для всех вершин
-
-  AllNormals = { // Направление нормалей по сторонам
-    { 1.0f, 0.0f, 0.0f }, //xp
-    {-1.0f, 0.0f, 0.0f }, //xn
-    { 0.0f, 1.0f, 0.0f }, //yp
-    { 0.0f,-1.0f, 0.0f }, //yn
-    { 0.0f, 0.0f, 1.0f }, //zp
-    { 0.0f, 0.0f,-1.0f }  //zn
-  };
-
-  IdxCoord = { // индексы координат из массива вершин, для построения сторон
-    a_uch4{ 2, 1, 5, 6 }, //x+
-    a_uch4{ 0, 3, 7, 4 }, //x-
-    a_uch4{ 0, 1, 2, 3 }, //y+
-    a_uch4{ 7, 6, 5, 4 }, //y-
-    a_uch4{ 1, 0, 4, 5 }, //z+
-    a_uch4{ 3, 2, 6, 7 }  //z-
-  };
-
-  IdxColor = { // индексы для цветов всех вершин всех 6 сторон
-    a_uch4{ 0, 0, 0, 0 }, //x+
-    a_uch4{ 0, 0, 0, 0 }, //x-
-    a_uch4{ 0, 0, 0, 0 }, //y+
-    a_uch4{ 0, 0, 0, 0 }, //y-
-    a_uch4{ 0, 0, 0, 0 }, //z+
-    a_uch4{ 0, 0, 0, 0 }, //z-
-  };
-
-  IdxNormal = { // индексы на нормали вершин
-    a_uch4{ 0, 0, 0, 0 }, //x+
-    a_uch4{ 1, 1, 1, 1 }, //x-
-    a_uch4{ 2, 2, 2, 2 }, //y+
-    a_uch4{ 3, 3, 3, 3 }, //y-
-    a_uch4{ 4, 4, 4, 4 }, //z+
-    a_uch4{ 5, 5, 5, 5 }, //z-
-  };
-
-  for(u_char s_id = 0; s_id < SIDES_COUNT; ++s_id)
-  {
-    VertTexture[VERT_PER_SIDE * s_id + 0].u = u_sz * tex_id[s_id].u;
-    VertTexture[VERT_PER_SIDE * s_id + 0].v = v_sz * tex_id[s_id].v;
-
-    VertTexture[VERT_PER_SIDE * s_id + 1].u = u_sz * tex_id[s_id].u;
-    VertTexture[VERT_PER_SIDE * s_id + 1].v = v_sz * tex_id[s_id].v + v_sz;
-
-    VertTexture[VERT_PER_SIDE * s_id + 2].u = u_sz * tex_id[s_id].u + u_sz;
-    VertTexture[VERT_PER_SIDE * s_id + 2].v = v_sz * tex_id[s_id].v + v_sz;
-
-    VertTexture[VERT_PER_SIDE * s_id + 3].u = u_sz * tex_id[s_id].u + u_sz;
-    VertTexture[VERT_PER_SIDE * s_id + 3].v = v_sz * tex_id[s_id].v;
+    side_position_set(side);
+    side_color_set(side, IniColor);
+    side_normals_set(side);
+    side_texture_set(side);
   }
 }
 
 
 ///
-/// \brief voxel::side_data
+/// \brief voxel::side_fill_data
 /// \param s
 /// \details Заполнение массива стороны данными. Если сторона
 /// скрытая, то данные не записываются и возвращается false
 ///
-bool voxel::side_fill_data(u_char side, GLfloat* data, const f3d& P)
+bool voxel::side_fill_data(u_char side, GLfloat* buff)
 {
   if(!visible[side]) return false;
-
-  size_t i = 0;
-  for(size_t n = 0; n < vertices_per_quad; ++n)
-  {
-    data[i++] = AllCoords[(IdxCoord[side][n])].x/255.f + P.x;
-    data[i++] = AllCoords[(IdxCoord[side][n])].y/255.f + P.y;
-    data[i++] = AllCoords[(IdxCoord[side][n])].z/255.f + P.z;
-
-    data[i++] = AllColors[(IdxColor[side][n])].r;
-    data[i++] = AllColors[(IdxColor[side][n])].g;
-    data[i++] = AllColors[(IdxColor[side][n])].b;
-    data[i++] = AllColors[(IdxColor[side][n])].a;
-
-    data[i++] = AllNormals[(IdxNormal[side][n])].nx;
-    data[i++] = AllNormals[(IdxNormal[side][n])].ny;
-    data[i++] = AllNormals[(IdxNormal[side][n])].nz;
-
-    data[i++] = VertTexture[VERT_PER_SIDE * side + n].u;
-    data[i++] = VertTexture[VERT_PER_SIDE * side + n].v;
-  }
+  GLfloat* src = &data[side * digits_per_side];
+  memcpy(buff, src, bytes_per_side);
   return true;
 }
 
@@ -169,6 +222,7 @@ bool voxel::side_fill_data(u_char side, GLfloat* data, const f3d& P)
 /// \brief voxel::offset_write
 /// \param side_id
 /// \param n
+/// \details Запись адреса размещения данных в VBO стороны вокселя
 ///
 void voxel::offset_write(u_char side_id, GLsizeiptr n)
 {

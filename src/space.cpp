@@ -90,10 +90,10 @@ void space::init_vao(void)
   glBindVertexArray(vao_id);
 
   // Число элементов в кубе с длиной стороны = "space_i0_length" элементов:
-  u_int n = static_cast<u_int>(pow((lod0_size + lod0_size + 1), 3));
+  u_int n = static_cast<u_int>(pow((lod0 + lod0 + 1), 3));
 
   // Размер данных VBO для размещения снипов:
-  VBO.allocate(n * bytes_per_snip);
+  VBO.allocate(n * bytes_per_side);
 
   // настройка положения атрибутов
   VBO.attrib(Prog3d->Atrib["position"],
@@ -163,7 +163,8 @@ void space::load_texture(unsigned gl_texture_index, const std::string& FileName)
 void space::init3d(void)
 {
   // начальная загрузка пространства масштаба g0, в точке Eye.ViewFrom
-  RigsDb0.load_space(&VBO, g1, Eye.ViewFrom);
+  VBO.clear();
+  Area0.load_space(&VBO);
 
   MoveFrom = {
     static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
@@ -172,18 +173,18 @@ void space::init3d(void)
   };
 
   int // границы уровня lod_0
-    xMin = MoveFrom.x - lod0_size,
-    yMin = MoveFrom.y - lod0_size,
-    zMin = MoveFrom.z - lod0_size,
-    xMax = MoveFrom.x + lod0_size,
-    yMax = MoveFrom.y + lod0_size,
-    zMax = MoveFrom.z + lod0_size;
+    xMin = MoveFrom.x - lod0,
+    yMin = MoveFrom.y - lod0,
+    zMin = MoveFrom.z - lod0,
+    xMax = MoveFrom.x + lod0,
+    yMax = MoveFrom.y + lod0,
+    zMax = MoveFrom.z + lod0;
 
   // Загрузить в графический буфер элементы пространства
   for(int x = xMin; x<= xMax; x += g1)
     for(int y = yMin; y<= yMax; y += g1)
       for(int z = zMin; z<= zMax; z += g1)
-        RigsDb0.voxel_draw(RigsDb0.get({x, y, z}));
+        Area0.voxel_draw(Area0.get({x, y, z}));
 }
 
 
@@ -198,32 +199,31 @@ void space::redraw_borders_x()
     x_old,                // координаты линий удаления фрагментов
     x_new,                // координаты линий вставки новых фрагментов
     vf_x = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
-    vf_z = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.z))),
-    clod_0 = lod0_size;
+    vf_z = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.z)));
 
   if(MoveFrom.x > vf_x) {
-    x_old = MoveFrom.x + clod_0;
-    x_new = vf_x - clod_0;
+    x_old = MoveFrom.x + lod0;
+    x_new = vf_x - lod0;
   } else {
-    x_old = MoveFrom.x - clod_0;
-    x_new = vf_x + clod_0;
+    x_old = MoveFrom.x - lod0;
+    x_new = vf_x + lod0;
   }
 
   int zMin, zMax;
 
   // Скрыть элементы с задней границы области
-  zMin = MoveFrom.z - clod_0;
-  zMax = MoveFrom.z + clod_0;
+  zMin = MoveFrom.z - lod0;
+  zMax = MoveFrom.z + lod0;
   for(int y = yMin; y <= yMax; y += g1)
     for(int z = zMin; z <= zMax; z += g1)
-      RigsDb0.voxel_wipe(RigsDb0.get({x_old, y, z}));
+      Area0.voxel_wipe(Area0.get({x_old, y, z}));
 
   // Добавить линию элементов по направлению движения
-  zMin = vf_z - clod_0;
-  zMax = vf_z + clod_0;
+  zMin = vf_z - lod0;
+  zMax = vf_z + lod0;
   for(int y = yMin; y <= yMax; y += g1)
     for(int z = zMin; z <= zMax; z += g1)
-      RigsDb0.voxel_draw(RigsDb0.get({x_new, y, z}));
+      Area0.voxel_draw(Area0.get({x_new, y, z}));
 
   MoveFrom.x = vf_x;
 }
@@ -239,32 +239,31 @@ void space::redraw_borders_z()
     yMin = -5, yMax =  5, // Y границы области сбора
     z_old, z_new,  // координаты линий удаления/вставки новых фрагментов
     vf_z = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.z))),
-    vf_x = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x))),
-    clod_0 = lod0_size;
+    vf_x = static_cast<int>(floor(static_cast<double>(Eye.ViewFrom.x)));
 
   if(MoveFrom.z > vf_z) {
-    z_old = MoveFrom.z + clod_0;
-    z_new = vf_z - clod_0;
+    z_old = MoveFrom.z + lod0;
+    z_new = vf_z - lod0;
   } else {
-    z_old = MoveFrom.z - clod_0;
-    z_new = vf_z + clod_0;
+    z_old = MoveFrom.z - lod0;
+    z_new = vf_z + lod0;
   }
 
   int xMin, xMax;
 
   // Скрыть элементы с задней границы области
-  xMin = MoveFrom.x - clod_0;
-  xMax = MoveFrom.x + clod_0;
+  xMin = MoveFrom.x - lod0;
+  xMax = MoveFrom.x + lod0;
   for(int y = yMin; y <= yMax; y += g1)
     for(int x = xMin; x <= xMax; x += g1)
-      RigsDb0.voxel_wipe(RigsDb0.get({x, y, z_old}));
+      Area0.voxel_wipe(Area0.get({x, y, z_old}));
 
   // Добавить линию элементов по направлению движения
-  xMin = vf_x - clod_0;
-  xMax = vf_x + clod_0;
+  xMin = vf_x - lod0;
+  xMax = vf_x + lod0;
   for(int y = yMin; y <= yMax; y += g1)
     for(int x = xMin; x <= xMax; x += g1)
-      RigsDb0.voxel_draw(RigsDb0.get({x, y, z_new}));
+      Area0.voxel_draw(Area0.get({x, y, z_new}));
 
   MoveFrom.z = vf_z;
 }
@@ -343,17 +342,19 @@ void space::draw(evInput& ev)
   calc_position(ev);
   recalc_borders();
 
+  /*
   if((ev.key == GLFW_KEY_CAPS_LOCK) && (ev.action == RELEASE))
   {
     ev.key = -1;
     ev.action = -1;
     RigsDb0.caps_lock_toggle();
   }
+  */
 
   int vertex_id = 0;
   AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &vertex_id);
-  id_point_0 = vertex_id - (vertex_id % vertices_per_quad);
-  id_point_8 = id_point_0 + vertices_per_quad - 1;
+  id_point_0 = vertex_id - (vertex_id % vertices_per_side);
+  id_point_8 = id_point_0 + vertices_per_side - 1;
 
   if((46 == ev.scancode) && (ev.action == PRESS))
   {
@@ -365,13 +366,13 @@ void space::draw(evInput& ev)
   if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
   {
     ev.action = -1;
-    RigsDb0.increase(vertex_id);
+    Area0.increase(vertex_id);
   }
 
   if((ev.mouse == MOUSE_BUTTON_RIGHT) && (ev.action == PRESS))
   {
     ev.action = -1;
-    RigsDb0.decrease(vertex_id);
+    Area0.decrease(vertex_id);
   }
 
   render_3d_space();
@@ -402,7 +403,7 @@ void space::render_3d_space(void)
   glEnableVertexAttribArray(Prog3d->Atrib["fragment"]);    // текстура
 
   // Нарисовать все за один проход:
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(RigsDb0.render_indices), GL_UNSIGNED_INT, nullptr);
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(Area0.render_indices), GL_UNSIGNED_INT, nullptr);
   //glDrawElements(GL_LINES, static_cast<GLsizei>(RigsDb0.render_indices), GL_UNSIGNED_INT, nullptr);
 
   // Xid содержит порядковый номер от начала VBO для первой вершины рисуемого прямоугольника

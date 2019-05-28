@@ -105,7 +105,7 @@ namespace tr {
     char buf[255];
     sprintf(buf, "INSERT INTO `snips`(`id_area`, `snip`) VALUES(%d, ?);",
             id);
-    request_put(buf, data, tr::digits_per_snip);
+    request_put(buf, data, tr::digits_per_side);
     return;
   }
 

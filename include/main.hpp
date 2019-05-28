@@ -94,7 +94,7 @@ enum MAP_INIT {
 };
 
 // структура для обращения в тексте программы к индексам данных вершин по названиям
-enum SNIP_DATA_ID { X, Y, Z, R, G, B, A, NX, NY, NZ, U, V, ROW_SIZE };
+enum SIDE_DATA_ID { X, Y, Z, R, G, B, A, NX, NY, NZ, U, V, SIDE_DATA_SIZE };
 
 extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
 extern glm::mat4 MatMVP;        // Матрица преобразования
@@ -119,26 +119,24 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
   };
   extern camera_3d Eye;
 
-  /** Начальная дистанция рендера окружения
-   *
-   * - блок, над которым расположена камера рендерится всегда, даже при lod_0 = 0.0f
-   * - при значении 0.0f < lod_0 <= 1.0f рисуется площадка из 9 блоков
-   * - координаты блока (нулевая точка) вычилсяется через floor(), граница - через ceil()
-   */
-  static const int lod0_size = 25;
-
   // число вершин в прямоугольнике
-  static const u_int vertices_per_quad = 4;
+  static const u_int vertices_per_side = 4;
+
   // число индексов в одном снипе
-  static const u_int indices_per_quad = 6;
+  static const u_int indices_per_side = 6;
+
   // количество чисел (GLfloat) в блоке данных одной вершины
   static const size_t digits_per_vertex = 12;
-  // количество чисел (GLfloat) в блоке данных снипа
-  static const size_t digits_per_snip = digits_per_vertex * vertices_per_quad;
-  // число элементов в поле shift элемента rig
-  //static const size_t digits_per_rig_shift = 7;
-  // размер (число байт) блока данных снипа
-  static const GLsizeiptr bytes_per_snip = digits_per_snip * sizeof(GLfloat);
+
+  // количество чисел (GLfloat) в блоке данных прямоугольника
+  static const size_t digits_per_side = digits_per_vertex * vertices_per_side;
+
+  // количество чисел (GLfloat) в блоке данных вокселя
+  static const size_t digits_per_voxel = digits_per_side * 6;
+
+  // размер (число байт) блока данных одной стороны вокселя
+  static const GLsizeiptr bytes_per_side = digits_per_side * sizeof(GLfloat);
+
   // число байт для записи данных одной вершины
   static const GLsizeiptr bytes_per_vertex = digits_per_vertex * sizeof(GLfloat);
 
@@ -173,11 +171,9 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
   // структуры для оперирования опорными точками в пространстве трехмерных координат
   struct i3d
   {
-    int x = 0;
-    int y = 0;
-    int z = 0;
-
+    int x, y, z;
     i3d(void) = delete;
+
     i3d(int X, int Y, int Z): x(X), y(Y), z(Z) {}
     i3d(const glm::vec3 &v): x(static_cast<int>(floor(v.x))),
       y(static_cast<int>(floor(v.y))), z(static_cast<int>(floor(v.z))) {}

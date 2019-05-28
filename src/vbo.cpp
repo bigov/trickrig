@@ -120,7 +120,7 @@ vbo_ext::vbo_ext(GLenum type): vbo_base(type)
 {
   glGenBuffers(1, &id_subbuf);
   glBindBuffer(GL_COPY_WRITE_BUFFER, id_subbuf);
-  glBufferData(GL_COPY_WRITE_BUFFER, bytes_per_snip, nullptr, GL_STATIC_DRAW);
+  glBufferData(GL_COPY_WRITE_BUFFER, bytes_per_side, nullptr, GL_STATIC_DRAW);
   glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
@@ -204,7 +204,7 @@ GLsizeiptr vbo_ext::append(const GLvoid* data, GLsizeiptr data_size)
 void vbo_ext::data_get(GLintptr offset, GLsizeiptr sz, GLvoid* dst)
 {
 #ifndef NDEBUG
-  if(sz > bytes_per_snip) ERR("vbo_ext::data_get > bytes_per_snip");
+  if(sz > bytes_per_side) ERR("vbo_ext::data_get > bytes_per_snip");
 #endif
 
   glBindBuffer(GL_COPY_WRITE_BUFFER, id_subbuf);

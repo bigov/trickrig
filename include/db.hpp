@@ -10,7 +10,7 @@
 
 #include "wsql.hpp"
 #include "voxel.hpp"
-#include "voxdb.hpp"
+#include "area.hpp"
 #include "framebuf.hpp"
 
 namespace tr {
