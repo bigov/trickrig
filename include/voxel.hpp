@@ -1,4 +1,4 @@
-/*
+/**
         4-----------1
        /| Zp       /|
       / |/        / |
@@ -37,8 +37,6 @@ namespace tr {
 #define SIDE_ZN       5
 #define SIDES_COUNT   6
 
-extern u_char opposite(u_char side_id);
-
 struct uch2
 {
   u_char
@@ -74,12 +72,10 @@ public:
   int side_len;     // размер стороны
   int born;         // метка времени создания
 
-  bool visible[SIDES_COUNT];      // Видимость сторон
-  bool in_vbo = false;            // данные помещены в VBO
+  bool visible[SIDES_COUNT] {true}; // Видимость сторон
+  bool in_vbo = false;              // данные помещены в VBO
 
   u_char side_id_by_offset(GLsizeiptr dst);
-  void visible_check(u_char side_id, voxel*);
-  void side_visible_calc(u_char side_id, voxel*);
   bool side_fill_data(u_char side_id, GLfloat* data);
   void offset_write(u_char side_id, GLsizeiptr n);
   GLsizeiptr offset_read(u_char side_id);

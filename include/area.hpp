@@ -35,9 +35,9 @@ class area
 
     void init_vbo(void);
     voxel* add_voxel(const i3d&);
-    void visibility_voxel_recalc(voxel*);
+    void recalc_visibility_around(voxel*);
     void visibility_recalc(i3d);
-    i3d i3d_shift(const i3d& P, u_char side);
+    i3d i3d_near(const i3d& P, u_char side);
 
   public:
     area(int s): voxel_size(s) {}

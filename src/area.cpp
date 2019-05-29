@@ -12,6 +12,26 @@ namespace tr
 {
 
 ///
+/// \brief cross
+/// \param s
+/// \return номер стороны, противоположной указанной в параметре
+///
+u_char side_opposite(u_char s)
+{
+  switch (s)
+  {
+    case SIDE_XP: return SIDE_XN; break;
+    case SIDE_XN: return SIDE_XP; break;
+    case SIDE_YP: return SIDE_YN; break;
+    case SIDE_YN: return SIDE_YP; break;
+    case SIDE_ZP: return SIDE_ZN; break;
+    case SIDE_ZN: return SIDE_ZP; break;
+    default: return UCHAR_MAX;
+  }
+}
+
+
+///
 /// \brief i3d_shift
 /// \param P
 /// \param s
@@ -20,7 +40,7 @@ namespace tr
 ///
 ///  Координаты опорной точки соседнего вокселя относительно указанной стороны
 ///
-i3d area::i3d_shift(const i3d& P, u_char side)
+i3d area::i3d_near(const i3d& P, u_char side)
 {
   switch (side) {
     case SIDE_XP:
@@ -51,7 +71,7 @@ i3d area::i3d_shift(const i3d& P, u_char side)
 /// \brief rdb::increase
 /// \param i
 ///
-/// \details Добавление объема к указанной стороне
+/// \details Добавление вокселя к указанной стороне
 ///
 void area::increase(int id)
 {
@@ -61,18 +81,18 @@ void area::increase(int id)
   voxel* pVox = mVBO[offset];                  // Указатель на выделенный воксель
   u_char s0 = pVox->side_id_by_offset(offset); // Направление стороны
   i3d P0 = pVox->Origin;                       // координаты опорной точки
-  P0 = i3d_shift(P0, s0);                 // точка размещения рядом нового элемента
+  P0 = i3d_near(P0, s0);                      // точка размещения рядом нового элемента
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера воксели
-    voxel_wipe(get(i3d_shift(P0, side)));      // вокруг изменяемого/нового вокселя
+    voxel_wipe(get(i3d_near(P0, side)));           // вокруг изменяемого/нового вокселя
 
-  // Нарисовать в опорной точке воксель. Если сторона была полная, то создается новый, и
-  // автоматически производится пересчет видимости сторон соседних вокселей вокруг только
-  // что созданного. Если воксель уже существует, то "add_voxel" выдает ссылку на него и он рисуется.
+  // Нарисовать в опорной точке воксель. Автоматически производится пересчет видимости
+  // сторон соседних вокселей вокруг только что созданного. Если воксель уже существует,
+  // то "add_voxel" выдает ссылку на него и он рисуется.
   voxel_draw(add_voxel(P0));
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксели
-    voxel_draw(get(i3d_shift(P0, side)));
+    voxel_draw(get(i3d_near(P0, side)));
 }
 
 
@@ -89,19 +109,16 @@ void area::decrease(int i)
   // по номеру группы данных вычисляем ее адрес смещения в VBO
   GLsizeiptr offset = (i/vertices_per_side) * bytes_per_side;
 
-  voxel* pVox = mVBO[offset];                 // По адресу смещения найдем бокс
+  voxel* pVox = mVBO[offset];                       // По адресу смещения найдем воксель,
+  i3d P0 = pVox->Origin;                            // по нему - опорную точку. Временно
+  for (u_char side = 0; side < SIDES_COUNT; ++side) // убрать из рендера воксели вокруг
+    voxel_wipe(get(i3d_near(P0, side)));           // найденой опорной точки
 
-  i3d P0 = pVox->Origin;                       // по ригу - опорную точку
-  //u_char s0 = B->side_id_by_offset(offset); // Направление стороны бокса;
-
-  for (u_char side = 0; side < SIDES_COUNT; ++side) // Убрать из рендера риги вокруг
-    voxel_wipe(get(i3d_shift(P0, side)));
-
-  voxel_wipe(pVox);                                 // убрать из рендера выбранный риг
-  mArea.erase(pVox->Origin);                        // удалить риг из базы данных
-  visibility_recalc(P0);                            // пересчитать видимость ригов вокруг
-  for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние риги
-    voxel_draw(get(i3d_shift(P0, side)));
+  voxel_wipe(pVox);                                 // Выделенный воксель убрать из рендера,
+  mArea.erase(P0);                                  // удалить из базы данных,
+  visibility_recalc(P0);                            // пересчитать видимость вокселей вокруг
+  for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксели
+    voxel_draw(get(i3d_near(P0, side)));
 }
 
 
@@ -215,7 +232,7 @@ voxel* area::add_voxel(const i3d& P)
   mArea.emplace(P, std::pair<const i3d&, int>(P, voxel_size)); // иначе - создается новый.
 
   pVox = get(P);
-  visibility_voxel_recalc(pVox);
+  recalc_visibility_around(pVox);
   return pVox;
 }
 
@@ -225,41 +242,44 @@ voxel* area::add_voxel(const i3d& P)
 /// \param R0
 /// \details Пересчет видимости сторон вокса и его соседей вокруг него
 ///
-void area::visibility_voxel_recalc(voxel* pVox0)
+void area::recalc_visibility_around(voxel* pVox)
 {
-  if(nullptr == pVox0) return;
+  if(nullptr == pVox) return;
+  voxel* pVoxNear = nullptr;
 
-  voxel* pVox1 = nullptr;
-  for (u_char side = 0; side < SIDES_COUNT; ++side)   // для их каждой стороны,
-  {                                                   // получить
-    pVox1 = get(i3d_shift(pVox0->Origin, side)); // ссылку на соседний риг.
-    if(nullptr == pVox1) continue;                    // Если пусто - пропустить.
-    pVox0->visible_check(side, pVox1);                // Проверить стыковку (видимость) стороны
-  }                                                   // с каждым из боксов соседнего рига
+  for (u_char side = 0; side < SIDES_COUNT; ++side)
+  { // С каждой стороны вокселя проверить наличие соседнего вокселя
+    pVoxNear = get(i3d_near(pVox->Origin, side));
+    if(nullptr != pVoxNear)                           // Если есть соседний,
+    {                                                 // то соприкасающиеся
+      pVox->visible[side] = false;                    // стороны невидимы
+      pVoxNear->visible[side_opposite(side)] = false; // у обоих вокселей.
+    }
+    else { pVox->visible[side] = true; }              // Иначе - сторона видимая.
+  }
 }
 
 
 ///
 /// \brief rdb::visibility_recalc
 /// \param P0
-/// \details Пересчет видимости ригов вокруг опорной точки
+/// \details Пересчет видимости вокселей вокруг опорной точки
 ///
 void area::visibility_recalc(i3d P0)
 {
   voxel* pVox = get(P0);
   if(nullptr != pVox)
-  {                               // Если в этой точке есть риг,
-    visibility_voxel_recalc(pVox);  // то вызвать пересчет сторон рига
-    return;                       // и выйти.
+  {                                 // Если в этой точке есть воксель,
+    recalc_visibility_around(pVox); // то вызвать пересчет видимости
+    return;                         // его сторон и выйти.
   }
 
-  // Если в указанной точке нет рига, то у ригов вокруг нее
-  // следует включить видимость противоположной стороны
+  // Если в указанной точке поусто, то у вокселей вокруг нее
+  // включить видимость прилегающих сторон
   for (u_char side = 0; side < SIDES_COUNT; ++side)
   {
-    pVox = get(i3d_shift(P0, side));
-    if(nullptr == pVox) continue;
-    pVox->visible[opposite(side)] = true;
+    pVox = get(i3d_near(P0, side));
+    if(nullptr != pVox) pVox->visible[side_opposite(side)] = true;
   }
 }
 

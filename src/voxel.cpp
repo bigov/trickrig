@@ -8,42 +8,6 @@
 
 namespace tr
 {
-
-///
-/// \brief cross
-/// \param s
-/// \return номер стороны, противоположной указанной в параметре
-///
-u_char opposite(u_char s)
-{
-  switch (s) {
-    case SIDE_XP:
-      return SIDE_XN;
-      break;
-    case SIDE_XN:
-      return SIDE_XP;
-      break;
-    case SIDE_YP:
-      return SIDE_YN;
-      break;
-    case SIDE_YN:
-      return SIDE_YP;
-      break;
-    case SIDE_ZP:
-      return SIDE_ZN;
-      break;
-    case SIDE_ZN:
-      return SIDE_ZP;
-      break;
-    default:
-#ifndef NDEBUG
-      info("no opposite for side = " + std::to_string(s));
-#endif
-      return UCHAR_MAX;
-  }
-}
-
-
 ///
 /// \brief voxel::box
 /// \param Origin point
@@ -294,30 +258,5 @@ void voxel::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
   info("voxel::offset_replace ERR - not found offset " + std::to_string(new_n) + "\n");
 #endif
 }
-
-
-///
-/// \brief voxel::visible_check
-/// \param side_id
-/// \param Sp
-///
-void voxel::visible_check(u_char side_id, voxel* B1)
-{
-  side_visible_calc(side_id, B1);
-  B1->side_visible_calc(opposite(side_id), this);
-}
-
-
-///
-/// \brief voxel::side_visible_calc
-/// \param side_id
-/// \param B1
-///
-void voxel::side_visible_calc(u_char side_id, voxel* pVox)
-{
-  if(nullptr != pVox) visible[side_id] = false;
-  else visible[side_id] = true;
-}
-
 
 } //tr
