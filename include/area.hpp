@@ -30,13 +30,12 @@ class area
     // изменения адреса смещения в буфере.
     std::unordered_map<GLsizeiptr, voxel*> mVBO {};
 
-    int lod = 1;            // --Level--Of--Details-- размер стороны элементов в LOD = 1
     int voxel_size;         // Размер вокселя задается при создании объекта класса
 
     void init_vbo(void);
     voxel* add_voxel(const i3d&);
-    void recalc_visibility_around(voxel*);
-    void visibility_recalc(i3d);
+    void recalc_voxel_visibility(voxel*);
+    void recalc_around_visibility(i3d);
     i3d i3d_near(const i3d& P, u_char side);
 
   public:

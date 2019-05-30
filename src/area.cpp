@@ -116,7 +116,7 @@ void area::decrease(int i)
 
   voxel_wipe(pVox);                                 // Выделенный воксель убрать из рендера,
   mArea.erase(P0);                                  // удалить из базы данных,
-  visibility_recalc(P0);                            // пересчитать видимость вокселей вокруг
+  recalc_around_visibility(P0);                            // пересчитать видимость вокселей вокруг
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксели
     voxel_draw(get(i3d_near(P0, side)));
 }
@@ -194,28 +194,40 @@ void area::voxel_wipe(voxel* pVox)
 
 
 ///
-/// \brief Загрузка из базы данных в оперативную память блока пространства
+/// \brief Загрузка в ОЗУ блока пространства
 ///
-/// \details  Формирование в оперативной памяти карты ригов (std::map) для
-/// выбраной области пространства. Из этой карты берутся данные снипов,
-/// размещаемых в VBO для рендера сцены.
+/// \details  Формирование в оперативной памяти карты вокселей (std::map),
+/// используемой в качестве буфера, из которого берутся данные для размещения
+/// в VBO при рендере трехмерного изображения сцены.
 ///
 void area::load_space(vbo_ext* v)
 {
-  pVBO = v;
+  pVBO = v; // привязка VBO
+
   mArea.clear();
   mVBO.clear();
   render_indices = 0;
 
-  int area_length = 20 * voxel_size;
+  ///TODO: тут должна быть подгрузка вокселей из базы данных. Временно
+  /// загружается простая платформа объемом 50х3х50 вокселей.
+  int area_length = 25 * voxel_size;
 
-  for (int x = -area_length; x < area_length + 1; x += voxel_size)
-    for (int z = -area_length; z < area_length + 1; z += voxel_size)
+  for (int x = -area_length; x <= area_length; x += voxel_size)
+    for (int z = -area_length; z <= area_length; z += voxel_size)
   {
     add_voxel({x,-voxel_size * 2, z});
     add_voxel({x,-voxel_size, z});
     add_voxel({x, 0, z});
   }
+
+  // Тут формируется бордюрчик проямоугольной формы на границе LOD.
+  // Это временный элемент для визуального контроля при настройке ПО.
+  int b = 9 * voxel_size;
+  for (int x = -b; x <= b; ++x) add_voxel({ x, voxel_size, b });
+  for (int x = -b; x <= b; ++x) add_voxel({ x, voxel_size,-b });
+  for (int z = -b; z <= b; ++z) add_voxel({ b, voxel_size, z });
+  for (int z = -b; z <= b; ++z) add_voxel({-b, voxel_size, z });
+
 }
 
 
@@ -232,7 +244,7 @@ voxel* area::add_voxel(const i3d& P)
   mArea.emplace(P, std::pair<const i3d&, int>(P, voxel_size)); // иначе - создается новый.
 
   pVox = get(P);
-  recalc_visibility_around(pVox);
+  recalc_voxel_visibility(pVox);
   return pVox;
 }
 
@@ -242,7 +254,7 @@ voxel* area::add_voxel(const i3d& P)
 /// \param R0
 /// \details Пересчет видимости сторон вокса и его соседей вокруг него
 ///
-void area::recalc_visibility_around(voxel* pVox)
+void area::recalc_voxel_visibility(voxel* pVox)
 {
   if(nullptr == pVox) return;
   voxel* pVoxNear = nullptr;
@@ -265,12 +277,12 @@ void area::recalc_visibility_around(voxel* pVox)
 /// \param P0
 /// \details Пересчет видимости вокселей вокруг опорной точки
 ///
-void area::visibility_recalc(i3d P0)
+void area::recalc_around_visibility(i3d P0)
 {
   voxel* pVox = get(P0);
   if(nullptr != pVox)
   {                                 // Если в этой точке есть воксель,
-    recalc_visibility_around(pVox); // то вызвать пересчет видимости
+    recalc_voxel_visibility(pVox); // то вызвать пересчет видимости
     return;                         // его сторон и выйти.
   }
 
