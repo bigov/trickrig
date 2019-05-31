@@ -30,16 +30,22 @@ class area
     // изменения адреса смещения в буфере.
     std::unordered_map<GLsizeiptr, voxel*> mVBO {};
 
-    int voxel_size;         // Размер вокселя задается при создании объекта класса
+    int side_len;           // Длина стороны вокселя
+    int lod_width;          // число вокселей до границы LOD
+
+    i3d Location {0, 0, 0}; // Origin вокселя, над которым камера
+    i3d MoveFrom {0, 0, 0}; // Origin вокселя с которого камера ушла
 
     void init_vbo(void);
     voxel* add_voxel(const i3d&);
     void recalc_voxel_visibility(voxel*);
     void recalc_around_visibility(i3d);
     i3d i3d_near(const i3d& P, u_char side);
+    void redraw_borders_x(void);
+    void redraw_borders_z(void);
 
   public:
-    area(int s): voxel_size(s) {}
+    area(int s, int d): side_len(s), lod_width(d) {}
     ~area(void) {}
 
     u_int render_indices = 0;  // сумма индексов, необходимых для рендера всех примитивов
@@ -49,8 +55,10 @@ class area
     void voxel_wipe(voxel*);   // убрать риг из VBO
     void increase(int);        // добавить объем по индексу снипа
     void decrease(int);        // удалить объем по индексу снипа
-    void load_space(vbo_ext*); // загрузка данных в VBO
+    void load_space(void);     // загрузка данных из базы в ОЗУ ЦПУ
     voxel* get(const i3d&);
+    void init(vbo_ext*);     // загрузка данных в VBO
+    void recalc_borders(void);
 };
 
 } //namespace tr

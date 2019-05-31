@@ -71,14 +71,24 @@ space::space(void)
   // настройка VAO
   init_vao();
 
-  // загрузка основной текстуры
-  load_texture(GL_TEXTURE0, cfg::app_key(PNG_TEXTURE0));
-
   // настройка рендер-буфера с двумя текстурами
   AppWin.RenderBuffer = std::make_unique<frame_buffer> ();
   if(!AppWin.RenderBuffer->init(AppWin.width, AppWin.height))
     ERR("Error on creating Render Buffer.");
 
+  // загрузка основной текстуры
+  load_texture(GL_TEXTURE0, cfg::app_key(PNG_TEXTURE0));
+
+}
+
+
+///
+/// \brief space::init
+///
+void space::init(void)
+{
+  Area4 = std::make_unique<area>(size_v4, dist_b4);
+  Area4->init(&VBO);
 }
 
 
@@ -119,7 +129,7 @@ void space::init_vao(void)
   GLuint *idx_data = new GLuint[idx_size];                       // данные для заполнения
   GLuint idx[6] = {0, 1, 2, 2, 3, 0};                            // шаблон четырехугольника
   GLuint stride = 0;                                             // число описаных вершин
-  for(size_t i = 0; i < idx_size; i += 6) {                        // заполнить массив для VBO
+  for(size_t i = 0; i < idx_size; i += 6) {                      // заполнить массив для VBO
     for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
     stride += 4;                                                 // по 4 вершины на снип
   }
@@ -158,136 +168,6 @@ void space::load_texture(unsigned gl_texture_index, const std::string& FileName)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
-
-///
-/// \brief space::init
-///
-void space::init3d(void)
-{
-  VBO.clear();
-  Area4.load_space(&VBO); // загрузка вокселей в ОЗУ
-
-  // Origin вокселя, в котором расположена камера
-  Location4 = { static_cast<int>(floor(Eye.ViewFrom.x / size_v4)) * size_v4,
-                static_cast<int>(floor(Eye.ViewFrom.y / size_v4)) * size_v4,
-                static_cast<int>(floor(Eye.ViewFrom.z / size_v4)) * size_v4 };
-  MoveFrom4 = Location4;
-
-  // загрузка пространства производится от места размещения камеры
-  int dist = dist_b4 * size_v4; // расстояние от камеры до границы LOD
-  int x_min = Location4.x - dist;
-  int x_max = Location4.x + dist;
-  int y_min = Location4.y - dist;
-  int y_max = Location4.y + dist;
-  int z_min = Location4.z - dist;
-  int z_max = Location4.z + dist;
-
-  // Загрузить в графический буфер элементы пространства
-  for(int x = x_min; x<= x_max; x += size_v4)
-    for(int y = y_min; y<= y_max; y += size_v4)
-      for(int z = z_min; z<= z_max; z += size_v4)
-        Area4.voxel_draw(Area4.get({x, y, z}));
-}
-
-
-///
-/// \brief space::redraw_borders_x
-/// \details Построение границы области по оси X по ходу движения
-///
-void space::redraw_borders_x(int side_len)
-{
-  int border_dist = dist_b4 * side_len; // расстояние от камеры до границы LOD
-  int yMin = -border_dist;              // Y-граница LOD
-  int yMax =  border_dist;
-
-  int x_show, x_hide;
-  if(Location4.x > MoveFrom4.x)
-  {        // Если направление движение по оси Х
-    x_show = Location4.x + border_dist; // X-линия вставки вокселей на границе LOD
-    x_hide = MoveFrom4.x - border_dist; // X-линия удаления вокселей на границе
-  } else { // Если направление движение против оси Х
-    x_show = Location4.x - border_dist; // X-линия вставки вокселей на границе LOD
-    x_hide = MoveFrom4.x + border_dist; // X-линия удаления вокселей на границе
-  }
-
-  int zMin, zMax;
-
-  // Скрыть элементы с задней границы области
-  zMin = MoveFrom4.z - border_dist;
-  zMax = MoveFrom4.z + border_dist;
-  for(int y = yMin; y <= yMax; y += side_len)
-    for(int z = zMin; z <= zMax; z += side_len)
-      Area4.voxel_wipe(Area4.get({x_hide, y, z}));
-
-  // Добавить линию элементов по направлению движения
-  zMin = Location4.z - border_dist;
-  zMax = Location4.z + border_dist;
-  for(int y = yMin; y <= yMax; y += side_len)
-    for(int z = zMin; z <= zMax; z += side_len)
-      Area4.voxel_draw(Area4.get({x_show, y, z}));
-
-  MoveFrom4.x = Location4.x;
-}
-
-
-///
-/// \brief space::redraw_borders_z
-/// \details Построение границы области по оси Z по ходу движения
-///
-void space::redraw_borders_z(int side_len)
-{
-  int border_dist = dist_b4 * side_len; // расстояние от камеры до границы LOD
-  int yMin = -border_dist;              // Y-граница LOD
-  int yMax =  border_dist;
-
-  int z_show, z_hide;
-  if(Location4.z > MoveFrom4.z)
-  {        // Если направление движение по оси Z
-    z_show = Location4.z + border_dist; // Z-линия вставки вокселей на границе LOD
-    z_hide = MoveFrom4.z - border_dist; // Z-линия удаления вокселей на границе
-  } else { // Если направление движение против оси Z
-    z_show = Location4.z - border_dist; // Z-линия вставки вокселей на границе LOD
-    z_hide = MoveFrom4.z + border_dist; // Z-линия удаления вокселей на границе
-  }
-
-  int xMin, xMax;
-
-  // Скрыть элементы с задней границы области
-  xMin = MoveFrom4.x - border_dist;
-  xMax = MoveFrom4.x + border_dist;
-  for(int y = yMin; y <= yMax; y += side_len)
-    for(int x = xMin; x <= xMax; x += side_len)
-      Area4.voxel_wipe(Area4.get({x, y, z_hide}));
-
-  // Добавить линию элементов по направлению движения
-  xMin = Location4.x - border_dist;
-  xMax = Location4.x + border_dist;
-  for(int y = yMin; y <= yMax; y += side_len)
-    for(int x = xMin; x <= xMax; x += side_len)
-      Area4.voxel_draw(Area4.get({x, y, z_show}));
-
-  MoveFrom4.z = Location4.z;
-}
-
-
-///
-/// \brief space::recalc_borders
-/// \details Перестроение границ активной области при перемещении камеры
-///
-/// TODO? (на случай притормаживания - если прыгать камерой туда-сюда через
-/// границу запуска перерисовки границ) можно процедуры "redraw_borders_?"
-/// разбить по две части - вперел/назад.
-///
-void space::recalc_borders(int voxel_size)
-{
-  // Origin вокселя, в котором расположена камера
-  Location4 = { static_cast<int>(floor(Eye.ViewFrom.x / size_v4)) * size_v4,
-                static_cast<int>(floor(Eye.ViewFrom.y / size_v4)) * size_v4,
-                static_cast<int>(floor(Eye.ViewFrom.z / size_v4)) * size_v4 };
-
-  if(Location4.x != MoveFrom4.x) redraw_borders_x(voxel_size);
-  if(Location4.z != MoveFrom4.z) redraw_borders_z(voxel_size);
-}
 
 
 ///
@@ -341,7 +221,7 @@ void space::calc_position(evInput & ev)
 void space::draw(evInput& ev)
 {
   calc_position(ev);
-  recalc_borders(size_v4);
+  Area4->recalc_borders();
 
   int vertex_id = 0;
   AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &vertex_id);
@@ -359,13 +239,13 @@ void space::draw(evInput& ev)
   if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
   {
     ev.action = -1;
-    Area4.increase(vertex_id);
+    Area4->increase(vertex_id);
   }
 
   if((ev.mouse == MOUSE_BUTTON_RIGHT) && (ev.action == PRESS))
   {
     ev.action = -1;
-    Area4.decrease(vertex_id);
+    Area4->decrease(vertex_id);
   }
 
   render_3d_space();
@@ -396,16 +276,8 @@ void space::render_3d_space(void)
   glEnableVertexAttribArray(Prog3d->Atrib["fragment"]);    // текстура
 
   // Нарисовать все за один проход:
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(Area4.render_indices), GL_UNSIGNED_INT, nullptr);
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(Area4->render_indices), GL_UNSIGNED_INT, nullptr);
   //glDrawElements(GL_LINES, static_cast<GLsizei>(RigsDb0.render_indices), GL_UNSIGNED_INT, nullptr);
-
-  // Xid содержит порядковый номер от начала VBO для первой вершины рисуемого прямоугольника
-  //GLsizei max = (RigsDb0.render_indices / indices_per_quad) * vertices_per_quad;
-  //for (GLsizei i = 0; i < max; i += vertices_per_quad)
-  //{
-  //  Prog3d->set_uniform1ui("Xid", static_cast<unsigned int>(i));
-  //  glDrawElementsBaseVertex(GL_TRIANGLES, indices_per_quad, GL_UNSIGNED_INT, nullptr, i);
-  //}
 
   glDisableVertexAttribArray(Prog3d->Atrib["position"]);
   glDisableVertexAttribArray(Prog3d->Atrib["color"]);

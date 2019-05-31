@@ -19,7 +19,7 @@ namespace tr
     public:
       space(void);
       ~space(void);
-      void init3d(void);
+      void init(void);
       void draw(evInput &);
 
     private:
@@ -41,12 +41,10 @@ namespace tr
       GLuint texture_id = 0;
 
       // LOD control
-      const int size_v4 = 4;        // размер стороны вокселя
-      float speed_v4 = size_v4*2.f; // скорость передвижения в пространстве
-      const int dist_b4 = 9;        // число элементов от камеры до отображаемой границы
-      area Area4 {size_v4};         // Управление пространством вокселей
-      i3d Location4 {0, 0, 0};       // Origin вокселя, над которым камера
-      i3d MoveFrom4 {0, 0, 0};       // Origin предыдущего вокселя
+      std::unique_ptr<area> Area4 = nullptr; // Управление пространством вокселей
+      const int size_v4 = 4;         // размер стороны вокселя
+      float speed_v4 = size_v4*2.f;  // скорость передвижения в пространстве
+      const int dist_b4 = 9;         // число элементов от камеры до отображаемой границы
 
       // Camera control
       float rl=0.f, ud=0.f, fb=0.f; // скорость движения по направлениям
@@ -58,10 +56,6 @@ namespace tr
       void load_texture(unsigned gl_texture_index, const std::string& fname);
       void init_vao(void);
       void calc_position(evInput&);
-      void recalc_borders(int);
-      void redraw_borders_x(int);
-      //void redraw_borders_y(int); // TODO
-      void redraw_borders_z(int);
       void render_3d_space(void);    // Рендер 3D сцены
   };
 

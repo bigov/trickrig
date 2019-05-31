@@ -420,7 +420,7 @@ void gui::button_click(ELEMENT_ID id)
       AppWin.set_mouse_ptr = -1;
       WinGui.resize(AppWin.width, AppWin.height); // для очистки элементов GUI окна
       hud_load();
-      Space->init3d();
+      Space->init();
       break;
     case BTN_CONFIG:
       GuiMode = GUI_MENU_CONFIG;
