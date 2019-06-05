@@ -25,7 +25,7 @@ std::list<std::string> dirs_list(const std::string &path)
   for(auto& it: std::filesystem::directory_iterator(path))
     if (std::filesystem::is_directory(it))  D.push_back(it.path().string());
 
-  return std::move(D);
+  return D;
 }
 
 bool operator== (const px &A, const px &B)
@@ -114,12 +114,6 @@ bool operator== (const px &A, const px &B)
      return std::rand();
   }
 
-  //## Генератор случайных положительных short
-  short random_short()
-  {
-    return
-      static_cast<short>(random_int() % std::numeric_limits<short>::max());
-  }
 
   //## Вычисляет число миллисекунд от начала суток
   int get_msec(void)
@@ -192,6 +186,7 @@ bool operator== (const px &A, const px &B)
     load(filename);
   }
 
+
   ///
   /// \brief Установка размеров
   /// \param W
@@ -204,9 +199,23 @@ bool operator== (const px &A, const px &B)
 
     _wc = _w/_c; // ширина ячейки в пикселях
     _hc = _h/_r; // высота ячейки в пикселях
+    //Data.clear();
+    //Data.resize(_w * _h, {0x00, 0x00, 0x00, 0x00});
+    clear();
+  }
+
+
+  ///
+  /// \brief img::clear
+  ///
+  void img::clear(void)
+  {
+    std::vector<px> empty {};
     Data.clear();
+    Data.swap(empty);
     Data.resize(_w * _h, {0x00, 0x00, 0x00, 0x00});
   }
+
 
   ///
   /// \brief img::uchar_data
@@ -217,6 +226,7 @@ bool operator== (const px &A, const px &B)
     return reinterpret_cast<u_char*>(px_data());
   }
 
+
   ///
   /// \brief img::px_data
   /// \return
@@ -225,6 +235,7 @@ bool operator== (const px &A, const px &B)
   {
     return const_cast<px*>(Data.data());
   }
+
 
   ///
   /// \brief Загрузки избражения из .PNG файла

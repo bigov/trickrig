@@ -101,7 +101,7 @@ void space::init_vao(void)
   glGenVertexArrays(1, &vao_id);
   glBindVertexArray(vao_id);
 
-  // Число элементов в кубе с длиной стороны = "space_i0_length" элементов:
+  // Число элементов в кубе с длиной стороны LOD (2*dist_xx) элементов:
   u_int n = static_cast<u_int>(pow((dist_b4 + dist_b4 + 1), 3));
 
   // Размер данных VBO для размещения снипов:

@@ -418,7 +418,7 @@ void gui::button_click(ELEMENT_ID id)
       GuiMode = GUI_HUD3D;
       AppWin.Cursor[2] = 4.0f;
       AppWin.set_mouse_ptr = -1;
-      WinGui.resize(AppWin.width, AppWin.height); // для очистки элементов GUI окна
+      WinGui.clear(); // очистка элементов GUI окна
       hud_load();
       Space->init();
       break;
