@@ -97,6 +97,8 @@ enum MAP_INIT {
 enum SIDE_DATA_ID { X, Y, Z, R, G, B, A, NX, NY, NZ, U, V, SIDE_DATA_SIZE };
 
 extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
+extern float zNear;
+extern float zFar;
 extern glm::mat4 MatMVP;        // Матрица преобразования
 
 // Настройка значений параметров для сравнения mouse_button и mouse_action

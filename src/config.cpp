@@ -24,6 +24,8 @@ errno_t getenv_s(
 
 // Инициализация глобальных объектов
 glm::mat4 MatProjection {}; // матрица проекции 3D сцены
+float zNear = 1.f;          // расстояние до ближней плоскости матрицы проекции
+float zFar  = 10000.f;      // расстояние до дальней плоскости матрицы проекции
 glm::mat4 MatMVP        {}; // Матрица преобразования
 camera_3d Eye           {}; // главная камера 3D вида
 main_window AppWin      {}; // параметры окна приложения
@@ -104,7 +106,7 @@ void cfg::load_app_cfg(void)
   AppWin.aspect = static_cast<float>(AppWin.width)
                    / static_cast<float>(AppWin.height);
 
-  MatProjection = glm::perspective(1.118f, AppWin.aspect, 0.01f, 1000.0f);
+  MatProjection = glm::perspective(1.118f, AppWin.aspect, zNear, zFar);
 }
 
 

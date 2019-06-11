@@ -46,7 +46,7 @@ void main_window::resize(u_int w, u_int h)
 
   // пересчет матрицы проекции
   aspect = static_cast<float>(w) / static_cast<float>(h);
-  MatProjection = glm::perspective(1.118f, aspect, 0.01f, 1000.0f);
+  MatProjection = glm::perspective(1.118f, aspect, zNear, zFar);
 
   if(nullptr != RenderBuffer ) RenderBuffer->resize(w, h); // пересчет рендер-буфера
   if(nullptr != pWinGui) pWinGui->resize(w, h);
