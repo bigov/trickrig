@@ -28,7 +28,7 @@ float zNear = 1.f;          // расстояние до ближней плос
 float zFar  = 10000.f;      // расстояние до дальней плоскости матрицы проекции
 glm::mat4 MatMVP        {}; // Матрица преобразования
 camera_3d Eye           {}; // главная камера 3D вида
-main_window AppWin      {}; // параметры окна приложения
+main_window WinParams      {}; // параметры окна приложения
 
 // Инициализация статических членов
 db cfg::DataBase {};
@@ -97,16 +97,16 @@ void cfg::load_app_cfg(void)
   DataBase.load_template(1, Tpls);
 
   // Загрузка настроек окна приложения
-  AppWin.width = static_cast<u_int>(std::stoi(AppParams[WINDOW_WIDTH]));
-  AppWin.height = static_cast<u_int>(std::stoi(AppParams[WINDOW_HEIGHT]));
-  AppWin.top = static_cast<u_int>(std::stoi(AppParams[WINDOW_TOP]));
-  AppWin.left = static_cast<u_int>(std::stoi(AppParams[WINDOW_LEFT]));
-  AppWin.Cursor.x = static_cast<float>(AppWin.width/2) + 0.5f;
-  AppWin.Cursor.y = static_cast<float>(AppWin.height/2) + 0.5f;
-  AppWin.aspect = static_cast<float>(AppWin.width)
-                   / static_cast<float>(AppWin.height);
+  WinParams.width = static_cast<u_int>(std::stoi(AppParams[WINDOW_WIDTH]));
+  WinParams.height = static_cast<u_int>(std::stoi(AppParams[WINDOW_HEIGHT]));
+  WinParams.top = static_cast<u_int>(std::stoi(AppParams[WINDOW_TOP]));
+  WinParams.left = static_cast<u_int>(std::stoi(AppParams[WINDOW_LEFT]));
+  WinParams.Cursor.x = static_cast<float>(WinParams.width/2) + 0.5f;
+  WinParams.Cursor.y = static_cast<float>(WinParams.height/2) + 0.5f;
+  WinParams.aspect = static_cast<float>(WinParams.width)
+                   / static_cast<float>(WinParams.height);
 
-  MatProjection = glm::perspective(1.118f, AppWin.aspect, zNear, zFar);
+  MatProjection = glm::perspective(1.118f, WinParams.aspect, zNear, zFar);
 }
 
 
@@ -180,7 +180,7 @@ std::string cfg::create_map(const std::string &MapName)
 ///
 void cfg::save_app(void)
 {
-  DataBase.save(AppWin);
+  DataBase.save(WinParams);
 }
 
 

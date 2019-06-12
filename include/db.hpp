@@ -50,7 +50,7 @@ struct main_window {
   char set_mouse_ptr = 0;           // запрос смены типа курсора {-1, 0, 1}
   void resize(u_int w, u_int h);
 };
-extern main_window AppWin;
+extern main_window WinParams;
 
 
 class db
@@ -63,7 +63,7 @@ class db
     void map_name_save(const std::string &Dir, const std::string &MapName);
     v_ch map_name_read(const std::string & dbFile);
     void save(const camera_3d &Eye);
-    void save(const main_window &AppWin);
+    void save(const main_window &WinParams);
     void init_map_config(const std::string &);
     void load_template(int level, const std::string &fname);   // загрузка шаблона из файла БД
 

@@ -28,7 +28,7 @@ const float down_max = -up_max;    // Максимальный угол вниз
 space::~space(void)
 {
   Prog3d = nullptr;
-  AppWin.RenderBuffer = nullptr;
+  WinParams.RenderBuffer = nullptr;
 }
 
 
@@ -72,8 +72,8 @@ space::space(void)
   init_vao();
 
   // настройка рендер-буфера с двумя текстурами
-  AppWin.RenderBuffer = std::make_unique<frame_buffer> ();
-  if(!AppWin.RenderBuffer->init(AppWin.width, AppWin.height))
+  WinParams.RenderBuffer = std::make_unique<frame_buffer> ();
+  if(!WinParams.RenderBuffer->init(WinParams.width, WinParams.height))
     ERR("Error on creating Render Buffer.");
 
   // загрузка основной текстуры
@@ -187,7 +187,7 @@ void space::calc_position(evInput & ev)
   if(Eye.look_t < down_max) Eye.look_t = down_max;
   ev.dy = 0.f;
 
-  float _k = Eye.speed / static_cast<float>(AppWin.fps); // корректировка по FPS
+  float _k = Eye.speed / static_cast<float>(WinParams.fps); // корректировка по FPS
 
   //if (!space_is_empty(Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
 
@@ -224,7 +224,7 @@ void space::draw(evInput& ev)
   Area4->recalc_borders();
 
   int vertex_id = 0;
-  AppWin.RenderBuffer->read_pixel(AppWin.Cursor.x, AppWin.Cursor.y, &vertex_id);
+  WinParams.RenderBuffer->read_pixel(WinParams.Cursor.x, WinParams.Cursor.y, &vertex_id);
   id_point_0 = vertex_id - (vertex_id % vertices_per_side);
   id_point_8 = id_point_0 + vertices_per_side - 1;
 
@@ -258,7 +258,7 @@ void space::draw(evInput& ev)
 void space::render_3d_space(void)
 {
   glBindVertexArray(vao_id);
-  AppWin.RenderBuffer->bind();
+  WinParams.RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
@@ -285,7 +285,7 @@ void space::render_3d_space(void)
   glDisableVertexAttribArray(Prog3d->Atrib["fragment"]);
 
   Prog3d->unuse(); // отключить шейдерную программу
-  AppWin.RenderBuffer->unbind();
+  WinParams.RenderBuffer->unbind();
   glBindVertexArray(0);
  }
 

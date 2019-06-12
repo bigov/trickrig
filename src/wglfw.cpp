@@ -75,16 +75,16 @@ wglfw::wglfw(void)
 
   //  Создание 3D окна
   glfwWindowHint(GLFW_VISIBLE, 0);
-  win_ptr = glfwCreateWindow(static_cast<int>(AppWin.width),
-                             static_cast<int>(AppWin.height),
+  win_ptr = glfwCreateWindow(static_cast<int>(WinParams.width),
+                             static_cast<int>(WinParams.height),
                        title.c_str(), nullptr, nullptr);
   if (nullptr == win_ptr) ERR("Creating Window fail.");
 
-  glfwSetWindowSizeLimits(win_ptr, AppWin.minwidth, AppWin.minheight,
+  glfwSetWindowSizeLimits(win_ptr, WinParams.minwidth, WinParams.minheight,
                           GLFW_DONT_CARE, GLFW_DONT_CARE);
 
-  glfwSetWindowPos(win_ptr, static_cast<int>(tr::AppWin.left),
-                   static_cast<int>(tr::AppWin.top));
+  glfwSetWindowPos(win_ptr, static_cast<int>(tr::WinParams.left),
+                   static_cast<int>(tr::WinParams.top));
 
   glfwShowWindow(win_ptr);
   glfwMakeContextCurrent(win_ptr);
@@ -132,13 +132,13 @@ void wglfw::error_callback(int error, const char* description)
 ///
 void wglfw::set_cursor(void)
 {
-  if(AppWin.set_mouse_ptr < 0 )
+  if(WinParams.set_mouse_ptr < 0 )
   {
     // спрятать указатель мыши
     glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-    AppWin.xpos = AppWin.width/2;
-    AppWin.ypos = AppWin.height/2;
-    glfwSetCursorPos(win_ptr, AppWin.xpos, AppWin.ypos);
+    WinParams.xpos = WinParams.width/2;
+    WinParams.ypos = WinParams.height/2;
+    glfwSetCursorPos(win_ptr, WinParams.xpos, WinParams.ypos);
   }
   else
   {
@@ -148,7 +148,7 @@ void wglfw::set_cursor(void)
     keys.dx = 0; keys.dy = 0;
   }
 
-  AppWin.set_mouse_ptr = 0; // после обработки установить нейтральное значение
+  WinParams.set_mouse_ptr = 0; // после обработки установить нейтральное значение
 }
 
 
@@ -190,18 +190,18 @@ void wglfw::key_callback(GLFWwindow* window, int key, int scancode, int action, 
 ///
 void wglfw::character_callback(GLFWwindow*, u_int ch)
 {
-  if(AppWin.pInputBuffer != nullptr)
+  if(WinParams.pInputBuffer != nullptr)
   {
     if(ch < 128)
     {
-      *(AppWin.pInputBuffer) += ch;
+      *(WinParams.pInputBuffer) += ch;
     }
     else
     {
       auto str = wstring2string({static_cast<wchar_t>(ch)});
       if(str == u8"№") str = "N";     // № трехбайтный, поэтому заменим на N
       if(str.size() > 2) str = "_";   // блокировка 3-х байтных символов
-      *(AppWin.pInputBuffer) += str;
+      *(WinParams.pInputBuffer) += str;
     }
   }
 }
@@ -212,8 +212,8 @@ void wglfw::character_callback(GLFWwindow*, u_int ch)
 ///
 void wglfw::window_pos_callback(GLFWwindow*, int left, int top)
 {
-  AppWin.left = static_cast<u_int>(left);
-  AppWin.top = static_cast<u_int>(top);
+  WinParams.left = static_cast<u_int>(left);
+  WinParams.top = static_cast<u_int>(top);
 }
 
 
@@ -222,7 +222,7 @@ void wglfw::window_pos_callback(GLFWwindow*, int left, int top)
 ///
 void wglfw::framebuffer_size_callback(GLFWwindow*, int width, int height)
 {
-  AppWin.resize(static_cast<u_int>(width), static_cast<u_int>(height));
+  WinParams.resize(static_cast<u_int>(width), static_cast<u_int>(height));
 }
 
 
@@ -236,14 +236,14 @@ void wglfw::cursor_position_callback(GLFWwindow* ptWin, double x, double y)
 {
   if(glfwGetInputMode(ptWin, GLFW_CURSOR) == GLFW_CURSOR_HIDDEN)
   {
-    keys.dx += static_cast<float>(x - AppWin.xpos);
-    keys.dy += static_cast<float>(y - AppWin.ypos);
-    glfwSetCursorPos(ptWin, AppWin.xpos, AppWin.ypos);
+    keys.dx += static_cast<float>(x - WinParams.xpos);
+    keys.dy += static_cast<float>(y - WinParams.ypos);
+    glfwSetCursorPos(ptWin, WinParams.xpos, WinParams.ypos);
   }
   else
   {
-    AppWin.xpos = x;
-    AppWin.ypos = y;
+    WinParams.xpos = x;
+    WinParams.ypos = y;
   }
 }
 
@@ -261,18 +261,18 @@ void wglfw::show(void)
   std::chrono::time_point<std::chrono::system_clock> t_start, t_frame;
   t_start = std::chrono::system_clock::now();
 
-  while (AppWin.run && (!glfwWindowShouldClose(win_ptr)))
+  while (WinParams.run && (!glfwWindowShouldClose(win_ptr)))
   {
     fps++;
     t_frame = std::chrono::system_clock::now();
     if (t_frame - t_start >= one_second)
     {
       t_start = std::chrono::system_clock::now();
-      AppWin.fps = fps;
+      WinParams.fps = fps;
       fps = 0;
     }
     AppGUI->draw(keys);
-    if(AppWin.set_mouse_ptr != 0) set_cursor();
+    if(WinParams.set_mouse_ptr != 0) set_cursor();
     glfwSwapBuffers(win_ptr);
     glfwPollEvents();
   }

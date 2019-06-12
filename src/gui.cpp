@@ -29,8 +29,8 @@ gui::gui(void)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glBindTexture(GL_TEXTURE_2D, 0);
 
-  WinGui.resize(AppWin.width, AppWin.height);
-  AppWin.pWinGui = &WinGui;
+  WinGui.resize(WinParams.width, WinParams.height);
+  WinParams.pWinGui = &WinGui;
 
 
   /// Инициализация GLSL программы обработки текстуры фреймбуфера.
@@ -176,7 +176,7 @@ void gui::input_text_line(const img &Font)
 
   // скопировать на экран изображение поля ввода с добавленым текстом
   auto x = (WinGui.w_summ - RowInput.w_summ) / 2;
-  y = WinGui.h_summ / 2 - 2 * AppWin.btn_h;
+  y = WinGui.h_summ / 2 - 2 * WinParams.btn_h;
   RowInput.copy(0, 0, WinGui, x, y);
 }
 
@@ -228,7 +228,7 @@ void gui::row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::str
   px bg_color = normal;
 
   // Если указатель находится над строкой
-  if(AppWin.xpos >= x && AppWin.xpos <= x+w && AppWin.ypos >= y && AppWin.ypos <= y+h)
+  if(WinParams.xpos >= x && WinParams.xpos <= x+w && WinParams.ypos >= y && WinParams.ypos <= y+h)
   {
     element_over = ROW_MAP_NAME; // для обработки в "menu_selector"
     bg_color = over;
@@ -284,8 +284,8 @@ void gui::cancel(void)
     case GUI_HUD3D:
       cfg::save_map_view();
       GuiMode = GUI_MENU_LSELECT;
-      AppWin.Cursor[2] = 0.0f;  // Убрать прицел
-      AppWin.set_mouse_ptr = 1; // Включить указатель мыши
+      WinParams.Cursor[2] = 0.0f;  // Убрать прицел
+      WinParams.set_mouse_ptr = 1; // Включить указатель мыши
       break;
     case GUI_MENU_LSELECT:
       GuiMode = GUI_MENU_START;
@@ -297,7 +297,7 @@ void gui::cancel(void)
       GuiMode = GUI_MENU_START;
       break;
     case GUI_MENU_START:
-      AppWin.run = false;
+      WinParams.run = false;
       break;
   }
 }
@@ -342,9 +342,9 @@ void gui::refresh_hud(void)
   u_int fps_length = 4;               // количество символов в надписи
   img Fps {fps_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
   char line[5];                   // the expected string plus 1 null terminator
-  std::sprintf(line, "%.4i", AppWin.fps);
+  std::sprintf(line, "%.4i", WinParams.fps);
   textstring_place(Font15n, line, Fps, 2, 1);
-  sub_img(Fps, 2, static_cast<GLint>(AppWin.height - Fps.h_summ - 2));
+  sub_img(Fps, 2, static_cast<GLint>(WinParams.height - Fps.h_summ - 2));
 
   // Координаты в пространстве
   u_int c_length = 60;               // количество символов в надписи
@@ -371,7 +371,7 @@ void gui::refresh_hud(void)
 void gui::hud_load(void)
 {
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-           static_cast<GLint>(AppWin.width), static_cast<GLint>(AppWin.height),
+           static_cast<GLint>(WinParams.width), static_cast<GLint>(WinParams.height),
            0, GL_RGBA, GL_UNSIGNED_BYTE, WinGui.uchar());
 
   // Панель инструментов для HUD в нижней части окна
@@ -452,7 +452,7 @@ void gui::button_click(ELEMENT_ID id)
 {
   static ELEMENT_ID double_id = NONE;
 
-  AppWin.pInputBuffer = nullptr; // Во всех режимах, кроме GUI_MENU_CREATE,
+  WinParams.pInputBuffer = nullptr; // Во всех режимах, кроме GUI_MENU_CREATE,
                                  // строка ввода отключена
 
   if(GuiMode == GUI_HUD3D) return;
@@ -470,8 +470,8 @@ void gui::button_click(ELEMENT_ID id)
     case BTN_OPEN:
       cfg::load_map_cfg(Maps[row_selected - 1].Folder);
       GuiMode = GUI_HUD3D;
-      AppWin.Cursor[2] = 4.0f;
-      AppWin.set_mouse_ptr = -1;
+      WinParams.Cursor[2] = 4.0f;
+      WinParams.set_mouse_ptr = -1;
       WinGui.clear(); // очистка элементов GUI окна
       hud_load();
       Space->init();
@@ -484,7 +484,7 @@ void gui::button_click(ELEMENT_ID id)
       break;
     case BTN_CREATE:
       user_input.clear();
-      AppWin.pInputBuffer = &user_input;       // Включить пользовательский ввод
+      WinParams.pInputBuffer = &user_input;       // Включить пользовательский ввод
       GuiMode = GUI_MENU_CREATE;
       break;
     case BTN_ENTER_NAME:
@@ -609,13 +609,13 @@ void gui::button_make_body(img &D, BUTTON_STATE s)
 void gui::button(ELEMENT_ID btn_id, u_long x, u_long y,
                      const std::string &Name, bool button_is_active)
 {
-  img Btn { AppWin.btn_w, AppWin.btn_h };
+  img Btn { WinParams.btn_w, WinParams.btn_h };
 
   if(button_is_active)
   {
     // Если указатель находится над кнопкой
-    if( AppWin.xpos >= x && AppWin.xpos <= x + AppWin.btn_w &&
-        AppWin.ypos >= y && AppWin.ypos <= y + AppWin.btn_h)
+    if( WinParams.xpos >= x && WinParams.xpos <= x + WinParams.btn_w &&
+        WinParams.ypos >= y && WinParams.ypos <= y + WinParams.btn_h)
     {
       element_over = btn_id;
 
@@ -644,13 +644,13 @@ void gui::button(ELEMENT_ID btn_id, u_long x, u_long y,
 
   if(button_is_active)
   {
-    textstring_place(Font18s, Name, Btn, AppWin.btn_w/2 - t_width/2,
-           AppWin.btn_h/2 - t_height/2);
+    textstring_place(Font18s, Name, Btn, WinParams.btn_w/2 - t_width/2,
+           WinParams.btn_h/2 - t_height/2);
   }
   else
   {
-    textstring_place(Font18l, Name, Btn, AppWin.btn_w/2 - t_width/2,
-           AppWin.btn_h/2 - t_height/2);
+    textstring_place(Font18l, Name, Btn, WinParams.btn_w/2 - t_width/2,
+           WinParams.btn_h/2 - t_height/2);
   }
   Btn.copy(0, 0, WinGui, x, y);
 }
@@ -664,14 +664,14 @@ void gui::menu_start(void)
   obscure_screen();
   title("Trick Rig");
 
-  u_int x = AppWin.width/2 - AppWin.btn_w/2;   // X координата кнопки
-  u_int y = AppWin.height/2 - AppWin.btn_h/2;  // Y координата кнопки
+  u_int x = WinParams.width/2 - WinParams.btn_w/2;   // X координата кнопки
+  u_int y = WinParams.height/2 - WinParams.btn_h/2;  // Y координата кнопки
   button(BTN_CONFIG, x, y, u8"Настроить");
 
-  y -= 1.5 * AppWin.btn_h;
+  y -= 1.5 * WinParams.btn_h;
   button(BTN_LOCATION, x, y, u8"Играть");
 
-  y += 3 * AppWin.btn_h;
+  y += 3 * WinParams.btn_h;
   button(BTN_CANCEL, x, y, u8"Закрыть");
 }
 
@@ -688,10 +688,10 @@ void gui::menu_map_select(void)
   // расстоянии 1/8 высоты окна сверху и снизу, и 1/8 ширины окна по бокам.
   // Расстояние между списком и кнопками равно половине высоты кнопки.
 
-  u_int y = AppWin.height/8; // отступ сверху (и снизу)
-  u_int list_h = AppWin.height - y * 2 - AppWin.btn_h * 1.5f;
-  u_int list_w = AppWin.minwidth - 4;
-  u_int x = (AppWin.width - list_w)/2;  // отступ слева (и справа)
+  u_int y = WinParams.height/8; // отступ сверху (и снизу)
+  u_int list_h = WinParams.height - y * 2 - WinParams.btn_h * 1.5f;
+  u_int list_w = WinParams.minwidth - 4;
+  u_int x = (WinParams.width - list_w)/2;  // отступ слева (и справа)
   v_str NamesList {};
 
   /// Вместо моего варианта -
@@ -704,12 +704,12 @@ void gui::menu_map_select(void)
   select_list(NamesList, x, y, list_w, list_h);
 
   x = WinGui.w_summ / 2 + 8;
-  y = y + list_h + AppWin.btn_h/2;
+  y = y + list_h + WinParams.btn_h/2;
 
   button(BTN_CANCEL, x, y, u8"Отмена");
-  button(BTN_MAP_DELETE, x + AppWin.btn_w + 16, y, u8"Удалить", row_selected > 0);
-  button(BTN_OPEN, x - (AppWin.btn_w + 16), y, u8"Старт", row_selected > 0);
-  button(BTN_CREATE, x - (AppWin.btn_w + 16)*2, y, u8"Создать");
+  button(BTN_MAP_DELETE, x + WinParams.btn_w + 16, y, u8"Удалить", row_selected > 0);
+  button(BTN_OPEN, x - (WinParams.btn_w + 16), y, u8"Старт", row_selected > 0);
+  button(BTN_CREATE, x - (WinParams.btn_w + 16)*2, y, u8"Создать");
 
 }
 
@@ -740,11 +740,11 @@ void gui::menu_map_create(evInput &ev)
   input_text_line(Font18n);
 
   // две кнопки
-  auto x = WinGui.w_summ / 2 - static_cast<u_long>(AppWin.btn_w * 1.25);
+  auto x = WinGui.w_summ / 2 - static_cast<u_long>(WinParams.btn_w * 1.25);
   auto y = WinGui.h_summ / 2;
   button(BTN_ENTER_NAME, x, y, u8"OK", user_input.length() > 0);
 
-  x += AppWin.btn_w * 1.5;  // X координата кнопки
+  x += WinParams.btn_w * 1.5;  // X координата кнопки
   button(BTN_LOCATION, x, y, u8"Отмена");
 }
 
@@ -757,7 +757,7 @@ void gui::menu_config(void)
   obscure_screen();
   title(u8"НАСТРОЙКИ");
 
-  int x = WinGui.w_summ / 2 - static_cast<u_long>(AppWin.btn_w/2);
+  int x = WinGui.w_summ / 2 - static_cast<u_long>(WinParams.btn_w/2);
   int y = WinGui.h_summ / 2;
   button(BTN_CANCEL, x, y, u8"Отмена");
 }
@@ -789,8 +789,8 @@ void gui::show_menu(evInput &ev)
 
   // обновляем картинку меню в виде текстуры каждый кадр
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-               static_cast<GLint>(AppWin.width),
-               static_cast<GLint>(AppWin.height),
+               static_cast<GLint>(WinParams.width),
+               static_cast<GLint>(WinParams.height),
                0, GL_RGBA, GL_UNSIGNED_BYTE, WinGui.uchar());
 
   if((ev.mouse == MOUSE_BUTTON_LEFT) &&
@@ -854,7 +854,7 @@ void gui::draw(evInput &ev)
   glBindVertexArray(vao_quad_id);
   glDisable(GL_DEPTH_TEST);
   screenShaderProgram->use();
-  screenShaderProgram->set_uniform("Cursor", AppWin.Cursor);
+  screenShaderProgram->set_uniform("Cursor", WinParams.Cursor);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   screenShaderProgram->unuse();
 }
