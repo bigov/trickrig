@@ -76,6 +76,9 @@ class gui
     std::string user_input {};  // строка ввода пользователя
     std::unique_ptr<space> Space = nullptr;
 
+    GLuint vao_quad_id  = 0;
+    std::unique_ptr<glsl> screenShaderProgram = nullptr; // шейдерная программа обработки текстуры рендера
+
     void hud_load(void);
     void obscure_screen(void);
     void button(ELEMENT_ID id, u_long x, u_long y, const std::string& Name,

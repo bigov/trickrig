@@ -99,8 +99,6 @@ wglfw::wglfw(void)
   if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
   if(!gladLoadGL()) { ERR("FAILURE: can't load GLAD."); }
 
-  Scene = std::make_unique<tr::scene>();
-
 }
 
 
@@ -109,7 +107,7 @@ wglfw::wglfw(void)
 ///
 wglfw::~wglfw()
 {
-  Scene = nullptr; // destruct Scene
+  AppGUI = nullptr; // destruct Scene
 
   glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
@@ -255,6 +253,8 @@ void wglfw::cursor_position_callback(GLFWwindow* ptWin, double x, double y)
 ///
 void wglfw::show(void)
 {
+  AppGUI = std::make_unique<tr::gui>();
+
   glfwSetInputMode(win_ptr, GLFW_STICKY_KEYS, 0);
   int fps = 0;
   std::chrono::seconds one_second(1);
@@ -271,7 +271,7 @@ void wglfw::show(void)
       AppWin.fps = fps;
       fps = 0;
     }
-    Scene->draw(keys);
+    AppGUI->draw(keys);
     if(AppWin.set_mouse_ptr != 0) set_cursor();
     glfwSwapBuffers(win_ptr);
     glfwPollEvents();

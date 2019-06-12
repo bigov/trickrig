@@ -6,10 +6,6 @@
 //
 //===========================================================================
 
-#include "main.hpp"
-#include "config.hpp"
-#include "io.hpp"
-#include "scene.hpp"
 #include "wglfw.hpp"
 
 std::string tr::AppPathDir {};

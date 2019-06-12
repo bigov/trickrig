@@ -1,9 +1,7 @@
 #ifndef WGLFW_HPP
 #define WGLFW_HPP
 
-#include "config.hpp"
-#include "main.hpp"
-#include "scene.hpp"
+#include "gui.hpp"
 #include "io.hpp"
 
 namespace tr
@@ -21,7 +19,7 @@ class wglfw
 
     private:
       GLFWwindow * win_ptr = nullptr;
-      std::unique_ptr<tr::scene> Scene = nullptr;   // Сборка сцены
+      std::unique_ptr<tr::gui> AppGUI = nullptr;   // Сборка сцены
 
       // переменная для запроса положения курсора в окне
       double mouse_x = 0.0,
