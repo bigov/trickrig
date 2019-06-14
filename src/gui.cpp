@@ -21,10 +21,12 @@ gui::gui(void)
   for(auto &P: MapsDirs) { Maps.push_back(map(P, cfg::map_name(P))); }
 
   //cfg::DataBase.load_template();
+
   // настройка текстуры для HUD
   glActiveTexture(GL_TEXTURE2);
-  glGenTextures(1, &tex_hud_id);
-  glBindTexture(GL_TEXTURE_2D, tex_hud_id);
+
+  glGenTextures(1, &gui_texture);
+  glBindTexture(GL_TEXTURE_2D, gui_texture);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -253,24 +255,21 @@ void gui::row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::str
 /// \brief gui::draw_list_select
 /// \details Отображение списка выбора
 ///
-void gui::select_list(const v_str &Rows, u_int lx, u_int ly, u_int lw, u_int lh, size_t i)
+void gui::select_list(u_int lx, u_int ly, u_int lw, u_int lh)
 {
   img ListImg {lw, lh, {0xDD, 0xDD, 0xDD, 0xFF}};             // изображение списка
   ListImg.copy(0, 0, WinGui, lx, ly);
-
-  if(i >= Rows.size()) i = 0;
 
   u_int rh = Font18n.h_cell * 1.5f;     // высота строки
   u_int rw = lw - 4;                    // ширина строки
   u_int max_rows = (lh - 4) / (rh + 2); // число строк, которое может поместиться в списке
 
   u_int id = 0;
-  for(auto &text: Rows)
+  for(auto &TheMap: Maps)
   {
-    row_text(id + 1, lx + 2, ly + id * (rh + 2) + 2, rw, rh, text);
+    row_text(id + 1, lx + 2, ly + id * (rh + 2) + 2, rw, rh, TheMap.Name);
     if(++id > max_rows) break;
   }
-
 }
 
 
@@ -281,7 +280,7 @@ void gui::cancel(void)
 {
   switch (GuiMode)
   {
-    case GUI_HUD3D:
+    case GUI_3D_MODE:
       cfg::save_map_view();
       GuiMode = GUI_MENU_LSELECT;
       WinParams.Cursor[2] = 0.0f;  // Убрать прицел
@@ -337,6 +336,8 @@ void gui::sub_img(const img &Image, GLint x, GLint y)
 ///
 void gui::refresh_hud(void)
 {
+  glBindTexture(GL_TEXTURE_2D, gui_texture);
+
   // счетчик FPS
   px bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения
   u_int fps_length = 4;               // количество символов в надписи
@@ -455,7 +456,7 @@ void gui::button_click(ELEMENT_ID id)
   WinParams.pInputBuffer = nullptr; // Во всех режимах, кроме GUI_MENU_CREATE,
                                  // строка ввода отключена
 
-  if(GuiMode == GUI_HUD3D) return;
+  if(GuiMode == GUI_3D_MODE) return;
 
   if(id == ROW_MAP_NAME)
   { // В списке карт первый клик выбирает карту, второй открывает.
@@ -469,7 +470,7 @@ void gui::button_click(ELEMENT_ID id)
   {
     case BTN_OPEN:
       cfg::load_map_cfg(Maps[row_selected - 1].Folder);
-      GuiMode = GUI_HUD3D;
+      GuiMode = GUI_3D_MODE;
       WinParams.Cursor[2] = 4.0f;
       WinParams.set_mouse_ptr = -1;
       WinGui.clear(); // очистка элементов GUI окна
@@ -692,16 +693,8 @@ void gui::menu_map_select(void)
   u_int list_h = WinParams.height - y * 2 - WinParams.btn_h * 1.5f;
   u_int list_w = WinParams.minwidth - 4;
   u_int x = (WinParams.width - list_w)/2;  // отступ слева (и справа)
-  v_str NamesList {};
 
-  /// Вместо моего варианта -
-  //for(auto p: Maps) NamesList.push_back(p.Name);
-  //
-  /// анализатор рекомендует так - строка ниже. Надеюсь, он хотя-бы быстрее :/
-  std::transform(Maps.begin(), Maps.end(), std::back_inserter(NamesList),
-                 [](map p) -> std::string { return p.Name; });
-
-  select_list(NamesList, x, y, list_w, list_h);
+  select_list(x, y, list_w, list_h);
 
   x = WinGui.w_summ / 2 + 8;
   y = y + list_h + WinParams.btn_h/2;
@@ -766,8 +759,10 @@ void gui::menu_config(void)
 ///
 /// \brief gui::draw_gui_menu
 ///
-void gui::show_menu(evInput &ev)
+void gui::render_menu(evInput &ev)
 {
+  glBindTexture(GL_TEXTURE_2D, gui_texture);
+
   mouse_press_left = (ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS);
 
   switch (GuiMode)
@@ -787,7 +782,7 @@ void gui::show_menu(evInput &ev)
     default: break;
    }
 
-  // обновляем картинку меню в виде текстуры каждый кадр
+  // каждый кадр на текстуре окна обновляем изображение меню
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                static_cast<GLint>(WinParams.width),
                static_cast<GLint>(WinParams.height),
@@ -808,9 +803,9 @@ void gui::show_menu(evInput &ev)
     //AppWin.action = -1; // флаг действия потребуется при вводе названия карты
   }
 
-  // При каждом рисовании каждой кнопки проверяются координаты указателя мыши.
-  // Если указатель находится над кнопкой, то кнопка изображается другим цветом
-  // и ее ID присваивается переменной "button_over"
+  // При рисовании кнопки проверяются координаты указателя мыши. Если указатель
+  // находится над кнопкой, то кнопка изображается другим цветом и ее ID
+  // присваивается переменной "button_over"
   element_over = NONE;
 
 }
@@ -838,11 +833,14 @@ void gui::draw(evInput &ev)
     ev.action = -1;
   }
 
-  if(GuiMode == GUI_HUD3D) Space->draw(ev); // Рендер фреймбуфера
-  glBindTexture(GL_TEXTURE_2D, tex_hud_id);
+  if(GuiMode == GUI_3D_MODE)
+  {
+    Space->render(ev); // Рендер фреймбуфера
+    refresh_hud();
+  } else {
+    render_menu(ev);
+  }
 
-  if(GuiMode == GUI_HUD3D) refresh_hud();
-  else show_menu(ev);
 
   /// Рендер окна с текстурами фреймбуфера и GIU
   ///

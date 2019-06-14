@@ -16,7 +16,7 @@ enum BUTTON_STATE {
 };
 
 enum GUI_MODES {   // режимы окна
-  GUI_HUD3D,         // основной режим - без шторки
+  GUI_3D_MODE,         // основной режим - без шторки
   GUI_MENU_START,    // начальное меню
   GUI_MENU_LSELECT,  // выбор игры
   GUI_MENU_CREATE,   // создание нового района
@@ -32,7 +32,7 @@ class gui
     px color_title {0xFF, 0xFF, 0xDD, 0xFF}; // фон заголовка
     bool mouse_press_left = false;           // нажатие на левую кнопку мыши
 
-    GLuint tex_hud_id   = 0;                 // id тектуры HUD
+    GLuint gui_texture = 0;                  // id тектуры HUD
 
     struct map{
         map(const std::string &f, const std::string &n): Folder(f), Name(n){}
@@ -90,9 +90,9 @@ class gui
     void title(const std::string& title);
     void input_text_line(const img &_Fn);
     void row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &);
-    void select_list(const v_str &, u_int x, u_int y, u_int w, u_int h, size_t i = 0);
+    void select_list(u_int x, u_int y, u_int w, u_int h);
     void sub_img(const img &Image, GLint x, GLint y);
-    void show_menu(evInput& ev);
+    void render_menu(evInput& ev);
     void menu_map_create(evInput& ev);
     void menu_map_select(void);
     void menu_start(void);

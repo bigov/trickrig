@@ -162,8 +162,7 @@ void space::load_texture(unsigned gl_texture_index, const std::string& FileName)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
   glGenerateMipmap(GL_TEXTURE_2D);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-    GL_NEAREST_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
@@ -216,13 +215,52 @@ void space::calc_position(evInput & ev)
 ///
 /// Функция, вызываемая из цикла окна для рендера сцены
 ///
-/// Скан-коды клавиш:
-/// [S] == 31; [C] == 46
-void space::draw(evInput& ev)
+void space::render(evInput& ev)
 {
   calc_position(ev);
   Area4->recalc_borders();
+  check_keys(ev);
 
+  glBindVertexArray(vao_id);
+  WinParams.RenderBuffer->bind();
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glEnable(GL_DEPTH_TEST);
+
+  Prog3d->use();   // включить шейдерную программу
+  Prog3d->set_uniform("mvp", MatMVP);
+  Prog3d->set_uniform("light_direction", light_direction); // направление
+  Prog3d->set_uniform("light_bright", light_bright);       // цвет/яркость
+
+  Prog3d->set_uniform("MinId", id_point_0);                // начальная вершина активного вокселя
+  Prog3d->set_uniform("MaxId", id_point_8);                // последняя вершина активного вокселя
+
+  glEnableVertexAttribArray(Prog3d->Atrib["position"]);    // положение 3D
+  glEnableVertexAttribArray(Prog3d->Atrib["color"]);       // цвет
+  glEnableVertexAttribArray(Prog3d->Atrib["normal"]);      // нормаль
+  glEnableVertexAttribArray(Prog3d->Atrib["fragment"]);    // текстура
+
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(Area4->render_indices), GL_UNSIGNED_INT, nullptr);
+  //glDrawElements(GL_LINES, static_cast<GLsizei>(RigsDb0.render_indices), GL_UNSIGNED_INT, nullptr);
+
+  glDisableVertexAttribArray(Prog3d->Atrib["position"]);
+  glDisableVertexAttribArray(Prog3d->Atrib["color"]);
+  glDisableVertexAttribArray(Prog3d->Atrib["normal"]);
+  glDisableVertexAttribArray(Prog3d->Atrib["fragment"]);
+
+  Prog3d->unuse(); // отключить шейдерную программу
+  WinParams.RenderBuffer->unbind();
+  glBindVertexArray(0);
+ }
+
+
+///
+/// \brief space::check_keys
+/// \param ev
+///
+/// Скан-коды клавиш:
+/// [S] == 31; [C] == 46
+void space::check_keys(evInput& ev)
+{
   int vertex_id = 0;
   WinParams.RenderBuffer->read_pixel(WinParams.Cursor.x, WinParams.Cursor.y, &vertex_id);
   id_point_0 = vertex_id - (vertex_id % vertices_per_side);
@@ -247,46 +285,6 @@ void space::draw(evInput& ev)
     ev.action = -1;
     Area4->decrease(vertex_id);
   }
-
-  render_3d_space();
 }
-
-
-///
-/// Рендер кадра
-///
-void space::render_3d_space(void)
-{
-  glBindVertexArray(vao_id);
-  WinParams.RenderBuffer->bind();
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glEnable(GL_DEPTH_TEST);
-
-  Prog3d->use();   // включить шейдерную программу
-  Prog3d->set_uniform("mvp", MatMVP);
-  Prog3d->set_uniform("light_direction", light_direction); // направление
-  Prog3d->set_uniform("light_bright", light_bright);       // цвет/яркость
-
-  Prog3d->set_uniform("MinId", id_point_0);                // начальная вершина активного вокселя
-  Prog3d->set_uniform("MaxId", id_point_8);                // последняя вершина активного вокселя
-
-  glEnableVertexAttribArray(Prog3d->Atrib["position"]);    // положение 3D
-  glEnableVertexAttribArray(Prog3d->Atrib["color"]);       // цвет
-  glEnableVertexAttribArray(Prog3d->Atrib["normal"]);      // нормаль
-  glEnableVertexAttribArray(Prog3d->Atrib["fragment"]);    // текстура
-
-  // Нарисовать все за один проход:
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(Area4->render_indices), GL_UNSIGNED_INT, nullptr);
-  //glDrawElements(GL_LINES, static_cast<GLsizei>(RigsDb0.render_indices), GL_UNSIGNED_INT, nullptr);
-
-  glDisableVertexAttribArray(Prog3d->Atrib["position"]);
-  glDisableVertexAttribArray(Prog3d->Atrib["color"]);
-  glDisableVertexAttribArray(Prog3d->Atrib["normal"]);
-  glDisableVertexAttribArray(Prog3d->Atrib["fragment"]);
-
-  Prog3d->unuse(); // отключить шейдерную программу
-  WinParams.RenderBuffer->unbind();
-  glBindVertexArray(0);
- }
 
 } // namespace tr

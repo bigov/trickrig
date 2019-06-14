@@ -72,6 +72,7 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
 
   // настройка текстуры для идентификации примитивов
   glActiveTexture(GL_TEXTURE2);
+
   ident_format = GL_RED_INTEGER;   // параметры format и type используются
   ident_type = GL_INT;             // еще и в frame_buffer::read_pixel
   TexIdent = std::make_unique<gl_texture>(GL_R32I, ident_format, ident_type);

@@ -20,7 +20,7 @@ namespace tr
       space(void);
       ~space(void);
       void init(void);
-      void draw(evInput &);
+      void render(evInput &);
 
     private:
       space(const space &);
@@ -56,7 +56,7 @@ namespace tr
       void load_texture(unsigned gl_texture_index, const std::string& fname);
       void init_vao(void);
       void calc_position(evInput&);
-      void render_3d_space(void);    // Рендер 3D сцены
+      void check_keys(evInput&);
   };
 
 } //namespace
