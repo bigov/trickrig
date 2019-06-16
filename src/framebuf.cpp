@@ -32,11 +32,24 @@ gl_texture::gl_texture( GLint internalformat, GLenum format, GLenum type,
 /// \brief gl_texture::resize
 /// \param width
 /// \param height
+/// \param data
+/// \details Изменение размера памяти под текстуру. Инициалиированную область
+/// можно заполнить изображением в формате RGBA - адрес данных изображения надо
+/// передать в третьем параметре. Иначе область заливается ровным голубым цветом.
 ///
 void gl_texture::resize(GLsizei width, GLsizei height, const GLvoid* data)
 {
   glBindTexture(target, texture_id);
-  glTexImage2D(target, level, internalformat, width, height, border, format, type, data);
+
+  if(data == nullptr)
+  {
+    img Blue{static_cast<u_long>(width), static_cast<u_long>(height),
+      {0x7F, 0xB0, 0xFF, 0xFF}};  // голубой цвет (формат RGBA)
+    glTexImage2D(target, level, internalformat, width, height, border, format, type, Blue.uchar());
+  } else {
+    glTexImage2D(target, level, internalformat, width, height, border, format, type, data);
+  }
+
   glBindTexture(target, 0);
 }
 
@@ -106,10 +119,7 @@ void frame_buffer::resize(GLsizei w, GLsizei h)
 
   // Текстура индентификации примитивов (канал RED)
   TexIdent->resize(w, h);
-
-  // Текстура рендера (формат RGBA)
-  img Blue{static_cast<u_long>(w), static_cast<u_long>(h), {0x7F, 0xB0, 0xFF, 0xFF}};  // голубой цвет
-  TexColor->resize(w, h, Blue.uchar());
+  TexColor->resize(w, h);
 
   // настройка размера рендербуфера
   glBindRenderbuffer(GL_RENDERBUFFER, rbuf_id);

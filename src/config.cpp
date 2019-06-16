@@ -57,7 +57,7 @@ std::string cfg::user_dir(void)
 ///
 void cfg::load_map_cfg(const std::string &DirName)
 {
-  MapParams = DataBase.open_map(DirName + DS);
+  MapParams = DataBase.map_open(DirName + DS);
 
   // Загрузка настроек камеры вида
   Eye.ViewFrom.x = std::stof(MapParams[VIEW_FROM_X]);
@@ -90,11 +90,6 @@ void cfg::load_app_cfg(void)
   set_user_dir();
   AssetsDir = ".." + DS + "assets";
   AppParams = DataBase.open_app(UserDir + DS);
-
-  // Загрузка шаблона поверхности
-  auto Tpls = AssetsDir + DS + "surf_tpl.db";
-  if(!fs::exists(Tpls)) ERR("Miss file: " + Tpls);
-  DataBase.load_template(1, Tpls);
 
   // Загрузка настроек окна приложения
   WinParams.width = static_cast<u_int>(std::stoi(AppParams[WINDOW_WIDTH]));
@@ -137,8 +132,6 @@ void cfg::set_user_dir(void)
   UserDir = std::string(env_p);
 #endif
 
-  //info("user dir:" + UserDir);
-
   UserDir += DS +".config";
    if(!fs::exists(UserDir)) fs::create_directory(UserDir);
   UserDir += DS + "TrickRig";
@@ -162,7 +155,7 @@ std::string cfg::create_map(const std::string &MapName)
   if(!fs::exists(DirPName)) fs::create_directory(DirPName);
   else ERR("Err: map dir exist: " + DirPName);
 
-  auto MapSrc { AssetsDir + DS + "surf_tpl.db" };   // шаблон карты
+  auto MapSrc { AssetsDir + DS + "space.db" };   // шаблон карты
   auto MapPathName { DirPName + DS + fname_map};    // новая карта
 
   std::ifstream src(MapSrc, std::ios::binary);   // TODO: контроль чтения
@@ -185,11 +178,11 @@ void cfg::save_app(void)
 
 
 ///
-/// Сохрание настроек положения камеры при закрытии карты
+/// Сохранить настройки положения камеры и закрыть карту
 ///
 void cfg::save_map_view(void)
 {
-  DataBase.save(Eye);
+  DataBase.map_close(Eye);
 }
 
 

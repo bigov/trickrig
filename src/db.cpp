@@ -36,20 +36,6 @@ namespace tr {
 
 
 ///
-/// \brief rdb::load_template
-/// \param level
-/// \details загрузка шаблонного фрагмента поверхности размером (tpl_side X tpl_side)
-/// для указанного уровня LOD.
-///
-/// TODO: вобще-то, тут должно быть что-то типа генератора пространства
-///
-void db::load_template(int, const std::string&)
-{
-  return;
-}
-
-
-///
 /// \brief db::load_config
 /// \param n
 /// \param Pname
@@ -114,16 +100,47 @@ v_ch db::map_name_read(const std::string & dbFile)
 
 
 ///
+/// \brief db::get_voxel
+/// \param x
+/// \param y
+/// \param z
+/// \param size
+/// \return
+///
+std::unique_ptr<voxel_data> db::get_voxel(const i3d& P, int size)
+{
+  std::unique_ptr<voxel_data> result = nullptr;
+  char query[255];
+  sprintf(query, "SELECT \"color\" FROM \"voxels\" WHERE \"x\"=%d AND \"y\"=%d AND \"z\"=%d AND \"size\"=%d;",
+          P.x, P.y, P.z, size);
+
+  SqlDb.exec(query);
+  if(!SqlDb.Table_rows.empty())
+  {
+    result = std::make_unique<voxel_data>();
+  }
+
+  return result;
+}
+
+
+///
 /// \brief db::open
 /// \param PathName - путь к директории данных карты пользователя (cо слэшем в конце)
 ///
-v_str db::open_map(const std::string &DirPathName)
+v_str db::map_open(const std::string &DirPathName)
 {
-  MapDir = DirPathName;
-  CfgMapPFName = MapDir + fname_cfg;
-  MapPFName = MapDir + fname_map;
+  CfgMapPFName = DirPathName + fname_cfg;
+  MapPFName = DirPathName + fname_map;
   if(!fs::exists(CfgMapPFName)) init_map_config(CfgMapPFName);
-  return load_config(MAP_INIT_SIZE, CfgMapPFName);
+  v_str Result = load_config(MAP_INIT_SIZE, CfgMapPFName);
+
+  // Перед выходом из функции чтения параметров карты открыть файл данных карты.
+  // Закроется файл при вызове функции сохранения конфига.
+  SqlDb.open_in_ram(MapPFName);
+
+  return Result;
+
 }
 
 
@@ -159,8 +176,10 @@ void db::map_name_save(const std::string &Dir, const std::string &MapName)
 /// \brief db::save
 /// \param Eye
 ///
-void db::save(const tr::camera_3d &Eye)
+void db::map_close(const tr::camera_3d &Eye)
 {
+  SqlDb.close_in_ram(MapPFName); // закрыть файл данных пространства вокселей
+
   char q [255]; // буфер для форматирования и передачи строки в запрос
   const char tpl[] = "UPDATE init SET val='%s' WHERE key=%d;";
   std::string p = "";

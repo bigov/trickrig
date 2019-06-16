@@ -9,14 +9,10 @@
 #define DB_HPP
 
 #include "wsql.hpp"
-#include "voxel.hpp"
-#include "area.hpp"
+//#include "voxel.hpp"
 #include "framebuf.hpp"
 
 namespace tr {
-
-
-struct texture_coord {float u=0.0f, v=0.0f;};
 
 // Параметры и режимы окна приложения
 struct main_window {
@@ -34,22 +30,20 @@ struct main_window {
 
   bool run     = true;  // индикатор закрытия окна
   float aspect = 1.0f;  // соотношение размеров окна
-  //bool resized = true;  // флаг наличия изменений параметров окна
   double xpos = 0.0;    // позиция указателя относительно левой границы
   double ypos = 0.0;    // позиция указателя относительно верхней границы
   int fps = 120;        // частота кадров (для коррекции скорости движения)
   glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина прицела
 
-  texture_coord texYp { 0.0f, 0.0f };
-  texture_coord texYn {};
-  texture_coord texXp {};
-  texture_coord texXn {};
-  texture_coord texZp {};
-  texture_coord texZn {};
-
   char set_mouse_ptr = 0;           // запрос смены типа курсора {-1, 0, 1}
   void resize(u_int w, u_int h);
 };
+
+struct voxel_data {
+    int color = 0;
+    int texture = 0;
+};
+
 extern main_window WinParams;
 
 
@@ -58,14 +52,14 @@ class db
   public:
     db(void) {}
    ~db(void) {}
-    v_str open_map(const std::string &); // загрузка данных карты
     v_str open_app(const std::string &); // загрузка данных приложения
+    v_str map_open(const std::string &); // загрузка данных карты
+    void map_close(const camera_3d &Eye);
     void map_name_save(const std::string &Dir, const std::string &MapName);
     v_ch map_name_read(const std::string & dbFile);
-    void save(const camera_3d &Eye);
     void save(const main_window &WinParams);
     void init_map_config(const std::string &);
-    void load_template(int level, const std::string &fname);   // загрузка шаблона из файла БД
+    std::unique_ptr<voxel_data> get_voxel(const i3d&, int);
 
   private:
     std::string MapDir       {}; // директория текущей карты (со слэшем в конце)
@@ -74,10 +68,6 @@ class db
     std::string CfgAppPFName {}; // файл глобальных настроек приложения
     wsql SqlDb {};
 
-    // == L-O-D 1 ==
-
-    std::map<i3d, voxel> TplRigs_1 {};     // Шаблон карты - для создания новых элементов.
-    int tpl_1_side = 16;                 // длина стороны шаблона
     void init_app_config(const std::string &);
     v_str load_config(size_t params_count, const std::string &file_name);
 };

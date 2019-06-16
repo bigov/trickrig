@@ -20,8 +20,6 @@ gui::gui(void)
   auto MapsDirs = dirs_list(cfg::user_dir()); // список директорий с картами
   for(auto &P: MapsDirs) { Maps.push_back(map(P, cfg::map_name(P))); }
 
-  //cfg::DataBase.load_template();
-
   // настройка текстуры для HUD
   glActiveTexture(GL_TEXTURE2);
 
@@ -835,7 +833,7 @@ void gui::draw(evInput &ev)
 
   if(GuiMode == GUI_3D_MODE)
   {
-    Space->render(ev); // Рендер фреймбуфера
+    Space->render(ev); // Рендер во фреймбуфер
     refresh_hud();
   } else {
     render_menu(ev);

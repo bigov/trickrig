@@ -12,6 +12,7 @@
 #include "main.hpp"
 #include "glsl.hpp"
 #include "vbo.hpp"
+#include "config.hpp"
 
 namespace tr
 {
@@ -30,8 +31,9 @@ class area
     // изменения адреса смещения в буфере.
     std::unordered_map<GLsizeiptr, voxel*> mVBO {};
 
-    int side_len;           // Длина стороны вокселя
-    int lod_width;          // число вокселей до границы LOD
+    int voxel_size =   0;   // Длина стороны вокселя
+    int area_width =   0;   // ширина области - расстояние от внешней границы
+                            // до внутренней или (для нулевой области) до камеры.
 
     i3d Location {0, 0, 0}; // Origin вокселя, над которым камера
     i3d MoveFrom {0, 0, 0}; // Origin вокселя с которого камера ушла
@@ -45,7 +47,7 @@ class area
     void redraw_borders_z(void);
 
   public:
-    area(int s, int d): side_len(s), lod_width(d) {}
+    area(int length, int count);
     ~area(void) {}
 
     u_int render_indices = 0;  // сумма индексов, необходимых для рендера всех примитивов

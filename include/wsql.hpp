@@ -39,17 +39,15 @@ class wsql
 
     bool open(const std::string &);
     void close(void);
+
+    bool open_in_ram(const std::string&);
+    void close_in_ram(const std::string&);
+
     void exec(const char *);
     void write(const char *);
     void request_put(const char *, const void *, int);
     void request_put(const char *, const float *, size_t);
     void request_get(const char *);
-
-    void select_rig(int, int, int);
-    void select_snip(int);
-    void insert_rig(int, int, int, int, int, const float *, size_t);
-    void insert_snip(int, const float *);
-    void update_snip(int, int);
 
   private:
     wsql(const wsql &) = delete;
@@ -62,6 +60,7 @@ class wsql
     bool is_open = false;
 
     bool _open(void);
+    int loadOrSaveDb(sqlite3 *pInMemory, const char *zFilename, int isSave);
     void save_row_data(void);
     static int callback(void*, int, char**, char**);
     static void update_callback(void*, int, const char*, const char*, sqlite3_int64);

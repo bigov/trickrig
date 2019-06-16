@@ -32,6 +32,19 @@ u_char side_opposite(u_char s)
 
 
 ///
+/// \brief area::area
+/// \param length - длина стороны вокселя
+/// \param count - число вокселей от камеры (или внутренней границы)
+/// до внешней границы области
+///
+area::area(int length, int count)
+{
+  voxel_size = length;
+  area_width = count * length;
+}
+
+
+///
 /// \brief i3d_shift
 /// \param P
 /// \param s
@@ -44,22 +57,22 @@ i3d area::i3d_near(const i3d& P, u_char side)
 {
   switch (side) {
     case SIDE_XP:
-      return i3d{ P.x + side_len, P.y, P.z };
+      return i3d{ P.x + voxel_size, P.y, P.z };
       break;
     case SIDE_XN:
-      return i3d{ P.x - side_len, P.y, P.z };
+      return i3d{ P.x - voxel_size, P.y, P.z };
       break;
     case SIDE_YP:
-      return i3d{ P.x, P.y + side_len, P.z };
+      return i3d{ P.x, P.y + voxel_size, P.z };
       break;
     case SIDE_YN:
-      return i3d{ P.x, P.y - side_len, P.z };
+      return i3d{ P.x, P.y - voxel_size, P.z };
       break;
     case SIDE_ZP:
-      return i3d{ P.x, P.y, P.z + side_len };
+      return i3d{ P.x, P.y, P.z + voxel_size };
       break;
     case SIDE_ZN:
-      return i3d{ P.x, P.y, P.z - side_len };
+      return i3d{ P.x, P.y, P.z - voxel_size };
       break;
     default:
       return P;
@@ -87,8 +100,7 @@ void area::increase(int id)
     voxel_wipe(get(i3d_near(P0, side)));           // вокруг изменяемого/нового вокселя
 
   // Нарисовать в опорной точке воксель. Автоматически производится пересчет видимости
-  // сторон соседних вокселей вокруг только что созданного. Если воксель уже существует,
-  // то "add_voxel" выдает ссылку на него и он рисуется.
+  // сторон соседних вокселей вокруг только что созданного.
   voxel_draw(add_voxel(P0));
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксели
@@ -100,7 +112,7 @@ void area::increase(int id)
 /// \brief rdb::decrease
 /// \param i - порядковый номер группы данных из буфера
 ///
-/// \details Уменьшение объема с указанной стороны
+/// \details Удаление вокселя
 ///
 void area::decrease(int i)
 {
@@ -112,11 +124,11 @@ void area::decrease(int i)
   voxel* pVox = mVBO[offset];                       // По адресу смещения найдем воксель,
   i3d P0 = pVox->Origin;                            // по нему - опорную точку. Временно
   for (u_char side = 0; side < SIDES_COUNT; ++side) // убрать из рендера воксели вокруг
-    voxel_wipe(get(i3d_near(P0, side)));           // найденой опорной точки
+    voxel_wipe(get(i3d_near(P0, side)));            // найденой опорной точки
 
   voxel_wipe(pVox);                                 // Выделенный воксель убрать из рендера,
   mArea.erase(P0);                                  // удалить из базы данных,
-  recalc_around_visibility(P0);                            // пересчитать видимость вокселей вокруг
+  recalc_around_visibility(P0);                     // пересчитать видимость вокселей вокруг
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксели
     voxel_draw(get(i3d_near(P0, side)));
 }
@@ -204,25 +216,33 @@ void area::init(vbo_ext* v)
   load_space(); // загрузка вокселей в ОЗУ
 
   // Origin вокселя, в котором расположена камера
-  Location = { static_cast<int>(floor(Eye.ViewFrom.x / side_len)) * side_len,
-                static_cast<int>(floor(Eye.ViewFrom.y / side_len)) * side_len,
-                static_cast<int>(floor(Eye.ViewFrom.z / side_len)) * side_len };
+  Location = { static_cast<int>(floor(Eye.ViewFrom.x / voxel_size)) * voxel_size,
+                static_cast<int>(floor(Eye.ViewFrom.y / voxel_size)) * voxel_size,
+                static_cast<int>(floor(Eye.ViewFrom.z / voxel_size)) * voxel_size };
   MoveFrom = Location;
-
+  /* DEBUG
   // загрузка пространства производится от места размещения камеры
-  int dist = lod_width * side_len; // расстояние от камеры до границы LOD
-  int x_min = Location.x - dist;
-  int x_max = Location.x + dist;
-  int y_min = Location.y - dist;
-  int y_max = Location.y + dist;
-  int z_min = Location.z - dist;
-  int z_max = Location.z + dist;
+  int x_min = Location.x - area_width;
+  int x_max = Location.x + area_width;
+  int y_min = Location.y - area_width;
+  int y_max = Location.y + area_width;
+  int z_min = Location.z - area_width;
+  int z_max = Location.z + area_width;
 
-  // Загрузить в графический буфер элементы пространства
-  for(int x = x_min; x<= x_max; x += side_len)
-    for(int y = y_min; y<= y_max; y += side_len)
-      for(int z = z_min; z<= z_max; z += side_len)
+  // Загрузка элементов в буфер GPU
+
+  for(int x = x_min; x<= x_max; x += voxel_size)
+    for(int y = y_min; y<= y_max; y += voxel_size)
+      for(int z = z_min; z<= z_max; z += voxel_size)
         voxel_draw(get({x, y, z}));
+
+  DEBUG */
+
+  for(int x = 0; x<= 64; x += voxel_size)
+    for(int y = 0; y<= 64; y += voxel_size)
+      for(int z = 0; z<= 64; z += voxel_size)
+        voxel_draw(get({x, y, z}));
+
 }
 
 
@@ -239,25 +259,27 @@ void area::load_space(void)
   mVBO.clear();
   render_indices = 0;
 
-  ///TODO: тут должна быть подгрузка вокселей из базы данных. Временно
+  /*
+  ///TODO: тут временно вместо подгрузки вокселей из базы данных
   /// загружается простая платформа объемом 50х3х50 вокселей.
-  int area_length = 25 * side_len;
+  int area_length = 25 * voxel_size;
 
-  for (int x = -area_length; x <= area_length; x += side_len)
-    for (int z = -area_length; z <= area_length; z += side_len)
+  for (int x = -area_length; x <= area_length; x += voxel_size)
+    for (int z = -area_length; z <= area_length; z += voxel_size)
   {
-    add_voxel({x,-side_len * 2, z});
-    add_voxel({x,-side_len, z});
+    add_voxel({x,-voxel_size * 2, z});
+    add_voxel({x,-voxel_size, z});
     add_voxel({x, 0, z});
   }
 
-  // Тут формируется бордюрчик проямоугольной формы на границе LOD.
-  // Это временный элемент для визуального контроля при настройке ПО.
-  int b = 9 * side_len;
-  for (int x = -b; x <= b; ++x) add_voxel({ x, side_len, b });
-  for (int x = -b; x <= b; ++x) add_voxel({ x, side_len,-b });
-  for (int z = -b; z <= b; ++z) add_voxel({ b, side_len, z });
-  for (int z = -b; z <= b; ++z) add_voxel({-b, side_len, z });
+  // Тут формируется бортик проямоугольной формы на границе LOD.
+  // Это временный элемент визуального контроля для настройки ПО.
+  int b = 9 * voxel_size;
+  for (int x = -b; x <= b; ++x) add_voxel({ x, voxel_size, b });
+  for (int x = -b; x <= b; ++x) add_voxel({ x, voxel_size,-b });
+  for (int z = -b; z <= b; ++z) add_voxel({ b, voxel_size, z });
+  for (int z = -b; z <= b; ++z) add_voxel({-b, voxel_size, z });
+  */
 
 }
 
@@ -268,34 +290,33 @@ void area::load_space(void)
 ///
 void area::redraw_borders_x(void)
 {
-  int border_dist = lod_width * side_len; // расстояние от камеры до границы LOD
-  int yMin = -border_dist;              // Y-граница LOD
-  int yMax =  border_dist;
+  int yMin = -area_width;              // Y-граница LOD
+  int yMax =  area_width;
 
   int x_show, x_hide;
   if(Location.x > MoveFrom.x)
   {        // Если направление движение по оси Х
-    x_show = Location.x + border_dist; // X-линия вставки вокселей на границе LOD
-    x_hide = MoveFrom.x - border_dist; // X-линия удаления вокселей на границе
+    x_show = Location.x + area_width; // X-линия вставки вокселей на границе LOD
+    x_hide = MoveFrom.x - area_width; // X-линия удаления вокселей на границе
   } else { // Если направление движение против оси Х
-    x_show = Location.x - border_dist; // X-линия вставки вокселей на границе LOD
-    x_hide = MoveFrom.x + border_dist; // X-линия удаления вокселей на границе
+    x_show = Location.x - area_width; // X-линия вставки вокселей на границе LOD
+    x_hide = MoveFrom.x + area_width; // X-линия удаления вокселей на границе
   }
 
   int zMin, zMax;
 
   // Скрыть элементы с задней границы области
-  zMin = MoveFrom.z - border_dist;
-  zMax = MoveFrom.z + border_dist;
-  for(int y = yMin; y <= yMax; y += side_len)
-    for(int z = zMin; z <= zMax; z += side_len)
+  zMin = MoveFrom.z - area_width;
+  zMax = MoveFrom.z + area_width;
+  for(int y = yMin; y <= yMax; y += voxel_size)
+    for(int z = zMin; z <= zMax; z += voxel_size)
       voxel_wipe(get({x_hide, y, z}));
 
   // Добавить линию элементов по направлению движения
-  zMin = Location.z - border_dist;
-  zMax = Location.z + border_dist;
-  for(int y = yMin; y <= yMax; y += side_len)
-    for(int z = zMin; z <= zMax; z += side_len)
+  zMin = Location.z - area_width;
+  zMax = Location.z + area_width;
+  for(int y = yMin; y <= yMax; y += voxel_size)
+    for(int z = zMin; z <= zMax; z += voxel_size)
       voxel_draw(get({x_show, y, z}));
 
   MoveFrom.x = Location.x;
@@ -308,34 +329,33 @@ void area::redraw_borders_x(void)
 ///
 void area::redraw_borders_z(void)
 {
-  int border_dist = lod_width * side_len; // расстояние от камеры до границы LOD
-  int yMin = -border_dist;              // Y-граница LOD
-  int yMax =  border_dist;
+  int yMin = -area_width;              // Y-граница LOD
+  int yMax =  area_width;
 
   int z_show, z_hide;
   if(Location.z > MoveFrom.z)
   {        // Если направление движение по оси Z
-    z_show = Location.z + border_dist; // Z-линия вставки вокселей на границе LOD
-    z_hide = MoveFrom.z - border_dist; // Z-линия удаления вокселей на границе
+    z_show = Location.z + area_width; // Z-линия вставки вокселей на границе LOD
+    z_hide = MoveFrom.z - area_width; // Z-линия удаления вокселей на границе
   } else { // Если направление движение против оси Z
-    z_show = Location.z - border_dist; // Z-линия вставки вокселей на границе LOD
-    z_hide = MoveFrom.z + border_dist; // Z-линия удаления вокселей на границе
+    z_show = Location.z - area_width; // Z-линия вставки вокселей на границе LOD
+    z_hide = MoveFrom.z + area_width; // Z-линия удаления вокселей на границе
   }
 
   int xMin, xMax;
 
   // Скрыть элементы с задней границы области
-  xMin = MoveFrom.x - border_dist;
-  xMax = MoveFrom.x + border_dist;
-  for(int y = yMin; y <= yMax; y += side_len)
-    for(int x = xMin; x <= xMax; x += side_len)
+  xMin = MoveFrom.x - area_width;
+  xMax = MoveFrom.x + area_width;
+  for(int y = yMin; y <= yMax; y += voxel_size)
+    for(int x = xMin; x <= xMax; x += voxel_size)
       voxel_wipe(get({x, y, z_hide}));
 
   // Добавить линию элементов по направлению движения
-  xMin = Location.x - border_dist;
-  xMax = Location.x + border_dist;
-  for(int y = yMin; y <= yMax; y += side_len)
-    for(int x = xMin; x <= xMax; x += side_len)
+  xMin = Location.x - area_width;
+  xMax = Location.x + area_width;
+  for(int y = yMin; y <= yMax; y += voxel_size)
+    for(int x = xMin; x <= xMax; x += voxel_size)
       voxel_draw(get({x, y, z_show}));
 
   MoveFrom.z = Location.z;
@@ -353,9 +373,9 @@ void area::redraw_borders_z(void)
 void area::recalc_borders(void)
 {
   // Origin вокселя, в котором расположена камера
-  Location = { static_cast<int>(floor(Eye.ViewFrom.x / side_len)) * side_len,
-                static_cast<int>(floor(Eye.ViewFrom.y / side_len)) * side_len,
-                static_cast<int>(floor(Eye.ViewFrom.z / side_len)) * side_len };
+  Location = { static_cast<int>(floor(Eye.ViewFrom.x / voxel_size)) * voxel_size,
+                static_cast<int>(floor(Eye.ViewFrom.y / voxel_size)) * voxel_size,
+                static_cast<int>(floor(Eye.ViewFrom.z / voxel_size)) * voxel_size };
 
   if(Location.x != MoveFrom.x) redraw_borders_x();
   if(Location.z != MoveFrom.z) redraw_borders_z();
@@ -372,7 +392,7 @@ voxel* area::add_voxel(const i3d& P)
 {
   voxel* pVox = get(P);                   // Если в этой точке уже есть воксель,
   if(nullptr != pVox) return pVox;        // то возвращается ссылка на него;
-  mArea.emplace(P, std::pair<const i3d&, int>(P, side_len)); // иначе - создается новый.
+  mArea.emplace(P, std::pair<const i3d&, int>(P, voxel_size)); // иначе - создается новый.
 
   pVox = get(P);
   recalc_voxel_visibility(pVox);
@@ -417,7 +437,7 @@ void area::recalc_around_visibility(i3d P0)
     return;                         // его сторон и выйти.
   }
 
-  // Если в указанной точке поусто, то у вокселей вокруг нее
+  // Если в указанной точке пусто, то у вокселей вокруг нее
   // включить видимость прилегающих сторон
   for (u_char side = 0; side < SIDES_COUNT; ++side)
   {
@@ -435,8 +455,12 @@ void area::recalc_around_visibility(i3d P0)
 ///
 voxel* area::get(const i3d &P)
 {
-  try { return &mArea.at(P); }
-  catch (...) { return nullptr; }
+  //try { return &mArea.at(P); }
+  //catch (...) { return nullptr; }
+
+  if(nullptr == cfg::DataBase.get_voxel(P, voxel_size)) return nullptr;
+  auto Voxel = std::make_unique<voxel>(P, voxel_size);
+  return Voxel.get();
 }
 
 } //namespace
