@@ -25,7 +25,7 @@ std::list<std::string> dirs_list(const std::string &path)
   for(auto& it: std::filesystem::directory_iterator(path))
     if (std::filesystem::is_directory(it))  D.push_back(it.path().string());
 
-  return std::move(D);
+  return D;
 }
 
 bool operator== (const px &A, const px &B)
