@@ -101,26 +101,21 @@ v_ch db::map_name_read(const std::string & dbFile)
 
 ///
 /// \brief db::get_voxel
-/// \param x
-/// \param y
-/// \param z
+/// \param i3d P
 /// \param size
 /// \return
 ///
-std::unique_ptr<voxel_data> db::get_voxel(const i3d& P, int size)
+std::unique_ptr<voxel> db::get_voxel(const i3d& P, int size)
 {
-  std::unique_ptr<voxel_data> result = nullptr;
   char query[255];
-  sprintf(query, "SELECT \"color\" FROM \"voxels\" WHERE \"x\"=%d AND \"y\"=%d AND \"z\"=%d AND \"size\"=%d;",
+  sprintf(query, "SELECT \"*\" FROM \"voxels\" WHERE \"x\"=%d AND \"y\"=%d AND \"z\"=%d AND \"size\"=%d;",
           P.x, P.y, P.z, size);
-
   SqlDb.exec(query);
-  if(!SqlDb.Table_rows.empty())
-  {
-    result = std::make_unique<voxel_data>();
-  }
 
-  return result;
+  if(!SqlDb.Table_rows.empty())
+    return std::make_unique<voxel>(P, size);
+  else
+    return nullptr;
 }
 
 

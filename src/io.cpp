@@ -99,14 +99,6 @@ bool operator== (const px &A, const px &B)
   }
 
 
-  //## Для обеспечения работы контейнера map c ключем i3d
-  bool operator< (tr::i3d const& left, tr::i3d const& right)
-  {
-    if (left.y != right.y)      {return left.y < right.y;}
-    else if (left.z != right.z) {return left.z < right.z;}
-    else                        {return left.x < right.x;}
-  }
-
   //## Генератор случайных положительных int
   int random_int()
   {

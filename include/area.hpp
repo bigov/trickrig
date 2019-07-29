@@ -16,20 +16,16 @@
 
 namespace tr
 {
-
 ///
 /// \brief class area
 /// \details Управление картой вокселей
-///
 class area
 {
   private:
-    std::map<i3d, voxel> mArea {}; // карта поверхности
-
-    // Карта размещения cнипов по адресам в VBO. Необходима для того,
-    // чтобы при перемещениях данных снипов в VBO было проще вносить
-    // изменения адреса смещения в буфере.
-    std::unordered_map<GLsizeiptr, voxel*> mVBO {};
+    // Карта размещения данных в VBO - содержит 3D координаты вокселей, данные которых размещены
+    // в указанных адресах VBO. Необходима для того, чтобы при перемещениях данных в VBO
+    // было проще вносить изменения адреса смещения в буфере.
+    std::unordered_map<GLsizeiptr, i3d> mVBO {};
 
     int voxel_size =   0;   // Длина стороны вокселя
     int area_width =   0;   // ширина области - расстояние от внешней границы
@@ -39,7 +35,7 @@ class area
     i3d MoveFrom {0, 0, 0}; // Origin вокселя с которого камера ушла
 
     void init_vbo(void);
-    voxel* add_voxel(const i3d&);
+    std::unique_ptr<voxel> add_voxel(const i3d&);
     void recalc_voxel_visibility(voxel*);
     void recalc_around_visibility(i3d);
     i3d i3d_near(const i3d& P, u_char side);
@@ -53,13 +49,11 @@ class area
     u_int render_indices = 0;  // сумма индексов, необходимых для рендера всех примитивов
     vbo_ext* pVBO = nullptr;   // VBO вершин поверхности
 
-    void voxel_draw(voxel*);   // разместить данные в VBO буфере
-    void voxel_wipe(voxel*);   // убрать риг из VBO
-    void increase(int);        // добавить объем по индексу снипа
-    void decrease(int);        // удалить объем по индексу снипа
-    void load_space(void);     // загрузка данных из базы в ОЗУ ЦПУ
-    voxel* get(const i3d&);
-    void init(vbo_ext*);     // загрузка данных в VBO
+    void voxel_draw(std::unique_ptr<voxel>);  // разместить данные в VBO буфере
+    void voxel_wipe(std::unique_ptr<voxel>);  // убрать из VBO
+    void increase(int);                       // добавить объем по индексу снипа
+    void decrease(int);                       // удалить объем по индексу снипа
+    void init(vbo_ext*);                      // загрузка данных в VBO
     void recalc_borders(void);
 };
 

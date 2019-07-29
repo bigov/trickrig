@@ -47,10 +47,10 @@ struct uch2
 class voxel
 {
 private:
-  GLfloat u_sz = 0.125f; // размер ячейки текстуры по U
-  GLfloat v_sz = 0.125f; // размер ячейки текстуры по V
-  uch2 tex_id[SIDES_COUNT];                             // Индексы текстур сторон
-  GLsizeiptr vbo_addr[SIDES_COUNT] {};  // Адреса смещения в буфере GPU массивов данных по каждой из сторон
+  GLfloat u_sz = 0.125f;               // размер ячейки текстуры по U
+  GLfloat v_sz = 0.125f;               // размер ячейки текстуры по V
+  uch2 tex_id[SIDES_COUNT];            // Индексы текстур сторон
+  GLsizeiptr vbo_addr[SIDES_COUNT] {}; // Адреса смещения в буфере GPU массивов данных по каждой из сторон
   GLfloat data[digits_per_voxel] {};
 
   void init_data(void);

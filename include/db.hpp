@@ -9,7 +9,7 @@
 #define DB_HPP
 
 #include "wsql.hpp"
-//#include "voxel.hpp"
+#include "voxel.hpp"
 #include "framebuf.hpp"
 
 namespace tr {
@@ -39,10 +39,6 @@ struct main_window {
   void resize(u_int w, u_int h);
 };
 
-struct voxel_data {
-    int color = 0;
-    int texture = 0;
-};
 
 extern main_window WinParams;
 
@@ -59,7 +55,7 @@ class db
     v_ch map_name_read(const std::string & dbFile);
     void save(const main_window &WinParams);
     void init_map_config(const std::string &);
-    std::unique_ptr<voxel_data> get_voxel(const i3d&, int);
+    std::unique_ptr<voxel> get_voxel(const i3d&, int);
 
   private:
     std::string MapDir       {}; // директория текущей карты (со слэшем в конце)
