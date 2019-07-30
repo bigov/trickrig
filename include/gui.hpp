@@ -99,7 +99,7 @@ class gui
     void menu_config(void);
     void button_click(ELEMENT_ID);
     void cancel(void);
-    void refresh_hud(void);      // обновление кадра
+    void hud_refresh(void);      // обновление кадра
     void create_map(void);
     void remove_map(void);
 

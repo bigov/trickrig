@@ -332,7 +332,7 @@ void gui::sub_img(const img &Image, GLint x, GLint y)
 ///
 /// \brief gui::update
 ///
-void gui::refresh_hud(void)
+void gui::hud_refresh(void)
 {
   glBindTexture(GL_TEXTURE_2D, gui_texture);
 
@@ -834,7 +834,7 @@ void gui::draw(evInput &ev)
   if(GuiMode == GUI_3D_MODE)
   {
     Space->render(ev); // Рендер во фреймбуфер
-    refresh_hud();
+    hud_refresh();
   } else {
     render_menu(ev);
   }
