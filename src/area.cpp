@@ -236,9 +236,10 @@ void area::init(vbo_ext* v)
                 static_cast<int>(floor(Eye.ViewFrom.z / voxel_size)) * voxel_size };
   MoveFrom = Location;
 
-  for(int x = 0; x<= 64; x += voxel_size)
-    for(int y = 0; y<= 64; y += voxel_size)
-      for(int z = 0; z<= 64; z += voxel_size)
+  int lod_side = 8 * voxel_size; // размер стороны LOD области для данных, запрашиваемых из БД
+  for(int x = 0; x<= lod_side; x += voxel_size)
+    for(int y = 0; y<= lod_side; y += voxel_size)
+      for(int z = 0; z<= lod_side; z += voxel_size)
         voxel_draw(cfg::DataBase.get_voxel({x, y, z}, voxel_size));
 }
 
