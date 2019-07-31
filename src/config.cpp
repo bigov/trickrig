@@ -173,7 +173,7 @@ std::string cfg::create_map(const std::string &MapName)
 ///
 void cfg::save_app(void)
 {
-  DataBase.save(WinParams);
+  DataBase.save_window_params(WinParams);
 }
 
 

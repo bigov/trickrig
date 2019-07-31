@@ -178,7 +178,7 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
     i3d(void): x(0), y(0), z(0) {}
     i3d(int X, int Y, int Z): x(X), y(Y), z(Z) {}
   };
-
+  extern bool operator== (const i3d&, const i3d&);
 
   struct f3d
   {

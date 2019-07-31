@@ -4,7 +4,7 @@
  *
  */
 
-#include "voxel.hpp"
+#include "vox.hpp"
 
 namespace tr
 {
@@ -13,7 +13,7 @@ namespace tr
 /// \param Origin point
 /// \param Side length
 ///
-voxel::voxel(const i3d& Or, int sz)
+vox::vox(const i3d& Or, int sz)
 : Origin(Or), side_len(sz), born(tr::get_msec())
 {
   init_data();
@@ -25,7 +25,7 @@ voxel::voxel(const i3d& Or, int sz)
 /// \param side
 /// \param C
 ///
-void voxel::side_color_set(u_int side, color C)
+void vox::side_color_set(u_int side, color C)
 {
   size_t i = side * digits_per_side;
   for(u_int v = 0; v < vertices_per_side; ++v)
@@ -44,7 +44,7 @@ void voxel::side_color_set(u_int side, color C)
 /// \param side
 /// \param texture
 ///
-void voxel::side_texture_set(u_int side)
+void vox::side_texture_set(u_int side)
 {
   uch2 texture = tex_id[side];
 
@@ -70,7 +70,7 @@ void voxel::side_texture_set(u_int side)
 /// \brief voxel::side_normals_set
 /// \param side
 ///
-void voxel::side_normals_set(u_int side)
+void vox::side_normals_set(u_int side)
 {
   GLfloat nx = 0.f, ny = 0.f, nz = 0.f;
 
@@ -109,7 +109,7 @@ void voxel::side_normals_set(u_int side)
 /// \brief voxel::side_position_set
 /// \param side
 ///
-void voxel::side_position_set(u_int side)
+void vox::side_position_set(u_int side)
 {
   // относительные координаты всех вершин вокселя
   f3d P[8] = {{side_len, side_len, 0}, {side_len, side_len, side_len}, {side_len, 0, side_len},
@@ -149,7 +149,7 @@ void voxel::side_position_set(u_int side)
 ///
 /// \brief voxel::init_arrays
 ///
-void voxel::init_data(void)
+void vox::init_data(void)
 {
   color IniColor {1.f, 1.f, 1.f, 1.f};
 
@@ -173,7 +173,7 @@ void voxel::init_data(void)
 /// \details Заполнение массива стороны данными. Если сторона
 /// скрытая, то данные не записываются и возвращается false
 ///
-bool voxel::side_fill_data(u_char side, GLfloat* buff)
+bool vox::side_fill_data(u_char side, GLfloat* buff)
 {
   if(!visible[side]) return false;
   GLfloat* src = &data[side * digits_per_side];
@@ -188,7 +188,7 @@ bool voxel::side_fill_data(u_char side, GLfloat* buff)
 /// \param n
 /// \details Запись адреса размещения данных в VBO стороны вокселя
 ///
-void voxel::offset_write(u_char side_id, GLsizeiptr n)
+void vox::offset_write(u_char side_id, GLsizeiptr n)
 {
 #ifndef NDEBUG
   if(side_id >= SIDES_COUNT)
@@ -208,7 +208,7 @@ void voxel::offset_write(u_char side_id, GLsizeiptr n)
 /// \return
 /// \details По указанному смещению определяет какая сторона там находится
 ///
-u_char voxel::side_id_by_offset(GLsizeiptr dst)
+u_char vox::side_id_by_offset(GLsizeiptr dst)
 {
   for (u_char side_id = 0; side_id < SIDES_COUNT; ++side_id) {
     if(vbo_addr[side_id] == dst) return side_id;
@@ -224,7 +224,7 @@ u_char voxel::side_id_by_offset(GLsizeiptr dst)
 /// \details Для указанной стороны, если она видимая, то возвращает записаный адрес
 /// размещения блока данных в VBO. Если не видимая, то -1.
 ///
-GLsizeiptr voxel::offset_read(u_char side_id)
+GLsizeiptr vox::offset_read(u_char side_id)
 {
 #ifndef NDEBUG
   if(side_id >= SIDES_COUNT) ERR ("voxel::offset_read ERR: side_id >= SIDES_COUNT");
@@ -239,7 +239,7 @@ GLsizeiptr voxel::offset_read(u_char side_id)
 /// \param old_n
 /// \param new_n
 ///
-void voxel::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
+void vox::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
 {
   u_char side_id;
   for (side_id = 0; side_id < SIDES_COUNT; ++side_id)

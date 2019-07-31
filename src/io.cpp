@@ -28,9 +28,16 @@ std::list<std::string> dirs_list(const std::string &path)
   return D;
 }
 
+
+bool operator== (const i3d& A, const i3d& B)
+{
+  return ((A.x == B.x) && (A.y == B.y) && (A.z == B.z));
+}
+
+
 bool operator== (const px &A, const px &B)
 {
-  return ((A.r == B.r) && (A.g==B.g) && (A.b==B.b) && (A.a==B.a));
+  return ((A.r == B.r) && (A.g == B.g) && (A.b == B.b) && (A.a == B.a));
 }
 
   ///

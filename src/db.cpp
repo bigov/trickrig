@@ -105,18 +105,23 @@ v_ch db::map_name_read(const std::string & dbFile)
 /// \param size
 /// \return
 ///
-std::unique_ptr<voxel> db::get_voxel(const i3d& P, int size)
+/// \details Если в базе данных по указанным координатам найдены параметры
+/// вокса, то в оперативной памяти создается объект с полученными
+/// параметрами и возвращается уникальный указатель на него.
+///
+std::unique_ptr<vox> db::get_vox(const i3d& P, int size)
 {
   char query[255];
-  sprintf(query, "SELECT \"*\" FROM \"voxels\" WHERE \"x\"=%d AND \"y\"=%d AND \"z\"=%d AND \"size\"=%d;",
+  sprintf(query, "SELECT * FROM voxels WHERE x=%d AND y=%d AND z=%d AND size=%d;",
           P.x, P.y, P.z, size);
   SqlDb.exec(query);
 
   if(!SqlDb.Table_rows.empty())
-    return std::make_unique<voxel>(P, size);
+    return std::make_unique<vox>(P, size);
   else
     return nullptr;
 }
+
 
 
 ///
@@ -209,10 +214,23 @@ void db::map_close(const tr::camera_3d &Eye)
 
 
 ///
+/// \brief db::save_vox
+/// \param V
+///
+void db::save_vox(vox* V)
+{
+  char q [255]; // буфер для форматирования и передачи строки в запрос
+  sprintf(q, "INSERT INTO voxels (x, y, z, size) VALUES (%d, %d, %d, %d);",
+          V->Origin.x, V->Origin.y, V->Origin.z, V->side_len);
+  SqlDb.write(q);
+}
+
+
+///
 /// \brief db::save
 /// \param AppWin
 ///
-void db::save(const tr::main_window &AppWin)
+void db::save_window_params(const tr::main_window &AppWin)
 {
   char q [255]; // буфер для форматирования и передачи строки в запрос
   const char tpl[] = "UPDATE init SET val='%s' WHERE key=%d;";

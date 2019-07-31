@@ -87,7 +87,7 @@ space::space(void)
 ///
 void space::init(void)
 {
-  Area4 = std::make_unique<area>(size_v4, dist_b4);
+  Area4 = std::make_unique<area>(size_v4, border_dist_b4);
   Area4->init(&VBO);
 }
 
@@ -102,9 +102,9 @@ void space::init_vao(void)
   glBindVertexArray(vao_id);
 
   // Число элементов в кубе с длиной стороны LOD (2*dist_xx) элементов:
-  u_int n = static_cast<u_int>(pow((dist_b4 + dist_b4 + 1), 3));
+  u_int n = static_cast<u_int>(pow((border_dist_b4 + border_dist_b4 + 1), 3));
 
-  // Размер данных VBO для размещения снипов:
+  // Размер данных VBO для размещения сторон вокселей:
   VBO.allocate(n * bytes_per_side);
 
   // настройка положения атрибутов
@@ -121,7 +121,7 @@ void space::init_vao(void)
     2, GL_FLOAT, GL_TRUE, bytes_per_vertex, 10 * sizeof(GLfloat));
 
   //
-  // Так как все четырехугольники в снипах индексируются одинаково, то индексный массив
+  // Так как все четырехугольники сторон индексируются одинаково, то индексный массив
   // заполняем один раз "под завязку" и забываем про него. Число используемых индексов
   // будет всегда соответствовать числу элементов, передаваемых в процедру "glDraw..."
   //
@@ -131,7 +131,7 @@ void space::init_vao(void)
   GLuint stride = 0;                                             // число описаных вершин
   for(size_t i = 0; i < idx_size; i += 6) {                      // заполнить массив для VBO
     for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
-    stride += 4;                                                 // по 4 вершины на снип
+    stride += 4;                                                 // по 4 вершины на сторону
   }
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data);   // и заполнить данными.
   delete[] idx_data;                                             // Удалить исходный массив.
@@ -240,7 +240,6 @@ void space::render(evInput& ev)
   glEnableVertexAttribArray(Prog3d->Atrib["fragment"]);    // текстура
 
   glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(Area4->render_indices), GL_UNSIGNED_INT, nullptr);
-  //glDrawElements(GL_LINES, static_cast<GLsizei>(RigsDb0.render_indices), GL_UNSIGNED_INT, nullptr);
 
   glDisableVertexAttribArray(Prog3d->Atrib["position"]);
   glDisableVertexAttribArray(Prog3d->Atrib["color"]);
@@ -277,13 +276,13 @@ void space::check_keys(evInput& ev)
   if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
   {
     ev.action = -1;
-    Area4->increase(vertex_id);
+    Area4->append(vertex_id);
   }
 
   if((ev.mouse == MOUSE_BUTTON_RIGHT) && (ev.action == PRESS))
   {
     ev.action = -1;
-    Area4->decrease(vertex_id);
+    Area4->remove(vertex_id);
   }
 }
 

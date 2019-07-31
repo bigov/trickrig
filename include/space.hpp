@@ -44,7 +44,7 @@ namespace tr
       std::unique_ptr<area> Area4 = nullptr; // Управление пространством вокселей
       const int size_v4 = 32;                // размер стороны вокселя
       float speed_v4 = size_v4 * 1.f;        // скорость передвижения в пространстве
-      const int dist_b4 = 24;                // число элементов от камеры до отображаемой границы
+      const int border_dist_b4 = 24;         // число элементов от камеры до отображаемой границы
 
       // Camera control
       float rl=0.f, ud=0.f, fb=0.f; // скорость движения по направлениям

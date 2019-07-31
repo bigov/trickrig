@@ -44,7 +44,7 @@ struct uch2
 };
 
 
-class voxel
+class vox
 {
 private:
   GLfloat u_sz = 0.125f;               // размер ячейки текстуры по U
@@ -59,14 +59,14 @@ private:
   void side_texture_set(u_int side);
   void side_position_set(u_int side);
 
-  voxel(void)                     = delete; // конструктор без параметров
-  voxel(const voxel&)             = delete; // дублирующий конструктор
-  voxel& operator= (const voxel&) = delete; // копирующее присваивание
+  vox(void)                     = delete; // конструктор без параметров
+  vox(const vox&)             = delete; // дублирующий конструктор
+  vox& operator= (const vox&) = delete; // копирующее присваивание
 
 public:
-  voxel(const i3d&, int);
-  voxel(std::pair<const i3d&, int> p): voxel(p.first, p.second) {}
-  ~voxel(void) {}
+  vox(const i3d&, int);
+  vox(std::pair<const i3d&, int> p): vox(p.first, p.second) {}
+  ~vox(void) {}
 
   i3d Origin;       // координаты опорной точки
   int side_len;     // размер стороны

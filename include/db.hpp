@@ -9,7 +9,7 @@
 #define DB_HPP
 
 #include "wsql.hpp"
-#include "voxel.hpp"
+#include "vox.hpp"
 #include "framebuf.hpp"
 
 namespace tr {
@@ -53,9 +53,10 @@ class db
     void map_close(const camera_3d &Eye);
     void map_name_save(const std::string &Dir, const std::string &MapName);
     v_ch map_name_read(const std::string & dbFile);
-    void save(const main_window &WinParams);
+    void save_window_params(const main_window &WinParams);
+    void save_vox(vox*);
     void init_map_config(const std::string &);
-    std::unique_ptr<voxel> get_voxel(const i3d&, int);
+    std::unique_ptr<vox> get_vox(const i3d&, int);
 
   private:
     std::string MapDir       {}; // директория текущей карты (со слэшем в конце)
