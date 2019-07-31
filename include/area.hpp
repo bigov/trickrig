@@ -38,11 +38,14 @@ class area
 
     void init_vbo(void);
     vox* add_vox(const i3d&);
+    vox* find_in_buffer(const i3d&);
     void recalc_vox_visibility(vox*);
     void recalc_around_visibility(i3d);
     i3d i3d_near(const i3d& P, u_char side);
     void redraw_borders_x(void);
     void redraw_borders_z(void);
+    void vox_draw(vox*);  // разместить данные в VBO буфере
+    void vox_wipe(vox*);  // убрать из VBO
 
   public:
     area(int length, int count);
@@ -50,8 +53,6 @@ class area
 
     u_int render_indices = 0;  // сумма индексов, необходимых для рендера всех примитивов
 
-    void vox_draw(vox*);  // разместить данные в VBO буфере
-    void vox_wipe(std::unique_ptr<vox>);  // убрать из VBO
     void append(int);                     // добавить объем по индексу снипа
     void remove(int);                     // удалить объем по индексу снипа
     void init(vbo_ext*);                  // загрузка данных в VBO

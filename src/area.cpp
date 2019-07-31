@@ -84,29 +84,26 @@ i3d area::i3d_near(const i3d& P, u_char side)
 /// \brief rdb::increase
 /// \param i
 ///
-/// \details Добавление вокселя к указанной стороне
+/// \details Добавление вокса к указанной стороне
 ///
 void area::append(int id)
 {
   if(id > (render_indices/indices_per_side) * bytes_per_side) return;
 
   GLsizeiptr offset = (id/vertices_per_side) * bytes_per_side;
-  i3d P0 = mVBO[offset];  // Адрес на выделенного вокселя
-  auto it = std::find_if(VoxBuffer.begin(), VoxBuffer.end(),
-                         [&P0](auto& V){ return V->Origin == P0; });
-  if (it == VoxBuffer.end()) return;
-  vox* pVox = it->get();
-  P0 = i3d_near(pVox->Origin, pVox->side_id_by_offset(offset)); // координаты нового вокса
+  vox* pVox = find_in_buffer(mVBO[offset]);
+  if (nullptr == pVox) return;
+  i3d P0 = i3d_near(pVox->Origin, pVox->side_id_by_offset(offset)); // координаты нового вокса
 
-  //for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера воксели
-  //  voxel_wipe(get(i3d_near(P0, side)));           // вокруг изменяемого/нового вокселя
+  for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера воксы
+    vox_wipe(find_in_buffer(i3d_near(P0, side)));   // вокруг точки добавления вокса
 
   // Нарисовать в опорной точке воксель. Автоматически производится пересчет видимости
-  // сторон соседних вокселей вокруг только что созданного.
+  // сторон соседних воксов вокруг только что созданного.
   vox_draw(add_vox(P0));
 
-  //for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксели
-  //  vox_draw(get(i3d_near(P0, side)));
+  for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксы
+    vox_draw(find_in_buffer(i3d_near(P0, side)));
 
 }
 
@@ -115,7 +112,7 @@ void area::append(int id)
 /// \brief rdb::decrease
 /// \param i - порядковый номер группы данных из буфера
 ///
-/// \details Удаление вокселя
+/// \details Удаление вокса
 ///
 void area::remove(int)
 {
@@ -142,7 +139,7 @@ void area::remove(int)
 
 
 ///
-/// \brief rdb::rig_display
+/// \brief rdb::vox_draw
 ///
 /// \details Добавление в графический буфер элементов
 ///
@@ -159,7 +156,7 @@ void area::vox_draw(vox* pVox)
   GLsizeiptr vbo_addr = 0;
   GLfloat buffer[digits_per_side];
 
-  // каждая сторона вокселя обрабатывается отдельно
+  // каждая сторона вокса обрабатывается отдельно
   for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
     if(!pVox->side_fill_data(side_id, buffer)) continue;
@@ -177,9 +174,9 @@ void area::vox_draw(vox* pVox)
 /// \param x
 /// \param y
 /// \param z
-/// \details Стереть риг в рендере
+/// \details Убрать вокс из рендера
 ///
-void area::vox_wipe(std::unique_ptr<vox> pVox)
+void area::vox_wipe(vox* pVox)
 {
   if(nullptr == pVox) return;
   if(!pVox->in_vbo) return;
@@ -190,8 +187,8 @@ void area::vox_wipe(std::unique_ptr<vox> pVox)
     GLsizeiptr dest = pVox->offset_read(side_id);  // адрес данных, которые будут перезаписаны
     if(dest < 0) continue;                         // -1 если сторона невидима - пропустить цикл
     pVox->offset_write(side_id, -1);
-    GLsizeiptr free = pVBO->remove(dest, bytes_per_side); // убрать снип из VBO и сохранить его адрес смещения
-                                                         // в VBO с которого данные были перенесены на dest
+    GLsizeiptr free = pVBO->remove(dest, bytes_per_side); // переписать в VBO блок данных по адресу "dest"
+    // free - новый адрес границы VBO (отсюда данные были перенесены по адресу "dest")
     if(free == 0) // Если VBO пустой
     {
       mVBO.clear();
@@ -199,22 +196,17 @@ void area::vox_wipe(std::unique_ptr<vox> pVox)
       return;
     }
 
-    if (free != dest)                     // Если удаляемый блок данных не в конце, то на его
-    {                                     // место переписываются данные с адреса free.
+    if (free != dest) // Если удаляемый блок данных был не в конце VBO, то на его
+    {                 // место были перенесены данные с хвоста VBO (c адреса "free").
 
-      //!!!TODO!!!
-      //!
-      //! Операции ниже использовались для вокселей, данные которых хранились в кэше в ОЗУ.
-      //! Теперь данные вокселей находятся в базе данных - следует пересмотреть это место.
-      //!
-      //auto pVoxMov = cfg::DataBase.get_voxel(mVBO[free], voxel_size); // Адрес вокселя, чьи данные переносятся.
-      //pVoxMov->offset_replace(free, dest);// изменить хранимый в боксе адрес размещения данных в VBO;
-
-      mVBO[dest] = mVBO[free];               // заменить адрес блока в карте.
+      // Найдем в буфере вокс, чьи данные были перенесены
+      auto V = find_in_buffer(mVBO[free]);
+      V->offset_replace(free, dest);    // изменить адрес размещения данных в VBO;
+      mVBO[dest] = mVBO[free];          // заменить адрес блока в карте.
     }
-                                          // Если free == dest, то только удалить адрес с карты
-    mVBO.erase(free);                     // удалить освободившийся элемент массива;
-    render_indices -= indices_per_side;   // Уменьшить число точек рендера
+                                        // Если free == dest, то только удалить адрес с карты
+    mVBO.erase(free);                   // удалить освободившийся элемент массива;
+    render_indices -= indices_per_side; // Уменьшить число точек рендера
   }
 }
 
@@ -237,6 +229,7 @@ void area::init(vbo_ext* v)
   MoveFrom = Location;
 
   int half_area = floor((area_width / vox_size) / 2) * vox_size;
+
   int x0 = Location.x - half_area;
   int y0 = Location.y - half_area;
   int z0 = Location.z - half_area;
@@ -288,7 +281,7 @@ void area::redraw_borders_x(void)
   zMax = MoveFrom.z + area_width;
   for(int y = yMin; y <= yMax; y += vox_size)
     for(int z = zMin; z <= zMax; z += vox_size)
-      vox_wipe(cfg::DataBase.get_vox({x_hide, y, z}, vox_size));
+      vox_wipe(find_in_buffer({x_hide, y, z}));
 
   // Добавить линию элементов по направлению движения
   zMin = Location.z - area_width;
@@ -335,7 +328,7 @@ void area::redraw_borders_z(void)
   xMax = MoveFrom.x + area_width;
   for(int y = yMin; y <= yMax; y += vox_size)
     for(int x = xMin; x <= xMax; x += vox_size)
-      vox_wipe(cfg::DataBase.get_vox({x, y, z_hide}, vox_size));
+      vox_wipe(find_in_buffer({x, y, z_hide}));
 
   // Добавить линию элементов по направлению движения
   xMin = Location.x - area_width;
@@ -398,6 +391,19 @@ vox* area::add_vox(const i3d& P)
 
 
 ///
+/// \brief area::get_vox
+/// \param P0
+/// \return
+///
+vox* area::find_in_buffer(const i3d& P0)
+{
+  auto it = std::find_if(VoxBuffer.begin(), VoxBuffer.end(),
+                         [&P0](auto& V){ return V->Origin == P0; });
+  if (it == VoxBuffer.end()) return nullptr;
+  else return it->get();
+}
+
+///
 /// \brief rdb::visibility_recalc
 /// \param R0
 /// \details Пересчет видимости сторон вокса и его соседей вокруг него
@@ -406,18 +412,15 @@ void area::recalc_vox_visibility(vox* pVox)
 {
   if (nullptr == pVox) return;
 
+  // С каждой стороны вокса проверить наличие соседа
   for (u_char side = 0; side < SIDES_COUNT; ++side)
-  { // С каждой стороны вокса проверить наличие соседа
-    i3d P0 = i3d_near(pVox->Origin, side);
-    auto it = std::find_if(VoxBuffer.begin(), VoxBuffer.end(),
-                           [&P0](auto& V){ return V->Origin == P0; });
-
-    if (it != VoxBuffer.end())                         // Если есть соседний,
-    {                                                  // то соприкасающиеся
-      pVox->visible[side] = false;                     // стороны невидимы
-      it->get()->visible[side_opposite(side)] = false; // у обоих вокселей.
-    }
-    else { pVox->visible[side] = true; }               // Иначе - сторона видимая.
+  {
+    vox* pNear = find_in_buffer(i3d_near(pVox->Origin, side));
+    if (nullptr != pNear)                          // Если есть соседний,
+    {                                              // то соприкасающиеся
+      pVox->visible[side] = false;                 // стороны невидимы
+      pNear->visible[side_opposite(side)] = false; // у обоих вокселей.
+    } else { pVox->visible[side] = true; }         // Иначе - сторона видимая.
   }
 }
 
@@ -429,23 +432,20 @@ void area::recalc_vox_visibility(vox* pVox)
 ///
 void area::recalc_around_visibility(i3d P0)
 {
-  auto it = std::find_if(VoxBuffer.begin(), VoxBuffer.end(),
-                         [&P0](auto& V){ return V->Origin == P0; });
-  if (it != VoxBuffer.end())
-  {                                   // Если в этой точке есть воксель,
-    recalc_vox_visibility(it->get()); // то вызвать пересчет видимости
-    return;                           // его сторон и выйти.
+  vox* pVox = find_in_buffer(P0);
+  if (nullptr != pVox)
+  {                              // Если в этой точке есть воксель,
+    recalc_vox_visibility(pVox); // то вызвать пересчет видимости
+    return;                      // его сторон и выйти.
   }
 
   // Если в указанной точке пусто, то у вокселей вокруг нее
-  // включить видимость прилегающих сторон
+  // надо включить видимость прилегающих сторон
   for (u_char side = 0; side < SIDES_COUNT; ++side)
   {
     i3d P1 = i3d_near(P0, side);
-    it = std::find_if(VoxBuffer.begin(), VoxBuffer.end(),
-                             [&P1](auto& V){ return V->Origin == P1; });
-    if (it != VoxBuffer.end())
-      it->get()->visible[side_opposite(side)] = true;
+    pVox = find_in_buffer(P1);
+    if (nullptr != pVox) pVox->visible[side_opposite(side)] = true;
   }
 }
 
