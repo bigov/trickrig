@@ -227,6 +227,19 @@ void db::save_vox(vox* V)
 
 
 ///
+/// \brief db::erase_vox
+/// \param V
+///
+void db::erase_vox(vox* V)
+{
+  char q [255]; // буфер для форматирования и передачи строки в запрос
+  sprintf(q, "DELETE FROM voxels WHERE (x = %d AND y = %d AND z = %d AND size = %d);",
+          V->Origin.x, V->Origin.y, V->Origin.z, V->side_len);
+  SqlDb.exec(q);
+}
+
+
+///
 /// \brief db::save
 /// \param AppWin
 ///

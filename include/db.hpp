@@ -55,6 +55,7 @@ class db
     v_ch map_name_read(const std::string & dbFile);
     void save_window_params(const main_window &WinParams);
     void save_vox(vox*);
+    void erase_vox(vox*);
     void init_map_config(const std::string &);
     std::unique_ptr<vox> get_vox(const i3d&, int);
 
