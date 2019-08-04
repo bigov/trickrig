@@ -9,6 +9,7 @@
 #ifndef AREA_HPP
 #define AREA_HPP
 
+#include <queue>
 #include "main.hpp"
 #include "glsl.hpp"
 #include "vbo.hpp"
@@ -24,6 +25,8 @@ class area
   private:
     vbo_ext* pVBO = nullptr;   // VBO вершин поверхности
     std::vector<std::unique_ptr<vox>> VoxBuffer {};
+    std::queue<i3d> QueueLoad {}; // адреса загружаемых воксов
+    std::queue<i3d> QueueWipe {}; // адреса выгружаемах воксов
 
     int vox_side_len = 0;   // Длина стороны вокса
     int lod_dist_far = 0;   // Расстояние от камеры до внешней границы LOD, кратное размеру вокса
@@ -54,6 +57,7 @@ class area
     void remove(int);                     // удалить объем по индексу снипа
     void init(vbo_ext*);                  // загрузка данных в VBO
     void recalc_borders(void);
+    void queue_release(void);
 };
 
 } //namespace tr

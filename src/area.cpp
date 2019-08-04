@@ -270,6 +270,7 @@ void area::vox_unload(const i3d& P0)
 void area::vox_load(const i3d& P0)
 {
   auto pVox = cfg::DataBase.get_vox(P0, vox_side_len);
+
   if(nullptr != pVox)
   {
     VoxBuffer.push_back(std::move(pVox));
@@ -313,13 +314,13 @@ void area::redraw_borders_x(void)
   zMin = MoveFrom.z - lod_dist_far;
   zMax = MoveFrom.z + lod_dist_far;
   for(int y = yMin; y <= yMax; y += vox_side_len)
-    for(int z = zMin; z <= zMax; z += vox_side_len) vox_unload({x_hide, y, z});
+    for(int z = zMin; z <= zMax; z += vox_side_len) QueueWipe.push({x_hide, y, z});
 
   // Добавить линию элементов по направлению движения
   zMin = Location.z - lod_dist_far;
   zMax = Location.z + lod_dist_far;
   for(int y = yMin; y <= yMax; y += vox_side_len)
-    for(int z = zMin; z <= zMax; z += vox_side_len) vox_load({x_show, y, z});
+    for(int z = zMin; z <= zMax; z += vox_side_len) QueueLoad.push({x_show, y, z});
 
   MoveFrom.x = Location.x;
 }
@@ -351,13 +352,13 @@ void area::redraw_borders_z(void)
   xMin = MoveFrom.x - lod_dist_far;
   xMax = MoveFrom.x + lod_dist_far;
   for(int y = yMin; y <= yMax; y += vox_side_len)
-    for(int x = xMin; x <= xMax; x += vox_side_len) vox_unload({x, y, z_hide});
+    for(int x = xMin; x <= xMax; x += vox_side_len) QueueWipe.push({x, y, z_hide});
 
   // Добавить линию элементов по направлению движения
   xMin = Location.x - lod_dist_far;
   xMax = Location.x + lod_dist_far;
   for(int y = yMin; y <= yMax; y += vox_side_len)
-    for(int x = xMin; x <= xMax; x += vox_side_len) vox_load({x, y, z_show});
+    for(int x = xMin; x <= xMax; x += vox_side_len) QueueLoad.push({x, y, z_show});
 
   MoveFrom.z = Location.z;
 }
@@ -380,6 +381,33 @@ void area::recalc_borders(void)
 
   if(Location.x != MoveFrom.x) redraw_borders_x();
   if(Location.z != MoveFrom.z) redraw_borders_z();
+}
+
+
+///
+/// \brief area::queue_release
+/// \details Операции с базой данных по скорости гораздо медленнее, чем рендер объектов из
+/// оперативной памяти, поэтому обмен информацией с базой данных и выгрузка больших объемов
+/// данных из памяти (при перестроении границ LOD) производится покадрово через очередь
+/// фиксированными по продолжительности порциями.
+void area::queue_release(void)
+{
+  auto st = std::chrono::system_clock::now();
+  while ((std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - st).count() < 500))
+  {
+    if(!QueueLoad.empty())
+    {
+      vox_load(QueueLoad.front());  // Загрузка данных имеет приоритет. Пока вся очередь
+      QueueLoad.pop();              // загрузки не очистится, очередь выгрузки ждет.
+      continue;
+    }
+
+    if(!QueueWipe.empty())
+    {
+      vox_unload(QueueWipe.front());
+      QueueWipe.pop();
+    } else { return; }
+  }
 }
 
 

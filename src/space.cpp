@@ -217,14 +217,8 @@ void space::calc_position(evInput& ev)
 void space::render(evInput& ev)
 {
   calc_position(ev);
-
-  // Расчет времени обработки (в миллисекундах)
-  //std::chrono::time_point<std::chrono::system_clock> start_f;
-  //start_f = std::chrono::system_clock::now();
-  // --- //
-  //int dt = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start_f).count();
-
   Area4->recalc_borders();
+  Area4->queue_release();
   check_keys(ev);
 
   glBindVertexArray(vao_id);
