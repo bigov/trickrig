@@ -143,8 +143,11 @@ GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
 
 #ifndef NDEBUG
   if((dest + data_size) > hem)
+  {
     std::printf("vbo_ext::remove error: dest %li + data_size %li  > hem %li\n",
                 static_cast<long>(dest), static_cast<long>(data_size), static_cast<long>(hem));
+    return hem;
+  }
 #endif
   auto src = hem - data_size; // Адрес крайнего на хвосте блока данных, которые будут перемещены.
 

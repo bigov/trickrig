@@ -53,13 +53,15 @@ private:
   GLsizeiptr vbo_addr[SIDES_COUNT] {}; // Адреса смещения в буфере GPU массивов данных по каждой из сторон
   GLfloat data[digits_per_voxel] {};
 
+  bool visible[SIDES_COUNT] {true}; // Видимость сторон
+
   void init_data(void);
   void side_color_set(u_int side, color C);
   void side_normals_set(u_int side);
   void side_texture_set(u_int side);
   void side_position_set(u_int side);
 
-  vox(void)                     = delete; // конструктор без параметров
+  vox(void)                   = delete; // конструктор без параметров
   vox(const vox&)             = delete; // дублирующий конструктор
   vox& operator= (const vox&) = delete; // копирующее присваивание
 
@@ -72,7 +74,10 @@ public:
   int side_len;     // размер стороны
   int born;         // метка времени создания
 
-  bool visible[SIDES_COUNT] {true}; // Видимость сторон
+  void visible_on(u_char side_id);
+  void visible_off(u_char side_id);
+  bool is_visible(u_char side_id);
+
   bool in_vbo = false;              // данные помещены в VBO
 
   u_char side_id_by_offset(GLsizeiptr dst);

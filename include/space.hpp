@@ -20,7 +20,7 @@ namespace tr
       space(void);
       ~space(void);
       void init(void);
-      void render(evInput &);
+      void render(evInput&);
 
     private:
       space(const space &);
@@ -43,7 +43,6 @@ namespace tr
       // LOD control
       std::unique_ptr<area> Area4 = nullptr; // Управление пространством вокселей
       const int size_v4 = 32;                // размер стороны вокселя
-      float speed_v4 = size_v4 * 1.f;        // скорость передвижения в пространстве
       const int border_dist_b4 = 24;         // число элементов от камеры до отображаемой границы
 
       // Camera control

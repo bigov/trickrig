@@ -6,6 +6,7 @@
 //
 //============================================================================
 #include "wglfw.hpp"
+using sys_clock = std::chrono::system_clock;
 
 namespace tr
 {
@@ -258,16 +259,16 @@ void wglfw::show(void)
   glfwSetInputMode(win_ptr, GLFW_STICKY_KEYS, 0);
   int fps = 0;
   std::chrono::seconds one_second(1);
-  std::chrono::time_point<std::chrono::system_clock> t_start, t_frame;
-  t_start = std::chrono::system_clock::now();
+  std::chrono::time_point<sys_clock> t_start, t_frame;
 
+  t_start = sys_clock::now();
   while (WinParams.run && (!glfwWindowShouldClose(win_ptr)))
   {
     fps++;
-    t_frame = std::chrono::system_clock::now();
+    t_frame = sys_clock::now();
     if (t_frame - t_start >= one_second)
     {
-      t_start = std::chrono::system_clock::now();
+      t_start = t_frame;
       WinParams.fps = fps;
       fps = 0;
     }

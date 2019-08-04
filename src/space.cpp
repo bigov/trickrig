@@ -168,31 +168,30 @@ void space::load_texture(unsigned gl_texture_index, const std::string& FileName)
 }
 
 
-
 ///
 /// \brief space::calc_position
 /// \param ev
+/// \param t: время прорисовки кадра в микросекундах
 /// \details Расчет положения и направления движения камеры
 ///
-void space::calc_position(evInput & ev)
+void space::calc_position(evInput& ev)
 {
-  Eye.look_a -= ev.dx * Eye.look_speed;
+  Eye.look_a -= ev.dx * Eye.speed_rotate;
   if(Eye.look_a > dPi) Eye.look_a -= dPi;
   if(Eye.look_a < 0) Eye.look_a += dPi;
   ev.dx = 0.f;
 
-  Eye.look_t -= ev.dy * Eye.look_speed;
+  Eye.look_t -= ev.dy * Eye.speed_rotate;
   if(Eye.look_t > up_max) Eye.look_t = up_max;
   if(Eye.look_t < down_max) Eye.look_t = down_max;
   ev.dy = 0.f;
 
-  float _k = Eye.speed / static_cast<float>(WinParams.fps); // корректировка по FPS
-
   //if (!space_is_empty(Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
+  //WinParams.fps
 
-  rl = _k * static_cast<float>(ev.rl) * speed_v4;   // скорости движения
-  fb = _k * static_cast<float>(ev.fb) * speed_v4;   // по трем нормалям от камеры
-  ud = _k * static_cast<float>(ev.ud) * speed_v4;
+  rl = Eye.speed_moving * static_cast<float>(ev.rl) * size_v4;   // скорости движения
+  fb = Eye.speed_moving * static_cast<float>(ev.fb) * size_v4;   // по трем нормалям от камеры
+  ud = Eye.speed_moving * static_cast<float>(ev.ud) * size_v4;
 
   // промежуточные скаляры для ускорения расчета координат точек вида
   float
@@ -218,6 +217,13 @@ void space::calc_position(evInput & ev)
 void space::render(evInput& ev)
 {
   calc_position(ev);
+
+  // Расчет времени обработки (в миллисекундах)
+  //std::chrono::time_point<std::chrono::system_clock> start_f;
+  //start_f = std::chrono::system_clock::now();
+  // --- //
+  //int dt = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - start_f).count();
+
   Area4->recalc_borders();
   check_keys(ev);
 

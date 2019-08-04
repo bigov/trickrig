@@ -115,8 +115,11 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
   struct camera_3d {
     float look_a = 0.0f;       // азимут (0 - X)
     float look_t = 0.0f;       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
-    float look_speed = 0.002f; // зависимость угла поворота от сдвига мыши /Config
-    float speed = 2.0f;        // корректировка скорости от FPS /Config
+
+    // TODO: измерять средний за 10 сек. fps, и пропорционально менять скорость перемещения
+    float speed_rotate = 0.001f; // скорость поворота (в секунду) камеры
+    float speed_moving = 0.005f;   // скорость перемещения (в секунду) камеры
+
     glm::vec3 ViewFrom = {};   // 3D координаты точки положения
   };
   extern camera_3d Eye;

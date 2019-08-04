@@ -39,8 +39,8 @@ u_char side_opposite(u_char s)
 ///
 area::area(int length, int count)
 {
-  vox_size = length;
-  area_width = count * length;
+  vox_side_len = length;
+  lod_dist_far = count * length;
 }
 
 
@@ -57,22 +57,22 @@ i3d area::i3d_near(const i3d& P, u_char side)
 {
   switch (side) {
     case SIDE_XP:
-      return i3d{ P.x + vox_size, P.y, P.z };
+      return i3d{ P.x + vox_side_len, P.y, P.z };
       break;
     case SIDE_XN:
-      return i3d{ P.x - vox_size, P.y, P.z };
+      return i3d{ P.x - vox_side_len, P.y, P.z };
       break;
     case SIDE_YP:
-      return i3d{ P.x, P.y + vox_size, P.z };
+      return i3d{ P.x, P.y + vox_side_len, P.z };
       break;
     case SIDE_YN:
-      return i3d{ P.x, P.y - vox_size, P.z };
+      return i3d{ P.x, P.y - vox_side_len, P.z };
       break;
     case SIDE_ZP:
-      return i3d{ P.x, P.y, P.z + vox_size };
+      return i3d{ P.x, P.y, P.z + vox_side_len };
       break;
     case SIDE_ZN:
-      return i3d{ P.x, P.y, P.z - vox_size };
+      return i3d{ P.x, P.y, P.z - vox_side_len };
       break;
     default:
       return P;
@@ -91,19 +91,18 @@ void area::append(int id)
   if(id > (render_indices/indices_per_side) * bytes_per_side) return;
 
   GLsizeiptr offset = (id/vertices_per_side) * bytes_per_side;
-  vox* pVox = find_in_buffer(mVBO[offset]);
+  vox* pVox = vox_by_vbo(offset);
   if (nullptr == pVox) return;
   i3d P0 = i3d_near(pVox->Origin, pVox->side_id_by_offset(offset)); // координаты нового вокса
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера воксы
-    vox_wipe(find_in_buffer(i3d_near(P0, side)));   // вокруг точки добавления вокса
+    vox_wipe(vox_by_i3d(i3d_near(P0, side)));   // вокруг точки добавления вокса
 
   // Добавить вокс в буфер (c пересчетом видимости сторон окружающих воксов) и в рендер VBO
   vox_draw(add_vox(P0));
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксы
-    vox_draw(find_in_buffer(i3d_near(P0, side)));
-
+    vox_draw(vox_by_i3d(i3d_near(P0, side)));
 }
 
 
@@ -116,27 +115,21 @@ void area::append(int id)
 void area::remove(int i)
 {
   if(i > (render_indices/indices_per_side) * bytes_per_side) return;
-
-  // по номеру группы данных вычисляем ее адрес смещения в VBO
-  GLsizeiptr offset = (i/vertices_per_side) * bytes_per_side;
-
-  i3d P0 = mVBO[offset];       // По адресу смещения найдем опорную точку.
-  vox* V = find_in_buffer(P0);
-  if(nullptr == V) ERR("Error: try to remove unexisting vox");
+  GLsizeiptr offset = (i/vertices_per_side) * bytes_per_side; // по номеру группы - адрес смещения в VBO
+  vox* V = vox_by_vbo(offset);
+  if(nullptr == V) ERR("Error: try to remove unexisted vox");
+  i3d P0 = V->Origin;
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера воксы вокруг
-    vox_wipe(find_in_buffer(i3d_near(P0, side)));
+    vox_wipe(vox_by_i3d(i3d_near(P0, side)));
 
-  vox_wipe(V);                                      // Выделенный вокс убрать из рендера
+  vox_wipe(V);                   // Выделенный вокс убрать из рендера
+  cfg::DataBase.erase_vox(V);    // удалить из базы данных,
+  vox_unload(P0);                // удалить из буфера
+  recalc_around_visibility(P0);  // пересчитать видимость вокселей вокруг
 
-  auto it = std::find_if(VoxBuffer.begin(), VoxBuffer.end(),
-                         [&P0](auto& V){ return V->Origin == P0; });
-  cfg::DataBase.erase_vox(it->get());               // удалить из базы данных,
-  VoxBuffer.erase(it);                              // удалить из буфера
-
-  recalc_around_visibility(P0);                     // пересчитать видимость вокселей вокруг
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксели
-    vox_draw(find_in_buffer(i3d_near(P0, side)));
+    vox_draw(vox_by_i3d(i3d_near(P0, side)));
 }
 
 
@@ -153,7 +146,9 @@ void area::remove(int i)
 void area::vox_draw(vox* pVox)
 {
   if(nullptr == pVox) return;
-  if(pVox->in_vbo) return;      // Если данные уже в VBO - ничего не делаем
+#ifndef NDEBUG
+  if(pVox->in_vbo) ERR("vox_draw: duplicate draw");
+#endif
 
   GLsizeiptr vbo_addr = 0;
   GLfloat buffer[digits_per_side];
@@ -164,7 +159,6 @@ void area::vox_draw(vox* pVox)
     if(!pVox->side_fill_data(side_id, buffer)) continue;
     vbo_addr = pVBO->append(buffer, bytes_per_side);
     pVox->offset_write(side_id, vbo_addr);     // запомнить адрес смещения стороны в VBO
-    mVBO[vbo_addr] = pVox->Origin;             // добавить в карту адрес вокселя
     render_indices += indices_per_side;        // увеличить число точек рендера
   }
   pVox->in_vbo = true;
@@ -182,34 +176,34 @@ void area::vox_wipe(vox* pVox)
 {
   if(nullptr == pVox) return;
   if(!pVox->in_vbo) return;
-  pVox->in_vbo = false;
 
+  // Данные каждой из сторон перезаписываются данными воксов с хвоста VBO
   for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
-    GLsizeiptr dest = pVox->offset_read(side_id);  // адрес данных, которые будут перезаписаны
-    if(dest < 0) continue;                         // -1 если сторона невидима - пропустить цикл
-    pVox->offset_write(side_id, -1);
-    GLsizeiptr free = pVBO->remove(dest, bytes_per_side); // переписать в VBO блок данных по адресу "dest"
+    if(!pVox->is_visible(side_id)) continue;      // если сторона невидима, то пропустить цикл
+    GLsizeiptr dest = pVox->offset_read(side_id); // адрес освобождаемого блока данных
+    pVox->offset_write(side_id, -1);              // чтобы функция поиска больше не нвходила этот вокс
+
     // free - новый адрес границы VBO (отсюда данные были перенесены по адресу "dest")
-    if(free == 0) // Если VBO пустой
-    {
-      mVBO.clear();
+    GLsizeiptr free = pVBO->remove(dest, bytes_per_side); // переписать в VBO блок данных по адресу "dest"
+    if(free == 0)
+    { // VBO пустой
       render_indices = 0;
       return;
     }
 
-    if (free != dest) // Если удаляемый блок данных был не в конце VBO, то на его
-    {                 // место были перенесены данные с хвоста VBO (c адреса "free").
-
-      // Найдем в буфере вокс, чьи данные были перенесены
-      auto V = find_in_buffer(mVBO[free]);
-      V->offset_replace(free, dest);    // изменить адрес размещения данных в VBO;
-      mVBO[dest] = mVBO[free];          // заменить адрес блока в карте.
+    if (free != dest)  // на "dest" были перенесены данные c адреса "free".
+    {
+      vox* V = vox_by_vbo(free); // Найти вокс, чьи данные были перенесены
+      if(nullptr == V) ERR("vox_wipe: find_in_buffer(" + std::to_string(free) + ")");
+      V->offset_replace(free, dest); // скорректировать адрес размещения данных
     }
-                                        // Если free == dest, то только удалить адрес с карты
-    mVBO.erase(free);                   // удалить освободившийся элемент массива;
-    render_indices -= indices_per_side; // Уменьшить число точек рендера
+    // Если free == dest, то удаляемый блок данных был в конце VBO,
+    // поэтому только уменьшаем число точек рендера
+    render_indices -= indices_per_side;
   }
+  pVox->in_vbo = false;
+
 }
 
 
@@ -220,32 +214,28 @@ void area::init(vbo_ext* v)
 {
   pVBO = v; // привязка VBO
   pVBO->clear();
-
-  mVBO.clear();
   render_indices = 0;
 
   // Origin вокселя, в котором расположена камера
-  Location = { static_cast<int>(floor(Eye.ViewFrom.x / vox_size)) * vox_size,
-                static_cast<int>(floor(Eye.ViewFrom.y / vox_size)) * vox_size,
-                static_cast<int>(floor(Eye.ViewFrom.z / vox_size)) * vox_size };
+  Location = { static_cast<int>(floor(Eye.ViewFrom.x / vox_side_len)) * vox_side_len,
+                static_cast<int>(floor(Eye.ViewFrom.y / vox_side_len)) * vox_side_len,
+                static_cast<int>(floor(Eye.ViewFrom.z / vox_side_len)) * vox_side_len };
   MoveFrom = Location;
 
-  int half_area = floor((area_width / vox_size) / 2) * vox_size;
+  int x0 = Location.x - lod_dist_far;
+  int y0 = Location.y - lod_dist_far;
+  int z0 = Location.z - lod_dist_far;
 
-  int x0 = Location.x - half_area;
-  int y0 = Location.y - half_area;
-  int z0 = Location.z - half_area;
-
-  int x1 = Location.x + half_area;
-  int y1 = Location.y + half_area;
-  int z1 = Location.z + half_area;
+  int x1 = Location.x + lod_dist_far;
+  int y1 = Location.y + lod_dist_far;
+  int z1 = Location.z + lod_dist_far;
 
   std::unique_ptr<vox> pVox = nullptr;
-  for(int x = x0; x<= x1; x += vox_size)
-    for(int y = y0; y<= y1; y += vox_size)
-      for(int z = z0; z<= z1; z += vox_size)
+  for(int x = x0; x<= x1; x += vox_side_len)
+    for(int y = y0; y<= y1; y += vox_side_len)
+      for(int z = z0; z<= z1; z += vox_side_len)
       {
-        pVox = cfg::DataBase.get_vox({x, y, z}, vox_size);
+        pVox = cfg::DataBase.get_vox({x, y, z}, vox_side_len);
         if(nullptr != pVox)
         {
           recalc_vox_visibility(pVox.get());
@@ -257,47 +247,79 @@ void area::init(vbo_ext* v)
 
 
 ///
+/// \brief area::vox_unload
+/// \param P0
+/// \details Выгрузить данные вокса из памяти, и убрать из рендера
+///
+void area::vox_unload(const i3d& P0)
+{
+  auto it = std::find_if(VoxBuffer.begin(), VoxBuffer.end(),
+                         [&P0](auto& V){ return V->Origin == P0; });
+  if(it == VoxBuffer.end()) return; // в этой точке вокса нет
+  vox* V = it->get();
+  if(V->in_vbo) vox_wipe(V);
+  VoxBuffer.erase(it);
+}
+
+
+///
+/// \brief area::vox_load
+/// \param P0
+/// \details Загрузить вокс из базы данных в буфер и в рендер
+///
+void area::vox_load(const i3d& P0)
+{
+  auto pVox = cfg::DataBase.get_vox(P0, vox_side_len);
+  if(nullptr != pVox)
+  {
+    VoxBuffer.push_back(std::move(pVox));
+    vox* V = VoxBuffer.back().get();
+
+    for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера воксы
+      vox_wipe(vox_by_i3d(i3d_near(P0, side)));   // вокруг точки добавления вокса
+
+    recalc_vox_visibility(V); // пересчитать видимость сторон
+    vox_draw(V);              // добавить в рендер
+
+    for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксы
+      vox_draw(vox_by_i3d(i3d_near(P0, side)));
+  }
+}
+
+
+///
 /// \brief space::redraw_borders_x
 /// \details Построение границы области по оси X по ходу движения
 ///
 void area::redraw_borders_x(void)
 {
-  int yMin = -area_width;              // Y-граница LOD
-  int yMax =  area_width;
+  int yMin = -lod_dist_far;              // Y-граница LOD
+  int yMax =  lod_dist_far;
 
   int x_show, x_hide;
   if(Location.x > MoveFrom.x)
   {        // Если направление движение по оси Х
-    x_show = Location.x + area_width; // X-линия вставки вокселей на границе LOD
-    x_hide = MoveFrom.x - area_width; // X-линия удаления вокселей на границе
+    x_show = Location.x + lod_dist_far; // X-линия вставки вокселей на границе LOD
+    x_hide = MoveFrom.x - lod_dist_far; // X-линия удаления вокселей на границе
   } else { // Если направление движение против оси Х
-    x_show = Location.x - area_width; // X-линия вставки вокселей на границе LOD
-    x_hide = MoveFrom.x + area_width; // X-линия удаления вокселей на границе
+    x_show = Location.x - lod_dist_far; // X-линия вставки вокселей на границе LOD
+    x_hide = MoveFrom.x + lod_dist_far; // X-линия удаления вокселей на границе
   }
 
   int zMin, zMax;
   std::unique_ptr<vox> pVox = nullptr;
 
   // Скрыть элементы с задней границы области
-  zMin = MoveFrom.z - area_width;
-  zMax = MoveFrom.z + area_width;
-  for(int y = yMin; y <= yMax; y += vox_size)
-    for(int z = zMin; z <= zMax; z += vox_size)
-      vox_wipe(find_in_buffer({x_hide, y, z}));
+  zMin = MoveFrom.z - lod_dist_far;
+  zMax = MoveFrom.z + lod_dist_far;
+  for(int y = yMin; y <= yMax; y += vox_side_len)
+    for(int z = zMin; z <= zMax; z += vox_side_len) vox_unload({x_hide, y, z});
 
   // Добавить линию элементов по направлению движения
-  zMin = Location.z - area_width;
-  zMax = Location.z + area_width;
-  for(int y = yMin; y <= yMax; y += vox_size)
-    for(int z = zMin; z <= zMax; z += vox_size)
-    {
-      pVox = cfg::DataBase.get_vox({x_show, y, z}, vox_size);
-      if(nullptr != pVox)
-      {
-        VoxBuffer.push_back(std::move(pVox));
-        vox_draw(VoxBuffer.back().get());
-      }
-    }
+  zMin = Location.z - lod_dist_far;
+  zMax = Location.z + lod_dist_far;
+  for(int y = yMin; y <= yMax; y += vox_side_len)
+    for(int z = zMin; z <= zMax; z += vox_side_len) vox_load({x_show, y, z});
 
   MoveFrom.x = Location.x;
 }
@@ -309,42 +331,33 @@ void area::redraw_borders_x(void)
 ///
 void area::redraw_borders_z(void)
 {
-  int yMin = -area_width;              // Y-граница LOD
-  int yMax =  area_width;
+  int yMin = -lod_dist_far;              // Y-граница LOD
+  int yMax =  lod_dist_far;
 
   int z_show, z_hide;
   if(Location.z > MoveFrom.z)
   {        // Если направление движение по оси Z
-    z_show = Location.z + area_width; // Z-линия вставки вокселей на границе LOD
-    z_hide = MoveFrom.z - area_width; // Z-линия удаления вокселей на границе
+    z_show = Location.z + lod_dist_far; // Z-линия вставки вокселей на границе LOD
+    z_hide = MoveFrom.z - lod_dist_far; // Z-линия удаления вокселей на границе
   } else { // Если направление движение против оси Z
-    z_show = Location.z - area_width; // Z-линия вставки вокселей на границе LOD
-    z_hide = MoveFrom.z + area_width; // Z-линия удаления вокселей на границе
+    z_show = Location.z - lod_dist_far; // Z-линия вставки вокселей на границе LOD
+    z_hide = MoveFrom.z + lod_dist_far; // Z-линия удаления вокселей на границе
   }
 
   int xMin, xMax;
   std::unique_ptr<vox> pVox = nullptr;
 
   // Скрыть элементы с задней границы области
-  xMin = MoveFrom.x - area_width;
-  xMax = MoveFrom.x + area_width;
-  for(int y = yMin; y <= yMax; y += vox_size)
-    for(int x = xMin; x <= xMax; x += vox_size)
-      vox_wipe(find_in_buffer({x, y, z_hide}));
+  xMin = MoveFrom.x - lod_dist_far;
+  xMax = MoveFrom.x + lod_dist_far;
+  for(int y = yMin; y <= yMax; y += vox_side_len)
+    for(int x = xMin; x <= xMax; x += vox_side_len) vox_unload({x, y, z_hide});
 
   // Добавить линию элементов по направлению движения
-  xMin = Location.x - area_width;
-  xMax = Location.x + area_width;
-  for(int y = yMin; y <= yMax; y += vox_size)
-    for(int x = xMin; x <= xMax; x += vox_size)
-    {
-      pVox = cfg::DataBase.get_vox({x, y, z_show}, vox_size);
-      if(nullptr != pVox)
-      {
-        VoxBuffer.push_back(std::move(pVox));
-        vox_draw(VoxBuffer.back().get());
-      }
-    }
+  xMin = Location.x - lod_dist_far;
+  xMax = Location.x + lod_dist_far;
+  for(int y = yMin; y <= yMax; y += vox_side_len)
+    for(int x = xMin; x <= xMax; x += vox_side_len) vox_load({x, y, z_show});
 
   MoveFrom.z = Location.z;
 }
@@ -361,9 +374,9 @@ void area::redraw_borders_z(void)
 void area::recalc_borders(void)
 {
   // Origin вокселя, в котором расположена камера
-  Location = { static_cast<int>(floor(Eye.ViewFrom.x / vox_size)) * vox_size,
-                static_cast<int>(floor(Eye.ViewFrom.y / vox_size)) * vox_size,
-                static_cast<int>(floor(Eye.ViewFrom.z / vox_size)) * vox_size };
+  Location = { static_cast<int>(floor(Eye.ViewFrom.x / vox_side_len)) * vox_side_len,
+                static_cast<int>(floor(Eye.ViewFrom.y / vox_side_len)) * vox_side_len,
+                static_cast<int>(floor(Eye.ViewFrom.z / vox_side_len)) * vox_side_len };
 
   if(Location.x != MoveFrom.x) redraw_borders_x();
   if(Location.z != MoveFrom.z) redraw_borders_z();
@@ -378,10 +391,10 @@ void area::recalc_borders(void)
 ///
 vox* area::add_vox(const i3d& P)
 {
-  auto pVox = cfg::DataBase.get_vox(P, vox_size);
+  auto pVox = cfg::DataBase.get_vox(P, vox_side_len);
   if (nullptr == pVox)
   {
-    pVox = std::make_unique<vox> (P, vox_size);
+    pVox = std::make_unique<vox> (P, vox_side_len);
     cfg::DataBase.save_vox(pVox.get());
   }
 
@@ -396,11 +409,31 @@ vox* area::add_vox(const i3d& P)
 /// \brief area::get_vox
 /// \param P0
 /// \return
+/// \details Поиск в буфере вокса по его координатам
 ///
-vox* area::find_in_buffer(const i3d& P0)
+vox* area::vox_by_i3d(const i3d& P0)
 {
   auto it = std::find_if(VoxBuffer.begin(), VoxBuffer.end(),
                          [&P0](auto& V){ return V->Origin == P0; });
+  if (it == VoxBuffer.end()) return nullptr;
+  else return it->get();
+}
+
+
+///
+/// \brief area::find_in_buffer
+/// \param addr
+/// \return
+/// \details Поиск в буфере вокса, у которого сторона размещена в VBO по указанному адресу
+vox* area::vox_by_vbo(GLsizeiptr addr)
+{
+  auto it = std::find_if( VoxBuffer.begin(), VoxBuffer.end(),
+    [&addr](auto& V)
+    {
+      if(!V->in_vbo) return false;
+      return V->side_id_by_offset(addr) < SIDES_COUNT;
+    }
+  );
   if (it == VoxBuffer.end()) return nullptr;
   else return it->get();
 }
@@ -417,12 +450,12 @@ void area::recalc_vox_visibility(vox* pVox)
   // С каждой стороны вокса проверить наличие соседа
   for (u_char side = 0; side < SIDES_COUNT; ++side)
   {
-    vox* pNear = find_in_buffer(i3d_near(pVox->Origin, side));
-    if (nullptr != pNear)                          // Если есть соседний,
-    {                                              // то соприкасающиеся
-      pVox->visible[side] = false;                 // стороны невидимы
-      pNear->visible[side_opposite(side)] = false; // у обоих вокселей.
-    } else { pVox->visible[side] = true; }         // Иначе - сторона видимая.
+    vox* pNear = vox_by_i3d(i3d_near(pVox->Origin, side));
+    if (nullptr != pNear)                      // Если есть соседний,
+    {                                          // то соприкасающиеся
+      pVox->visible_off(side);                 // стороны невидимы
+      pNear->visible_off(side_opposite(side)); // у обоих воксов.
+    } else { pVox->visible_on(side); }         // Иначе - сторона видимая.
   }
 }
 
@@ -434,7 +467,7 @@ void area::recalc_vox_visibility(vox* pVox)
 ///
 void area::recalc_around_visibility(i3d P0)
 {
-  vox* pVox = find_in_buffer(P0);
+  vox* pVox = vox_by_i3d(P0);
   if (nullptr != pVox)
   {                              // Если в этой точке есть вокс,
     recalc_vox_visibility(pVox); // то вызвать пересчет видимости
@@ -445,8 +478,8 @@ void area::recalc_around_visibility(i3d P0)
   // надо включить видимость прилегающих сторон
   for (u_char side = 0; side < SIDES_COUNT; ++side)
   {
-    pVox = find_in_buffer(i3d_near(P0, side));
-    if (nullptr != pVox) pVox->visible[side_opposite(side)] = true;
+    pVox = vox_by_i3d(i3d_near(P0, side));
+    if (nullptr != pVox) pVox->visible_on(side_opposite(side));
   }
 }
 

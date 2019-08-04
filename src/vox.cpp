@@ -175,7 +175,7 @@ void vox::init_data(void)
 ///
 bool vox::side_fill_data(u_char side, GLfloat* buff)
 {
-  if(!visible[side]) return false;
+  if(!is_visible(side)) return false;
   GLfloat* src = &data[side * digits_per_side];
   memcpy(buff, src, bytes_per_side);
   return true;
@@ -191,12 +191,8 @@ bool vox::side_fill_data(u_char side, GLfloat* buff)
 void vox::offset_write(u_char side_id, GLsizeiptr n)
 {
 #ifndef NDEBUG
-  if(side_id >= SIDES_COUNT)
-  {
-    info("voxel::offset_write ERR: side_id >= SIDES_COUNT");
-    return;
-  }
-  if(!visible[side_id]) info("voxel::offset_write ERR: using unvisible side");
+  if(side_id >= SIDES_COUNT) ERR ("voxel::offset_write: side_id >= SIDES_COUNT");
+  if(!is_visible(side_id)) ERR("voxel::offset_write: unvisible side");
 #endif
 
   vbo_addr[side_id] = n;
@@ -210,6 +206,8 @@ void vox::offset_write(u_char side_id, GLsizeiptr n)
 ///
 u_char vox::side_id_by_offset(GLsizeiptr dst)
 {
+  if(dst < 0) ERR("side_id_by_offset: undefined address");
+
   for (u_char side_id = 0; side_id < SIDES_COUNT; ++side_id) {
     if(vbo_addr[side_id] == dst) return side_id;
   }
@@ -226,11 +224,8 @@ u_char vox::side_id_by_offset(GLsizeiptr dst)
 ///
 GLsizeiptr vox::offset_read(u_char side_id)
 {
-#ifndef NDEBUG
-  if(side_id >= SIDES_COUNT) ERR ("voxel::offset_read ERR: side_id >= SIDES_COUNT");
-#endif
-  if(visible[side_id]) return vbo_addr[side_id];
-  return -1;
+  if(!is_visible(side_id)) return -1;
+  return vbo_addr[side_id];
 }
 
 
@@ -258,5 +253,38 @@ void vox::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
   info("voxel::offset_replace ERR - not found offset " + std::to_string(new_n) + "\n");
 #endif
 }
+
+
+///
+/// \brief vox::visible_on
+/// \param side_id
+///
+void vox::visible_on(u_char side_id)
+{
+  if(side_id < SIDES_COUNT) visible[side_id] = true;
+}
+
+
+///
+/// \brief vox::visible_off
+/// \param side_id
+///
+void vox::visible_off(u_char side_id)
+{
+  if(side_id < SIDES_COUNT) visible[side_id] = false;
+}
+
+
+///
+/// \brief vox::is_visible
+/// \param side_id
+/// \return
+///
+bool vox::is_visible(u_char side_id)
+{
+  if(side_id < SIDES_COUNT) return visible[side_id];
+  else return false;
+}
+
 
 } //tr

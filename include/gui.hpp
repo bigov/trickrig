@@ -108,7 +108,7 @@ class gui
   public:
     gui(void);
     ~gui(void);
-    void draw(evInput &);      // формирование изображения GIU окна
+    void draw(evInput&);      // формирование изображения GIU окна
 };
 
 } //tr
