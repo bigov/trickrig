@@ -31,14 +31,8 @@ int main(int, char* argv[])
   try
   {
     tr::cfg::load_app_cfg();
-
-    //tr::wglfw Win {};    // Создать OpenGL окно
-    //Win.show();          // Цикл рендера
-
-    //std::unique_ptr<tr::gui> AppGUI = nullptr;   // Сборка сцены
-    auto AppGUI = std::make_unique<tr::gui>();
-    AppGUI->show();
-
+    tr::gui AppGUI {};
+    AppGUI.show();
     tr::cfg::save_app(); // Сохранение конфигурации
   }
   catch(std::exception & e)

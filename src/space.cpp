@@ -20,6 +20,7 @@ const double
   dPi = 2 * Pi;                    // двойная "Пи
 const float up_max = hPi - 0.001f; // Максимальный угол вверх
 const float down_max = -up_max;    // Максимальный угол вниз
+std::chrono::seconds one_second(1);
 
 
 ///
@@ -176,22 +177,22 @@ void space::load_texture(unsigned gl_texture_index, const std::string& FileName)
 ///
 void space::calc_position(void)
 {
-  Eye.look_a -= Input.dx * Eye.speed_rotate;
+  Eye.look_a -= Eye.speed_rotate * Input.dx;
+  Input.dx = 0.f;
   if(Eye.look_a > dPi) Eye.look_a -= dPi;
   if(Eye.look_a < 0) Eye.look_a += dPi;
-  Input.dx = 0.f;
 
-  Eye.look_t -= Input.dy * Eye.speed_rotate;
+  Eye.look_t -= Eye.speed_rotate * Input.dy;
+  Input.dy = 0.f;
   if(Eye.look_t > up_max) Eye.look_t = up_max;
   if(Eye.look_t < down_max) Eye.look_t = down_max;
-  Input.dy = 0.f;
 
   //if (!space_is_empty(Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
-  //WinParams.fps
 
-  rl = Eye.speed_moving * static_cast<float>(Input.rl) * size_v4;   // скорости движения
-  fb = Eye.speed_moving * static_cast<float>(Input.fb) * size_v4;   // по трем нормалям от камеры
-  ud = Eye.speed_moving * static_cast<float>(Input.ud) * size_v4;
+  float dist  = Eye.speed_moving * cycle_time * size_v4; // Дистанция перемещения
+  rl = dist * Input.rl;
+  fb = dist * Input.fb;   // по трем нормалям от камеры
+  ud = dist * Input.ud;
 
   // промежуточные скаляры для ускорения расчета координат точек вида
   float
@@ -212,10 +213,36 @@ void space::calc_position(void)
 
 
 ///
+/// \brief gui::calc_render_time
+///
+void space::calc_render_time(void)
+{
+  std::chrono::time_point<sys_clock> t_frame = sys_clock::now();
+
+  static int fps = 0;
+  static std::chrono::time_point<sys_clock> cycle_start = t_frame;
+  static std::chrono::time_point<sys_clock> fps_start = t_frame;
+
+  fps++;
+  if (t_frame - fps_start >= one_second)
+  {
+    fps_start = t_frame;
+    AppWindow.fps = fps;
+    fps = 0;
+  }
+
+  // время (в секундах) прошедшее после предыдущего вызова данный функции
+  cycle_time = std::chrono::duration_cast<std::chrono::microseconds>(t_frame - cycle_start).count() / 1000000.0;
+  cycle_start = t_frame;
+}
+
+
+///
 /// Функция, вызываемая из цикла окна для рендера сцены
 ///
 void space::render(void)
 {
+  calc_render_time();
   calc_position();
   Area4->recalc_borders();
   Area4->queue_release();

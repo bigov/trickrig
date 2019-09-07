@@ -1,13 +1,10 @@
 #ifndef GUI_HPP
 #define GUI_HPP
 
-#include <chrono>
 #include "main.hpp"
 #include "wglfw.hpp"
 #include "config.hpp"
 #include "space.hpp"
-
-using sys_clock = std::chrono::system_clock;
 
 namespace tr {
 
@@ -81,9 +78,7 @@ class gui
     std::unique_ptr<space> Space = nullptr;
     GLuint vao_quad_id  = 0;
     std::unique_ptr<glsl> screenShaderProgram = nullptr; // шейдерная программа обработки текстуры рендера
-
-    int fps = 0;
-    std::chrono::time_point<sys_clock> t_start = sys_clock::now();
+    std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
     void hud_load(void);
     void obscure_screen(void);
@@ -108,9 +103,6 @@ class gui
     void hud_refresh(void);      // обновление кадра
     void create_map(void);
     void remove_map(void);
-    void calc_render_time(void);
-
-    std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
   public:
     gui(void);

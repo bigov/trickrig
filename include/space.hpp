@@ -12,6 +12,8 @@
 #include "area.hpp"
 #include "framebuf.hpp"
 
+using sys_clock = std::chrono::system_clock;
+
 namespace tr
 {
   class space
@@ -25,6 +27,8 @@ namespace tr
     private:
       space(const space &);
       space operator=(const space &);
+
+      double cycle_time;  // время (в секундах) на рендер кадра
 
       // GLSL control
       std::unique_ptr<glsl> Prog3d = nullptr;  // GLSL программа шейдеров
@@ -52,6 +56,7 @@ namespace tr
         UpWard {0.0, -1.0, 0.0},    // направление наверх
         ViewTo {};                  // направление взгляда
 
+      void calc_render_time(void);
       void load_texture(unsigned gl_texture_index, const std::string& fname);
       void init_vao(void);
       void calc_position();

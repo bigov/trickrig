@@ -3,8 +3,6 @@
 
 namespace tr {
 
-std::chrono::seconds one_second(1);
-
 ///
 /// \brief gui::gui
 ///
@@ -185,6 +183,7 @@ void gui::input_text_line(const img &Font)
 /// \param _Fn       шрифт ввода
 /// \param _Dst      строка ввода
 /// \param position  номер позиции курсора в строке ввода
+/// \details Формирование курсора ввода, моргающего с интервалом в пол-секунды
 ///
 void gui::cursor_text_row(const img &_Fn, img &_Dst, size_t position)
 {
@@ -808,22 +807,6 @@ void gui::render_menu(void)
 
 
 ///
-/// \brief gui::calc_render_time
-///
-void gui::calc_render_time(void)
-{
-  fps++;
-  std::chrono::time_point<sys_clock> t_frame = sys_clock::now();
-
-  if (t_frame - t_start >= one_second)
-  {
-    t_start = t_frame;
-    AppWindow.fps = fps;
-    fps = 0;
-  }
-}
-
-///
 /// \brief Создание элементов интерфейса окна
 ///
 /// \details Окно приложения может иметь два состояния: HUD-3D, в котором
@@ -838,7 +821,6 @@ void gui::calc_render_time(void)
 ///
 void gui::show(void)
 {
-
   while(AppWindow.is_open)
   {
     if((Input.key == KEY_ESCAPE) && (Input.action == RELEASE))
@@ -850,7 +832,6 @@ void gui::show(void)
 
     if(GuiMode == GUI_3D_MODE)
     {
-      calc_render_time();
       Space->render(); // Рендер во фреймбуфер
       hud_refresh();
     } else {

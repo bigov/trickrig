@@ -394,7 +394,7 @@ void area::recalc_borders(void)
 void area::queue_release(void)
 {
   auto st = std::chrono::system_clock::now();
-  while ((std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now() - st).count() < 500))
+  while ((std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - st).count() < 5))
   {
     if(!QueueLoad.empty())
     {
