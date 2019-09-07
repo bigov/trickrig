@@ -24,23 +24,31 @@ struct main_window {
   u_int btn_h = 36;                     // высота кнопки GUI
   u_int minwidth = (btn_w + 16) * 4;    // минимально допустимая ширина окна
   u_int minheight = btn_h * 4 + 8;      // минимально допустимая высота окна
-  std::string* pInputBuffer = nullptr;  // строка ввода пользователя
   std::unique_ptr<frame_buffer> RenderBuffer = nullptr;    // рендер-буфер окна
   img* pWinGui = nullptr;               // текстура GUI окна
 
-  bool run     = true;  // индикатор закрытия окна
+  bool is_open = true;  // состояние окна
   float aspect = 1.0f;  // соотношение размеров окна
   double xpos = 0.0;    // позиция указателя относительно левой границы
   double ypos = 0.0;    // позиция указателя относительно верхней границы
-  int fps = 500;       // частота кадров (для коррекции скорости движения)
+  int fps = 500;        // частота кадров (для коррекции скорости движения)
   glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина прицела
 
-  char set_mouse_ptr = 0;           // запрос смены типа курсора {-1, 0, 1}
   void resize(u_int w, u_int h);
 };
 
+extern main_window AppWindow;
 
-extern main_window WinParams;
+struct ev_input
+{
+  float dx, dy;   // смещение указателя мыши в активном окне
+  int fb, rl, ud, // управление направлением движения в 3D пространстве
+  scancode, mods, mouse, action, key;
+  std::string StringBuffer;  // строка ввода пользователя
+  bool text_mode;
+};
+
+extern ev_input Input;
 
 
 class db
@@ -53,7 +61,7 @@ class db
     void map_close(const camera_3d &Eye);
     void map_name_save(const std::string &Dir, const std::string &MapName);
     v_ch map_name_read(const std::string & dbFile);
-    void save_window_params(const main_window &WinParams);
+    void save_window_params(const main_window &AppWindow);
     void save_vox(vox*);
     void erase_vox(vox*);
     void init_map_config(const std::string &);

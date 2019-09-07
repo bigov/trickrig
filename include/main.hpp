@@ -148,13 +148,6 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
   static const char fname_cfg[] = "config.db";
   static const char fname_map[] = "map.db";
 
-  struct evInput
-  {
-    float dx, dy;   // смещение указателя мыши в активном окне
-    int fb, rl, ud, // управление направлением движения в 3D пространстве
-    scancode, mods, mouse, action, key;
-  };
-
   struct texture {
       GLfloat u = 0.0f;
       GLfloat v = 0.0f;

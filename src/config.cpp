@@ -28,17 +28,19 @@ float zNear = 1.f;          // расстояние до ближней плос
 float zFar  = 10000.f;      // расстояние до дальней плоскости матрицы проекции
 glm::mat4 MatMVP        {}; // Матрица преобразования
 camera_3d Eye           {}; // главная камера 3D вида
-main_window WinParams      {}; // параметры окна приложения
+main_window AppWindow   {}; // параметры окна приложения
+// ввод пользователя
+ev_input Input = { 0.0, 0.0, 0, 0, 0, -1, -1, -1, -1, -1, std::string(), false };
 
 // Инициализация статических членов
 db cfg::DataBase {};
 
-v_str cfg::AppParams {}; // параметры конфигурации приложения
-v_str cfg::MapParams {}; // параметры когфигурации карты
-std::string cfg::AssetsDir {}; // папка служебных файлов
-std::string cfg::UserDir   {}; // папка конфигов пользователя
-std::string cfg::DS        {}; // символ разделителя папок
-std::string cfg::CfgFname  {}; // конфиг, выбранный пользователем
+v_str cfg::AppParams      {}; // параметры конфигурации приложения
+v_str cfg::MapParams      {}; // параметры когфигурации карты
+std::string cfg::AssetsDir{}; // папка служебных файлов
+std::string cfg::UserDir  {}; // папка конфигов пользователя
+std::string cfg::DS       {}; // символ разделителя папок
+std::string cfg::CfgFname {}; // конфиг, выбранный пользователем
 
 ///
 /// \brief cfg::user_dir
@@ -92,16 +94,16 @@ void cfg::load_app_cfg(void)
   AppParams = DataBase.open_app(UserDir + DS);
 
   // Загрузка настроек окна приложения
-  WinParams.width = static_cast<u_int>(std::stoi(AppParams[WINDOW_WIDTH]));
-  WinParams.height = static_cast<u_int>(std::stoi(AppParams[WINDOW_HEIGHT]));
-  WinParams.top = static_cast<u_int>(std::stoi(AppParams[WINDOW_TOP]));
-  WinParams.left = static_cast<u_int>(std::stoi(AppParams[WINDOW_LEFT]));
-  WinParams.Cursor.x = static_cast<float>(WinParams.width/2) + 0.5f;
-  WinParams.Cursor.y = static_cast<float>(WinParams.height/2) + 0.5f;
-  WinParams.aspect = static_cast<float>(WinParams.width)
-                   / static_cast<float>(WinParams.height);
+  AppWindow.width = static_cast<u_int>(std::stoi(AppParams[WINDOW_WIDTH]));
+  AppWindow.height = static_cast<u_int>(std::stoi(AppParams[WINDOW_HEIGHT]));
+  AppWindow.top = static_cast<u_int>(std::stoi(AppParams[WINDOW_TOP]));
+  AppWindow.left = static_cast<u_int>(std::stoi(AppParams[WINDOW_LEFT]));
+  AppWindow.Cursor.x = static_cast<float>(AppWindow.width/2) + 0.5f;
+  AppWindow.Cursor.y = static_cast<float>(AppWindow.height/2) + 0.5f;
+  AppWindow.aspect = static_cast<float>(AppWindow.width)
+                   / static_cast<float>(AppWindow.height);
 
-  MatProjection = glm::perspective(1.118f, WinParams.aspect, zNear, zFar);
+  MatProjection = glm::perspective(1.118f, AppWindow.aspect, zNear, zFar);
 }
 
 
@@ -173,7 +175,7 @@ std::string cfg::create_map(const std::string &MapName)
 ///
 void cfg::save_app(void)
 {
-  DataBase.save_window_params(WinParams);
+  DataBase.save_window_params(AppWindow);
 }
 
 

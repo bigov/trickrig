@@ -28,7 +28,7 @@ const float down_max = -up_max;    // Максимальный угол вниз
 space::~space(void)
 {
   Prog3d = nullptr;
-  WinParams.RenderBuffer = nullptr;
+  AppWindow.RenderBuffer = nullptr;
 }
 
 
@@ -72,8 +72,8 @@ space::space(void)
   init_vao();
 
   // настройка рендер-буфера с двумя текстурами
-  WinParams.RenderBuffer = std::make_unique<frame_buffer> ();
-  if(!WinParams.RenderBuffer->init(WinParams.width, WinParams.height))
+  AppWindow.RenderBuffer = std::make_unique<frame_buffer> ();
+  if(!AppWindow.RenderBuffer->init(AppWindow.width, AppWindow.height))
     ERR("Error on creating Render Buffer.");
 
   // загрузка основной текстуры
@@ -174,24 +174,24 @@ void space::load_texture(unsigned gl_texture_index, const std::string& FileName)
 /// \param t: время прорисовки кадра в микросекундах
 /// \details Расчет положения и направления движения камеры
 ///
-void space::calc_position(evInput& ev)
+void space::calc_position(void)
 {
-  Eye.look_a -= ev.dx * Eye.speed_rotate;
+  Eye.look_a -= Input.dx * Eye.speed_rotate;
   if(Eye.look_a > dPi) Eye.look_a -= dPi;
   if(Eye.look_a < 0) Eye.look_a += dPi;
-  ev.dx = 0.f;
+  Input.dx = 0.f;
 
-  Eye.look_t -= ev.dy * Eye.speed_rotate;
+  Eye.look_t -= Input.dy * Eye.speed_rotate;
   if(Eye.look_t > up_max) Eye.look_t = up_max;
   if(Eye.look_t < down_max) Eye.look_t = down_max;
-  ev.dy = 0.f;
+  Input.dy = 0.f;
 
   //if (!space_is_empty(Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
   //WinParams.fps
 
-  rl = Eye.speed_moving * static_cast<float>(ev.rl) * size_v4;   // скорости движения
-  fb = Eye.speed_moving * static_cast<float>(ev.fb) * size_v4;   // по трем нормалям от камеры
-  ud = Eye.speed_moving * static_cast<float>(ev.ud) * size_v4;
+  rl = Eye.speed_moving * static_cast<float>(Input.rl) * size_v4;   // скорости движения
+  fb = Eye.speed_moving * static_cast<float>(Input.fb) * size_v4;   // по трем нормалям от камеры
+  ud = Eye.speed_moving * static_cast<float>(Input.ud) * size_v4;
 
   // промежуточные скаляры для ускорения расчета координат точек вида
   float
@@ -214,15 +214,15 @@ void space::calc_position(evInput& ev)
 ///
 /// Функция, вызываемая из цикла окна для рендера сцены
 ///
-void space::render(evInput& ev)
+void space::render(void)
 {
-  calc_position(ev);
+  calc_position();
   Area4->recalc_borders();
   Area4->queue_release();
-  check_keys(ev);
+  check_keys();
 
   glBindVertexArray(vao_id);
-  WinParams.RenderBuffer->bind();
+  AppWindow.RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
@@ -247,7 +247,7 @@ void space::render(evInput& ev)
   glDisableVertexAttribArray(Prog3d->Atrib["fragment"]);
 
   Prog3d->unuse(); // отключить шейдерную программу
-  WinParams.RenderBuffer->unbind();
+  AppWindow.RenderBuffer->unbind();
   glBindVertexArray(0);
  }
 
@@ -258,30 +258,30 @@ void space::render(evInput& ev)
 ///
 /// Скан-коды клавиш:
 /// [S] == 31; [C] == 46
-void space::check_keys(evInput& ev)
+void space::check_keys()
 {
   int vertex_id = 0;
-  WinParams.RenderBuffer->read_pixel(WinParams.Cursor.x, WinParams.Cursor.y, &vertex_id);
+  AppWindow.RenderBuffer->read_pixel(AppWindow.Cursor.x, AppWindow.Cursor.y, &vertex_id);
   id_point_0 = vertex_id - (vertex_id % vertices_per_side);
   id_point_8 = id_point_0 + vertices_per_side - 1;
 
   //DEBUG: Нажатие на [C] выводит в консль номер вершины-индикатора
-  if((46 == ev.scancode) && (ev.action == PRESS))
+  if((46 == Input.scancode) && (Input.action == PRESS))
   {
-    ev.action = -1;
-    ev.scancode = -1;
+    Input.action = -1;
+    Input.scancode = -1;
     std::cout << "ID=" << vertex_id << " ";
   }
 
-  if((ev.mouse == MOUSE_BUTTON_LEFT) && (ev.action == PRESS))
+  if((Input.mouse == MOUSE_BUTTON_LEFT) && (Input.action == PRESS))
   {
-    ev.action = -1;
+    Input.action = -1;
     Area4->append(vertex_id);
   }
 
-  if((ev.mouse == MOUSE_BUTTON_RIGHT) && (ev.action == PRESS))
+  if((Input.mouse == MOUSE_BUTTON_RIGHT) && (Input.action == PRESS))
   {
-    ev.action = -1;
+    Input.action = -1;
     Area4->remove(vertex_id);
   }
 }

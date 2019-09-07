@@ -6,7 +6,8 @@
 //
 //===========================================================================
 
-#include "wglfw.hpp"
+//#include "wglfw.hpp"
+#include "gui.hpp"
 
 std::string tr::AppPathDir {};
 
@@ -29,8 +30,15 @@ int main(int, char* argv[])
 
   try
   {
-    tr::wglfw Win {};    // Создать OpenGL окно
-    Win.show();          // Цикл рендера
+    tr::cfg::load_app_cfg();
+
+    //tr::wglfw Win {};    // Создать OpenGL окно
+    //Win.show();          // Цикл рендера
+
+    //std::unique_ptr<tr::gui> AppGUI = nullptr;   // Сборка сцены
+    auto AppGUI = std::make_unique<tr::gui>();
+    AppGUI->show();
+
     tr::cfg::save_app(); // Сохранение конфигурации
   }
   catch(std::exception & e)

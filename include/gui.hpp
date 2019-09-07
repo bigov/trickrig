@@ -1,9 +1,13 @@
 #ifndef GUI_HPP
 #define GUI_HPP
 
+#include <chrono>
 #include "main.hpp"
+#include "wglfw.hpp"
 #include "config.hpp"
 #include "space.hpp"
+
+using sys_clock = std::chrono::system_clock;
 
 namespace tr {
 
@@ -73,11 +77,13 @@ class gui
     img Font18s { "../assets/font_10x18_sh.png", f_len }; //шрифт 10x18 (тень)
     img Font18l { "../assets/font_10x18_lt.png", f_len }; //шрифт 10x18 (светл)
 
-    std::string user_input {};  // строка ввода пользователя
+    std::unique_ptr<wglfw> Win = nullptr;    // OpenGL окно
     std::unique_ptr<space> Space = nullptr;
-
     GLuint vao_quad_id  = 0;
     std::unique_ptr<glsl> screenShaderProgram = nullptr; // шейдерная программа обработки текстуры рендера
+
+    int fps = 0;
+    std::chrono::time_point<sys_clock> t_start = sys_clock::now();
 
     void hud_load(void);
     void obscure_screen(void);
@@ -92,8 +98,8 @@ class gui
     void row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &);
     void select_list(u_int x, u_int y, u_int w, u_int h);
     void sub_img(const img &Image, GLint x, GLint y);
-    void render_menu(evInput& ev);
-    void menu_map_create(evInput& ev);
+    void render_menu(void);
+    void menu_map_create(void);
     void menu_map_select(void);
     void menu_start(void);
     void menu_config(void);
@@ -102,13 +108,14 @@ class gui
     void hud_refresh(void);      // обновление кадра
     void create_map(void);
     void remove_map(void);
+    void calc_render_time(void);
 
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
   public:
     gui(void);
     ~gui(void);
-    void draw(evInput&);      // формирование изображения GIU окна
+    void show(void);
 };
 
 } //tr
