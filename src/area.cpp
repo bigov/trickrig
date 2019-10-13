@@ -254,7 +254,7 @@ void area::init(vbo_ext* v)
 void area::vox_unload(const i3d& P0)
 {
   auto it = std::find_if(VoxBuffer.begin(), VoxBuffer.end(),
-                         [&P0](auto& V){ return V->Origin == P0; });
+                         [&P0](const auto& V){ return V->Origin == P0; });
   if(it == VoxBuffer.end()) return; // в этой точке вокса нет
   vox* V = it->get();
   if(V->in_vbo) vox_wipe(V);
@@ -443,7 +443,7 @@ vox* area::add_vox(const i3d& P)
 vox* area::vox_by_i3d(const i3d& P0)
 {
   auto it = std::find_if(VoxBuffer.begin(), VoxBuffer.end(),
-                         [&P0](auto& V){ return V->Origin == P0; });
+                         [&P0](const auto& V){ return V->Origin == P0; });
   if (it == VoxBuffer.end()) return nullptr;
   else return it->get();
 }
