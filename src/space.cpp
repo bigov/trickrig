@@ -88,8 +88,7 @@ space::space(void)
 ///
 void space::init(void)
 {
-  Area4 = std::make_unique<area>(size_v4, border_dist_b4);
-  Area4->init(&VBO);
+  Area4 = std::make_unique<area>(size_v4, border_dist_b4, &VBO);
 }
 
 
@@ -266,7 +265,7 @@ void space::render(void)
   glEnableVertexAttribArray(Prog3d->Atrib["normal"]);      // нормаль
   glEnableVertexAttribArray(Prog3d->Atrib["fragment"]);    // текстура
 
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(Area4->render_indices), GL_UNSIGNED_INT, nullptr);
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(Area4->render_indices()), GL_UNSIGNED_INT, nullptr);
 
   glDisableVertexAttribArray(Prog3d->Atrib["position"]);
   glDisableVertexAttribArray(Prog3d->Atrib["color"]);
@@ -292,7 +291,7 @@ void space::check_keys()
   id_point_0 = vertex_id - (vertex_id % vertices_per_side);
   id_point_8 = id_point_0 + vertices_per_side - 1;
 
-  //DEBUG: Нажатие на [C] выводит в консль номер вершины-индикатора
+  //DEBUG: Нажатие на [C] выводит в консоль номер вершины-индикатора
   if((46 == Input.scancode) && (Input.action == PRESS))
   {
     Input.action = -1;

@@ -93,14 +93,14 @@ class gui
     void row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &);
     void select_list(u_int x, u_int y, u_int w, u_int h);
     void sub_img(const img &Image, GLint x, GLint y);
-    void render_menu(void);
+    void menu_draw(void);
     void menu_map_create(void);
     void menu_map_select(void);
     void menu_start(void);
     void menu_config(void);
     void button_click(ELEMENT_ID);
     void cancel(void);
-    void hud_refresh(void);      // обновление кадра
+    void hud_draw(void);      // обновление кадра
     void create_map(void);
     void remove_map(void);
 

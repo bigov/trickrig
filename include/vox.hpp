@@ -24,7 +24,6 @@ Xn-(6)----------3-Xp
 #ifndef VOXEL_HPP
 #define VOXEL_HPP
 
-#include "main.hpp"
 #include "io.hpp"
 
 namespace tr {
@@ -44,6 +43,9 @@ struct uch2
 };
 
 
+///
+/// \brief class vox
+/// \details Элементы из которых строится пространство
 class vox
 {
 private:
@@ -85,7 +87,6 @@ public:
   void offset_write(u_char side_id, GLsizeiptr n);
   GLsizeiptr offset_read(u_char side_id);
   void offset_replace(GLsizeiptr old_n, GLsizeiptr new_n);
-
 };
 
 }

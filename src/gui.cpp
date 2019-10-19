@@ -330,7 +330,7 @@ void gui::sub_img(const img &Image, GLint x, GLint y)
 ///
 /// \brief gui::update
 ///
-void gui::hud_refresh(void)
+void gui::hud_draw(void)
 {
   glBindTexture(GL_TEXTURE_2D, gui_texture);
 
@@ -755,7 +755,7 @@ void gui::menu_config(void)
 ///
 /// \brief gui::draw_gui_menu
 ///
-void gui::render_menu(void)
+void gui::menu_draw(void)
 {
   glBindTexture(GL_TEXTURE_2D, gui_texture);
 
@@ -833,9 +833,9 @@ void gui::show(void)
     if(GuiMode == GUI_3D_MODE)
     {
       Space->render(); // Рендер во фреймбуфер
-      hud_refresh();
+      hud_draw();
     } else {
-      render_menu();
+      menu_draw();
     }
 
     /// Рендер окна с текстурами фреймбуфера и GIU
