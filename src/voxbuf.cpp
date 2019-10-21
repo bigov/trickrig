@@ -35,6 +35,8 @@ vox_buffer::vox_buffer(int side_len, vbo_ext* VBO_pointer, const i3d P0, const i
   pVBO = VBO_pointer;
   pVBO->clear();
 
+  // Запрос из базы данных воксов и передача их в рендер
+
   std::unique_ptr<vox> pVox = nullptr;
   for(int x = P0.x; x<= P1.x; x += vox_side_len)
     for(int y = P0.y; y<= P1.y; y += vox_side_len)
@@ -43,10 +45,10 @@ vox_buffer::vox_buffer(int side_len, vbo_ext* VBO_pointer, const i3d P0, const i
         pVox = cfg::DataBase.get_vox({x, y, z}, vox_side_len);
         if(nullptr != pVox)
         {
-          data.push_back(std::move(pVox));
+          push_vox(std::move(pVox));
         }
       }
-  draw();
+  for(auto& V: data) vox_draw(V.get());
 }
 
 
@@ -55,7 +57,7 @@ vox_buffer::vox_buffer(int side_len, vbo_ext* VBO_pointer, const i3d P0, const i
 /// \param V
 /// \details Добавить в конец буфера элемент
 ///
-void vox_buffer::push_back(std::unique_ptr<vox> V)
+void vox_buffer::push_vox(std::unique_ptr<vox> V)
 {
   recalc_vox_visibility(V.get());
   data.push_back(std::move(V));
@@ -111,9 +113,10 @@ i3d vox_buffer::i3d_near(const i3d& P, u_char side)
 /// \brief vox_buffer::add_vox
 /// \param P
 ///
-/// \details В указанной 3D точке генерирует новый вокс.
+/// \details В указанной 3D точке генерирует новый вокс c пересчетом
+/// видимости своих сторон и окружающих воксов и вносит его в базу данных
 ///
-vox* vox_buffer::add_vox(const i3d& P)
+void vox_buffer::add_vox(const i3d& P)
 {
   auto pVox = cfg::DataBase.get_vox(P, vox_side_len);
   if (nullptr == pVox)
@@ -125,7 +128,7 @@ vox* vox_buffer::add_vox(const i3d& P)
   data.push_back(std::move(pVox));
   vox* V = data.back().get();
   recalc_vox_visibility(V);
-  return V;
+  vox_draw(V);
 }
 
 
@@ -147,8 +150,8 @@ void vox_buffer::append(int id)
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера воксы
     vox_wipe(vox_by_i3d(i3d_near(P0, side)));   // вокруг точки добавления вокса
 
-  // Добавить вокс в буфер (c пересчетом видимости сторон окружающих воксов) и в рендер VBO
-  vox_draw(add_vox(P0));
+  // Добавить вокс в буфер и в рендер VBO
+  add_vox(P0);
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксы
     vox_draw(vox_by_i3d(i3d_near(P0, side)));
@@ -179,16 +182,6 @@ void vox_buffer::remove(int i)
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксели
     vox_draw(vox_by_i3d(i3d_near(P0, side)));
-}
-
-
-///
-/// \brief vox_buffer::draw
-/// \details Отправить все элементы буфера в рендер
-///
-void vox_buffer::draw(void)
-{
-  for(auto& V: data) vox_draw(V.get());
 }
 
 
