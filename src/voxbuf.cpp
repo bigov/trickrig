@@ -11,12 +11,12 @@ u_char side_opposite(u_char s)
 {
   switch (s)
   {
-    case SIDE_XP: return SIDE_XN; break;
-    case SIDE_XN: return SIDE_XP; break;
-    case SIDE_YP: return SIDE_YN; break;
-    case SIDE_YN: return SIDE_YP; break;
-    case SIDE_ZP: return SIDE_ZN; break;
-    case SIDE_ZN: return SIDE_ZP; break;
+    case SIDE_XP: return SIDE_XN;
+    case SIDE_XN: return SIDE_XP;
+    case SIDE_YP: return SIDE_YN;
+    case SIDE_YN: return SIDE_YP;
+    case SIDE_ZP: return SIDE_ZN;
+    case SIDE_ZN: return SIDE_ZP;
     default: return UCHAR_MAX;
   }
 }
