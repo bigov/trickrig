@@ -15,9 +15,9 @@ class vox_buffer
 {
   public:
     vox_buffer(int, vbo_ext*, const i3d, const i3d);
-    void push_back(std::unique_ptr<vox>);
+    void push_vox(std::unique_ptr<vox>);
 
-    vox* add_vox(const i3d&);       // создать в указанной точке вокс
+    void add_vox(const i3d&);       // создать в указанной точке вокс
     void vox_load(const i3d& P0);   // загрузить вокс из базы данных в буфер и рендер
     void vox_unload(const i3d& P0); // выгрузить вокс из буфера и из рендера
     u_int get_render_indices(void);
@@ -35,7 +35,6 @@ class vox_buffer
     u_int render_indices = 0;       // сумма индексов, необходимых для рендера всех примитивов
     int vox_side_len = 0;           // Длина стороны вокса
 
-    void draw(void);                // отправить все содержимое в рендер
     void vox_draw(vox*);            // разместить вокс в VBO буфере
     void vox_wipe(vox*);            // убрать из VBO
     i3d i3d_near(const i3d& P, u_char side);
