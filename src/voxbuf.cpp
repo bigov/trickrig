@@ -11,12 +11,12 @@ u_char side_opposite(u_char s)
 {
   switch (s)
   {
-    case SIDE_XP: return SIDE_XN; break;
-    case SIDE_XN: return SIDE_XP; break;
-    case SIDE_YP: return SIDE_YN; break;
-    case SIDE_YN: return SIDE_YP; break;
-    case SIDE_ZP: return SIDE_ZN; break;
-    case SIDE_ZN: return SIDE_ZP; break;
+    case SIDE_XP: return SIDE_XN;
+    case SIDE_XN: return SIDE_XP;
+    case SIDE_YP: return SIDE_YN;
+    case SIDE_YN: return SIDE_YP;
+    case SIDE_ZP: return SIDE_ZN;
+    case SIDE_ZN: return SIDE_ZP;
     default: return UCHAR_MAX;
   }
 }
@@ -28,39 +28,17 @@ u_char side_opposite(u_char s)
 /// \param VBO_pointer - указатель на буфер VBO
 /// \param P0          - 3D точка начала области
 /// \param P1          - 3D точка конца области
+/// \details Запрос из базы данных воксов и передача их в рендер
 ///
 vox_buffer::vox_buffer(int side_len, vbo_ext* VBO_pointer, const i3d P0, const i3d P1)
 {
   vox_side_len = side_len;
   pVBO = VBO_pointer;
   pVBO->clear();
-
-  // Запрос из базы данных воксов и передача их в рендер
-
-  std::unique_ptr<vox> pVox = nullptr;
-  for(int x = P0.x; x<= P1.x; x += vox_side_len)
-    for(int y = P0.y; y<= P1.y; y += vox_side_len)
-      for(int z = P0.z; z<= P1.z; z += vox_side_len)
-      {
-        pVox = cfg::DataBase.get_vox({x, y, z}, vox_side_len);
-        if(nullptr != pVox)
-        {
-          push_vox(std::move(pVox));
-        }
-      }
-  for(auto& V: data) vox_draw(V.get());
-}
-
-
-///
-/// \brief vox_buffer::push_back
-/// \param V
-/// \details Добавить в конец буфера элемент
-///
-void vox_buffer::push_vox(std::unique_ptr<vox> V)
-{
-  recalc_vox_visibility(V.get());
-  data.push_back(std::move(V));
+  i3d vP {};
+  for(vP.x = P0.x; vP.x<= P1.x; vP.x += vox_side_len)
+  for(vP.y = P0.y; vP.y<= P1.y; vP.y += vox_side_len)
+  for(vP.z = P0.z; vP.z<= P1.z; vP.z += vox_side_len) vox_load(vP);
 }
 
 
@@ -85,26 +63,13 @@ u_int vox_buffer::get_render_indices(void)
 i3d vox_buffer::i3d_near(const i3d& P, u_char side)
 {
   switch (side) {
-    case SIDE_XP:
-      return i3d{ P.x + vox_side_len, P.y, P.z };
-      break;
-    case SIDE_XN:
-      return i3d{ P.x - vox_side_len, P.y, P.z };
-      break;
-    case SIDE_YP:
-      return i3d{ P.x, P.y + vox_side_len, P.z };
-      break;
-    case SIDE_YN:
-      return i3d{ P.x, P.y - vox_side_len, P.z };
-      break;
-    case SIDE_ZP:
-      return i3d{ P.x, P.y, P.z + vox_side_len };
-      break;
-    case SIDE_ZN:
-      return i3d{ P.x, P.y, P.z - vox_side_len };
-      break;
-    default:
-      return P;
+    case SIDE_XP: return i3d{ P.x + vox_side_len, P.y, P.z };
+    case SIDE_XN: return i3d{ P.x - vox_side_len, P.y, P.z };
+    case SIDE_YP: return i3d{ P.x, P.y + vox_side_len, P.z };
+    case SIDE_YN: return i3d{ P.x, P.y - vox_side_len, P.z };
+    case SIDE_ZP: return i3d{ P.x, P.y, P.z + vox_side_len };
+    case SIDE_ZN: return i3d{ P.x, P.y, P.z - vox_side_len };
+    default:      return P;
   }
 }
 
@@ -112,11 +77,12 @@ i3d vox_buffer::i3d_near(const i3d& P, u_char side)
 ///
 /// \brief vox_buffer::add_vox
 /// \param P
+/// \return vox*
 ///
 /// \details В указанной 3D точке генерирует новый вокс c пересчетом
 /// видимости своих сторон и окружающих воксов и вносит его в базу данных
 ///
-void vox_buffer::add_vox(const i3d& P)
+vox* vox_buffer::add_vox_in_db(const i3d& P)
 {
   auto pVox = cfg::DataBase.get_vox(P, vox_side_len);
   if (nullptr == pVox)
@@ -124,11 +90,8 @@ void vox_buffer::add_vox(const i3d& P)
     pVox = std::make_unique<vox> (P, vox_side_len);
     cfg::DataBase.save_vox(pVox.get());
   }
-
   data.push_back(std::move(pVox));
-  vox* V = data.back().get();
-  recalc_vox_visibility(V);
-  vox_draw(V);
+  return data.back().get();
 }
 
 
@@ -150,8 +113,10 @@ void vox_buffer::append(int id)
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера воксы
     vox_wipe(vox_by_i3d(i3d_near(P0, side)));   // вокруг точки добавления вокса
 
-  // Добавить вокс в буфер и в рендер VBO
-  add_vox(P0);
+  // Добавить вокс в БД и в рендер VBO
+  vox* V = add_vox_in_db(P0);
+  recalc_vox_visibility(V);
+  vox_draw(V);
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксы
     vox_draw(vox_by_i3d(i3d_near(P0, side)));
@@ -283,6 +248,7 @@ void vox_buffer::vox_wipe(vox* pVox)
     if(free == 0)
     { // VBO пустой
       render_indices = 0;
+      pVox->in_vbo = false;
       return;
     }
 
@@ -297,7 +263,6 @@ void vox_buffer::vox_wipe(vox* pVox)
     render_indices -= indices_per_side;
   }
   pVox->in_vbo = false;
-
 }
 
 
@@ -351,7 +316,10 @@ void vox_buffer::recalc_vox_visibility(vox* pVox)
     {                                          // то соприкасающиеся
       pVox->visible_off(side);                 // стороны невидимы
       pNear->visible_off(side_opposite(side)); // у обоих воксов.
-    } else { pVox->visible_on(side); }         // Иначе - сторона видимая.
+    } else
+    {
+      pVox->visible_on(side);                  // Иначе - сторона видимая.
+    }
   }
 }
 

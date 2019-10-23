@@ -15,18 +15,11 @@ class vox_buffer
 {
   public:
     vox_buffer(int, vbo_ext*, const i3d, const i3d);
-    void push_vox(std::unique_ptr<vox>);
-
-    void add_vox(const i3d&);       // создать в указанной точке вокс
+    u_int get_render_indices(void);
     void vox_load(const i3d& P0);   // загрузить вокс из базы данных в буфер и рендер
     void vox_unload(const i3d& P0); // выгрузить вокс из буфера и из рендера
-    u_int get_render_indices(void);
     void append(int);               // добавить объем по индексу снипа
     void remove(int);               // удалить объем по индексу снипа
-    vox* vox_by_i3d(const i3d&);
-    vox* vox_by_vbo(GLsizeiptr);
-    void recalc_vox_visibility(vox*);
-    void recalc_around_visibility(i3d);
 
   private:
     std::vector<std::unique_ptr<vox>> data {};
@@ -35,9 +28,14 @@ class vox_buffer
     u_int render_indices = 0;       // сумма индексов, необходимых для рендера всех примитивов
     int vox_side_len = 0;           // Длина стороны вокса
 
+    vox* vox_by_vbo(GLsizeiptr);
+    vox* vox_by_i3d(const i3d&);
+    vox* add_vox_in_db(const i3d&); // создать в указанной точке вокс и записать в БД
     void vox_draw(vox*);            // разместить вокс в VBO буфере
     void vox_wipe(vox*);            // убрать из VBO
     i3d i3d_near(const i3d& P, u_char side);
+    void recalc_around_visibility(i3d);
+    void recalc_vox_visibility(vox*);
 };
 
 
