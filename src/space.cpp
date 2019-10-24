@@ -14,13 +14,13 @@
 
 namespace tr
 {
-const double
-  hPi = acos(0),                   // половина константы "Пи"
+const float
+  hPi = static_cast<float>(acos(0)), // половина константы "Пи"
   Pi  = 2 * hPi,                   // константа "Пи"
   dPi = 2 * Pi;                    // двойная "Пи
 const float up_max = hPi - 0.001f; // Максимальный угол вверх
 const float down_max = -up_max;    // Максимальный угол вниз
-std::chrono::seconds one_second(1);
+static const std::chrono::seconds one_second(1);
 
 
 ///
@@ -74,19 +74,20 @@ space::space(void)
 
   // настройка рендер-буфера с двумя текстурами
   AppWindow.RenderBuffer = std::make_unique<frame_buffer> ();
-  if(!AppWindow.RenderBuffer->init(AppWindow.width, AppWindow.height))
+  if(!AppWindow.RenderBuffer->init(
+              static_cast<GLsizei>(AppWindow.width),
+              static_cast<GLsizei>(AppWindow.height)))
     ERR("Error on creating Render Buffer.");
 
   // загрузка основной текстуры
   load_texture(GL_TEXTURE0, cfg::app_key(PNG_TEXTURE0));
-
 }
 
 
 ///
 /// \brief space::init
 ///
-void space::init(void)
+void space::area3d_load(void)
 {
   Area4 = std::make_unique<area>(size_v4, border_dist_b4, &VBO);
 }
@@ -188,19 +189,20 @@ void space::calc_position(void)
 
   //if (!space_is_empty(Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
 
-  float dist  = Eye.speed_moving * cycle_time * size_v4; // Дистанция перемещения
+  float dist  = Eye.speed_moving *
+          static_cast<float>(cycle_time) * size_v4; // Дистанция перемещения
   rl = dist * Input.rl;
   fb = dist * Input.fb;   // по трем нормалям от камеры
   ud = dist * Input.ud;
 
   // промежуточные скаляры для ускорения расчета координат точек вида
   float
-    _ca = static_cast<float>(cos(Eye.look_a)),
-    _sa = static_cast<float>(sin(Eye.look_a)),
-    _ct = static_cast<float>(cos(Eye.look_t));
+    _ca = static_cast<float>(cosf(Eye.look_a)),
+    _sa = static_cast<float>(sinf(Eye.look_a)),
+    _ct = static_cast<float>(cosf(Eye.look_t));
 
-  glm::vec3 LookDir {_ca*_ct, sin(Eye.look_t), _sa*_ct}; //Направление взгляда
-  Eye.ViewFrom += glm::vec3(fb *_ca + rl*sin(Eye.look_a - Pi), ud,  fb*_sa + rl*_ca);
+  glm::vec3 LookDir {_ca*_ct, sinf(Eye.look_t), _sa*_ct}; //Направление взгляда
+  Eye.ViewFrom += glm::vec3(fb *_ca + rl*sinf(Eye.look_a - Pi), ud,  fb*_sa + rl*_ca);
   ViewTo = Eye.ViewFrom + LookDir;
 
   // Расчет матрицы вида
@@ -244,7 +246,6 @@ void space::render(void)
   calc_render_time();
   calc_position();
   Area4->recalc_borders();
-  Area4->queue_release();
   check_keys();
 
   glBindVertexArray(vao_id);
@@ -256,9 +257,8 @@ void space::render(void)
   Prog3d->set_uniform("mvp", MatMVP);
   Prog3d->set_uniform("light_direction", light_direction); // направление
   Prog3d->set_uniform("light_bright", light_bright);       // цвет/яркость
-
-  Prog3d->set_uniform("MinId", id_point_0);                // начальная вершина активного вокселя
-  Prog3d->set_uniform("MaxId", id_point_8);                // последняя вершина активного вокселя
+  Prog3d->set_uniform("MinId", GLint(id_point_0));         // начальная вершина активного вокселя
+  Prog3d->set_uniform("MaxId", GLint(id_point_8));         // последняя вершина активного вокселя
 
   glEnableVertexAttribArray(Prog3d->Atrib["position"]);    // положение 3D
   glEnableVertexAttribArray(Prog3d->Atrib["color"]);       // цвет
@@ -286,8 +286,10 @@ void space::render(void)
 /// [S] == 31; [C] == 46
 void space::check_keys()
 {
-  int vertex_id = 0;
-  AppWindow.RenderBuffer->read_pixel(AppWindow.Cursor.x, AppWindow.Cursor.y, &vertex_id);
+  u_int vertex_id = 0;
+  AppWindow.RenderBuffer->read_pixel(
+              GLint(AppWindow.Cursor.x), GLint(AppWindow.Cursor.y), &vertex_id);
+
   id_point_0 = vertex_id - (vertex_id % vertices_per_side);
   id_point_8 = id_point_0 + vertices_per_side - 1;
 

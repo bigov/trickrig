@@ -21,7 +21,7 @@ namespace tr
     public:
       space(void);
       ~space(void);
-      void init(void);
+      void area3d_load(void);
       void render(void);
 
     private:
@@ -35,8 +35,8 @@ namespace tr
       glm::vec3 light_direction {}; // направление освещения
       glm::vec3 light_bright {};    // яркость света
       // Индексы вершин подсвечиваемого вокселя, на который направлен курсор (центр экрана)
-      int id_point_0 = 0;           // индекс начальной вершины
-      int id_point_8 = 0;           // индекс последней вершины
+      u_int id_point_0 = 0;           // индекс начальной вершины
+      u_int id_point_8 = 0;           // индекс последней вершины
 
       // GPU control
       GLuint vao_id = 0;                               // VAO ID

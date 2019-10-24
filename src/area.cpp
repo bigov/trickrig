@@ -24,9 +24,9 @@ area::area(int side_length, int count_elements_to_border, vbo_ext* v)
   lod_dist_far = count_elements_to_border * side_length;
 
   // Origin вокселя, в котором расположена камера
-  Location = { static_cast<int>(floor(Eye.ViewFrom.x / vox_side_len)) * vox_side_len,
-                static_cast<int>(floor(Eye.ViewFrom.y / vox_side_len)) * vox_side_len,
-                static_cast<int>(floor(Eye.ViewFrom.z / vox_side_len)) * vox_side_len };
+  Location = { static_cast<int>(floorf(Eye.ViewFrom.x / vox_side_len)) * vox_side_len,
+               static_cast<int>(floorf(Eye.ViewFrom.y / vox_side_len)) * vox_side_len,
+               static_cast<int>(floorf(Eye.ViewFrom.z / vox_side_len)) * vox_side_len };
   MoveFrom = Location;
 
   i3d P0 { Location.x - lod_dist_far,
@@ -44,7 +44,7 @@ area::area(int side_length, int count_elements_to_border, vbo_ext* v)
 /// \brief area::append
 /// \param i
 ///
-void area::append(int i)
+void area::append(u_int i)
 {
   VoxBuffer->append(i);
 }
@@ -54,7 +54,7 @@ void area::append(int i)
 /// \brief area::remove
 /// \param i
 ///
-void area::remove(int i)
+void area::remove(u_int i)
 {
   VoxBuffer->remove(i);
 }
@@ -150,17 +150,19 @@ void area::redraw_borders_z(void)
 ///
 /// TODO? (на случай притормаживания - если прыгать камерой туда-сюда через
 /// границу запуска перерисовки границ) можно процедуры "redraw_borders_?"
-/// разбить по две части - вперел/назад.
+/// разбить по две части - вперед/назад.
 ///
 void area::recalc_borders(void)
 {
   // Origin вокселя, в котором расположена камера
-  Location = { static_cast<int>(floor(Eye.ViewFrom.x / vox_side_len)) * vox_side_len,
-                static_cast<int>(floor(Eye.ViewFrom.y / vox_side_len)) * vox_side_len,
-                static_cast<int>(floor(Eye.ViewFrom.z / vox_side_len)) * vox_side_len };
+  Location = { static_cast<int>(floorf(Eye.ViewFrom.x / vox_side_len)) * vox_side_len,
+               static_cast<int>(floorf(Eye.ViewFrom.y / vox_side_len)) * vox_side_len,
+               static_cast<int>(floorf(Eye.ViewFrom.z / vox_side_len)) * vox_side_len };
 
   if(Location.x != MoveFrom.x) redraw_borders_x();
   if(Location.z != MoveFrom.z) redraw_borders_z();
+
+  queue_release();
 }
 
 

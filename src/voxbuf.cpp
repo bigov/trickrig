@@ -51,6 +51,7 @@ u_int vox_buffer::get_render_indices(void)
   return render_indices;
 }
 
+
 ///
 /// \brief vox_buffer::i3d_near
 /// \param P
@@ -101,7 +102,7 @@ vox* vox_buffer::add_vox_in_db(const i3d& P)
 ///
 /// \details Добавление вокса к указанной стороне
 ///
-void vox_buffer::append(int id)
+void vox_buffer::append(u_int id)
 {
   if(id > (render_indices/indices_per_side) * bytes_per_side) return;
 
@@ -129,7 +130,7 @@ void vox_buffer::append(int id)
 ///
 /// \details Удаление вокса
 ///
-void vox_buffer::remove(int i)
+void vox_buffer::remove(u_int i)
 {
   if(i > (render_indices/indices_per_side) * bytes_per_side) return;
   GLsizeiptr offset = (i/vertices_per_side) * bytes_per_side; // по номеру группы - адрес смещения в VBO

@@ -471,7 +471,7 @@ void gui::button_click(ELEMENT_ID id)
       Win->cursor_hide();  // выключить отображение курсора мыши в окне
       WinGui.clear();      // очистка элементов GUI окна
       hud_load();
-      Space->init();
+      Space->area3d_load();
       break;
     case BTN_CONFIG:
       GuiMode = GUI_MENU_CONFIG;

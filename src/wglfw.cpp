@@ -37,7 +37,7 @@ void main_window::resize(u_int w, u_int h)
 {
   width  = w;
   height = h;
-  glViewport(0, 0, w, h); // пересчет Viewport
+  glViewport(0, 0, GLsizei(w), GLsizei(h)); // пересчет Viewport
 
   // пересчет позции координат прицела (центр окна)
   Cursor.x = static_cast<float>(w/2) + 0.5f;
@@ -47,7 +47,8 @@ void main_window::resize(u_int w, u_int h)
   aspect = static_cast<float>(w) / static_cast<float>(h);
   MatProjection = glm::perspective(1.118f, aspect, zNear, zFar);
 
-  if(nullptr != RenderBuffer ) RenderBuffer->resize(w, h); // пересчет рендер-буфера
+  // пересчет рендер-буфера
+  if(nullptr != RenderBuffer ) RenderBuffer->resize(GLsizei(w), GLsizei(h));
   if(nullptr != pWinGui) pWinGui->resize(w, h);
 }
 
@@ -77,7 +78,7 @@ wglfw::wglfw(void)
                        title.c_str(), nullptr, nullptr);
   if (nullptr == win_ptr) ERR("Creating Window fail.");
 
-  glfwSetWindowSizeLimits(win_ptr, AppWindow.minwidth, AppWindow.minheight,
+  glfwSetWindowSizeLimits(win_ptr, GLsizei(AppWindow.minwidth), GLsizei(AppWindow.minheight),
                           GLFW_DONT_CARE, GLFW_DONT_CARE);
 
   glfwSetWindowPos(win_ptr, static_cast<int>(tr::AppWindow.left),
@@ -188,13 +189,13 @@ void wglfw::character_callback(GLFWwindow*, u_int ch)
 
   if(ch < 128)
   {
-    Input.StringBuffer += ch;
+    Input.StringBuffer += char(ch);
   }
   else
   {
     auto str = wstring2string({static_cast<wchar_t>(ch)});
-    if(str == u8"№") str = "N";     // № трехбайтный, поэтому заменим на N
-    if(str.size() > 2) str = "_";   // блокировка 3-х байтных символов
+    if(str == "№") str = "N";     // № трехбайтный, поэтому заменим на N
+    if(str.size() > 2) str = "_"; // блокировка 3-х байтных символов
     Input.StringBuffer += str;
   }
 }

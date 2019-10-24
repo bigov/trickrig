@@ -43,8 +43,8 @@ class area
     u_int render_indices(void);
     void recalc_borders(void);
     void queue_release(void);
-    void append(int);
-    void remove(int);
+    void append(u_int);
+    void remove(u_int);
 };
 
 } //namespace tr

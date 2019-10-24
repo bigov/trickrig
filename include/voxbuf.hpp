@@ -18,8 +18,8 @@ class vox_buffer
     u_int get_render_indices(void);
     void vox_load(const i3d& P0);   // загрузить вокс из базы данных в буфер и рендер
     void vox_unload(const i3d& P0); // выгрузить вокс из буфера и из рендера
-    void append(int);               // добавить объем по индексу снипа
-    void remove(int);               // удалить объем по индексу снипа
+    void append(u_int);               // добавить объем по индексу снипа
+    void remove(u_int);               // удалить объем по индексу снипа
 
   private:
     std::vector<std::unique_ptr<vox>> data {};
