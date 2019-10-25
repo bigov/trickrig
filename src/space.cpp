@@ -24,16 +24,6 @@ static const std::chrono::seconds one_second(1);
 
 
 ///
-/// \brief space::~space
-///
-space::~space(void)
-{
-  Prog3d = nullptr;
-  AppWindow.RenderBuffer = nullptr;
-}
-
-
-///
 /// \brief space::space
 /// \details Формирование 3D пространства
 ///
@@ -314,4 +304,13 @@ void space::check_keys()
   }
 }
 
+
+///
+/// \brief space::~space
+///
+space::~space(void)
+{
+  Prog3d = nullptr;
+  AppWindow.RenderBuffer = nullptr;
+}
 } // namespace tr

@@ -30,7 +30,6 @@ gui::gui(void)
   WinGui.resize(AppWindow.width, AppWindow.height);
   AppWindow.pWinGui = &WinGui;
 
-
   /// Инициализация GLSL программы обработки текстуры фреймбуфера.
   ///
   /// Текстура фрейм-буфера за счет измения порядка следования координат
