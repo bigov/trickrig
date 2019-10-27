@@ -48,7 +48,7 @@ void main_window::resize(u_int w, u_int h)
   MatProjection = glm::perspective(1.118f, aspect, zNear, zFar);
 
   // пересчет рендер-буфера
-  if(nullptr != RenderBuffer ) RenderBuffer->resize(GLsizei(w), GLsizei(h));
+  if(nullptr != RenderBuffer) RenderBuffer->resize(GLsizei(w), GLsizei(h));
   if(nullptr != pWinGui) pWinGui->resize(w, h);
 }
 
