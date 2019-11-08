@@ -36,205 +36,6 @@ namespace tr {
 
 
 ///
-/// \brief db::rigs_loader
-/// \param Map
-/// \param Start
-/// \param End
-///
-/// \details Загружает блок ригов [P;End] в переданный по ссылке массив.
-///
-void db::rigs_loader(std::map<i3d, rig> &Map, i3d &Start, i3d &End)
-{
-  std::string StreamReading = "";
-
-  SqlDb.open(MapPFName);
-  i3d P {0,0,0};
-  for( P.x = Start.x; P.x < End.x; P.x++ )
-    for( P.y = Start.y; P.y < End.y; P.y++ )
-      for( P.z = Start.z; P.z < End.z; P.z++)
-      {
-        Map[P] = load_rig(P, StreamReading);
-        Map[P].Origin = P; // .Origin в базе данных не хранится
-      }
-  SqlDb.close();
-}
-
-
-///
-/// \brief rdb::load_template
-/// \param level
-/// \details загрузка шаблонного фрагмента поверхности размером (tpl_side X tpl_side)
-/// для указанного уровня LOD.
-///
-/// TODO: вобще-то, тут должно быть что-то типа генератора пространства
-///
-void db::load_template(int level, const std::string& fname)
-{
-  if (level != 1) ERR ("rdb::load_template work only on level = 1");
-  if(!SqlDb.open(fname)) ERR ("rdb::load_template: can't open: " + fname);
-
-  std::string StreamReading = "";
-
-  i3d P{ 0, 0, 0 };
-  for( P.x = 0; P.x < tpl_1_side; P.x++ )
-    for( P.z = 0; P.z < tpl_1_side; P.z++ )
-    {
-      auto R = load_rig(P, StreamReading);
-      TplRigs_1[  P                                        ] = R;
-      TplRigs_1[ {P.x - tpl_1_side, P.y, P.z             } ] = R;
-      TplRigs_1[ {P.x,              P.y, P.z - tpl_1_side} ] = R;
-      TplRigs_1[ {P.x - tpl_1_side, P.y, P.z - tpl_1_side} ] = R;
-    }
-
-  SqlDb.close();
-}
-
-
-///
-/// \brief db::load_rig
-/// \param P
-/// \param file_name
-/// \return
-/// \details Загрузка данных. Если указано имя файла, то производится его автоматическое
-/// открытие перед обращениием, и закрытие - после получения данных. Если имя файла не
-/// передано, то открытие/закрытие файла данных должно производится во внешней процедуре.
-/// Это используется для ускорения чтения серии записей, чтобы при обращении к каждой
-/// отдельной записи не открывать/закрывать каждый раз файл базы данных
-///
-rig db::load_rig(const i3d &P, const std::string& file_name)
-{
-  rig Rig {{0,0,0}};
-
-  if(!file_name.empty()) SqlDb.open(file_name);
-
-  SqlDb.select_rig(P.x, P.y, P.z);
-
-  if(SqlDb.Rows.empty()) // если в базе данных нет, то вернуть Rig из шаблона
-  {
-    Rig = TplRigs_1[ { P.x % tpl_1_side,  P.y % tpl_1_side,  P.z % tpl_1_side } ];
-    Rig.born = get_msec();
-    return Rig;
-  }
-
-  auto Row = SqlDb.Rows.front();
-  Rig.born = std::any_cast<int>(Row[0]);
-
-  std::vector<unsigned char> BufVector { std::any_cast<std::vector<unsigned char>>(Row[2]) };
-  memcpy(Rig.shift, BufVector.data(), SHIFT_DIGITS * sizeof(float));
-  SqlDb.select_snip( std::any_cast<int>(Row[1]) );
-
-  for(auto Row: SqlDb.Rows)
-  {
-    snip Snip {};
-    BufVector.clear();
-    BufVector = std::any_cast<std::vector<unsigned char>>(Row[0]);
-
-    // x, y, z, #, r, g, b, a, nx, ny, nz, #, u, v
-    // x, y, z, r, g, b, a, nx, ny, nz, u, v
-
-    memcpy(Snip.data, BufVector.data(), tr::bytes_per_snip);
-
-//NEW_VER
-//    Rig.SideYp.insert(Rig.SideYp.begin(), Snip);
-  }
-
-  if(!file_name.empty()) SqlDb.close();
-  return Rig;
-}
-
-
-///
-/// \brief db::save_rig
-/// \param P
-/// \param R
-/// \details сохранение в базу данных рига
-///
-/// Вначале записываем в таблицу снипов данные области рига. При этом
-/// индекс области, который будет внесен в таблицу ригов, назначаем
-/// по номеру записи первого снипа группы области.
-///
-/// После этого обновляем/вставляем запись в таблицу ригов с указанием
-/// индекса созданой группы
-///
-void db::save_rig(const i3d &P, const rig *R)
-{
-  int id_area = 0;
-  SqlDb.open(MapPFName);
-
-//NEW_VER
-/*
-  for(auto & Snip: R->SideYp)
-  {
-    // Запись снипа
-    SqlDb.insert_snip(id_area, Snip.data);
-
-    if(0 == id_area)
-    {
-      id_area = static_cast<int>(SqlDb.Result.rowid);
-      SqlDb.update_snip( id_area, id_area ); //TODO: !!!THE BUG???
-      // Обновить номер группы в записи первого снипа
-    }
-  }
-*/
-  // Запись рига
-  SqlDb.insert_rig( P.x, P.y, P.z, R->born, id_area, R->shift, SHIFT_DIGITS);
-  //DB.request_put(query_buf, R->shift, SHIFT_DIGITS);
-
-  SqlDb.close();
-}
-
-
-///
-/// \brief db::save_rigs_block
-/// \param From
-/// \param To
-/// \param RDb
-/// \details сохранение в базу данных блока ригов
-///
-/// Вначале записываем в таблицу снипов данные области рига. При этом
-/// индекс области, который будет внесен в таблицу ригов, назначаем
-/// по номеру записи первого снипа группы области.
-///
-/// После этого обновляем/вставляем запись в таблицу ригов с указанием
-/// индекса созданой группы
-///
-void db::save_rigs_block(const i3d &From, const i3d &To, rdb &RDB )
-{
-  int id_area = 0;
-  SqlDb.open(MapPFName);
-
-  for(int x = From.x; x < To.x; x++)
-    for(int y = From.y; y < To.y; y++)
-      for(int z = From.z; z < To.z; z++)
-      {
-        rig *R = RDB.get({x, y, z});
-        if(nullptr != R)
-        {
-          id_area = 0;
-//NEW_VER
-          /*
-          for(auto & Snip: R->SideYp)
-          {
-            // Запись снипа
-            SqlDb.insert_snip(id_area, Snip.data);
-
-            if(0 == id_area)
-            {
-              id_area = static_cast<int>(SqlDb.Result.rowid);
-              SqlDb.update_snip( id_area, id_area ); //TODO: !!!THE BUG???
-              // Обновить номер группы в записи первого снипа
-            }
-          }
-*/
-          // Записать риг
-          SqlDb.insert_rig( x, y, z, R->born, id_area, R->shift, SHIFT_DIGITS);
-        }
-      }
-  SqlDb.close();
-}
-
-
-///
 /// \brief db::load_config
 /// \param n
 /// \param Pname
@@ -299,16 +100,47 @@ v_ch db::map_name_read(const std::string & dbFile)
 
 
 ///
+/// \brief db::get_voxel
+/// \param i3d P
+/// \param size
+/// \return
+///
+/// \details Если в базе данных по указанным координатам найдены параметры
+/// вокса, то в оперативной памяти создается объект с полученными
+/// параметрами и возвращается уникальный указатель на него.
+///
+std::unique_ptr<vox> db::get_vox(const i3d& P, int size)
+{
+  char query[255];
+  sprintf(query, "SELECT * FROM voxels WHERE x=%d AND y=%d AND z=%d AND size=%d;",
+          P.x, P.y, P.z, size);
+  SqlDb.exec(query);
+
+  if(!SqlDb.Table_rows.empty())
+    return std::make_unique<vox>(P, size);
+  else
+    return nullptr;
+}
+
+
+
+///
 /// \brief db::open
 /// \param PathName - путь к директории данных карты пользователя (cо слэшем в конце)
 ///
-v_str db::open_map(const std::string &DirPathName)
+v_str db::map_open(const std::string &DirPathName)
 {
-  MapDir = DirPathName;
-  CfgMapPFName = MapDir + fname_cfg;
-  MapPFName = MapDir + fname_map;
+  CfgMapPFName = DirPathName + fname_cfg;
+  MapPFName = DirPathName + fname_map;
   if(!fs::exists(CfgMapPFName)) init_map_config(CfgMapPFName);
-  return load_config(MAP_INIT_SIZE, CfgMapPFName);
+  v_str Result = load_config(MAP_INIT_SIZE, CfgMapPFName);
+
+  // Перед выходом из функции чтения параметров карты открыть файл данных карты.
+  // Закроется файл при вызове функции сохранения конфига.
+  SqlDb.open_in_ram(MapPFName);
+
+  return Result;
+
 }
 
 
@@ -344,8 +176,10 @@ void db::map_name_save(const std::string &Dir, const std::string &MapName)
 /// \brief db::save
 /// \param Eye
 ///
-void db::save(const tr::camera_3d &Eye)
+void db::map_close(const tr::camera_3d &Eye)
 {
+  SqlDb.close_in_ram(MapPFName); // закрыть файл данных пространства вокселей
+
   char q [255]; // буфер для форматирования и передачи строки в запрос
   const char tpl[] = "UPDATE init SET val='%s' WHERE key=%d;";
   std::string p = "";
@@ -380,10 +214,36 @@ void db::save(const tr::camera_3d &Eye)
 
 
 ///
+/// \brief db::save_vox
+/// \param V
+///
+void db::save_vox(vox* V)
+{
+  char q [255]; // буфер для форматирования и передачи строки в запрос
+  sprintf(q, "INSERT INTO voxels (x, y, z, size) VALUES (%d, %d, %d, %d);",
+          V->Origin.x, V->Origin.y, V->Origin.z, V->side_len);
+  SqlDb.write(q);
+}
+
+
+///
+/// \brief db::erase_vox
+/// \param V
+///
+void db::erase_vox(vox* V)
+{
+  char q [255]; // буфер для форматирования и передачи строки в запрос
+  sprintf(q, "DELETE FROM voxels WHERE (x = %d AND y = %d AND z = %d AND size = %d);",
+          V->Origin.x, V->Origin.y, V->Origin.z, V->side_len);
+  SqlDb.exec(q);
+}
+
+
+///
 /// \brief db::save
 /// \param AppWin
 ///
-void db::save(const tr::main_window &AppWin)
+void db::save_window_params(const tr::main_window &AppWin)
 {
   char q [255]; // буфер для форматирования и передачи строки в запрос
   const char tpl[] = "UPDATE init SET val='%s' WHERE key=%d;";

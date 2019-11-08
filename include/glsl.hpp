@@ -8,7 +8,7 @@
 #ifndef GLSL_HPP
 #define GLSL_HPP
 
-#include "main.hpp"
+//#include "main.hpp"
 #include "io.hpp"
 
 namespace tr

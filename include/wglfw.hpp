@@ -1,27 +1,25 @@
 #ifndef WGLFW_HPP
 #define WGLFW_HPP
 
-#include "config.hpp"
-#include "main.hpp"
-#include "scene.hpp"
 #include "io.hpp"
+#include "db.hpp"
 
 namespace tr
 {
 
 class wglfw
 {
-  static evInput keys;
   static std::string title;
 
   public:
       wglfw(void);
       ~wglfw(void);
-      void show(void);
+      void swap_buffers(void);
+      void cursor_hide(void);
+      void cursor_restore(void);
 
     private:
       GLFWwindow * win_ptr = nullptr;
-      std::unique_ptr<tr::scene> Scene = nullptr;   // Сборка сцены
 
       // переменная для запроса положения курсора в окне
       double mouse_x = 0.0,
@@ -38,7 +36,6 @@ class wglfw
       wglfw(const tr::wglfw &);
       wglfw operator=(const tr::wglfw &);
 
-      void set_cursor(void);
       static void error_callback(int error_id, const char* description);
 
       static void cursor_position_callback(

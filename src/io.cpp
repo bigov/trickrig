@@ -28,9 +28,16 @@ std::list<std::string> dirs_list(const std::string &path)
   return D;
 }
 
+
+bool operator== (const i3d& A, const i3d& B)
+{
+  return ((A.x == B.x) && (A.y == B.y) && (A.z == B.z));
+}
+
+
 bool operator== (const px &A, const px &B)
 {
-  return ((A.r == B.r) && (A.g==B.g) && (A.b==B.b) && (A.a==B.a));
+  return ((A.r == B.r) && (A.g == B.g) && (A.b == B.b) && (A.a == B.a));
 }
 
   ///
@@ -99,14 +106,6 @@ bool operator== (const px &A, const px &B)
   }
 
 
-  //## Для обеспечения работы контейнера map c ключем i3d
-  bool operator< (tr::i3d const& left, tr::i3d const& right)
-  {
-    if (left.y != right.y)      {return left.y < right.y;}
-    else if (left.z != right.z) {return left.z < right.z;}
-    else                        {return left.x < right.x;}
-  }
-
   //## Генератор случайных положительных int
   int random_int()
   {
@@ -114,12 +113,6 @@ bool operator== (const px &A, const px &B)
      return std::rand();
   }
 
-  //## Генератор случайных положительных short
-  short random_short()
-  {
-    return
-      static_cast<short>(random_int() % std::numeric_limits<short>::max());
-  }
 
   //## Вычисляет число миллисекунд от начала суток
   int get_msec(void)
@@ -192,6 +185,7 @@ bool operator== (const px &A, const px &B)
     load(filename);
   }
 
+
   ///
   /// \brief Установка размеров
   /// \param W
@@ -204,9 +198,23 @@ bool operator== (const px &A, const px &B)
 
     _wc = _w/_c; // ширина ячейки в пикселях
     _hc = _h/_r; // высота ячейки в пикселях
+    //Data.clear();
+    //Data.resize(_w * _h, {0x00, 0x00, 0x00, 0x00});
+    clear();
+  }
+
+
+  ///
+  /// \brief img::clear
+  ///
+  void img::clear(void)
+  {
+    std::vector<px> empty {};
     Data.clear();
+    Data.swap(empty);
     Data.resize(_w * _h, {0x00, 0x00, 0x00, 0x00});
   }
+
 
   ///
   /// \brief img::uchar_data
@@ -217,6 +225,7 @@ bool operator== (const px &A, const px &B)
     return reinterpret_cast<u_char*>(px_data());
   }
 
+
   ///
   /// \brief img::px_data
   /// \return
@@ -225,6 +234,7 @@ bool operator== (const px &A, const px &B)
   {
     return const_cast<px*>(Data.data());
   }
+
 
   ///
   /// \brief Загрузки избражения из .PNG файла

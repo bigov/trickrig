@@ -9,7 +9,6 @@
 
 namespace tr
 {
-evInput wglfw::keys = {0.0, 0.0, 0, 0, 0, -1, -1, -1, -1, -1};
 std::string wglfw::title = "TrickRig: v.development";
 
 // TODO: сделать привязку через конфиг
@@ -38,7 +37,7 @@ void main_window::resize(u_int w, u_int h)
 {
   width  = w;
   height = h;
-  glViewport(0, 0, w, h); // пересчет Viewport
+  glViewport(0, 0, GLsizei(w), GLsizei(h)); // пересчет Viewport
 
   // пересчет позции координат прицела (центр окна)
   Cursor.x = static_cast<float>(w/2) + 0.5f;
@@ -46,9 +45,10 @@ void main_window::resize(u_int w, u_int h)
 
   // пересчет матрицы проекции
   aspect = static_cast<float>(w) / static_cast<float>(h);
-  MatProjection = glm::perspective(1.118f, aspect, 0.01f, 1000.0f);
+  MatProjection = glm::perspective(1.118f, aspect, zNear, zFar);
 
-  if(nullptr != RenderBuffer ) RenderBuffer->resize(w, h); // пересчет рендер-буфера
+  // пересчет рендер-буфера
+  if(nullptr != RenderBuffer) RenderBuffer->resize(GLsizei(w), GLsizei(h));
   if(nullptr != pWinGui) pWinGui->resize(w, h);
 }
 
@@ -59,8 +59,6 @@ void main_window::resize(u_int w, u_int h)
 ///
 wglfw::wglfw(void)
 {
-  cfg::load_app_cfg();
-
   glfwSetErrorCallback(error_callback);
   if (!glfwInit()) ERR("Error init GLFW lib.");
 
@@ -75,16 +73,16 @@ wglfw::wglfw(void)
 
   //  Создание 3D окна
   glfwWindowHint(GLFW_VISIBLE, 0);
-  win_ptr = glfwCreateWindow(static_cast<int>(AppWin.width),
-                             static_cast<int>(AppWin.height),
+  win_ptr = glfwCreateWindow(static_cast<int>(AppWindow.width),
+                             static_cast<int>(AppWindow.height),
                        title.c_str(), nullptr, nullptr);
   if (nullptr == win_ptr) ERR("Creating Window fail.");
 
-  glfwSetWindowSizeLimits(win_ptr, AppWin.minwidth, AppWin.minheight,
+  glfwSetWindowSizeLimits(win_ptr, GLsizei(AppWindow.minwidth), GLsizei(AppWindow.minheight),
                           GLFW_DONT_CARE, GLFW_DONT_CARE);
 
-  glfwSetWindowPos(win_ptr, static_cast<int>(tr::AppWin.left),
-                   static_cast<int>(tr::AppWin.top));
+  glfwSetWindowPos(win_ptr, static_cast<int>(tr::AppWindow.left),
+                   static_cast<int>(tr::AppWindow.top));
 
   glfwShowWindow(win_ptr);
   glfwMakeContextCurrent(win_ptr);
@@ -99,8 +97,7 @@ wglfw::wglfw(void)
   if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
   if(!gladLoadGL()) { ERR("FAILURE: can't load GLAD."); }
 
-  Scene = std::make_unique<tr::scene>();
-
+  glfwSetInputMode(win_ptr, GLFW_STICKY_KEYS, 0);
 }
 
 
@@ -109,13 +106,9 @@ wglfw::wglfw(void)
 ///
 wglfw::~wglfw()
 {
-  Scene = nullptr; // destruct Scene
-
-  glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-
+  cursor_restore();
   if(!glfwWindowShouldClose(win_ptr)) glfwSetWindowShouldClose(win_ptr, true);
   glfwDestroyWindow(win_ptr);
-
   glfwTerminate();
 }
 
@@ -130,27 +123,27 @@ void wglfw::error_callback(int error, const char* description)
 
 
 ///
-/// \brief wingl::set_cursor Смена режима отображения сцены (GUI/3D)
+/// \brief wglfw::cursor_hide
 ///
-void wglfw::set_cursor(void)
+void wglfw::cursor_hide(void)
 {
-  if(AppWin.set_mouse_ptr < 0 )
-  {
-    // спрятать указатель мыши
-    glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-    AppWin.xpos = AppWin.width/2;
-    AppWin.ypos = AppWin.height/2;
-    glfwSetCursorPos(win_ptr, AppWin.xpos, AppWin.ypos);
-  }
-  else
-  {
-    // восстановить курсор мыши
-    glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-    keys.fb = 0; keys.ud = 0; keys.rl = 0;
-    keys.dx = 0; keys.dy = 0;
-  }
+  // спрятать указатель мыши
+  glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+  AppWindow.xpos = AppWindow.width/2;
+  AppWindow.ypos = AppWindow.height/2;
+  glfwSetCursorPos(win_ptr, AppWindow.xpos, AppWindow.ypos);
+}
 
-  AppWin.set_mouse_ptr = 0; // после обработки установить нейтральное значение
+
+///
+/// \brief wglfw::cursor_restore
+///
+void wglfw::cursor_restore(void)
+{
+  // восстановить курсор мыши
+  glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  Input.fb = 0; Input.ud = 0; Input.rl = 0;
+  Input.dx = 0; Input.dy = 0;
 }
 
 
@@ -163,9 +156,9 @@ void wglfw::set_cursor(void)
 ///
 void wglfw::mouse_button_callback(GLFWwindow*, int button, int action, int mods)
 {
-  keys.mods   = mods;
-  keys.mouse  = button;
-  keys.action = action;
+  Input.mods   = mods;
+  Input.mouse  = button;
+  Input.action = action;
 }
 
 
@@ -174,14 +167,14 @@ void wglfw::mouse_button_callback(GLFWwindow*, int button, int action, int mods)
 ///
 void wglfw::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-  keys.key    = key;
-  keys.action = action;
-  keys.mouse  = -1;
-  keys.mods = mods;
-  keys.scancode = scancode;
-  keys.fb = glfwGetKey(window, k_FRONT) - glfwGetKey(window, k_BACK);
-  keys.ud = glfwGetKey(window, k_DOWN)  - glfwGetKey(window, k_UP);
-  keys.rl = glfwGetKey(window, k_LEFT)  - glfwGetKey(window, k_RIGHT);
+  Input.key    = key;
+  Input.action = action;
+  Input.mouse  = -1;
+  Input.mods = mods;
+  Input.scancode = scancode;
+  Input.fb = glfwGetKey(window, k_FRONT) - glfwGetKey(window, k_BACK);
+  Input.ud = glfwGetKey(window, k_DOWN)  - glfwGetKey(window, k_UP);
+  Input.rl = glfwGetKey(window, k_LEFT)  - glfwGetKey(window, k_RIGHT);
 }
 
 
@@ -192,19 +185,18 @@ void wglfw::key_callback(GLFWwindow* window, int key, int scancode, int action, 
 ///
 void wglfw::character_callback(GLFWwindow*, u_int ch)
 {
-  if(AppWin.pInputBuffer != nullptr)
+  if(!Input.text_mode) return;
+
+  if(ch < 128)
   {
-    if(ch < 128)
-    {
-      *(AppWin.pInputBuffer) += ch;
-    }
-    else
-    {
-      auto str = wstring2string({static_cast<wchar_t>(ch)});
-      if(str == u8"№") str = "N";     // № трехбайтный, поэтому заменим на N
-      if(str.size() > 2) str = "_";   // блокировка 3-х байтных символов
-      *(AppWin.pInputBuffer) += str;
-    }
+    Input.StringBuffer += char(ch);
+  }
+  else
+  {
+    auto str = wstring2string({static_cast<wchar_t>(ch)});
+    if(str == "№") str = "N";     // № трехбайтный, поэтому заменим на N
+    if(str.size() > 2) str = "_"; // блокировка 3-х байтных символов
+    Input.StringBuffer += str;
   }
 }
 
@@ -214,8 +206,8 @@ void wglfw::character_callback(GLFWwindow*, u_int ch)
 ///
 void wglfw::window_pos_callback(GLFWwindow*, int left, int top)
 {
-  AppWin.left = static_cast<u_int>(left);
-  AppWin.top = static_cast<u_int>(top);
+  AppWindow.left = static_cast<u_int>(left);
+  AppWindow.top = static_cast<u_int>(top);
 }
 
 
@@ -224,7 +216,7 @@ void wglfw::window_pos_callback(GLFWwindow*, int left, int top)
 ///
 void wglfw::framebuffer_size_callback(GLFWwindow*, int width, int height)
 {
-  AppWin.resize(static_cast<u_int>(width), static_cast<u_int>(height));
+  AppWindow.resize(static_cast<u_int>(width), static_cast<u_int>(height));
 }
 
 
@@ -238,44 +230,26 @@ void wglfw::cursor_position_callback(GLFWwindow* ptWin, double x, double y)
 {
   if(glfwGetInputMode(ptWin, GLFW_CURSOR) == GLFW_CURSOR_HIDDEN)
   {
-    keys.dx += static_cast<float>(x - AppWin.xpos);
-    keys.dy += static_cast<float>(y - AppWin.ypos);
-    glfwSetCursorPos(ptWin, AppWin.xpos, AppWin.ypos);
+    Input.dx += static_cast<float>(x - AppWindow.xpos);
+    Input.dy += static_cast<float>(y - AppWindow.ypos);
+    glfwSetCursorPos(ptWin, AppWindow.xpos, AppWindow.ypos);
   }
   else
   {
-    AppWin.xpos = x;
-    AppWin.ypos = y;
+    AppWindow.xpos = x;
+    AppWindow.ypos = y;
   }
 }
 
 
 ///
-/// \brief Main loop for the app-window show
+/// \brief wglfw::swap_buffers
 ///
-void wglfw::show(void)
+void wglfw::swap_buffers(void)
 {
-  glfwSetInputMode(win_ptr, GLFW_STICKY_KEYS, 0);
-  int fps = 0;
-  std::chrono::seconds one_second(1);
-  std::chrono::time_point<std::chrono::system_clock> t_start, t_frame;
-  t_start = std::chrono::system_clock::now();
-
-  while (AppWin.run && (!glfwWindowShouldClose(win_ptr)))
-  {
-    fps++;
-    t_frame = std::chrono::system_clock::now();
-    if (t_frame - t_start >= one_second)
-    {
-      t_start = std::chrono::system_clock::now();
-      AppWin.fps = fps;
-      fps = 0;
-    }
-    Scene->draw(keys);
-    if(AppWin.set_mouse_ptr != 0) set_cursor();
-    glfwSwapBuffers(win_ptr);
-    glfwPollEvents();
-  }
+  glfwSwapBuffers(win_ptr);
+  glfwPollEvents();
+  AppWindow.is_open &= !glfwWindowShouldClose(win_ptr);
 }
 
 } //namespace tr

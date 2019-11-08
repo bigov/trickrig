@@ -64,6 +64,7 @@ using a_f2   = std::array<float, 2>;
 using a_f3   = std::array<float, 3>;
 using a_f4   = std::array<float, 4>;
 using a_uch4 = std::array<unsigned char, 4>;
+using a_int3 = std::array<int, 3>;
 
 enum APP_INIT {      // вначале списка идут названия файлов
   PNG_TEXTURE0,
@@ -93,9 +94,11 @@ enum MAP_INIT {
 };
 
 // структура для обращения в тексте программы к индексам данных вершин по названиям
-enum SNIP_DATA_ID { X, Y, Z, R, G, B, A, NX, NY, NZ, U, V, ROW_SIZE };
+enum SIDE_DATA_ID { X, Y, Z, R, G, B, A, NX, NY, NZ, U, V, SIDE_DATA_SIZE };
 
 extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
+extern float zNear;
+extern float zFar;
 extern glm::mat4 MatMVP;        // Матрица преобразования
 
 // Настройка значений параметров для сравнения mouse_button и mouse_action
@@ -112,44 +115,38 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
   struct camera_3d {
     float look_a = 0.0f;       // азимут (0 - X)
     float look_t = 0.0f;       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
-    float look_speed = 0.002f; // зависимость угла поворота от сдвига мыши /Config
-    float speed = 2.0f;        // корректировка скорости от FPS /Config
+
+    // TODO: измерять средний за 10 сек. fps, и пропорционально менять скорость перемещения
+    float speed_rotate = 0.001f; // скорость поворота (радиан в секунду) камеры
+    float speed_moving = 10.f;   // скорость перемещения (в секунду) камеры
+
     glm::vec3 ViewFrom = {};   // 3D координаты точки положения
   };
   extern camera_3d Eye;
 
-  /** Начальная дистанция рендера окружения
-   *
-   * - блок, над которым расположена камера рендерится всегда, даже при lod_0 = 0.0f
-   * - при значении 0.0f < lod_0 <= 1.0f рисуется площадка из 9 блоков
-   * - координаты блока (нулевая точка) вычилсяется через floor(), граница - через ceil()
-   */
-  static const int lod0_size = 25;
+  // число вершин в прямоугольнике
+  static const u_int vertices_per_side = 4;
 
-  // число вершин в одном снипе
-  static const u_int vertices_per_quad = 4;
   // число индексов в одном снипе
-  static const u_int indices_per_quad = 6;
+  static const u_int indices_per_side = 6;
+
   // количество чисел (GLfloat) в блоке данных одной вершины
   static const size_t digits_per_vertex = 12;
-  // количество чисел (GLfloat) в блоке данных снипа
-  static const size_t digits_per_snip = digits_per_vertex * vertices_per_quad;
-  // число элементов в поле shift элемента rig
-  //static const size_t digits_per_rig_shift = 7;
-  // размер (число байт) блока данных снипа
-  static const GLsizeiptr bytes_per_snip = digits_per_snip * sizeof(GLfloat);
+
+  // количество чисел (GLfloat) в блоке данных прямоугольника
+  static const size_t digits_per_side = digits_per_vertex * vertices_per_side;
+
+  // количество чисел (GLfloat) в блоке данных вокселя
+  static const size_t digits_per_voxel = digits_per_side * 6;
+
+  // размер (число байт) блока данных одной стороны вокселя
+  static const GLsizeiptr bytes_per_side = digits_per_side * sizeof(GLfloat);
+
   // число байт для записи данных одной вершины
   static const GLsizeiptr bytes_per_vertex = digits_per_vertex * sizeof(GLfloat);
 
   static const char fname_cfg[] = "config.db";
   static const char fname_map[] = "map.db";
-
-  struct evInput
-  {
-    float dx, dy;   // смещение указателя мыши в активном окне
-    int fb, rl, ud, // управление направлением движения в 3D пространстве
-    scancode, mods, mouse, action, key;
-  };
 
   struct texture {
       GLfloat u = 0.0f;
@@ -169,21 +166,15 @@ extern const int KEY_BACKSPACE;      // GLFW_KEY_BACKSPACE
       float a = 1.0f;
   };
 
+
   // структуры для оперирования опорными точками в пространстве трехмерных координат
   struct i3d
   {
-    int x = 0;
-    int y = 0;
-    int z = 0;
-
-    i3d(void) = delete;
+    int x, y, z;
+    i3d(void): x(0), y(0), z(0) {}
     i3d(int X, int Y, int Z): x(X), y(Y), z(Z) {}
-    i3d(const glm::vec3 &v): x(static_cast<int>(floor(v.x))),
-      y(static_cast<int>(floor(v.y))), z(static_cast<int>(floor(v.z))) {}
-    i3d(const glm::vec4 &v): x(static_cast<int>(floor(v.x))),
-      y(static_cast<int>(floor(v.y))), z(static_cast<int>(floor(v.z))) {}
   };
-  extern bool operator< (i3d const& left, i3d const& right);
+  extern bool operator== (const i3d&, const i3d&);
 
   struct f3d
   {

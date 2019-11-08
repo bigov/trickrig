@@ -120,7 +120,7 @@ vbo_ext::vbo_ext(GLenum type): vbo_base(type)
 {
   glGenBuffers(1, &id_subbuf);
   glBindBuffer(GL_COPY_WRITE_BUFFER, id_subbuf);
-  glBufferData(GL_COPY_WRITE_BUFFER, bytes_per_snip, nullptr, GL_STATIC_DRAW);
+  glBufferData(GL_COPY_WRITE_BUFFER, bytes_per_side, nullptr, GL_STATIC_DRAW);
   glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
@@ -134,7 +134,7 @@ vbo_ext::vbo_ext(GLenum type): vbo_base(type)
 /// активной части буфера уменьшается на размер удаленного блока.
 ///
 /// Возвращается значение границы VBO после переноса данных. Она равна
-/// предыдущему значению адреса блока данных, которые были перемещены.
+/// началу адреса блока, данные которого были перемещены.
 ///
 GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
 {
@@ -143,8 +143,11 @@ GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
 
 #ifndef NDEBUG
   if((dest + data_size) > hem)
+  {
     std::printf("vbo_ext::remove error: dest %li + data_size %li  > hem %li\n",
                 static_cast<long>(dest), static_cast<long>(data_size), static_cast<long>(hem));
+    return hem;
+  }
 #endif
   auto src = hem - data_size; // Адрес крайнего на хвосте блока данных, которые будут перемещены.
 
@@ -196,15 +199,16 @@ GLsizeiptr vbo_ext::append(const GLvoid* data, GLsizeiptr data_size)
 /// \param offset
 /// \param size
 /// \param data
-/// \details Если читать из рендер-буфера напрямую в ОЗУ, то после считывания
-/// скорость операции перемещения данных внутри памяти GPU устанавливается
-/// равной скорости обмена с CPU. Чтобы это обойти, создается промежуточный
-/// буфер (id_subbuf), через который и производится чтение данных.
+/// \details Если читать из рендер-буфера напрямую в ОЗУ, то после первого-же
+/// считывания OpenGL автоматически устанавливает скорость операции перемещения
+/// данных внутри памяти GPU равной скорости обмена с CPU, которая в разы ниже,
+/// что сразу становится заметно визуально. Чтобы это обойти, создается
+/// промежуточный (id_subbuf) буфер, через который и производится чтение данных.
 ///
 void vbo_ext::data_get(GLintptr offset, GLsizeiptr sz, GLvoid* dst)
 {
 #ifndef NDEBUG
-  if(sz > bytes_per_snip) ERR("vbo_ext::data_get > bytes_per_snip");
+  if(sz > bytes_per_side) ERR("vbo_ext::data_get > bytes_per_snip");
 #endif
 
   glBindBuffer(GL_COPY_WRITE_BUFFER, id_subbuf);

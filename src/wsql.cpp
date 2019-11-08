@@ -20,6 +20,115 @@ namespace tr {
 
 
   ///
+  /// \brief loadOrSaveDb
+  /// \param pInMemory
+  /// \param zFilename
+  /// \param isSave
+  /// \return
+  /// \details   This function is used to load the contents of a database file on disk
+  /// into the "main" database of open database connection pInMemory, or
+  /// to save the current contents of the database opened by pInMemory into
+  /// a database file on disk. pInMemory is probably an in-memory database,
+  /// but this function will also work fine if it is not.
+  ///
+  /// Parameter zFilename points to a nul-terminated string containing the
+  /// name of the database file on disk to load from or save to. If parameter
+  /// isSave is non-zero, then the contents of the file zFilename are
+  /// overwritten with the contents of the database opened by pInMemory. If
+  /// parameter isSave is zero, then the contents of the database opened by
+  /// pInMemory are replaced by data loaded from the file zFilename.
+  ///
+  /// If the operation is successful, SQLITE_OK is returned. Otherwise, if
+  /// an error occurs, an SQLite error code is returned.
+  ///
+  int wsql::loadOrSaveDb(sqlite3 *pInMemory, const char *zFilename, int isSave)
+  {
+    int rc;                   /* Function return code */
+    sqlite3 *pFile;           /* Database connection opened on zFilename */
+
+    /* Open the database file identified by zFilename. Exit early if this fails
+    ** for any reason. */
+    rc = sqlite3_open(zFilename, &pFile);
+    if( rc==SQLITE_OK ){
+
+      /* If this is a 'load' operation (isSave==0), then data is copied
+      ** from the database file just opened to database pInMemory.
+      ** Otherwise, if this is a 'save' operation (isSave==1), then data
+      ** is copied from pInMemory to pFile.  Set the variables pFrom and
+      ** pTo accordingly. */
+      sqlite3* pFrom = (isSave ? pInMemory : pFile);
+      sqlite3* pTo   = (isSave ? pFile     : pInMemory);
+
+      /* Set up the backup procedure to copy from the "main" database of
+      ** connection pFile to the main database of connection pInMemory.
+      ** If something goes wrong, pBackup will be set to NULL and an error
+      ** code and message left in connection pTo.
+      **
+      ** If the backup object is successfully created, call backup_step()
+      ** to copy data from pFile to pInMemory. Then call backup_finish()
+      ** to release resources associated with the pBackup object.  If an
+      ** error occurred, then an error code and message will be left in
+      ** connection pTo. If no error occurred, then the error code belonging
+      ** to pTo is set to SQLITE_OK.
+      */
+      sqlite3_backup* pBackup = sqlite3_backup_init(pTo, "main", pFrom, "main");
+      if( pBackup ){
+        (void)sqlite3_backup_step(pBackup, -1);
+        (void)sqlite3_backup_finish(pBackup);
+      }
+      rc = sqlite3_errcode(pTo);
+    }
+
+    /* Close the database connection opened on database file zFilename
+    ** and return the result of this function. */
+    (void)sqlite3_close(pFile);
+    return rc;
+  }
+
+
+  ///
+  /// \brief wsql::open_in_ram
+  /// \return
+  /// \details Загружает данные из файла в базу данных, размещенную
+  /// в оперативной памяти
+  ///
+  bool wsql::open_in_ram(const std::string& FileNameDB)
+  {
+    assert(!is_open);
+    ErrorsList.clear();
+
+    int rc = sqlite3_open_v2(":memory:", &db,
+      SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nullptr);
+    if (rc != SQLITE_OK)
+    {
+      ErrorsList.emplace_front(std::string(sqlite3_errmsg(db))
+        + std::string("\nCan't open :memory: database."));
+      if(db != nullptr) sqlite3_close(db);
+      return false;
+    }
+    else
+    {
+      sqlite3_update_hook(db, update_callback, &empty);
+      rc = loadOrSaveDb(db, FileNameDB.c_str(), 0);
+      is_open = (rc == SQLITE_OK);
+    }
+    return is_open;
+  }
+
+
+  ///
+  /// \brief wsql::close_in_ram
+  /// \param FileNameDB
+  /// \details закрывает базу данных в памяти с сохранением данных в файл на диске.
+  ///
+  void wsql::close_in_ram(const std::string& FileNameDB)
+  {
+    loadOrSaveDb(db, FileNameDB.c_str(), 1);
+    close();
+  }
+
+
+  ///
   /// \brief wsql::callback
   /// \param x
   /// \param count
@@ -53,73 +162,6 @@ namespace tr {
     if(nullptr != x) return 1; // В этой реализации значение x всегда равно 0
     else return 0;
   }
-
-
-  ///
-  /// \brief sqlw::select_rig
-  /// \param x
-  /// \param y
-  /// \param z
-  ///
-  void wsql::select_rig(int x, int y, int z)
-  {
-    char buf[255];
-    sprintf(buf,
-      "SELECT `born`, `id_area`, `shift` FROM `rigs` "
-      "WHERE(`x`=%d AND `y`=%d AND `z`=%d);",
-      x, y, z);
-    request_get(buf);
-    return;
-  }
-
-
-  ///
-  /// \brief sqlw::select_snip
-  /// \param id
-  ///
-  void wsql::select_snip(int id)
-  {
-    char buf[255];
-    sprintf(buf, "SELECT `snip` FROM `snips` WHERE `id_area`=%d;", id);
-    request_get(buf);
-    return;
-  }
-
-
-  /// Запись рига
-  void wsql::insert_rig(int x, int y, int z, int t, int id, const float *rs, size_t s)
-  {
-    char buf[255];
-    sprintf(buf, "INSERT OR REPLACE "
-                 "INTO `rigs`(`x`,`y`,`z`,`born`,`id_area`, `shift`) "
-                 "VALUES(%d, %d, %d, %d, %d, ?);",
-                  x, y, z, t, id);
-    request_put(buf, rs, s);
-    return;
-  }
-
-
-  /// Запись снипа
-  void wsql::insert_snip(int id, const float* data)
-  {
-    char buf[255];
-    sprintf(buf, "INSERT INTO `snips`(`id_area`, `snip`) VALUES(%d, ?);",
-            id);
-    request_put(buf, data, tr::digits_per_snip);
-    return;
-  }
-
-  /// Обновить номер группы в записи первого снипа
-  void wsql::update_snip(int i, int j)
-  {
-    char buf[255];
-    sprintf(buf, "UPDATE `snips` SET `id_area`=%d WHERE `id`=%d;",
-            i, j);
-    write(buf); //TODO: может тут надо exec??
-    return;
-  }
-
-//////////////////////
 
 
   ///
@@ -198,11 +240,9 @@ namespace tr {
       complete = true;
     }
     num_rows = 0;
-    int step = 0;
     while (!complete)
     {
-      step = sqlite3_step(pStmt);
-      switch (step)
+      switch (sqlite3_step(pStmt))
       {
         case SQLITE_ROW:
           num_rows++;

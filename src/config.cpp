@@ -24,19 +24,23 @@ errno_t getenv_s(
 
 // Инициализация глобальных объектов
 glm::mat4 MatProjection {}; // матрица проекции 3D сцены
+float zNear = 1.f;          // расстояние до ближней плоскости матрицы проекции
+float zFar  = 10000.f;      // расстояние до дальней плоскости матрицы проекции
 glm::mat4 MatMVP        {}; // Матрица преобразования
 camera_3d Eye           {}; // главная камера 3D вида
-main_window AppWin      {}; // параметры окна приложения
+main_window AppWindow   {}; // параметры окна приложения
+// ввод пользователя
+ev_input Input = { 0.0, 0.0, 0, 0, 0, -1, -1, -1, -1, -1, std::string(), false };
 
 // Инициализация статических членов
 db cfg::DataBase {};
 
-v_str cfg::AppParams {}; // параметры конфигурации приложения
-v_str cfg::MapParams {}; // параметры когфигурации карты
-std::string cfg::AssetsDir {}; // папка служебных файлов
-std::string cfg::UserDir   {}; // папка конфигов пользователя
-std::string cfg::DS        {}; // символ разделителя папок
-std::string cfg::CfgFname  {}; // конфиг, выбранный пользователем
+v_str cfg::AppParams      {}; // параметры конфигурации приложения
+v_str cfg::MapParams      {}; // параметры когфигурации карты
+std::string cfg::AssetsDir{}; // папка служебных файлов
+std::string cfg::UserDir  {}; // папка конфигов пользователя
+std::string cfg::DS       {}; // символ разделителя папок
+std::string cfg::CfgFname {}; // конфиг, выбранный пользователем
 
 ///
 /// \brief cfg::user_dir
@@ -55,7 +59,7 @@ std::string cfg::user_dir(void)
 ///
 void cfg::load_map_cfg(const std::string &DirName)
 {
-  MapParams = DataBase.open_map(DirName + DS);
+  MapParams = DataBase.map_open(DirName + DS);
 
   // Загрузка настроек камеры вида
   Eye.ViewFrom.x = std::stof(MapParams[VIEW_FROM_X]);
@@ -89,22 +93,17 @@ void cfg::load_app_cfg(void)
   AssetsDir = ".." + DS + "assets";
   AppParams = DataBase.open_app(UserDir + DS);
 
-  // Загрузка шаблона поверхности
-  auto Tpls = AssetsDir + DS + "surf_tpl.db";
-  if(!fs::exists(Tpls)) ERR("Miss file: " + Tpls);
-  DataBase.load_template(1, Tpls);
-
   // Загрузка настроек окна приложения
-  AppWin.width = static_cast<u_int>(std::stoi(AppParams[WINDOW_WIDTH]));
-  AppWin.height = static_cast<u_int>(std::stoi(AppParams[WINDOW_HEIGHT]));
-  AppWin.top = static_cast<u_int>(std::stoi(AppParams[WINDOW_TOP]));
-  AppWin.left = static_cast<u_int>(std::stoi(AppParams[WINDOW_LEFT]));
-  AppWin.Cursor.x = static_cast<float>(AppWin.width/2) + 0.5f;
-  AppWin.Cursor.y = static_cast<float>(AppWin.height/2) + 0.5f;
-  AppWin.aspect = static_cast<float>(AppWin.width)
-                   / static_cast<float>(AppWin.height);
+  AppWindow.width = static_cast<u_int>(std::stoi(AppParams[WINDOW_WIDTH]));
+  AppWindow.height = static_cast<u_int>(std::stoi(AppParams[WINDOW_HEIGHT]));
+  AppWindow.top = static_cast<u_int>(std::stoi(AppParams[WINDOW_TOP]));
+  AppWindow.left = static_cast<u_int>(std::stoi(AppParams[WINDOW_LEFT]));
+  AppWindow.Cursor.x = static_cast<float>(AppWindow.width/2) + 0.5f;
+  AppWindow.Cursor.y = static_cast<float>(AppWindow.height/2) + 0.5f;
+  AppWindow.aspect = static_cast<float>(AppWindow.width)
+                   / static_cast<float>(AppWindow.height);
 
-  MatProjection = glm::perspective(1.118f, AppWin.aspect, 0.01f, 1000.0f);
+  MatProjection = glm::perspective(1.118f, AppWindow.aspect, zNear, zFar);
 }
 
 
@@ -135,8 +134,6 @@ void cfg::set_user_dir(void)
   UserDir = std::string(env_p);
 #endif
 
-  //info("user dir:" + UserDir);
-
   UserDir += DS +".config";
    if(!fs::exists(UserDir)) fs::create_directory(UserDir);
   UserDir += DS + "TrickRig";
@@ -160,7 +157,7 @@ std::string cfg::create_map(const std::string &MapName)
   if(!fs::exists(DirPName)) fs::create_directory(DirPName);
   else ERR("Err: map dir exist: " + DirPName);
 
-  auto MapSrc { AssetsDir + DS + "surf_tpl.db" };   // шаблон карты
+  auto MapSrc { AssetsDir + DS + "space.db" };   // шаблон карты
   auto MapPathName { DirPName + DS + fname_map};    // новая карта
 
   std::ifstream src(MapSrc, std::ios::binary);   // TODO: контроль чтения
@@ -178,16 +175,16 @@ std::string cfg::create_map(const std::string &MapName)
 ///
 void cfg::save_app(void)
 {
-  DataBase.save(AppWin);
+  DataBase.save_window_params(AppWindow);
 }
 
 
 ///
-/// Сохрание настроек положения камеры при закрытии карты
+/// Сохранить настройки положения камеры и закрыть карту
 ///
 void cfg::save_map_view(void)
 {
-  DataBase.save(Eye);
+  DataBase.map_close(Eye);
 }
 
 

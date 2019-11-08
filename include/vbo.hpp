@@ -9,8 +9,7 @@
 #ifndef VBO_HPP
 #define VBO_HPP
 
-#include "main.hpp"
-#include "rig.hpp"
+#include "io.hpp"
 
 namespace tr
 {

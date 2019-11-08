@@ -75,6 +75,7 @@ namespace tr
 
       // публичные методы
       void resize(u_int width, u_int height);
+      void clear(void);
       u_char* uchar(void) const;
       px* px_data(void) const;
       void load(const std::string &filename);
@@ -85,7 +86,6 @@ namespace tr
   extern void info(const std::string &);
   extern int get_msec(void);   // число миллисекунд от начала суток.
   extern int random_int(void);
-  extern short random_short(void);
   extern std::list<std::string> dirs_list(const std::string &path);
 
 }

@@ -9,14 +9,10 @@
 #define DB_HPP
 
 #include "wsql.hpp"
-#include "rig.hpp"
-#include "rdb.hpp"
+#include "vox.hpp"
 #include "framebuf.hpp"
 
 namespace tr {
-
-
-struct texture_coord {float u=0.0f, v=0.0f;};
 
 // Параметры и режимы окна приложения
 struct main_window {
@@ -28,29 +24,31 @@ struct main_window {
   u_int btn_h = 36;                     // высота кнопки GUI
   u_int minwidth = (btn_w + 16) * 4;    // минимально допустимая ширина окна
   u_int minheight = btn_h * 4 + 8;      // минимально допустимая высота окна
-  std::string* pInputBuffer = nullptr;  // строка ввода пользователя
   std::unique_ptr<frame_buffer> RenderBuffer = nullptr;    // рендер-буфер окна
   img* pWinGui = nullptr;               // текстура GUI окна
 
-  bool run     = true;  // индикатор закрытия окна
+  bool is_open = true;  // состояние окна
   float aspect = 1.0f;  // соотношение размеров окна
-  //bool resized = true;  // флаг наличия изменений параметров окна
   double xpos = 0.0;    // позиция указателя относительно левой границы
   double ypos = 0.0;    // позиция указателя относительно верхней границы
-  int fps = 120;        // частота кадров (для коррекции скорости движения)
+  int fps = 500;        // частота кадров (для коррекции скорости движения)
   glm::vec3 Cursor = { 200.5f, 200.5f, .0f }; // x=u, y=v, z - длина прицела
 
-  texture_coord texYp { 0.0f, 0.0f };
-  texture_coord texYn {};
-  texture_coord texXp {};
-  texture_coord texXn {};
-  texture_coord texZp {};
-  texture_coord texZn {};
-
-  char set_mouse_ptr = 0;           // запрос смены типа курсора {-1, 0, 1}
   void resize(u_int w, u_int h);
 };
-extern main_window AppWin;
+
+extern main_window AppWindow;
+
+struct ev_input
+{
+  float dx, dy;   // смещение указателя мыши в активном окне
+  int fb, rl, ud, // управление направлением движения в 3D пространстве
+  scancode, mods, mouse, action, key;
+  std::string StringBuffer;  // строка ввода пользователя
+  bool text_mode;
+};
+
+extern ev_input Input;
 
 
 class db
@@ -58,18 +56,16 @@ class db
   public:
     db(void) {}
    ~db(void) {}
-    v_str open_map(const std::string &); // загрузка данных карты
     v_str open_app(const std::string &); // загрузка данных приложения
+    v_str map_open(const std::string &); // загрузка данных карты
+    void map_close(const camera_3d &Eye);
     void map_name_save(const std::string &Dir, const std::string &MapName);
     v_ch map_name_read(const std::string & dbFile);
-    void save(const camera_3d &Eye);
-    void save(const main_window &AppWin);
-    rig load_rig(const i3d &, const std::string &file_name);
-    void rigs_loader(std::map<i3d, rig> &Map, i3d &Start, i3d &End);
-    void save_rig(const i3d &, const rig *);
-    void save_rigs_block(const i3d &, const i3d &, rdb &);
+    void save_window_params(const main_window &AppWindow);
+    void save_vox(vox*);
+    void erase_vox(vox*);
     void init_map_config(const std::string &);
-    void load_template(int level, const std::string &fname);   // загрузка шаблона из файла БД
+    std::unique_ptr<vox> get_vox(const i3d&, int);
 
   private:
     std::string MapDir       {}; // директория текущей карты (со слэшем в конце)
@@ -78,10 +74,6 @@ class db
     std::string CfgAppPFName {}; // файл глобальных настроек приложения
     wsql SqlDb {};
 
-    // == L-O-D 1 ==
-
-    std::map<i3d, rig> TplRigs_1 {};     // Шаблон карты - для создания новых элементов.
-    int tpl_1_side = 16;                 // длина стороны шаблона
     void init_app_config(const std::string &);
     v_str load_config(size_t params_count, const std::string &file_name);
 };

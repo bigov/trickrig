@@ -8,7 +8,6 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
-#include "main.hpp"
 #include "db.hpp"
 
 namespace tr
