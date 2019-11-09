@@ -40,8 +40,8 @@ void main_window::resize(u_int w, u_int h)
   glViewport(0, 0, GLsizei(w), GLsizei(h)); // пересчет Viewport
 
   // пересчет позции координат прицела (центр окна)
-  Cursor.x = static_cast<float>(w/2) + 0.5f;
-  Cursor.y = static_cast<float>(h/2) + 0.5f;
+  Cursor.x = static_cast<float>(w/2);
+  Cursor.y = static_cast<float>(h/2);
 
   // пересчет матрицы проекции
   aspect = static_cast<float>(w) / static_cast<float>(h);

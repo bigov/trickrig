@@ -98,8 +98,8 @@ void cfg::load_app_cfg(void)
   AppWindow.height = static_cast<u_int>(std::stoi(AppParams[WINDOW_HEIGHT]));
   AppWindow.top = static_cast<u_int>(std::stoi(AppParams[WINDOW_TOP]));
   AppWindow.left = static_cast<u_int>(std::stoi(AppParams[WINDOW_LEFT]));
-  AppWindow.Cursor.x = static_cast<float>(AppWindow.width/2) + 0.5f;
-  AppWindow.Cursor.y = static_cast<float>(AppWindow.height/2) + 0.5f;
+  AppWindow.Cursor.x = static_cast<float>(AppWindow.width/2);
+  AppWindow.Cursor.y = static_cast<float>(AppWindow.height/2);
   AppWindow.aspect = static_cast<float>(AppWindow.width)
                    / static_cast<float>(AppWindow.height);
 
