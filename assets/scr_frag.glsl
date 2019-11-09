@@ -17,7 +17,6 @@ void main(void)
 
   // Формирование курсора c длиной стороны, равной Cursor.z
   // в точке с координатами (Cursor.x; Cursor.y)
-  float m, n;
   if((
     abs(gl_FragCoord.x - Cursor.x) < thickness &&
     abs(gl_FragCoord.y - Cursor.y) < Cursor.z
@@ -26,8 +25,8 @@ void main(void)
     abs(gl_FragCoord.x - Cursor.x) < Cursor.z
     ))
   {
-    m = (FragColor.r + FragColor.g + FragColor.b)/3;      // средняя яркость текущей точки
-    if(m < 0.6f) { n = m + 0.3f; } else { n = m - 0.3f; } // "инвертировать" значение
-    FragColor = vec4(n, n, n, 1.f);                       // в итоге получим инверсный курсор
+    float m = (FragColor.r + FragColor.g + FragColor.b)/3.f;
+    if(m < 0.6f) m += 0.5f; else m -= 0.5f; // "инвертировать" среднюю яркость
+    FragColor = vec4(m, m, m, 1.f);         // получим курсор с инверсной яркостью
   }
 }
