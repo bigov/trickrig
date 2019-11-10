@@ -36,6 +36,87 @@ namespace tr {
 
 
 ///
+/// \brief ev_input::mouse_event
+/// \param _button
+/// \param _action
+/// \param _mods
+///
+void ev_input::mouse_event(int _button, int _action, int _mods)
+{
+  mods   = _mods;
+  mouse  = _button;
+  action = _action;
+}
+
+
+///
+/// \brief ev_input::keyboard_event
+/// \param key
+/// \param scancode
+/// \param action
+/// \param mods
+///
+void ev_input::keyboard_event(int _key, int _scancode, int _action, int _mods)
+{
+  mouse    = -1;
+  key      = _key;
+  scancode = _scancode;
+  action   = _action;
+  mods     = _mods;
+
+  if (PRESS == _action) {
+    switch(_key) {
+      case KEY_MOVE_UP:
+        on_up = 1;
+        break;
+      case KEY_MOVE_DOWN:
+        on_down = 1;
+        break;
+      case KEY_MOVE_FRONT:
+        on_front = 1;
+        break;
+      case KEY_MOVE_BACK:
+        on_back = 1;
+        break;
+      case KEY_MOVE_LEFT:
+        on_left = 1;
+        break;
+      case KEY_MOVE_RIGHT:
+        on_right = 1;
+        break;
+      default: break;
+    }
+  } else if (RELEASE == _action) {
+    switch(_key) {
+      case KEY_MOVE_UP:
+        on_up = 0;
+        break;
+      case KEY_MOVE_DOWN:
+        on_down = 0;
+        break;
+      case KEY_MOVE_FRONT:
+        on_front = 0;
+        break;
+      case KEY_MOVE_BACK:
+        on_back = 0;
+        break;
+      case KEY_MOVE_LEFT:
+        on_left = 0;
+        break;
+      case KEY_MOVE_RIGHT:
+        on_right = 0;
+        break;
+      default: break;
+    }
+  }
+
+  fb = on_front - on_back;
+  ud = on_down  - on_up;
+  rl = on_left  - on_right;
+}
+
+
+///
 /// \brief db::load_config
 /// \param n
 /// \param Pname

@@ -9,6 +9,8 @@ namespace tr {
 gui::gui(void)
 {
   Win = std::make_unique<wglfw>();
+  Win->append(Input);
+
   Space = std::make_unique<space>();
 
   FontMap1_len = static_cast<u_int>(FontMap1.length());

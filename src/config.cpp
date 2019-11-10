@@ -29,18 +29,16 @@ float zFar  = 10000.f;      // расстояние до дальней плос
 glm::mat4 MatMVP        {}; // Матрица преобразования
 camera_3d Eye           {}; // главная камера 3D вида
 main_window AppWindow   {}; // параметры окна приложения
-// ввод пользователя
-ev_input Input = { 0.0, 0.0, 0, 0, 0, -1, -1, -1, -1, -1, std::string(), false };
+ev_input Input          {}; // ввод пользователя
 
 // Инициализация статических членов
-db cfg::DataBase {};
-
-v_str cfg::AppParams      {}; // параметры конфигурации приложения
-v_str cfg::MapParams      {}; // параметры когфигурации карты
-std::string cfg::AssetsDir{}; // папка служебных файлов
-std::string cfg::UserDir  {}; // папка конфигов пользователя
-std::string cfg::DS       {}; // символ разделителя папок
-std::string cfg::CfgFname {}; // конфиг, выбранный пользователем
+db          cfg::DataBase  {};
+v_str       cfg::AppParams {}; // параметры конфигурации приложения
+v_str       cfg::MapParams {}; // параметры когфигурации карты
+std::string cfg::AssetsDir {}; // папка служебных файлов
+std::string cfg::UserDir   {}; // папка конфигов пользователя
+std::string cfg::DS        {}; // символ разделителя папок
+std::string cfg::CfgFname  {}; // конфиг, выбранный пользователем
 
 ///
 /// \brief cfg::user_dir

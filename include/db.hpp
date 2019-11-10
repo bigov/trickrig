@@ -14,6 +14,17 @@
 
 namespace tr {
 
+class wglfw;
+class IUserInput
+{
+public:
+    IUserInput(void) = default;
+    virtual ~IUserInput(void) = default;
+
+    virtual void mouse_event(int button, int action, int mods) = 0;
+    virtual void keyboard_event(int key, int scancode, int action, int mods) = 0;
+};
+
 // Параметры и режимы окна приложения
 struct main_window {
   u_int width = 400;                    // ширина окна
@@ -39,13 +50,40 @@ struct main_window {
 
 extern main_window AppWindow;
 
-struct ev_input
+class ev_input: public IUserInput
 {
-  float dx, dy;   // смещение указателя мыши в активном окне
-  int fb, rl, ud, // управление направлением движения в 3D пространстве
-  scancode, mods, mouse, action, key;
-  std::string StringBuffer;  // строка ввода пользователя
-  bool text_mode;
+  public:
+    explicit ev_input(void) = default;
+
+    // Запретить копирование и перенос экземпляров класса
+    ev_input(const ev_input&) = delete;
+    ev_input& operator=(const ev_input&) = delete;
+    ev_input(ev_input&&) = delete;
+    ev_input& operator=(ev_input&&) = delete;
+
+    float dx = 0.f;    // смещение мыши в активном окне
+    float dy = 0.f;
+    int fb = 0;        // 3D движение front/back
+    int rl = 0;        // -- right/left
+    int ud = 0;        // -- up/down
+
+    int on_front = 0; // нажата клавиша вперед
+    int on_back  = 0; // нажата клавиша назад
+    int on_right = 0; // нажата клавиша вправо
+    int on_left  = 0; // нажата клавиша влево
+    int on_up    = 0; // нажата клавиша вверх
+    int on_down  = 0; // нажата клавиша вниз
+
+    int scancode = -1;
+    int mods = -1;
+    int mouse = -1;
+    int action = -1;
+    int key = -1;
+    std::string StringBuffer {};  // строка ввода пользователя
+    bool text_mode = false;
+
+    virtual void mouse_event(int _button, int _action, int _mods);
+    virtual void keyboard_event(int _key, int _scancode, int _action, int _mods);
 };
 
 extern ev_input Input;

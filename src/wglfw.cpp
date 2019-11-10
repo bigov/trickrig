@@ -11,23 +11,6 @@ namespace tr
 {
 std::string wglfw::title = "TrickRig: v.development";
 
-// TODO: сделать привязку через конфиг
-int wglfw::k_FRONT = GLFW_KEY_W;
-int wglfw::k_BACK  = GLFW_KEY_S;
-int wglfw::k_UP    = GLFW_KEY_LEFT_SHIFT;
-int wglfw::k_DOWN  = GLFW_KEY_SPACE;
-int wglfw::k_RIGHT = GLFW_KEY_D;
-int wglfw::k_LEFT  = GLFW_KEY_A;
-
-const int MOUSE_BUTTON_LEFT  = GLFW_MOUSE_BUTTON_LEFT;
-const int MOUSE_BUTTON_RIGHT = GLFW_MOUSE_BUTTON_RIGHT;
-const int PRESS              = GLFW_PRESS;
-const int REPEAT             = GLFW_REPEAT;
-const int RELEASE            = GLFW_RELEASE;
-const int KEY_ESCAPE         = GLFW_KEY_ESCAPE;
-const int KEY_BACKSPACE      = GLFW_KEY_BACKSPACE;
-
-
 ///
 /// \brief main_window::resize
 /// \param w
@@ -51,6 +34,10 @@ void main_window::resize(u_int w, u_int h)
   if(nullptr != RenderBuffer) RenderBuffer->resize(GLsizei(w), GLsizei(h));
   if(nullptr != pWinGui) pWinGui->resize(w, h);
 }
+
+
+// Инициализация статических членов
+std::list<IUserInput*> wglfw::_observers {};
 
 
 ///
@@ -114,6 +101,28 @@ wglfw::~wglfw()
 
 
 ///
+/// \brief wglfw::append
+/// \param ref
+/// \details добавить наблюдателя за событиями ввода
+///
+void wglfw::append(IUserInput& ref)
+{
+  _observers.push_back(&ref);
+}
+
+
+///
+/// \brief wglfw::remove
+/// \param ref
+/// \details удалить наблюдателя за событиями ввода
+///
+void wglfw::remove(IUserInput& ref)
+{
+  _observers.remove(&ref);
+}
+
+
+///
 /// Errors callback
 ///
 void wglfw::error_callback(int error, const char* description)
@@ -156,25 +165,22 @@ void wglfw::cursor_restore(void)
 ///
 void wglfw::mouse_button_callback(GLFWwindow*, int button, int action, int mods)
 {
-  Input.mods   = mods;
-  Input.mouse  = button;
-  Input.action = action;
+  for(auto& observer: _observers)
+  {
+    observer->mouse_event(button, action, mods);
+  }
 }
 
 
 ///
 /// Keys events callback
 ///
-void wglfw::key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+void wglfw::key_callback(GLFWwindow*, int key, int scancode, int action, int mods)
 {
-  Input.key    = key;
-  Input.action = action;
-  Input.mouse  = -1;
-  Input.mods = mods;
-  Input.scancode = scancode;
-  Input.fb = glfwGetKey(window, k_FRONT) - glfwGetKey(window, k_BACK);
-  Input.ud = glfwGetKey(window, k_DOWN)  - glfwGetKey(window, k_UP);
-  Input.rl = glfwGetKey(window, k_LEFT)  - glfwGetKey(window, k_RIGHT);
+  for(auto& observer: _observers)
+  {
+    observer->keyboard_event(key, scancode, action, mods);
+  }
 }
 
 

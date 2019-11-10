@@ -18,23 +18,20 @@ class wglfw
       void cursor_hide(void);
       void cursor_restore(void);
 
+      void append(IUserInput& ref);  // добавить наблюдателя
+      void remove(IUserInput& ref);  // удалить наблюдателя
+
+      // Запретить копирование объекта
+      wglfw(const wglfw&) = delete;
+      wglfw& operator=(const wglfw&) = delete;
+
+      // Запретить перенос объекта
+      wglfw(wglfw&&) = delete;
+      wglfw& operator=(wglfw&&) = delete;
+
     private:
       GLFWwindow * win_ptr = nullptr;
-
-      // переменная для запроса положения курсора в окне
-      double mouse_x = 0.0,
-             mouse_y = 0.0;
-
-      // TODO: setup by Config
-      static int k_FRONT;
-      static int k_BACK;
-      static int k_UP;
-      static int k_DOWN;
-      static int k_RIGHT;
-      static int k_LEFT;
-
-      wglfw(const tr::wglfw &);
-      wglfw operator=(const tr::wglfw &);
+      static std::list<IUserInput*> _observers;
 
       static void error_callback(int error_id, const char* description);
 
@@ -44,11 +41,12 @@ class wglfw
       static void mouse_button_callback(
         GLFWwindow* window, int button, int action, int mods);
 
-      static void key_callback(
-        GLFWwindow* window, int key, int scancode, int action, int mods);
+      static void key_callback(GLFWwindow*, int key, int scancode, int action, int mods);
 
       static void window_pos_callback(GLFWwindow*, int, int);
+
       static void framebuffer_size_callback(GLFWwindow*, int, int);
+
       static void character_callback(GLFWwindow*, unsigned int);
 
   };
