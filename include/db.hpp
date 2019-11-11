@@ -14,58 +14,62 @@
 
 namespace tr {
 
-class wglfw;
-class IUserInput
+// Интерфейс графического окна для обмена данными с OpenGL контентом
+class IWindowInput
 {
 public:
-    IUserInput(void) = default;
-    virtual ~IUserInput(void) = default;
+    IWindowInput(void) = default;
+    virtual ~IWindowInput(void) = default;
 
     virtual void mouse_event(int button, int action, int mods) = 0;
     virtual void keyboard_event(int key, int scancode, int action, int mods) = 0;
+    virtual void character_event(u_int ch) = 0;
+    virtual void reposition_event(int left, int top) = 0;
+    virtual void resize_event(GLsizei width, GLsizei height) = 0;
+    virtual void cursor_position_event(double x, double y) = 0;
+    virtual void sight_position_event(double x, double y) = 0;
+    virtual void close_event(void) = 0;
+    virtual void cursor_hide(void) = 0;
+    virtual void cursor_show(void) = 0;
 };
 
 // Параметры и режимы окна приложения
-struct main_window {
-  u_int width = 400;                    // ширина окна
-  u_int height = 400;                   // высота окна
-  u_int left = 0;                       // положение окна по горизонтали
-  u_int top = 0;                        // положение окна по вертикали
-  u_int btn_w = 120;                    // ширина кнопки GUI
-  u_int btn_h = 36;                     // высота кнопки GUI
-  u_int minwidth = (btn_w + 16) * 4;    // минимально допустимая ширина окна
-  u_int minheight = btn_h * 4 + 8;      // минимально допустимая высота окна
-  std::unique_ptr<frame_buffer> RenderBuffer = nullptr;    // рендер-буфер окна
-  img* pWinGui = nullptr;               // текстура GUI окна
-
-  bool is_open = true;  // состояние окна
-  float aspect = 1.0f;  // соотношение размеров окна
-  double xpos = 0.0;    // позиция указателя относительно левой границы
-  double ypos = 0.0;    // позиция указателя относительно верхней границы
-  int fps = 500;        // частота кадров (для коррекции скорости движения)
-  glm::vec3 Cursor = { 200.f, 200.f, .0f }; // x=u, y=v, z - длина прицела
-
-  void resize(u_int w, u_int h);
-};
-
-extern main_window AppWindow;
-
-class ev_input: public IUserInput
+class win_data: public IWindowInput
 {
   public:
-    explicit ev_input(void) = default;
-
+    explicit win_data(void) = default;
     // Запретить копирование и перенос экземпляров класса
-    ev_input(const ev_input&) = delete;
-    ev_input& operator=(const ev_input&) = delete;
-    ev_input(ev_input&&) = delete;
-    ev_input& operator=(ev_input&&) = delete;
+    win_data(const win_data&) = delete;
+    win_data& operator=(const win_data&) = delete;
+    win_data(win_data&&) = delete;
+    win_data& operator=(win_data&&) = delete;
 
-    float dx = 0.f;    // смещение мыши в активном окне
+    u_int width = 400;                    // ширина окна
+    u_int height = 400;                   // высота окна
+    u_int left = 0;                       // положение окна по горизонтали
+    u_int top = 0;                        // положение окна по вертикали
+    u_int btn_w = 120;                    // ширина кнопки GUI
+    u_int btn_h = 36;                     // высота кнопки GUI
+    u_int minwidth = (btn_w + 16) * 4;    // минимально допустимая ширина окна
+    u_int minheight = btn_h * 4 + 8;      // минимально допустимая высота окна
+    std::unique_ptr<frame_buffer> RenderBuffer = nullptr;    // рендер-буфер окна
+    img* pWinGui = nullptr;               // текстура GUI окна
+
+    bool is_open = true;  // состояние окна
+    float aspect = 1.0f;  // соотношение размеров окна
+    int fps = 500;        // частота кадров (для коррекции скорости движения)
+
+    glm::vec3 Sight = { 200.f, 200.f, .0f }; // положение и размер прицела
+    double xpos = 0.0;             // позиция указателя относительно левой границы
+    double ypos = 0.0;             // позиция указателя относительно верхней границы
+    bool cursor_is_visible = true; // режим указателя мыши в окне
+
+    float dx = 0.f;   // смещение мыши в активном окне между кадрами
     float dy = 0.f;
-    int fb = 0;        // 3D движение front/back
-    int rl = 0;        // -- right/left
-    int ud = 0;        // -- up/down
+
+    int fb = 0;       // 3D движение front/back
+    int rl = 0;       // -- right/left
+    int ud = 0;       // -- up/down
 
     int on_front = 0; // нажата клавиша вперед
     int on_back  = 0; // нажата клавиша назад
@@ -84,9 +88,18 @@ class ev_input: public IUserInput
 
     virtual void mouse_event(int _button, int _action, int _mods);
     virtual void keyboard_event(int _key, int _scancode, int _action, int _mods);
+    virtual void character_event(u_int ch);
+    virtual void reposition_event(int left, int top);
+    virtual void resize_event(GLsizei width, GLsizei height);
+    virtual void cursor_position_event(double x, double y);
+    virtual void sight_position_event(double x, double y);
+    virtual void close_event(void);
+    virtual void cursor_hide(void);
+    virtual void cursor_show(void);
+
 };
 
-extern ev_input Input;
+extern win_data AppWindow;
 
 
 class db
@@ -99,7 +112,7 @@ class db
     void map_close(const camera_3d &Eye);
     void map_name_save(const std::string &Dir, const std::string &MapName);
     v_ch map_name_read(const std::string & dbFile);
-    void save_window_params(const main_window &AppWindow);
+    void save_window_params(const win_data &AppWindow);
     void save_vox(vox*);
     void erase_vox(vox*);
     void init_map_config(const std::string &);

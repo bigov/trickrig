@@ -41,7 +41,7 @@ namespace tr {
 /// \param _action
 /// \param _mods
 ///
-void ev_input::mouse_event(int _button, int _action, int _mods)
+void win_data::mouse_event(int _button, int _action, int _mods)
 {
   mods   = _mods;
   mouse  = _button;
@@ -56,7 +56,7 @@ void ev_input::mouse_event(int _button, int _action, int _mods)
 /// \param action
 /// \param mods
 ///
-void ev_input::keyboard_event(int _key, int _scancode, int _action, int _mods)
+void win_data::keyboard_event(int _key, int _scancode, int _action, int _mods)
 {
   mouse    = -1;
   key      = _key;
@@ -113,6 +113,139 @@ void ev_input::keyboard_event(int _key, int _scancode, int _action, int _mods)
   fb = on_front - on_back;
   ud = on_down  - on_up;
   rl = on_left  - on_right;
+}
+
+
+///
+/// \brief win_data::character_event
+/// \param ch
+/// \details Прием в буфер ввода текстовой UTF-8 строки
+///
+void win_data::character_event(u_int ch)
+{
+  if(!text_mode) return;
+
+  if(ch < 128)
+  {
+    StringBuffer += char(ch);
+  }
+  else
+  {
+    auto str = wstring2string({static_cast<wchar_t>(ch)});
+    if(str == "№") str = "N";     // № трехбайтный, поэтому заменим на N
+    if(str.size() > 2) str = "_"; // блокировка 3-х байтных символов
+    StringBuffer += str;
+  }
+}
+
+
+///
+/// \brief win_data::window_pos_event
+/// \param left
+/// \param top
+///
+void win_data::reposition_event(int _left, int _top)
+{
+  left = static_cast<u_int>(_left);
+  top = static_cast<u_int>(_top);
+}
+
+
+///
+/// \brief gui_window::resize_event
+/// \param width
+/// \param height
+///
+void win_data::resize_event(GLsizei w, GLsizei h)
+{
+  width  = w;
+  height = h;
+
+  // пересчет позции координат прицела (центр окна)
+  Sight.x = static_cast<float>(w/2);
+  Sight.y = static_cast<float>(h/2);
+
+  // пересчет матрицы проекции
+  aspect = static_cast<float>(w) / static_cast<float>(h);
+  MatProjection = glm::perspective(1.118f, aspect, zNear, zFar);
+
+  // пересчет рендер-буфера
+  if(nullptr != RenderBuffer) RenderBuffer->resize(w, h);
+  if(nullptr != pWinGui) pWinGui->resize(w, h);
+}
+
+
+///
+/// \brief win_data::cursor_position_event
+/// \param x
+/// \param y
+///
+void win_data::cursor_position_event(double x, double y)
+{
+  xpos = x;
+  ypos = y;
+}
+
+
+///
+/// \brief win_data::sight_position_event
+/// \param x
+/// \param y
+///
+void win_data::sight_position_event(double x, double y)
+{
+  dx += static_cast<float>(x - xpos);
+  dy += static_cast<float>(y - ypos);
+}
+
+
+///
+/// \brief win_data::close_event
+///
+void win_data::close_event(void)
+{
+  is_open = false;
+}
+
+
+///
+/// \brief win_data::cursor_hide
+///
+void win_data::cursor_hide(void)
+{
+  assert(cursor_is_visible);
+  cursor_is_visible = false;
+
+  // Сбросить значения элементов, управляющих движением камеры
+  on_front = 0; // клавиша вперед
+  on_back  = 0; // клавиша назад
+  on_right = 0; // клавиша вправо
+  on_left  = 0; // клавиша влево
+  on_up    = 0; // клавиша вверх
+  on_down  = 0; // клавиша вниз
+  fb       = 0; // движение вперед
+  ud       = 0; // движение вверх
+  rl       = 0; // движение в сторону
+  dx       = 0; // поворот по азимуту
+  dy       = 0; // поворот по тангажу
+
+  // курсор мыши в центр окна
+  xpos = width / 2.0;
+  ypos = height / 2.0;
+}
+
+
+///
+/// \brief win_data::cursor_show
+///
+void win_data::cursor_show(void)
+{
+  assert(!cursor_is_visible);
+  cursor_is_visible = true;
+
+  // курсор мыши в центре окна
+  xpos = width / 2.0;
+  ypos = height / 2.0;
 }
 
 
@@ -324,7 +457,7 @@ void db::erase_vox(vox* V)
 /// \brief db::save
 /// \param AppWin
 ///
-void db::save_window_params(const tr::main_window &AppWin)
+void db::save_window_params(const tr::win_data &AppWin)
 {
   char q [255]; // буфер для форматирования и передачи строки в запрос
   const char tpl[] = "UPDATE init SET val='%s' WHERE key=%d;";

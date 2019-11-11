@@ -8,8 +8,10 @@ namespace tr {
 ///
 gui::gui(void)
 {
-  Win = std::make_unique<wglfw>();
-  Win->append(Input);
+  Win = std::make_unique<wglfw>(AppWindow.width, AppWindow.height,
+                                AppWindow.minwidth, AppWindow.minheight,
+                                AppWindow.left, AppWindow.top);
+  Win->set_observer(AppWindow);
 
   Space = std::make_unique<space>();
 
@@ -169,8 +171,8 @@ void gui::input_text_line(const img &Font)
 
   // добавить текст, введенный пользователем
   u_int y = (row_height - Font.h_cell)/2;
-  textstring_place(Font, Input.StringBuffer, RowInput, Font.w_cell, y);
-  cursor_text_row(Font, RowInput, utf8_size(Input.StringBuffer));
+  textstring_place(Font, AppWindow.StringBuffer, RowInput, Font.w_cell, y);
+  cursor_text_row(Font, RowInput, utf8_size(AppWindow.StringBuffer));
 
   // скопировать на экран изображение поля ввода с добавленым текстом
   auto x = (WinGui.w_summ - RowInput.w_summ) / 2;
@@ -280,7 +282,7 @@ void gui::cancel(void)
     case GUI_3D_MODE:
       cfg::save_map_view();
       GuiMode = GUI_MENU_LSELECT;
-      AppWindow.Cursor[2] = 0.0f;  // Убрать прицел
+      AppWindow.Sight[2] = 0.0f;  // Убрать прицел
       Win->cursor_restore();       // Включить указатель мыши
       break;
     case GUI_MENU_LSELECT:
@@ -402,8 +404,8 @@ void gui::obscure_screen(void)
 ///
 void gui::create_map(void)
 {
-  auto MapDir = cfg::create_map(Input.StringBuffer);
-  Maps.push_back(map(MapDir, Input.StringBuffer));
+  auto MapDir = cfg::create_map(AppWindow.StringBuffer);
+  Maps.push_back(map(MapDir, AppWindow.StringBuffer));
   row_selected = Maps.size();     // выбрать номер карты
   button_click(BTN_OPEN);         // открыть
 }
@@ -450,7 +452,7 @@ void gui::button_click(ELEMENT_ID id)
 {
   static ELEMENT_ID double_id = NONE;
 
-  Input.text_mode = false; // Во всех режимах, кроме GUI_MENU_CREATE,
+  AppWindow.text_mode = false; // Во всех режимах, кроме GUI_MENU_CREATE,
                                  // строка ввода отключена
 
   if(GuiMode == GUI_3D_MODE) return;
@@ -468,7 +470,7 @@ void gui::button_click(ELEMENT_ID id)
     case BTN_OPEN:
       cfg::load_map_cfg(Maps[row_selected - 1].Folder);
       GuiMode = GUI_3D_MODE;
-      AppWindow.Cursor[2] = 4.0f;
+      AppWindow.Sight[2] = 4.0f;
       Win->cursor_hide();  // выключить отображение курсора мыши в окне
       WinGui.clear();      // очистка элементов GUI окна
       hud_load();
@@ -481,8 +483,8 @@ void gui::button_click(ELEMENT_ID id)
       GuiMode = GUI_MENU_LSELECT;
       break;
     case BTN_CREATE:
-      Input.text_mode = true;
-      Input.StringBuffer.clear();
+      AppWindow.text_mode = true;
+      AppWindow.StringBuffer.clear();
       GuiMode = GUI_MENU_CREATE;
       break;
     case BTN_ENTER_NAME:
@@ -716,13 +718,13 @@ void gui::menu_map_create(void)
   obscure_screen();
   title(u8"ВВЕДИТЕ НАЗВАНИЕ");
 
-  if((Input.key == KEY_BACKSPACE) && // Удаление введенных символов
-    ((Input.action == PRESS)||(Input.action == REPEAT)))
+  if((AppWindow.key == KEY_BACKSPACE) && // Удаление введенных символов
+    ((AppWindow.action == PRESS)||(AppWindow.action == REPEAT)))
   {
-    if (Input.StringBuffer.length() == 0) return;
-    if(char_type(Input.StringBuffer[Input.StringBuffer.size()-1]) != SINGLE)
-    { Input.StringBuffer.pop_back(); } // если это UTF-8, то удаляем два байта
-    Input.StringBuffer.pop_back();
+    if (AppWindow.StringBuffer.length() == 0) return;
+    if(char_type(AppWindow.StringBuffer[AppWindow.StringBuffer.size()-1]) != SINGLE)
+    { AppWindow.StringBuffer.pop_back(); } // если это UTF-8, то удаляем два байта
+    AppWindow.StringBuffer.pop_back();
     std::this_thread::sleep_for(std::chrono::milliseconds(75));
   }
 
@@ -732,7 +734,7 @@ void gui::menu_map_create(void)
   // две кнопки
   auto x = WinGui.w_summ / 2 - static_cast<u_long>(AppWindow.btn_w * 1.25);
   auto y = WinGui.h_summ / 2;
-  button(BTN_ENTER_NAME, x, y, u8"OK", Input.StringBuffer.length() > 0);
+  button(BTN_ENTER_NAME, x, y, u8"OK", AppWindow.StringBuffer.length() > 0);
 
   x += AppWindow.btn_w * 1.5;  // X координата кнопки
   button(BTN_LOCATION, x, y, u8"Отмена");
@@ -760,7 +762,7 @@ void gui::menu_draw(void)
 {
   glBindTexture(GL_TEXTURE_2D, gui_texture);
 
-  mouse_press_left = (Input.mouse == MOUSE_BUTTON_LEFT) && (Input.action == PRESS);
+  mouse_press_left = (AppWindow.mouse == MOUSE_BUTTON_LEFT) && (AppWindow.action == PRESS);
 
   switch (GuiMode)
   {
@@ -785,18 +787,18 @@ void gui::menu_draw(void)
                static_cast<GLint>(AppWindow.height),
                0, GL_RGBA, GL_UNSIGNED_BYTE, WinGui.uchar());
 
-  if((Input.mouse == MOUSE_BUTTON_LEFT) &&
-     (Input.action == RELEASE) &&
+  if((AppWindow.mouse == MOUSE_BUTTON_LEFT) &&
+     (AppWindow.action == RELEASE) &&
      (element_over != NONE))
   {
     button_click(element_over);
-    Input.mouse = -1;   // сбросить флаг кнопки
-    Input.action = -1;  // сбросить флаг действия
+    AppWindow.mouse = -1;   // сбросить флаг кнопки
+    AppWindow.action = -1;  // сбросить флаг действия
   }
 
   if(element_over == NONE)
   {
-    Input.mouse = -1;   // сбросить флаг кнопки
+    AppWindow.mouse = -1;   // сбросить флаг кнопки
     //AppWin.action = -1; // флаг действия потребуется при вводе названия карты
   }
 
@@ -824,11 +826,11 @@ void gui::show(void)
 {
   while(AppWindow.is_open)
   {
-    if((Input.key == KEY_ESCAPE) && (Input.action == RELEASE))
+    if((AppWindow.key == KEY_ESCAPE) && (AppWindow.action == RELEASE))
     {
       cancel();
-      Input.key    = -1;
-      Input.action = -1;
+      AppWindow.key    = -1;
+      AppWindow.action = -1;
     }
 
     if(GuiMode == GUI_3D_MODE)
@@ -848,7 +850,7 @@ void gui::show(void)
     glBindVertexArray(vao_quad_id);
     glDisable(GL_DEPTH_TEST);
     screenShaderProgram->use();
-    screenShaderProgram->set_uniform("Cursor", AppWindow.Cursor);
+    screenShaderProgram->set_uniform("Cursor", AppWindow.Sight);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
     screenShaderProgram->unuse();
 

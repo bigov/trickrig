@@ -12,14 +12,14 @@ class wglfw
   static std::string title;
 
   public:
-      wglfw(void);
+      wglfw(int width=0, int height=0, int min_w=0, int min_h=0, int left=0, int top=0);
       ~wglfw(void);
       void swap_buffers(void);
       void cursor_hide(void);
       void cursor_restore(void);
 
-      void append(IUserInput& ref);  // добавить наблюдателя
-      void remove(IUserInput& ref);  // удалить наблюдателя
+      void set_observer(IWindowInput& ref);  // добавить наблюдателя
+      void remove_observer(void);  // удалить наблюдателя
 
       // Запретить копирование объекта
       wglfw(const wglfw&) = delete;
@@ -30,24 +30,33 @@ class wglfw
       wglfw& operator=(wglfw&&) = delete;
 
     private:
-      GLFWwindow * win_ptr = nullptr;
-      static std::list<IUserInput*> _observers;
+      static GLFWwindow* win_ptr;
+      static IWindowInput* observer;
+      static double half_w;   // середина окна по X
+      static double half_h;   // середина окна по Y
 
       static void error_callback(int error_id, const char* description);
 
+      // движение указателя мыши в окне
       static void cursor_position_callback(
+          GLFWwindow* window, double xpos, double ypos);
+
+      // смещение прицела в режиме 3D
+      static void sight_position_callback(
           GLFWwindow* window, double xpos, double ypos);
 
       static void mouse_button_callback(
         GLFWwindow* window, int button, int action, int mods);
 
-      static void key_callback(GLFWwindow*, int key, int scancode, int action, int mods);
+      static void keyboard_callback(GLFWwindow*, int key, int scancode, int action, int mods);
 
-      static void window_pos_callback(GLFWwindow*, int, int);
+      static void reposition_callback(GLFWwindow*, int, int);
 
-      static void framebuffer_size_callback(GLFWwindow*, int, int);
+      static void resize_callback(GLFWwindow*, int, int);
 
       static void character_callback(GLFWwindow*, unsigned int);
+
+      static void window_close_callback(GLFWwindow*);
 
   };
 } //namespace tr

@@ -28,8 +28,7 @@ float zNear = 1.f;          // расстояние до ближней плос
 float zFar  = 10000.f;      // расстояние до дальней плоскости матрицы проекции
 glm::mat4 MatMVP        {}; // Матрица преобразования
 camera_3d Eye           {}; // главная камера 3D вида
-main_window AppWindow   {}; // параметры окна приложения
-ev_input Input          {}; // ввод пользователя
+win_data AppWindow   {}; // параметры окна приложения
 
 // Инициализация статических членов
 db          cfg::DataBase  {};
@@ -96,8 +95,8 @@ void cfg::load_app_cfg(void)
   AppWindow.height = static_cast<u_int>(std::stoi(AppParams[WINDOW_HEIGHT]));
   AppWindow.top = static_cast<u_int>(std::stoi(AppParams[WINDOW_TOP]));
   AppWindow.left = static_cast<u_int>(std::stoi(AppParams[WINDOW_LEFT]));
-  AppWindow.Cursor.x = static_cast<float>(AppWindow.width/2);
-  AppWindow.Cursor.y = static_cast<float>(AppWindow.height/2);
+  AppWindow.Sight.x = static_cast<float>(AppWindow.width/2);
+  AppWindow.Sight.y = static_cast<float>(AppWindow.height/2);
   AppWindow.aspect = static_cast<float>(AppWindow.width)
                    / static_cast<float>(AppWindow.height);
 

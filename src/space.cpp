@@ -167,13 +167,13 @@ void space::load_texture(unsigned gl_texture_index, const std::string& FileName)
 ///
 void space::calc_position(void)
 {
-  Eye.look_a -= Eye.speed_rotate * Input.dx;
-  Input.dx = 0.f;
+  Eye.look_a -= Eye.speed_rotate * AppWindow.dx;
+  AppWindow.dx = 0.f;
   if(Eye.look_a > dPi) Eye.look_a -= dPi;
   if(Eye.look_a < 0) Eye.look_a += dPi;
 
-  Eye.look_t -= Eye.speed_rotate * Input.dy;
-  Input.dy = 0.f;
+  Eye.look_t -= Eye.speed_rotate * AppWindow.dy;
+  AppWindow.dy = 0.f;
   if(Eye.look_t > up_max) Eye.look_t = up_max;
   if(Eye.look_t < down_max) Eye.look_t = down_max;
 
@@ -181,9 +181,9 @@ void space::calc_position(void)
 
   float dist  = Eye.speed_moving *
           static_cast<float>(cycle_time) * size_v4; // Дистанция перемещения
-  rl = dist * Input.rl;
-  fb = dist * Input.fb;   // по трем нормалям от камеры
-  ud = dist * Input.ud;
+  rl = dist * AppWindow.rl;
+  fb = dist * AppWindow.fb;   // по трем нормалям от камеры
+  ud = dist * AppWindow.ud;
 
   // промежуточные скаляры для ускорения расчета координат точек вида
   float
@@ -278,28 +278,28 @@ void space::check_keys()
 {
   u_int vertex_id = 0;
   AppWindow.RenderBuffer->read_pixel(
-              GLint(AppWindow.Cursor.x), GLint(AppWindow.Cursor.y), &vertex_id);
+              GLint(AppWindow.Sight.x), GLint(AppWindow.Sight.y), &vertex_id);
 
   id_point_0 = vertex_id - (vertex_id % vertices_per_side);
   id_point_8 = id_point_0 + vertices_per_side - 1;
 
   //DEBUG: Нажатие на [C] выводит в консоль номер вершины-индикатора
-  if((46 == Input.scancode) && (Input.action == PRESS))
+  if((46 == AppWindow.scancode) && (AppWindow.action == PRESS))
   {
-    Input.action = -1;
-    Input.scancode = -1;
+    AppWindow.action = -1;
+    AppWindow.scancode = -1;
     std::cout << "ID=" << vertex_id << " ";
   }
 
-  if((Input.mouse == MOUSE_BUTTON_LEFT) && (Input.action == PRESS))
+  if((AppWindow.mouse == MOUSE_BUTTON_LEFT) && (AppWindow.action == PRESS))
   {
-    Input.action = -1;
+    AppWindow.action = -1;
     Area4->append(vertex_id);
   }
 
-  if((Input.mouse == MOUSE_BUTTON_RIGHT) && (Input.action == PRESS))
+  if((AppWindow.mouse == MOUSE_BUTTON_RIGHT) && (AppWindow.action == PRESS))
   {
-    Input.action = -1;
+    AppWindow.action = -1;
     Area4->remove(vertex_id);
   }
 }
