@@ -30,15 +30,67 @@ u_char side_opposite(u_char s)
 /// \param P1          - 3D точка конца области
 /// \details Запрос из базы данных воксов и передача их в рендер
 ///
-vox_buffer::vox_buffer(int side_len, vbo_ext* VBO_pointer, const i3d P0, const i3d P1)
+vox_buffer::vox_buffer(int side_len, int b_dist, const i3d P0, const i3d P1)
 {
   vox_side_len = side_len;
-  pVBO = VBO_pointer;
-  pVBO->clear();
+  border_dist = b_dist;
+
+  pVBO = std::make_unique<vbo_ext> (GL_ARRAY_BUFFER);
+  init_vao();
+
   i3d vP {};
   for(vP.x = P0.x; vP.x<= P1.x; vP.x += vox_side_len)
   for(vP.y = P0.y; vP.y<= P1.y; vP.y += vox_side_len)
   for(vP.z = P0.z; vP.z<= P1.z; vP.z += vox_side_len) vox_load(vP);
+}
+
+
+///
+/// \brief vox_buffer::init_vao
+///
+void vox_buffer::init_vao(void)
+{
+  pVBO->clear();
+
+  glGenVertexArrays(1, &vao_id);
+  glBindVertexArray(vao_id);
+
+  // Число элементов в кубе с длиной стороны LOD (2*dist_xx) элементов:
+  u_int n = static_cast<u_int>(pow((border_dist + border_dist + 1), 3));
+
+  // Размер данных VBO для размещения сторон вокселей:
+  pVBO->allocate(n * bytes_per_side);
+
+  // настройка положения атрибутов
+  pVBO->attrib(Prog3d.Atrib["position"],
+    3, GL_FLOAT, GL_FALSE, bytes_per_vertex, 0 * sizeof(GLfloat));
+
+  pVBO->attrib(Prog3d.Atrib["color"],
+    4, GL_FLOAT, GL_TRUE, bytes_per_vertex, 3 * sizeof(GLfloat));
+
+  pVBO->attrib(Prog3d.Atrib["normal"],
+    3, GL_FLOAT, GL_TRUE, bytes_per_vertex, 7 * sizeof(GLfloat));
+
+  pVBO->attrib(Prog3d.Atrib["fragment"],
+    2, GL_FLOAT, GL_TRUE, bytes_per_vertex, 10 * sizeof(GLfloat));
+
+  //
+  // Так как все четырехугольники сторон индексируются одинаково, то индексный массив
+  // заполняем один раз "под завязку" и забываем про него. Число используемых индексов
+  // будет всегда соответствовать числу элементов, передаваемых в процедру "glDraw..."
+  //
+  size_t idx_size = static_cast<size_t>(6 * n * sizeof(GLuint)); // Размер индексного массива
+  GLuint *idx_data = new GLuint[idx_size];                       // данные для заполнения
+  GLuint idx[6] = {0, 1, 2, 2, 3, 0};                            // шаблон четырехугольника
+  GLuint stride = 0;                                             // число описаных вершин
+  for(size_t i = 0; i < idx_size; i += 6) {                      // заполнить массив для VBO
+    for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
+    stride += 4;                                                 // по 4 вершины на сторону
+  }
+  vbo_base VBOindex = { GL_ELEMENT_ARRAY_BUFFER };               // индексный буфер
+  VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data);   // и заполнить данными.
+  delete[] idx_data;                                             // Удалить исходный массив.
+  glBindVertexArray(0);
 }
 
 

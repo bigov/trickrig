@@ -14,6 +14,7 @@
 
 namespace tr
 {
+
 const float
   hPi = static_cast<float>(acos(0)), // половина константы "Пи"
   Pi  = 2 * hPi,                   // константа "Пи"
@@ -29,7 +30,6 @@ static const std::chrono::seconds one_second(1);
 ///
 space::space(void)
 {
-  Prog3d = std::make_unique<glsl>();
   light_direction = glm::normalize(glm::vec3(0.3f, 0.45f, 0.4f)); // направление (x,y,z)
   light_bright = glm::vec3(0.99f, 0.99f, 1.00f);                  // цвет        (r,g,b)
 
@@ -48,19 +48,19 @@ space::space(void)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   // компиляция GLSL программы
-  Prog3d->attach_shaders( cfg::app_key(SHADER_VERT_SCENE), cfg::app_key(SHADER_FRAG_SCENE) );
-  Prog3d->use();
+  Prog3d.init();
+  Prog3d.attach_shaders( cfg::app_key(SHADER_VERT_SCENE), cfg::app_key(SHADER_FRAG_SCENE) );
+  Prog3d.use();
 
   // Заполнить карту атрибутов для более быстрого доступа
-  Prog3d->attrib_location_get("position");
-  Prog3d->attrib_location_get("color");
-  Prog3d->attrib_location_get("normal");
-  Prog3d->attrib_location_get("fragment");
+  Prog3d.attrib_location_get("position");
+  Prog3d.attrib_location_get("color");
+  Prog3d.attrib_location_get("normal");
+  Prog3d.attrib_location_get("fragment");
 
-  Prog3d->unuse();
+  Prog3d.unuse();
 
-  // настройка VAO
-  init_vao();
+  //init_vao(); // настройка VAO
 
   // настройка рендер-буфера с двумя текстурами
   AppWindow.RenderBuffer = std::make_unique<frame_buffer> ();
@@ -79,54 +79,7 @@ space::space(void)
 ///
 void space::area3d_load(void)
 {
-  Area4 = std::make_unique<area>(size_v4, border_dist_b4, &VBO);
-}
-
-
-///
-/// \brief space::init_vao
-/// \details инициализация VAO
-///
-void space::init_vao(void)
-{
-  glGenVertexArrays(1, &vao_id);
-  glBindVertexArray(vao_id);
-
-  // Число элементов в кубе с длиной стороны LOD (2*dist_xx) элементов:
-  u_int n = static_cast<u_int>(pow((border_dist_b4 + border_dist_b4 + 1), 3));
-
-  // Размер данных VBO для размещения сторон вокселей:
-  VBO.allocate(n * bytes_per_side);
-
-  // настройка положения атрибутов
-  VBO.attrib(Prog3d->Atrib["position"],
-    3, GL_FLOAT, GL_FALSE, bytes_per_vertex, 0 * sizeof(GLfloat));
-
-  VBO.attrib(Prog3d->Atrib["color"],
-    4, GL_FLOAT, GL_TRUE, bytes_per_vertex, 3 * sizeof(GLfloat));
-
-  VBO.attrib(Prog3d->Atrib["normal"],
-    3, GL_FLOAT, GL_TRUE, bytes_per_vertex, 7 * sizeof(GLfloat));
-
-  VBO.attrib(Prog3d->Atrib["fragment"],
-    2, GL_FLOAT, GL_TRUE, bytes_per_vertex, 10 * sizeof(GLfloat));
-
-  //
-  // Так как все четырехугольники сторон индексируются одинаково, то индексный массив
-  // заполняем один раз "под завязку" и забываем про него. Число используемых индексов
-  // будет всегда соответствовать числу элементов, передаваемых в процедру "glDraw..."
-  //
-  size_t idx_size = static_cast<size_t>(6 * n * sizeof(GLuint)); // Размер индексного массива
-  GLuint *idx_data = new GLuint[idx_size];                       // данные для заполнения
-  GLuint idx[6] = {0, 1, 2, 2, 3, 0};                            // шаблон четырехугольника
-  GLuint stride = 0;                                             // число описаных вершин
-  for(size_t i = 0; i < idx_size; i += 6) {                      // заполнить массив для VBO
-    for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
-    stride += 4;                                                 // по 4 вершины на сторону
-  }
-  VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data);   // и заполнить данными.
-  delete[] idx_data;                                             // Удалить исходный массив.
-  glBindVertexArray(0);
+  Area4 = std::make_unique<area>(size_v4, border_dist_b4);
 }
 
 
@@ -238,31 +191,31 @@ void space::render(void)
   Area4->recalc_borders();
   check_keys();
 
-  glBindVertexArray(vao_id);
+  glBindVertexArray(Area4->vao_id());
   AppWindow.RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
-  Prog3d->use();   // включить шейдерную программу
-  Prog3d->set_uniform("mvp", MatMVP);
-  Prog3d->set_uniform("light_direction", light_direction); // направление
-  Prog3d->set_uniform("light_bright", light_bright);       // цвет/яркость
-  Prog3d->set_uniform("MinId", GLint(id_point_0));         // начальная вершина активного вокселя
-  Prog3d->set_uniform("MaxId", GLint(id_point_8));         // последняя вершина активного вокселя
+  Prog3d.use();   // включить шейдерную программу
+  Prog3d.set_uniform("mvp", MatMVP);
+  Prog3d.set_uniform("light_direction", light_direction); // направление
+  Prog3d.set_uniform("light_bright", light_bright);       // цвет/яркость
+  Prog3d.set_uniform("MinId", GLint(id_point_0));         // начальная вершина активного вокселя
+  Prog3d.set_uniform("MaxId", GLint(id_point_8));         // последняя вершина активного вокселя
 
-  glEnableVertexAttribArray(Prog3d->Atrib["position"]);    // положение 3D
-  glEnableVertexAttribArray(Prog3d->Atrib["color"]);       // цвет
-  glEnableVertexAttribArray(Prog3d->Atrib["normal"]);      // нормаль
-  glEnableVertexAttribArray(Prog3d->Atrib["fragment"]);    // текстура
+  glEnableVertexAttribArray(Prog3d.Atrib["position"]);    // положение 3D
+  glEnableVertexAttribArray(Prog3d.Atrib["color"]);       // цвет
+  glEnableVertexAttribArray(Prog3d.Atrib["normal"]);      // нормаль
+  glEnableVertexAttribArray(Prog3d.Atrib["fragment"]);    // текстура
 
   glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(Area4->render_indices()), GL_UNSIGNED_INT, nullptr);
 
-  glDisableVertexAttribArray(Prog3d->Atrib["position"]);
-  glDisableVertexAttribArray(Prog3d->Atrib["color"]);
-  glDisableVertexAttribArray(Prog3d->Atrib["normal"]);
-  glDisableVertexAttribArray(Prog3d->Atrib["fragment"]);
+  glDisableVertexAttribArray(Prog3d.Atrib["position"]);
+  glDisableVertexAttribArray(Prog3d.Atrib["color"]);
+  glDisableVertexAttribArray(Prog3d.Atrib["normal"]);
+  glDisableVertexAttribArray(Prog3d.Atrib["fragment"]);
 
-  Prog3d->unuse(); // отключить шейдерную программу
+  Prog3d.unuse(); // отключить шейдерную программу
   AppWindow.RenderBuffer->unbind();
   glBindVertexArray(0);
  }
@@ -310,7 +263,8 @@ void space::check_keys()
 ///
 space::~space(void)
 {
-  Prog3d = nullptr;
+  Prog3d.destroy();
   AppWindow.RenderBuffer = nullptr;
 }
+
 } // namespace tr

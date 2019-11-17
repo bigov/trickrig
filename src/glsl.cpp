@@ -15,16 +15,26 @@ namespace tr {
   //
   glsl::glsl()
   {
-    id = glCreateProgram();
-    if (glGetError()) ERR("Can't create GLSL program");
     Atrib.clear();
-    return;
   }
 
-  ////////
-  // Деструктор шейдерной программы
-  //
-  glsl::~glsl()
+
+  ///
+  /// \brief glsl::init
+  ///
+  void glsl::init(void)
+  {
+    if( id > 0 ) return;
+
+    id = glCreateProgram();
+    if (glGetError()) ERR("Can't create GLSL program");
+  }
+
+
+  ///
+  /// \brief glsl::destroy
+  ///
+  void glsl::destroy(void)
   {
     unuse();
     for(auto shader_id: Shaders)
@@ -34,8 +44,17 @@ namespace tr {
     }
     glDeleteProgram(id);
     id = 0;
-    return;
   }
+
+
+  ///
+  /// \brief glsl::~glsl
+  ///
+  glsl::~glsl(void)
+  {
+    if(id != 0) info("ALERT: the glsl::destroy() method was missing!");
+  }
+
 
   ////////
   // Идентификатор ш/программы
@@ -59,7 +78,6 @@ namespace tr {
       msg += message;
       ERR(msg);
     }
-    return;
   }
   
   ////////
@@ -247,6 +265,10 @@ namespace tr {
   //
   void glsl::attach_shader(GLenum type, const std::string &fname)
   {
+#ifndef NDEBUG
+    if(id == 0) ERR("Need call glsl::init()");
+#endif
+
     GLuint shader_id = glCreateShader(type);
     Shaders.push_back(shader_id);
     if(glGetError()) ERR("Can't glCreateShader");

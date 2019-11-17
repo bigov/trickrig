@@ -11,6 +11,7 @@
 #include "wsql.hpp"
 #include "vox.hpp"
 #include "framebuf.hpp"
+#include "glsl.hpp"
 
 namespace tr {
 

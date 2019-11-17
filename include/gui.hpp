@@ -77,7 +77,7 @@ class gui
     std::unique_ptr<wglfw> Win = nullptr;    // OpenGL окно
     std::unique_ptr<space> Space = nullptr;
     GLuint vao_quad_id  = 0;
-    std::unique_ptr<glsl> screenShaderProgram = nullptr; // шейдерная программа обработки текстуры рендера
+    //std::unique_ptr<glsl> screenShaderProgram = nullptr; // шейдерная программа обработки текстуры рендера
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
     void hud_load(void);

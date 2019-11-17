@@ -56,33 +56,34 @@ gui::gui(void)
     1.f, 0.f, //2
   };
 
-  screenShaderProgram = std::make_unique<glsl>();
+//  screenShaderProgram = std::make_unique<glsl>();
 
   glGenVertexArrays(1, &vao_quad_id);
   glBindVertexArray(vao_quad_id);
 
-  screenShaderProgram->attach_shaders(
+  screenShaderProgram.init();
+  screenShaderProgram.attach_shaders(
         cfg::app_key(SHADER_VERT_SCREEN), cfg::app_key(SHADER_FRAG_SCREEN) );
-  screenShaderProgram->use();
+  screenShaderProgram.use();
 
   vbo_base VboPosition { GL_ARRAY_BUFFER };
 
   VboPosition.allocate( sizeof(Position), Position );
-  VboPosition.attrib( screenShaderProgram->attrib_location_get("position"),
+  VboPosition.attrib( screenShaderProgram.attrib_location_get("position"),
       2, GL_FLOAT, GL_FALSE, 0, 0);
 
   vbo_base VboTexcoord { GL_ARRAY_BUFFER };
 
   VboTexcoord.allocate( sizeof(Texcoord), Texcoord );
-  VboTexcoord.attrib( screenShaderProgram->attrib_location_get("texcoord"),
+  VboTexcoord.attrib( screenShaderProgram.attrib_location_get("texcoord"),
       2, GL_FLOAT, GL_FALSE, 0, 0);
 
   // GL_TEXTURE1
-  glUniform1i(screenShaderProgram->uniform_location_get("texFramebuffer"), 1);
+  glUniform1i(screenShaderProgram.uniform_location_get("texFramebuffer"), 1);
   // GL_TEXTURE2
-  glUniform1i(screenShaderProgram->uniform_location_get("texHUD"), 2);
+  glUniform1i(screenShaderProgram.uniform_location_get("texHUD"), 2);
 
-  screenShaderProgram->unuse();
+  screenShaderProgram.unuse();
   glBindVertexArray(0);
 
 }
@@ -93,8 +94,8 @@ gui::gui(void)
 ///
 gui::~gui(void)
 {
+  screenShaderProgram.destroy();
   Space = nullptr;
-  screenShaderProgram = nullptr;
 }
 
 
@@ -849,10 +850,10 @@ void gui::show(void)
     /// изображаются как наложеные сверху дополнительные текстуры
     glBindVertexArray(vao_quad_id);
     glDisable(GL_DEPTH_TEST);
-    screenShaderProgram->use();
-    screenShaderProgram->set_uniform("Cursor", AppWindow.Sight);
+    screenShaderProgram.use();
+    screenShaderProgram.set_uniform("Cursor", AppWindow.Sight);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    screenShaderProgram->unuse();
+    screenShaderProgram.unuse();
 
     // переключить буфер окна и получить данные ввода пользователя
     Win->swap_buffers();

@@ -32,13 +32,19 @@ class area
     i3d Location {0, 0, 0}; // Origin вокса, над которым камера
     i3d MoveFrom {0, 0, 0}; // Origin вокса, с которого камера ушла
 
-    void init_vbo(void);
     void redraw_borders_x(void);
     void redraw_borders_z(void);
 
   public:
-    area(int length, int count, vbo_ext* VBO_pointer);
+    explicit area(int length, int count);
     ~area(void) {}
+
+    // Запретить копирование и перенос экземпляров класса
+    area(const area&) = delete;
+    area& operator=(const area&) = delete;
+    area(area&&) = delete;
+    area& operator=(area&&) = delete;
+    GLuint vao_id(void);
 
     u_int render_indices(void);
     void recalc_borders(void);
@@ -46,6 +52,8 @@ class area
     void append(u_int);
     void remove(u_int);
 };
+
+
 
 } //namespace tr
 

@@ -32,6 +32,7 @@ int main(int, char* argv[])
   {
     tr::cfg::load_app_cfg();
     tr::gui AppGUI {};
+
     AppGUI.show();
     tr::cfg::save_app(); // Сохранение конфигурации
   }

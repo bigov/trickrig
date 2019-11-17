@@ -18,17 +18,27 @@ namespace tr
     public:
       glsl(void);
       ~glsl(void);
+
+      void init(void);
+      void destroy(void);
+
+      // Запретить копирование и перенос экземпляров класса
+      glsl(const glsl&) = delete;
+      glsl& operator=(const glsl&) = delete;
+      glsl(glsl&&) = delete;
+      glsl& operator=(glsl&&) = delete;
+
       void attach_shader(GLenum shader_type, 
         const std::string& file_name);
+
+      void attach_shaders(
+        const std::string& vertex_shader_filename,
+        const std::string& fragment_shader_filename);
 
       //void attach_shaders(
       //  const std::string& vertex_shader_filename,
       //  const std::string& geometric_shader_filename,
       //  const std::string& fragment_shader_filename);
-
-      void attach_shaders(
-        const std::string& vertex_shader_filename,
-        const std::string& fragment_shader_filename);
 
       GLuint get_id(void);
       std::map<std::string, GLuint> Atrib {};
@@ -50,10 +60,11 @@ namespace tr
       GLuint id = 0;
       GLint isLinked = 0;
       std::vector<GLuint> Shaders {};
-      glsl(const glsl &);
-      glsl operator= (const glsl &);
 
-    protected:
   };
+
+extern glsl Prog3d;
+extern glsl screenShaderProgram;
+
 } //namespace tr
 #endif

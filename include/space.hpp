@@ -30,8 +30,6 @@ namespace tr
 
       double cycle_time;  // время (в секундах) на рендер кадра
 
-      // GLSL control
-      std::unique_ptr<glsl> Prog3d = nullptr;  // GLSL программа шейдеров
       glm::vec3 light_direction {}; // направление освещения
       glm::vec3 light_bright {};    // яркость света
       // Индексы вершин подсвечиваемого вокселя, на который направлен курсор (центр экрана)
@@ -39,9 +37,6 @@ namespace tr
       u_int id_point_8 = 0;           // индекс последней вершины
 
       // GPU control
-      GLuint vao_id = 0;                               // VAO ID
-      vbo_ext VBO {GL_ARRAY_BUFFER};                   // VBO вершин поверхности
-      vbo_base VBOindex = { GL_ELEMENT_ARRAY_BUFFER }; // индексный буфер
       GLuint texture_id = 0;
 
       // LOD control
@@ -58,7 +53,6 @@ namespace tr
 
       void calc_render_time(void);
       void load_texture(unsigned gl_texture_index, const std::string& fname);
-      void init_vao(void);
       void calc_position();
       void check_keys();
   };
