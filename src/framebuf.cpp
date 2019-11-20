@@ -101,7 +101,7 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  resize(w, h);
+  resize_event(w, h);
   return glGetError() == GL_NO_ERROR;
 }
 
@@ -111,7 +111,7 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
 /// \param width
 /// \param height
 ///
-void frame_buffer::resize(GLsizei w, GLsizei h)
+void frame_buffer::resize_event(GLsizei w, GLsizei h)
 {
 #ifndef NDEBUG
   fb_w = w; fb_h = h;

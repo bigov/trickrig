@@ -8,12 +8,15 @@ namespace tr {
 ///
 gui::gui(void)
 {
-  Win = std::make_unique<wglfw>(AppWindow.width, AppWindow.height,
+  Win = std::make_unique<wglfw>(AppWindow.Layout.width, AppWindow.Layout.height,
                                 AppWindow.minwidth, AppWindow.minheight,
-                                AppWindow.left, AppWindow.top);
-  Win->set_observer(AppWindow);
+                                AppWindow.Layout.left, AppWindow.Layout.top);
 
   Space = std::make_unique<space>();
+
+  Win->set_win_observer(AppWindow);
+  Win->set_char_observer(*this);
+  Win->set_size_observer(Space->RenderBuffer);
 
   FontMap1_len = static_cast<u_int>(FontMap1.length());
   TimeStart = std::chrono::system_clock::now();
@@ -31,7 +34,7 @@ gui::gui(void)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glBindTexture(GL_TEXTURE_2D, 0);
 
-  WinGui.resize(AppWindow.width, AppWindow.height);
+  WinGui.resize(AppWindow.Layout.width, AppWindow.Layout.height);
   AppWindow.pWinGui = &WinGui;
 
   /// Инициализация GLSL программы обработки текстуры фреймбуфера.
@@ -172,8 +175,8 @@ void gui::input_text_line(const img &Font)
 
   // добавить текст, введенный пользователем
   u_int y = (row_height - Font.h_cell)/2;
-  textstring_place(Font, AppWindow.StringBuffer, RowInput, Font.w_cell, y);
-  cursor_text_row(Font, RowInput, utf8_size(AppWindow.StringBuffer));
+  textstring_place(Font, StringBuffer, RowInput, Font.w_cell, y);
+  cursor_text_row(Font, RowInput, utf8_size(StringBuffer));
 
   // скопировать на экран изображение поля ввода с добавленым текстом
   auto x = (WinGui.w_summ - RowInput.w_summ) / 2;
@@ -281,7 +284,7 @@ void gui::cancel(void)
   switch (GuiMode)
   {
     case GUI_3D_MODE:
-      cfg::save_map_view();
+      cfg::map_view_save();
       GuiMode = GUI_MENU_LSELECT;
       AppWindow.Sight[2] = 0.0f;  // Убрать прицел
       Win->cursor_restore();       // Включить указатель мыши
@@ -345,7 +348,7 @@ void gui::hud_draw(void)
   char line[5];                   // the expected string plus 1 null terminator
   std::sprintf(line, "%.4i", AppWindow.fps);
   textstring_place(Font15n, line, Fps, 2, 1);
-  sub_img(Fps, 2, static_cast<GLint>(AppWindow.height - Fps.h_summ - 2));
+  sub_img(Fps, 2, static_cast<GLint>(AppWindow.Layout.height - Fps.h_summ - 2));
 
   // Координаты в пространстве
   u_int c_length = 60;               // количество символов в надписи
@@ -372,7 +375,7 @@ void gui::hud_draw(void)
 void gui::hud_load(void)
 {
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-           static_cast<GLint>(AppWindow.width), static_cast<GLint>(AppWindow.height),
+           static_cast<GLint>(AppWindow.Layout.width), static_cast<GLint>(AppWindow.Layout.height),
            0, GL_RGBA, GL_UNSIGNED_BYTE, WinGui.uchar());
 
   // Панель инструментов для HUD в нижней части окна
@@ -405,8 +408,8 @@ void gui::obscure_screen(void)
 ///
 void gui::create_map(void)
 {
-  auto MapDir = cfg::create_map(AppWindow.StringBuffer);
-  Maps.push_back(map(MapDir, AppWindow.StringBuffer));
+  auto MapDir = cfg::create_map(StringBuffer);
+  Maps.push_back(map(MapDir, StringBuffer));
   row_selected = Maps.size();     // выбрать номер карты
   button_click(BTN_OPEN);         // открыть
 }
@@ -453,8 +456,8 @@ void gui::button_click(ELEMENT_ID id)
 {
   static ELEMENT_ID double_id = NONE;
 
-  AppWindow.text_mode = false; // Во всех режимах, кроме GUI_MENU_CREATE,
-                                 // строка ввода отключена
+  text_mode = false; // Во всех режимах, кроме GUI_MENU_CREATE,
+                     // строка ввода отключена
 
   if(GuiMode == GUI_3D_MODE) return;
 
@@ -469,7 +472,7 @@ void gui::button_click(ELEMENT_ID id)
   switch(id)
   {
     case BTN_OPEN:
-      cfg::load_map_cfg(Maps[row_selected - 1].Folder);
+      cfg::map_view_load(Maps[row_selected - 1].Folder);
       GuiMode = GUI_3D_MODE;
       AppWindow.Sight[2] = 4.0f;
       Win->cursor_hide();  // выключить отображение курсора мыши в окне
@@ -484,8 +487,8 @@ void gui::button_click(ELEMENT_ID id)
       GuiMode = GUI_MENU_LSELECT;
       break;
     case BTN_CREATE:
-      AppWindow.text_mode = true;
-      AppWindow.StringBuffer.clear();
+      text_mode = true;
+      StringBuffer.clear();
       GuiMode = GUI_MENU_CREATE;
       break;
     case BTN_ENTER_NAME:
@@ -665,8 +668,8 @@ void gui::menu_start(void)
   obscure_screen();
   title("Trick Rig");
 
-  u_int x = AppWindow.width/2 - AppWindow.btn_w/2;   // X координата кнопки
-  u_int y = AppWindow.height/2 - AppWindow.btn_h/2;  // Y координата кнопки
+  u_int x = AppWindow.Layout.width/2 - AppWindow.btn_w/2;   // X координата кнопки
+  u_int y = AppWindow.Layout.height/2 - AppWindow.btn_h/2;  // Y координата кнопки
   button(BTN_CONFIG, x, y, u8"Настроить");
 
   y -= 1.5 * AppWindow.btn_h;
@@ -683,26 +686,26 @@ void gui::menu_start(void)
 void gui::menu_map_select(void)
 {
   obscure_screen();
-  title(u8"ВЫБОР КАРТЫ");
+  title("ВЫБОР КАРТЫ");
 
   // Список фиксированой ширины и один ряд кнопок размещается в центре окна на
   // расстоянии 1/8 высоты окна сверху и снизу, и 1/8 ширины окна по бокам.
   // Расстояние между списком и кнопками равно половине высоты кнопки.
 
-  u_int y = AppWindow.height/8; // отступ сверху (и снизу)
-  u_int list_h = AppWindow.height - y * 2 - AppWindow.btn_h * 1.5f;
+  u_int y = AppWindow.Layout.height/8; // отступ сверху (и снизу)
+  u_int list_h = AppWindow.Layout.height - y * 2 - AppWindow.btn_h * 1.5f;
   u_int list_w = AppWindow.minwidth - 4;
-  u_int x = (AppWindow.width - list_w)/2;  // отступ слева (и справа)
+  u_int x = (AppWindow.Layout.width - list_w)/2;  // отступ слева (и справа)
 
   select_list(x, y, list_w, list_h);
 
   x = WinGui.w_summ / 2 + 8;
   y = y + list_h + AppWindow.btn_h/2;
 
-  button(BTN_CANCEL, x, y, u8"Отмена");
-  button(BTN_MAP_DELETE, x + AppWindow.btn_w + 16, y, u8"Удалить", row_selected > 0);
-  button(BTN_OPEN, x - (AppWindow.btn_w + 16), y, u8"Старт", row_selected > 0);
-  button(BTN_CREATE, x - (AppWindow.btn_w + 16)*2, y, u8"Создать");
+  button(BTN_CANCEL, x, y, "Отмена");
+  button(BTN_MAP_DELETE, x + AppWindow.btn_w + 16, y, "Удалить", row_selected > 0);
+  button(BTN_OPEN, x - (AppWindow.btn_w + 16), y, "Старт", row_selected > 0);
+  button(BTN_CREATE, x - (AppWindow.btn_w + 16)*2, y, "Создать");
 
 }
 
@@ -722,10 +725,10 @@ void gui::menu_map_create(void)
   if((AppWindow.key == KEY_BACKSPACE) && // Удаление введенных символов
     ((AppWindow.action == PRESS)||(AppWindow.action == REPEAT)))
   {
-    if (AppWindow.StringBuffer.length() == 0) return;
-    if(char_type(AppWindow.StringBuffer[AppWindow.StringBuffer.size()-1]) != SINGLE)
-    { AppWindow.StringBuffer.pop_back(); } // если это UTF-8, то удаляем два байта
-    AppWindow.StringBuffer.pop_back();
+    if (StringBuffer.length() == 0) return;
+    if(char_type(StringBuffer[StringBuffer.size()-1]) != SINGLE)
+    { StringBuffer.pop_back(); } // если это UTF-8, то удаляем два байта
+    StringBuffer.pop_back();
     std::this_thread::sleep_for(std::chrono::milliseconds(75));
   }
 
@@ -735,7 +738,7 @@ void gui::menu_map_create(void)
   // две кнопки
   auto x = WinGui.w_summ / 2 - static_cast<u_long>(AppWindow.btn_w * 1.25);
   auto y = WinGui.h_summ / 2;
-  button(BTN_ENTER_NAME, x, y, u8"OK", AppWindow.StringBuffer.length() > 0);
+  button(BTN_ENTER_NAME, x, y, u8"OK", StringBuffer.length() > 0);
 
   x += AppWindow.btn_w * 1.5;  // X координата кнопки
   button(BTN_LOCATION, x, y, u8"Отмена");
@@ -784,8 +787,8 @@ void gui::menu_draw(void)
 
   // каждый кадр на текстуре окна обновляем изображение меню
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-               static_cast<GLint>(AppWindow.width),
-               static_cast<GLint>(AppWindow.height),
+               static_cast<GLint>(AppWindow.Layout.width),
+               static_cast<GLint>(AppWindow.Layout.height),
                0, GL_RGBA, GL_UNSIGNED_BYTE, WinGui.uchar());
 
   if((AppWindow.mouse == MOUSE_BUTTON_LEFT) &&
@@ -859,6 +862,28 @@ void gui::show(void)
     Win->swap_buffers();
   }
 
+}
+
+
+///
+/// \brief gui::character_event
+/// \param ch
+///
+void gui::character_event(u_int ch)
+{
+  if(!text_mode) return;
+
+  if(ch < 128)
+  {
+    StringBuffer += char(ch);
+  }
+  else
+  {
+    auto str = wstring2string({static_cast<wchar_t>(ch)});
+    if(str == "№") str = "N";     // № трехбайтный, поэтому заменим на N
+    if(str.size() > 2) str = "_"; // блокировка 3-х байтных символов
+    StringBuffer += str;
+  }
 }
 
 } //tr

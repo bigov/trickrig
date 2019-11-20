@@ -24,6 +24,8 @@ namespace tr
       void area3d_load(void);
       void render(void);
 
+      frame_buffer RenderBuffer {};    // рендер-буфер окна
+
     private:
       space(const space &);
       space operator=(const space &);
@@ -46,6 +48,7 @@ namespace tr
 
       // Camera control
       float rl=0.f, ud=0.f, fb=0.f; // скорость движения по направлениям
+      glm::mat4 MatMVP  {};         // Матрица преобразования
       glm::mat4 MatView {};         // матрица вида
       glm::vec3
         UpWard {0.0, -1.0, 0.0},    // направление наверх

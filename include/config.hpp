@@ -16,8 +16,12 @@ namespace tr
   {
     private:
       cfg(void)                   = delete;
-      cfg(const cfg &)            = delete;
-      cfg& operator=(const cfg &) = delete;
+
+      // Запретить копирование и перенос
+      cfg(const cfg&) = delete;
+      cfg& operator=(const cfg&) = delete;
+      cfg(cfg&&) = delete;
+      cfg& operator=(cfg&&) = delete;
 
       static std::string AssetsDir;   // папка служебных файлов приложения
       static std::string UserDir;     // папка конфигов пользователя
@@ -28,13 +32,14 @@ namespace tr
 
     public:
       static db DataBase;
-      static std::string DS;          // символ разделителя папок
-      static std::string CfgFname;    // конфиг текущей сесии
+      static std::string DS;       // символ разделителя папок
+      static std::string CfgFname; // конфиг текущей сесии
+      static layout WinLayout;     // размер и положение главного окна
 
-      static void load_map_cfg(const std::string &DirName);
-      static void load_app_cfg(void);
-      static void save_map_view(void);
-      static void save_app(void);
+      static void map_view_load(const std::string &DirName);
+      static void map_view_save(void);
+      static void load(void);
+      static void save(const layout& WindowLayout);
       static std::string create_map(const std::string &MapName);
       static std::string app_key(APP_INIT);
       static std::string map_key(MAP_INIT);

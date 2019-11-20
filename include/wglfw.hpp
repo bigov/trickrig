@@ -18,8 +18,9 @@ class wglfw
       void cursor_hide(void);
       void cursor_restore(void);
 
-      void set_observer(IWindowInput& ref);  // добавить наблюдателя
-      void remove_observer(void);  // удалить наблюдателя
+      void set_win_observer(IWindowInput& ref); // добавить наблюдателя окна
+      void set_char_observer(IWindowInput& ref); // добавить наблюдателя ввода
+      void set_size_observer(IWindowInput& ref); // добавить наблюдателя размера
 
       // Запретить копирование объекта
       wglfw(const wglfw&) = delete;
@@ -31,7 +32,10 @@ class wglfw
 
     private:
       static GLFWwindow* win_ptr;
-      static IWindowInput* observer;
+      static IWindowInput* win_observer;
+      static IWindowInput* char_observer;
+      static IWindowInput* size_observer;
+
       static double half_w;   // середина окна по X
       static double half_h;   // середина окна по Y
 

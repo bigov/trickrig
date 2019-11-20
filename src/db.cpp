@@ -117,37 +117,14 @@ void win_data::keyboard_event(int _key, int _scancode, int _action, int _mods)
 
 
 ///
-/// \brief win_data::character_event
-/// \param ch
-/// \details Прием в буфер ввода текстовой UTF-8 строки
-///
-void win_data::character_event(u_int ch)
-{
-  if(!text_mode) return;
-
-  if(ch < 128)
-  {
-    StringBuffer += char(ch);
-  }
-  else
-  {
-    auto str = wstring2string({static_cast<wchar_t>(ch)});
-    if(str == "№") str = "N";     // № трехбайтный, поэтому заменим на N
-    if(str.size() > 2) str = "_"; // блокировка 3-х байтных символов
-    StringBuffer += str;
-  }
-}
-
-
-///
 /// \brief win_data::window_pos_event
 /// \param left
 /// \param top
 ///
 void win_data::reposition_event(int _left, int _top)
 {
-  left = static_cast<u_int>(_left);
-  top = static_cast<u_int>(_top);
+  Layout.left = static_cast<u_int>(_left);
+  Layout.top = static_cast<u_int>(_top);
 }
 
 
@@ -158,8 +135,11 @@ void win_data::reposition_event(int _left, int _top)
 ///
 void win_data::resize_event(GLsizei w, GLsizei h)
 {
-  width  = w;
-  height = h;
+  assert(w >= 0);
+  assert(h >= 0);
+
+  Layout.width  = static_cast<u_int>(w);
+  Layout.height = static_cast<u_int>(h);
 
   // пересчет позции координат прицела (центр окна)
   Sight.x = static_cast<float>(w/2);
@@ -169,8 +149,7 @@ void win_data::resize_event(GLsizei w, GLsizei h)
   aspect = static_cast<float>(w) / static_cast<float>(h);
   MatProjection = glm::perspective(1.118f, aspect, zNear, zFar);
 
-  // пересчет рендер-буфера
-  if(nullptr != RenderBuffer) RenderBuffer->resize(w, h);
+  // пересчет размеров GUI
   if(nullptr != pWinGui) pWinGui->resize(w, h);
 }
 
@@ -230,8 +209,8 @@ void win_data::cursor_hide(void)
   dy       = 0; // поворот по тангажу
 
   // курсор мыши в центр окна
-  xpos = width / 2.0;
-  ypos = height / 2.0;
+  xpos = Layout.width / 2.0;
+  ypos = Layout.height / 2.0;
 }
 
 
@@ -244,8 +223,24 @@ void win_data::cursor_show(void)
   cursor_is_visible = true;
 
   // курсор мыши в центре окна
-  xpos = width / 2.0;
-  ypos = height / 2.0;
+  xpos = Layout.width / 2.0;
+  ypos = Layout.height / 2.0;
+}
+
+
+///
+/// \brief win_data::set_location
+/// \param width
+/// \param height
+/// \param left
+/// \param top
+///
+void win_data::layout_set(const layout &L)
+{
+  Layout = L;
+  Sight.x = static_cast<float>(L.width/2);
+  Sight.y = static_cast<float>(L.height/2);
+  aspect  = static_cast<float>(L.width/L.height);
 }
 
 
@@ -457,26 +452,26 @@ void db::erase_vox(vox* V)
 /// \brief db::save
 /// \param AppWin
 ///
-void db::save_window_params(const tr::win_data &AppWin)
+void db::save_window_layout(const layout& L)
 {
   char q [255]; // буфер для форматирования и передачи строки в запрос
   const char tpl[] = "UPDATE init SET val='%s' WHERE key=%d;";
   std::string p = "";
   std::string Query = "";
 
-  p = std::to_string(AppWin.left);
+  p = std::to_string(L.left);
   sprintf(q, tpl, p.c_str(), WINDOW_LEFT);
   Query += q;
 
-  p = std::to_string(AppWin.top);
+  p = std::to_string(L.top);
   sprintf(q, tpl, p.c_str(), WINDOW_TOP);
   Query += q;
 
-  p = std::to_string(AppWin.width);
+  p = std::to_string(L.width);
   sprintf(q, tpl, p.c_str(), WINDOW_WIDTH);
   Query += q;
 
-  p = std::to_string(AppWin.height);
+  p = std::to_string(L.height);
   sprintf(q, tpl, p.c_str(), WINDOW_HEIGHT);
   Query += q;
 

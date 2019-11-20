@@ -21,13 +21,6 @@ errno_t getenv_s(
 }
 #endif
 
-// Инициализация глобальных объектов
-glm::mat4 MatProjection {}; // матрица проекции 3D сцены
-float zNear = 1.f;          // расстояние до ближней плоскости матрицы проекции
-float zFar  = 10000.f;      // расстояние до дальней плоскости матрицы проекции
-glm::mat4 MatMVP        {}; // Матрица преобразования
-camera_3d Eye           {}; // главная камера 3D вида
-win_data AppWindow      {}; // параметры окна приложения
 
 // Инициализация статических членов
 db          cfg::DataBase  {};
@@ -37,7 +30,7 @@ std::string cfg::AssetsDir {}; // папка служебных файлов
 std::string cfg::UserDir   {}; // папка конфигов пользователя
 std::string cfg::DS        {}; // символ разделителя папок
 std::string cfg::CfgFname  {}; // конфиг, выбранный пользователем
-
+layout    cfg::WinLayout {}; // размер и положение главного окна
 tr::glsl screenShaderProgram {};
 tr::glsl Prog3d {};
 
@@ -56,7 +49,7 @@ std::string cfg::user_dir(void)
 ///
 /// Загрузка параметров сессии карты
 ///
-void cfg::load_map_cfg(const std::string &DirName)
+void cfg::map_view_load(const std::string &DirName)
 {
   MapParams = DataBase.map_open(DirName + DS);
 
@@ -86,23 +79,16 @@ std::string cfg::map_name(const std::string &FolderName)
 ///
 /// Загрузка параметров приложения
 ///
-void cfg::load_app_cfg(void)
+void cfg::load(void)
 {
   set_user_dir();
   AssetsDir = ".." + DS + "assets";
   AppParams = DataBase.open_app(UserDir + DS);
 
-  // Загрузка настроек окна приложения
-  AppWindow.width = static_cast<u_int>(std::stoi(AppParams[WINDOW_WIDTH]));
-  AppWindow.height = static_cast<u_int>(std::stoi(AppParams[WINDOW_HEIGHT]));
-  AppWindow.top = static_cast<u_int>(std::stoi(AppParams[WINDOW_TOP]));
-  AppWindow.left = static_cast<u_int>(std::stoi(AppParams[WINDOW_LEFT]));
-  AppWindow.Sight.x = static_cast<float>(AppWindow.width/2);
-  AppWindow.Sight.y = static_cast<float>(AppWindow.height/2);
-  AppWindow.aspect = static_cast<float>(AppWindow.width)
-                   / static_cast<float>(AppWindow.height);
-
-  MatProjection = glm::perspective(1.118f, AppWindow.aspect, zNear, zFar);
+  WinLayout.width = static_cast<u_int>(std::stoi(AppParams[WINDOW_WIDTH]));
+  WinLayout.height = static_cast<u_int>(std::stoi(AppParams[WINDOW_HEIGHT]));
+  WinLayout.left = static_cast<u_int>(std::stoi(AppParams[WINDOW_LEFT]));
+  WinLayout.top = static_cast<u_int>(std::stoi(AppParams[WINDOW_TOP]));
 }
 
 
@@ -120,7 +106,7 @@ void cfg::set_user_dir(void)
 
   char env_key[] = "USERPROFILE";
   size_t requiredSize;
-  getenv_s( &requiredSize, NULL, 0, env_key);
+  getenv_s( &requiredSize, nullptr, 0, env_key);
   std::vector<char> libvar {};
   libvar.resize(requiredSize);
   getenv_s( &requiredSize, libvar.data(), requiredSize, env_key );
@@ -172,16 +158,16 @@ std::string cfg::create_map(const std::string &MapName)
 ///
 /// Сохрание настроек текущей сессии при закрытии программы
 ///
-void cfg::save_app(void)
+void cfg::save(const layout& WindowLayout)
 {
-  DataBase.save_window_params(AppWindow);
+  DataBase.save_window_layout(WindowLayout);
 }
 
 
 ///
 /// Сохранить настройки положения камеры и закрыть карту
 ///
-void cfg::save_map_view(void)
+void cfg::map_view_save(void)
 {
   DataBase.map_close(Eye);
 }

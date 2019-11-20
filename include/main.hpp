@@ -43,7 +43,7 @@
 #include "glm/gtx/transform.hpp"
 #include "glm/gtc/type_ptr.hpp"
 
-#include "GLFW/glfw3.h"
+#include "i_win.hpp"
 
 #define ERR throw std::runtime_error
 namespace fs = std::filesystem;
@@ -93,13 +93,20 @@ enum MAP_INIT {
   MAP_INIT_SIZE
 };
 
+struct layout
+{
+  u_int width  = 0;
+  u_int height = 0;
+  u_int left = 0;
+  u_int top = 0;
+};
+
 // структура для обращения в тексте программы к индексам данных вершин по названиям
 enum SIDE_DATA_ID { X, Y, Z, R, G, B, A, NX, NY, NZ, U, V, SIDE_DATA_SIZE };
 
 extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
 extern float zNear;
 extern float zFar;
-extern glm::mat4 MatMVP;        // Матрица преобразования
 
 // Настройка значений параметров для сравнения mouse_button и mouse_action
 // будут выполнены в классе управления окном

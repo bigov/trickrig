@@ -13,7 +13,10 @@ std::string wglfw::title = "TrickRig: v.development";
 
 
 // Инициализация статических членов
-IWindowInput* wglfw::observer = nullptr;
+IWindowInput* wglfw::win_observer = nullptr;
+IWindowInput* wglfw::char_observer = nullptr;
+IWindowInput* wglfw::size_observer = nullptr;
+
 GLFWwindow* wglfw::win_ptr = nullptr;
 double wglfw::half_w = 0.0;   // середина окна по X
 double wglfw::half_h = 0.0;   // середина окна по Y
@@ -75,24 +78,35 @@ wglfw::~wglfw()
 
 
 ///
-/// \brief wglfw::append
+/// \brief wglfw::set_win_observer
 /// \param ref
-/// \details добавить наблюдателя за событиями ввода
+/// \details добавить наблюдателя за событиями окна
 ///
-void wglfw::set_observer(IWindowInput& ref)
+void wglfw::set_win_observer(IWindowInput& ref)
 {
-  observer = &ref;
+  win_observer = &ref;
 }
 
 
 ///
-/// \brief wglfw::remove
+/// \brief wglfw::set_char_observer
 /// \param ref
-/// \details удалить наблюдателя за событиями ввода
+/// \details добавить наблюдателя за событиями ввода
 ///
-void wglfw::remove_observer(void)
+void wglfw::set_char_observer(IWindowInput& ref)
 {
-  observer = nullptr;
+  char_observer = &ref;
+}
+
+
+///
+/// \brief wglfw::set_size_observer
+/// \param ref
+/// \details добавить наблюдателя за событиями изменения размеров
+///
+void wglfw::set_size_observer(IWindowInput& ref)
+{
+  size_observer = &ref;
 }
 
 
@@ -125,7 +139,7 @@ void wglfw::cursor_hide(void)
   glfwSetCursorPos(win_ptr, half_w, half_h); // курсор в центр окна
   glfwSetCharCallback(win_ptr, nullptr);
 
-  if(observer != nullptr) observer->cursor_hide();
+  if(win_observer != nullptr) win_observer->cursor_hide();
 }
 
 
@@ -140,7 +154,7 @@ void wglfw::cursor_restore(void)
   glfwSetCursorPos(win_ptr, half_w, half_h); // Установить курсор в центре окна
   glfwSetCharCallback(win_ptr, character_callback);
 
-  if(observer != nullptr) observer->cursor_show();
+  if(win_observer != nullptr) win_observer->cursor_show();
 }
 
 
@@ -154,7 +168,7 @@ void wglfw::cursor_restore(void)
 void wglfw::mouse_button_callback(GLFWwindow* w, int button, int action, int mods)
 {
   assert(w == win_ptr);
-  if(observer != nullptr) observer->mouse_event(button, action, mods);
+  if(win_observer != nullptr) win_observer->mouse_event(button, action, mods);
 }
 
 
@@ -164,7 +178,7 @@ void wglfw::mouse_button_callback(GLFWwindow* w, int button, int action, int mod
 void wglfw::keyboard_callback(GLFWwindow* w, int key, int scancode, int action, int mods)
 {
   assert(w == win_ptr);
-  if(observer != nullptr) observer->keyboard_event(key, scancode, action, mods);
+  if(win_observer != nullptr) win_observer->keyboard_event(key, scancode, action, mods);
 }
 
 
@@ -176,7 +190,7 @@ void wglfw::keyboard_callback(GLFWwindow* w, int key, int scancode, int action, 
 void wglfw::character_callback(GLFWwindow* w, u_int ch)
 {
   assert(w == win_ptr);
-  if(observer != nullptr) observer->character_event(ch);
+  if(char_observer != nullptr) char_observer->character_event(ch);
 }
 
 
@@ -186,12 +200,16 @@ void wglfw::character_callback(GLFWwindow* w, u_int ch)
 void wglfw::reposition_callback(GLFWwindow* w, int left, int top)
 {
   assert(w == win_ptr);
-  if(observer != nullptr) observer->reposition_event(left, top);
+  if(win_observer != nullptr) win_observer->reposition_event(left, top);
 }
 
 
 ///
-/// GLFW framebuffer callback resize
+/// \brief wglfw::resize_callback
+/// \param WindowPointer
+/// \param width
+/// \param height
+/// \details GLFW framebuffer and window-data callback resize
 ///
 void wglfw::resize_callback(GLFWwindow* w, int width, int height)
 {
@@ -200,7 +218,8 @@ void wglfw::resize_callback(GLFWwindow* w, int width, int height)
   half_w = width / 2.0;            // пересчет центра окна
   half_h = height / 2.0;
 
-  if(observer != nullptr) observer->resize_event(width, height);
+  if(win_observer != nullptr) win_observer->resize_event(width, height);
+  if(size_observer != nullptr) size_observer->resize_event(width, height);
 }
 
 
@@ -213,7 +232,7 @@ void wglfw::resize_callback(GLFWwindow* w, int width, int height)
 void wglfw::cursor_position_callback(GLFWwindow* w, double x, double y)
 {
   assert(w == win_ptr);
-  if(observer != nullptr) observer->cursor_position_event(x, y);
+  if(win_observer != nullptr) win_observer->cursor_position_event(x, y);
 }
 
 
@@ -226,7 +245,7 @@ void wglfw::cursor_position_callback(GLFWwindow* w, double x, double y)
 void wglfw::sight_position_callback(GLFWwindow* w, double x, double y)
 {
   assert(w == win_ptr);
-  if(observer != nullptr) observer->sight_position_event(x, y);
+  if(win_observer != nullptr) win_observer->sight_position_event(x, y);
   glfwSetCursorPos(w, half_w, half_h);
 }
 
@@ -238,7 +257,7 @@ void wglfw::sight_position_callback(GLFWwindow* w, double x, double y)
 void wglfw::window_close_callback(GLFWwindow* w)
 {
   assert(w == win_ptr);
-  if(observer != nullptr) observer->close_event();
+  if(win_observer != nullptr) win_observer->close_event();
 }
 
 

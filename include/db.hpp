@@ -15,46 +15,24 @@
 
 namespace tr {
 
-// Интерфейс графического окна для обмена данными с OpenGL контентом
-class IWindowInput
-{
-public:
-    IWindowInput(void) = default;
-    virtual ~IWindowInput(void) = default;
-
-    virtual void mouse_event(int button, int action, int mods) = 0;
-    virtual void keyboard_event(int key, int scancode, int action, int mods) = 0;
-    virtual void character_event(u_int ch) = 0;
-    virtual void reposition_event(int left, int top) = 0;
-    virtual void resize_event(GLsizei width, GLsizei height) = 0;
-    virtual void cursor_position_event(double x, double y) = 0;
-    virtual void sight_position_event(double x, double y) = 0;
-    virtual void close_event(void) = 0;
-    virtual void cursor_hide(void) = 0;
-    virtual void cursor_show(void) = 0;
-};
-
 // Параметры и режимы окна приложения
 class win_data: public IWindowInput
 {
   public:
     explicit win_data(void) = default;
+
     // Запретить копирование и перенос экземпляров класса
     win_data(const win_data&) = delete;
     win_data& operator=(const win_data&) = delete;
     win_data(win_data&&) = delete;
     win_data& operator=(win_data&&) = delete;
 
-    u_int width = 400;                    // ширина окна
-    u_int height = 400;                   // высота окна
-    u_int left = 0;                       // положение окна по горизонтали
-    u_int top = 0;                        // положение окна по вертикали
-    u_int btn_w = 120;                    // ширина кнопки GUI
-    u_int btn_h = 36;                     // высота кнопки GUI
-    u_int minwidth = (btn_w + 16) * 4;    // минимально допустимая ширина окна
-    u_int minheight = btn_h * 4 + 8;      // минимально допустимая высота окна
-    std::unique_ptr<frame_buffer> RenderBuffer = nullptr;    // рендер-буфер окна
-    img* pWinGui = nullptr;               // текстура GUI окна
+    layout Layout {400, 400, 0, 0};      // размеры и положение
+    u_int btn_w = 120;                   // ширина кнопки GUI
+    u_int btn_h = 36;                    // высота кнопки GUI
+    u_int minwidth = (btn_w + 16) * 4;   // минимально допустимая ширина окна
+    u_int minheight = btn_h * 4 + 8;     // минимально допустимая высота окна
+    img* pWinGui = nullptr;              // текстура GUI окна
 
     bool is_open = true;  // состояние окна
     float aspect = 1.0f;  // соотношение размеров окна
@@ -84,12 +62,9 @@ class win_data: public IWindowInput
     int mouse = -1;
     int action = -1;
     int key = -1;
-    std::string StringBuffer {};  // строка ввода пользователя
-    bool text_mode = false;
 
     virtual void mouse_event(int _button, int _action, int _mods);
     virtual void keyboard_event(int _key, int _scancode, int _action, int _mods);
-    virtual void character_event(u_int ch);
     virtual void reposition_event(int left, int top);
     virtual void resize_event(GLsizei width, GLsizei height);
     virtual void cursor_position_event(double x, double y);
@@ -97,6 +72,8 @@ class win_data: public IWindowInput
     virtual void close_event(void);
     virtual void cursor_hide(void);
     virtual void cursor_show(void);
+
+    void layout_set(const layout &L);
 
 };
 
@@ -113,7 +90,7 @@ class db
     void map_close(const camera_3d &Eye);
     void map_name_save(const std::string &Dir, const std::string &MapName);
     v_ch map_name_read(const std::string & dbFile);
-    void save_window_params(const win_data &AppWindow);
+    void save_window_layout(const layout&);
     void save_vox(vox*);
     void erase_vox(vox*);
     void init_map_config(const std::string &);

@@ -6,10 +6,19 @@
 //
 //===========================================================================
 
-//#include "wglfw.hpp"
 #include "gui.hpp"
 
-std::string tr::AppPathDir {};
+namespace tr
+{
+  // Инициализация глобальных объектов
+  glm::mat4 MatProjection {}; // матрица проекции 3D сцены
+  float zNear = 1.f;          // расстояние до ближней плоскости матрицы проекции
+  float zFar  = 10000.f;      // расстояние до дальней плоскости матрицы проекции
+
+  std::string AppPathDir {};  // Абсолютный путь к исполняемому файлу приложения
+  win_data AppWindow     {};  // параметры окна приложения
+  camera_3d Eye          {};  // главная камера 3D вида
+}
 
 
 ///
@@ -18,32 +27,37 @@ std::string tr::AppPathDir {};
 ///
 int main(int, char* argv[])
 {
+  using namespace tr;
+
   fs::path p = argv[0];
   // Путь к папке исполняемого файла (со слэшем в конце)
-  tr::AppPathDir = fs::absolute(p).remove_filename().u8string();
+  AppPathDir = fs::absolute(p).remove_filename().u8string();
 
 #ifndef NDEBUG
   assert(sizeof(GLfloat) == 4);
-  tr::info("--- --- ---\nExec path: " + tr::AppPathDir);
-  tr::info("Debug mode: ON\n--- --- ---\n");
+  info("--- --- ---\nExec path: " + AppPathDir);
+  info("Debug mode: ON\n--- --- ---\n");
 #endif
 
   try
   {
-    tr::cfg::load_app_cfg();
-    tr::gui AppGUI {};
+    cfg::load();
+    AppWindow.layout_set(cfg::WinLayout);
+    MatProjection = glm::perspective(1.118f, AppWindow.aspect, zNear, zFar);
 
+    gui AppGUI {};
     AppGUI.show();
-    tr::cfg::save_app(); // Сохранение конфигурации
+
+    cfg::save(AppWindow.Layout); // Сохранение положения окна
   }
   catch(std::exception & e)
   {
-    tr::info(e.what());
+    info(e.what());
     return EXIT_FAILURE;
   }
   catch(...)
   {
-    tr::info("FAILURE: undefined exception.");
+    info("FAILURE: undefined exception.");
     return EXIT_FAILURE;
   }
 

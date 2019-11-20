@@ -16,17 +16,27 @@ enum BUTTON_STATE {
   ST_OFF
 };
 
-enum GUI_MODES {   // режимы окна
-  GUI_3D_MODE,         // основной режим - без шторки
-  GUI_MENU_START,    // начальное меню
-  GUI_MENU_LSELECT,  // выбор игры
-  GUI_MENU_CREATE,   // создание нового района
-  GUI_MENU_CONFIG,   // настройки
+enum GUI_MODES {    // режимы окна
+  GUI_3D_MODE,      // основной режим - без шторки
+  GUI_MENU_START,   // начальное меню
+  GUI_MENU_LSELECT, // выбор игры
+  GUI_MENU_CREATE,  // создание нового района
+  GUI_MENU_CONFIG,  // настройки
 };
 
-class gui
+class gui: public IWindowInput
 {
+  public:
+    gui(void);
+    ~gui(void);
+
+    void show(void);
+    virtual void character_event(u_int ch);
+
   private:
+    bool text_mode = false;                  // режим ввода текста
+    std::string StringBuffer {};             // строка ввода пользователя
+
     px bg      {0xE0, 0xE0, 0xE0, 0xC0};     // фон заполнения неактивного окна
     px bg_hud  {0x00, 0x88, 0x00, 0x40};     // фон панелей HUD (активного окна)
     img WinGui { 0, 0 };                     // GUI/HUD текстура окна приложения
@@ -59,11 +69,11 @@ class gui
     size_t row_selected = 0;         // какая строка выбрана
 
     // "FontMap1" - однобайтовые символы
-    const std::string FontMap1 { u8"_'\"~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghi"
+    const std::string FontMap1 { "_'\"~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghi"
                                  "jklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0"
                                  "123456789 "};
     // "FontMap2" - каждый символ занимает по два байта
-    const std::string FontMap2 { u8"абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗ"
+    const std::string FontMap2 { "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗ"
                                  "ИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };
     u_int FontMap1_len = 0; // значение будет присвоено в конструкторе класса
 
@@ -103,11 +113,6 @@ class gui
     void hud_draw(void);      // обновление кадра
     void create_map(void);
     void remove_map(void);
-
-  public:
-    gui(void);
-    ~gui(void);
-    void show(void);
 };
 
 } //tr

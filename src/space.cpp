@@ -60,13 +60,10 @@ space::space(void)
 
   Prog3d.unuse();
 
-  //init_vao(); // настройка VAO
-
   // настройка рендер-буфера с двумя текстурами
-  AppWindow.RenderBuffer = std::make_unique<frame_buffer> ();
-  if(!AppWindow.RenderBuffer->init(
-              static_cast<GLsizei>(AppWindow.width),
-              static_cast<GLsizei>(AppWindow.height)))
+  if(!RenderBuffer.init(
+              static_cast<GLsizei>(AppWindow.Layout.width),
+              static_cast<GLsizei>(AppWindow.Layout.height)))
     ERR("Error on creating Render Buffer.");
 
   // загрузка основной текстуры
@@ -192,7 +189,7 @@ void space::render(void)
   check_keys();
 
   glBindVertexArray(Area4->vao_id());
-  AppWindow.RenderBuffer->bind();
+  RenderBuffer.bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
@@ -216,7 +213,7 @@ void space::render(void)
   glDisableVertexAttribArray(Prog3d.Atrib["fragment"]);
 
   Prog3d.unuse(); // отключить шейдерную программу
-  AppWindow.RenderBuffer->unbind();
+  RenderBuffer.unbind();
   glBindVertexArray(0);
  }
 
@@ -230,7 +227,7 @@ void space::render(void)
 void space::check_keys()
 {
   u_int vertex_id = 0;
-  AppWindow.RenderBuffer->read_pixel(
+  RenderBuffer.read_pixel(
               GLint(AppWindow.Sight.x), GLint(AppWindow.Sight.y), &vertex_id);
 
   id_point_0 = vertex_id - (vertex_id % vertices_per_side);
@@ -264,7 +261,6 @@ void space::check_keys()
 space::~space(void)
 {
   Prog3d.destroy();
-  AppWindow.RenderBuffer = nullptr;
 }
 
 } // namespace tr

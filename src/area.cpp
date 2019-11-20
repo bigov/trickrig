@@ -85,9 +85,6 @@ u_int area::render_indices()
 ///
 void area::redraw_borders_x(void)
 {
-  int yMin = -lod_dist_far;              // Y-граница LOD
-  int yMax =  lod_dist_far;
-
   int x_show, x_hide;
   if(Location.x > MoveFrom.x)
   {        // Если направление движение по оси Х
@@ -98,19 +95,16 @@ void area::redraw_borders_x(void)
     x_hide = MoveFrom.x + lod_dist_far; // X-линия удаления вокселей на границе
   }
 
-  int zMin, zMax;
+  for(int y = -lod_dist_far; y <= lod_dist_far; y += vox_side_len)
+  {
+    // Скрыть элементы с задней границы области
+    for(int z = MoveFrom.z - lod_dist_far, lod = MoveFrom.z + lod_dist_far;
+        z <= lod; z += vox_side_len) QueueWipe.push({x_hide, y, z});
 
-  // Скрыть элементы с задней границы области
-  zMin = MoveFrom.z - lod_dist_far;
-  zMax = MoveFrom.z + lod_dist_far;
-  for(int y = yMin; y <= yMax; y += vox_side_len)
-    for(int z = zMin; z <= zMax; z += vox_side_len) QueueWipe.push({x_hide, y, z});
-
-  // Добавить линию элементов по направлению движения
-  zMin = Location.z - lod_dist_far;
-  zMax = Location.z + lod_dist_far;
-  for(int y = yMin; y <= yMax; y += vox_side_len)
-    for(int z = zMin; z <= zMax; z += vox_side_len) QueueLoad.push({x_show, y, z});
+    // Добавить линию элементов по направлению движения
+    for(int z = Location.z - lod_dist_far, lod = Location.z + lod_dist_far;
+        z <= lod; z += vox_side_len) QueueLoad.push({x_show, y, z});
+  }
 
   MoveFrom.x = Location.x;
 }

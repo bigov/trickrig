@@ -27,13 +27,13 @@ class gl_texture
   public:
     gl_texture(GLint internalformat, GLenum format, GLenum type,
                GLsizei width = 0, GLsizei height = 0, const GLvoid* data = nullptr);
-    ~gl_texture() {};
+    ~gl_texture() {}
 
     void resize(GLsizei width, GLsizei height, const GLvoid* data = nullptr);
     GLuint id(void) const;
 };
 
-class frame_buffer
+class frame_buffer: public IWindowInput
 {
 private:
   GLuint id = 0;
@@ -53,7 +53,7 @@ public:
   ~frame_buffer(void);
 
   bool init(GLsizei w, GLsizei h);
-  void resize(GLsizei w, GLsizei h);
+  virtual void resize_event(GLsizei w, GLsizei h);
   void read_pixel(GLint screen_coord_x, GLint screen_coord_y, void* pixel_data);
   void bind(void);
   void unbind(void);
