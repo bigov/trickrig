@@ -18,6 +18,7 @@ namespace tr
   std::string AppPathDir {};  // Абсолютный путь к исполняемому файлу приложения
   win_data WinData     {};  // параметры окна приложения
   camera_3d Eye          {};  // главная камера 3D вида
+  wglfw GLWindow {};
 }
 
 
@@ -43,6 +44,18 @@ int main(int, char* argv[])
   {
     cfg::load();
     WinData.layout_set(cfg::WinLayout);
+
+    GLWindow.init(WinData.Layout.width, WinData.Layout.height,
+                  WinData.minwidth, WinData.minheight,
+                  WinData.Layout.left, WinData.Layout.top);
+    GLWindow.set_error_observer(WinData);    // отслеживание ошибок
+    GLWindow.set_cursor_observer(WinData);   // курсор мыши в окне
+    GLWindow.set_button_observer(WinData);   // кнопки мыши
+    GLWindow.set_keyboard_observer(WinData); // клавиши клавиатуры
+    GLWindow.set_position_observer(WinData); // положение окна
+    GLWindow.add_size_observer(WinData);     // размер окна
+    GLWindow.set_close_observer(WinData);    // закрытие окна
+
     MatProjection = glm::perspective(1.118f, WinData.aspect, zNear, zFar);
 
     gui AppGUI {};

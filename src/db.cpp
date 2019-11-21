@@ -179,6 +179,7 @@ void win_data::cursor_event(double x, double y)
   {
     dx += static_cast<float>(x - xpos);
     dy += static_cast<float>(y - ypos);
+    GLWindow.set_cursor_pos(xpos, ypos);
   }
 }
 

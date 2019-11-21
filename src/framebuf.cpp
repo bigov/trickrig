@@ -117,6 +117,8 @@ void frame_buffer::resize_event(GLsizei w, GLsizei h)
   fb_w = w; fb_h = h;
 #endif
 
+  glViewport(0, 0, w, h); // пересчет Viewport
+
   // Текстура индентификации примитивов (канал RED)
   TexIdent->resize(w, h);
   TexColor->resize(w, h);

@@ -12,6 +12,7 @@
 #include "vox.hpp"
 #include "framebuf.hpp"
 #include "glsl.hpp"
+#include "wglfw.hpp"
 
 namespace tr {
 
@@ -78,6 +79,7 @@ class win_data: public IWindowInput
 };
 
 extern win_data WinData;
+extern wglfw GLWindow;
 
 
 class db

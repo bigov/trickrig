@@ -14,9 +14,6 @@ namespace tr
 
 GLFWwindow* wglfw::win_ptr = nullptr;
 std::string wglfw::title = "TrickRig: v.development";
-double wglfw::half_w = 0.0;   // середина окна по X
-double wglfw::half_h = 0.0;   // середина окна по Y
-bool wglfw::sight_mode = false;
 
 IWindowInput* wglfw::error_observer = nullptr;
 IWindowInput* wglfw::cursor_observer = nullptr;
@@ -31,7 +28,7 @@ IWindowInput* wglfw::close_observer = nullptr;
 /// Создание нового окна с обработчиками ввода и настройка контекста
 /// отображения OpenGL
 ///
-wglfw::wglfw(int width, int height, int min_w, int min_h, int left, int top)
+void wglfw::init(u_int width, u_int height, u_int min_w, u_int min_h, u_int left, u_int top)
 {
   glfwSetErrorCallback(callback_error);
   if (!glfwInit()) ERR("Error init GLFW lib.");
@@ -47,13 +44,13 @@ wglfw::wglfw(int width, int height, int min_w, int min_h, int left, int top)
 
   //  Создание 3D окна
   glfwWindowHint(GLFW_VISIBLE, 0);
-  win_ptr = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
+  win_ptr = glfwCreateWindow(static_cast<int>(width), static_cast<int>(height),
+                             title.c_str(), nullptr, nullptr);
   if (nullptr == win_ptr) ERR("Creating Window fail.");
-  half_w = width / 2.0;
-  half_h = height / 2.0;
 
-  glfwSetWindowSizeLimits(win_ptr, min_w, min_h, GLFW_DONT_CARE, GLFW_DONT_CARE);
-  glfwSetWindowPos(win_ptr, left, top);
+  glfwSetWindowSizeLimits(win_ptr, static_cast<int>(min_w), static_cast<int>(min_h),
+                          GLFW_DONT_CARE, GLFW_DONT_CARE);
+  glfwSetWindowPos(win_ptr, static_cast<int>(left), static_cast<int>(top));
   glfwShowWindow(win_ptr);
   glfwMakeContextCurrent(win_ptr);
   glfwSwapInterval(0);  // Vertical sync is "OFF". When param is 1 - will be ON
@@ -132,9 +129,7 @@ void wglfw::swap_buffers(void)
 ///
 void wglfw::cursor_hide(void)
 {
-  sight_mode = true; // активировать режим прицеливания
   glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-  glfwSetCursorPos(win_ptr, half_w, half_h); // курсор в центр окна
 
   // отключить ввод символов
   glfwSetCharCallback(win_ptr, nullptr);
@@ -146,12 +141,21 @@ void wglfw::cursor_hide(void)
 ///
 void wglfw::cursor_restore(void)
 {
-  sight_mode = false; // восстановить курсор мыши
   glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-  glfwSetCursorPos(win_ptr, half_w, half_h); // Установить курсор в центре окна
 
   // разрешить ввод символов
   glfwSetCharCallback(win_ptr, callback_char);
+}
+
+
+///
+/// \brief wglfw::set_cursor_pos
+/// \param x
+/// \param y
+///
+void wglfw::set_cursor_pos(double x, double y)
+{
+  glfwSetCursorPos(win_ptr, x, y);
 }
 
 
@@ -183,9 +187,6 @@ void wglfw::callback_cursor(GLFWwindow* w, double x, double y)
 {
   assert(w == win_ptr);
   if(cursor_observer != nullptr) cursor_observer->cursor_event(x, y);
-
-  // В режиме прицеливания вернуть курсор в центр окна
-  if(sight_mode) glfwSetCursorPos(w, half_w, half_h);
 }
 
 
@@ -233,9 +234,6 @@ void wglfw::callback_position(GLFWwindow* w, int left, int top)
 void wglfw::callback_size(GLFWwindow* w, int width, int height)
 {
   assert(w == win_ptr);
-  glViewport(0, 0, width, height); // пересчет Viewport
-  half_w = width / 2.0;            // пересчет центра окна
-  half_h = height / 2.0;
   for(auto& observer: size_observers) observer->resize_event(width, height);
 }
 
@@ -259,7 +257,7 @@ void wglfw::callback_char(GLFWwindow* w, u_int ch)
 void wglfw::callback_close(GLFWwindow* w)
 {
   assert(w == win_ptr);
-  if(position_observer != nullptr) position_observer->close_event();
+  if(close_observer != nullptr) close_observer->close_event();
 }
 
 } //namespace tr

@@ -24,6 +24,7 @@ enum GUI_MODES {    // режимы окна
   GUI_MENU_CONFIG,  // настройки
 };
 
+
 class gui: public IWindowInput
 {
   public:
@@ -84,7 +85,6 @@ class gui: public IWindowInput
     img Font18s { "../assets/font_10x18_sh.png", f_len }; //шрифт 10x18 (тень)
     img Font18l { "../assets/font_10x18_lt.png", f_len }; //шрифт 10x18 (светл)
 
-    std::unique_ptr<wglfw> GLWindow = nullptr;    // OpenGL окно
     std::unique_ptr<space> Space = nullptr;
     GLuint vao_quad_id  = 0;
     //std::unique_ptr<glsl> screenShaderProgram = nullptr; // шейдерная программа обработки текстуры рендера

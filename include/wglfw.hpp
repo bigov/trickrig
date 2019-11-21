@@ -2,7 +2,6 @@
 #define WGLFW_HPP
 
 #include "io.hpp"
-#include "db.hpp"
 
 namespace tr
 {
@@ -12,7 +11,7 @@ class wglfw
   static std::string title;
 
   public:
-      wglfw(int width=0, int height=0, int min_w=0, int min_h=0, int left=0, int top=0);
+      wglfw() = default;
       ~wglfw(void);
 
       // Запретить копирование объекта
@@ -23,9 +22,11 @@ class wglfw
       wglfw(wglfw&&) = delete;
       wglfw& operator=(wglfw&&) = delete;
 
+      void init(u_int width=0, u_int height=0, u_int min_w=0, u_int min_h=0, u_int left=0, u_int top=0);
       void swap_buffers(void);
       void cursor_hide(void);
       void cursor_restore(void);
+      void set_cursor_pos(double x, double y);
 
       void set_error_observer(IWindowInput& ref);    // отслеживание ошибок
       void set_cursor_observer(IWindowInput& ref);   // курсор мыши в окне
@@ -38,9 +39,6 @@ class wglfw
 
     private:
       static GLFWwindow* win_ptr;
-      static bool sight_mode;
-      static double half_w; // середина окна по X
-      static double half_h; // середина окна по Y
 
       static IWindowInput* error_observer;
       static IWindowInput* cursor_observer;
@@ -61,6 +59,7 @@ class wglfw
       static void callback_close(GLFWwindow*);
 
   };
+
 } //namespace tr
 
 #endif //WGLFW_HPP

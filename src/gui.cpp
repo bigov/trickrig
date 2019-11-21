@@ -8,22 +8,10 @@ namespace tr {
 ///
 gui::gui(void)
 {
-  GLWindow = std::make_unique<wglfw>(WinData.Layout.width, WinData.Layout.height,
-                                WinData.minwidth, WinData.minheight,
-                                WinData.Layout.left, WinData.Layout.top);
-
   Space = std::make_unique<space>();
 
-  GLWindow->set_error_observer(WinData);    // отслеживание ошибок
-  GLWindow->set_cursor_observer(WinData);   // курсор мыши в окне
-  GLWindow->set_button_observer(WinData);   // кнопки мыши
-  GLWindow->set_keyboard_observer(WinData); // клавиши клавиатуры
-  GLWindow->set_position_observer(WinData); // положение окна
-  GLWindow->add_size_observer(WinData);     // размер окна
-  GLWindow->set_close_observer(WinData);    // закрытие окна
-
-  GLWindow->set_char_observer(*this);
-  GLWindow->add_size_observer(Space->RenderBuffer);
+  GLWindow.set_char_observer(*this);
+  GLWindow.add_size_observer(Space->RenderBuffer);
 
   FontMap1_len = static_cast<u_int>(FontMap1.length());
   TimeStart = std::chrono::system_clock::now();
@@ -295,7 +283,7 @@ void gui::cancel(void)
       GuiMode = GUI_MENU_LSELECT;
       WinData.Sight[2] = 0.0f;  // Убрать прицел
       WinData.cursor_restore();
-      GLWindow->cursor_restore();       // Включить указатель мыши
+      GLWindow.cursor_restore();       // Включить указатель мыши
       break;
     case GUI_MENU_LSELECT:
       GuiMode = GUI_MENU_START;
@@ -482,7 +470,8 @@ void gui::button_click(ELEMENT_ID id)
     case BTN_OPEN:
       cfg::map_view_load(Maps[row_selected - 1].Folder);
       GuiMode = GUI_3D_MODE;
-      GLWindow->cursor_hide();  // выключить отображение курсора мыши в окне
+      GLWindow.cursor_hide();  // выключить отображение курсора мыши в окне
+      GLWindow.set_cursor_pos(WinData.Layout.width/2, WinData.Layout.height/2);
       WinData.Sight[2] = 4.0f;
       WinData.cursor_hide();
 
@@ -869,7 +858,7 @@ void gui::show(void)
     screenShaderProgram.unuse();
 
     // переключить буфер окна и получить данные ввода пользователя
-    GLWindow->swap_buffers();
+    GLWindow.swap_buffers();
   }
 
 }

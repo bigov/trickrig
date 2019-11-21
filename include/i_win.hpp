@@ -1,5 +1,7 @@
 #include "GLFW/glfw3.h"
 
+namespace tr {
+
 // Интерфейс графического окна для обмена данными с OpenGL контентом
 class IWindowInput
 {
@@ -17,3 +19,4 @@ public:
     virtual void close_event(void) {}
 };
 
+}

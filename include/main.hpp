@@ -136,6 +136,7 @@ const int KEY_MOVE_LEFT  = GLFW_KEY_A;
 
     glm::vec3 ViewFrom = {};   // 3D координаты точки положения
   };
+
   extern camera_3d Eye;
 
   // число вершин в прямоугольнике
