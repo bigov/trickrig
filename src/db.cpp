@@ -36,6 +36,15 @@ namespace tr {
 
 
 ///
+/// \brief win_data::error_event
+/// \param message
+///
+void win_data::error_event(const char* message)
+{
+  info(std::string(message));
+}
+
+///
 /// \brief ev_input::mouse_event
 /// \param _button
 /// \param _action
@@ -159,22 +168,18 @@ void win_data::resize_event(GLsizei w, GLsizei h)
 /// \param x
 /// \param y
 ///
-void win_data::cursor_position_event(double x, double y)
+void win_data::cursor_event(double x, double y)
 {
-  xpos = x;
-  ypos = y;
-}
-
-
-///
-/// \brief win_data::sight_position_event
-/// \param x
-/// \param y
-///
-void win_data::sight_position_event(double x, double y)
-{
-  dx += static_cast<float>(x - xpos);
-  dy += static_cast<float>(y - ypos);
+  if(cursor_is_visible)
+  {
+    xpos = x;
+    ypos = y;
+  }
+  else
+  {
+    dx += static_cast<float>(x - xpos);
+    dy += static_cast<float>(y - ypos);
+  }
 }
 
 
@@ -217,14 +222,10 @@ void win_data::cursor_hide(void)
 ///
 /// \brief win_data::cursor_show
 ///
-void win_data::cursor_show(void)
+void win_data::cursor_restore(void)
 {
   assert(!cursor_is_visible);
   cursor_is_visible = true;
-
-  // курсор мыши в центре окна
-  xpos = Layout.width / 2.0;
-  ypos = Layout.height / 2.0;
 }
 
 

@@ -62,8 +62,8 @@ space::space(void)
 
   // настройка рендер-буфера с двумя текстурами
   if(!RenderBuffer.init(
-              static_cast<GLsizei>(AppWindow.Layout.width),
-              static_cast<GLsizei>(AppWindow.Layout.height)))
+              static_cast<GLsizei>(WinData.Layout.width),
+              static_cast<GLsizei>(WinData.Layout.height)))
     ERR("Error on creating Render Buffer.");
 
   // загрузка основной текстуры
@@ -117,13 +117,13 @@ void space::load_texture(unsigned gl_texture_index, const std::string& FileName)
 ///
 void space::calc_position(void)
 {
-  Eye.look_a -= Eye.speed_rotate * AppWindow.dx;
-  AppWindow.dx = 0.f;
+  Eye.look_a -= Eye.speed_rotate * WinData.dx;
+  WinData.dx = 0.f;
   if(Eye.look_a > dPi) Eye.look_a -= dPi;
   if(Eye.look_a < 0) Eye.look_a += dPi;
 
-  Eye.look_t -= Eye.speed_rotate * AppWindow.dy;
-  AppWindow.dy = 0.f;
+  Eye.look_t -= Eye.speed_rotate * WinData.dy;
+  WinData.dy = 0.f;
   if(Eye.look_t > up_max) Eye.look_t = up_max;
   if(Eye.look_t < down_max) Eye.look_t = down_max;
 
@@ -131,9 +131,9 @@ void space::calc_position(void)
 
   float dist  = Eye.speed_moving *
           static_cast<float>(cycle_time) * size_v4; // Дистанция перемещения
-  rl = dist * AppWindow.rl;
-  fb = dist * AppWindow.fb;   // по трем нормалям от камеры
-  ud = dist * AppWindow.ud;
+  rl = dist * WinData.rl;
+  fb = dist * WinData.fb;   // по трем нормалям от камеры
+  ud = dist * WinData.ud;
 
   // промежуточные скаляры для ускорения расчета координат точек вида
   float
@@ -168,7 +168,7 @@ void space::calc_render_time(void)
   if (t_frame - fps_start >= one_second)
   {
     fps_start = t_frame;
-    AppWindow.fps = fps;
+    WinData.fps = fps;
     fps = 0;
   }
 
@@ -228,28 +228,28 @@ void space::check_keys()
 {
   u_int vertex_id = 0;
   RenderBuffer.read_pixel(
-              GLint(AppWindow.Sight.x), GLint(AppWindow.Sight.y), &vertex_id);
+              GLint(WinData.Sight.x), GLint(WinData.Sight.y), &vertex_id);
 
   id_point_0 = vertex_id - (vertex_id % vertices_per_side);
   id_point_8 = id_point_0 + vertices_per_side - 1;
 
   //DEBUG: Нажатие на [C] выводит в консоль номер вершины-индикатора
-  if((46 == AppWindow.scancode) && (AppWindow.action == PRESS))
+  if((46 == WinData.scancode) && (WinData.action == PRESS))
   {
-    AppWindow.action = -1;
-    AppWindow.scancode = -1;
+    WinData.action = -1;
+    WinData.scancode = -1;
     std::cout << "ID=" << vertex_id << " ";
   }
 
-  if((AppWindow.mouse == MOUSE_BUTTON_LEFT) && (AppWindow.action == PRESS))
+  if((WinData.mouse == MOUSE_BUTTON_LEFT) && (WinData.action == PRESS))
   {
-    AppWindow.action = -1;
+    WinData.action = -1;
     Area4->append(vertex_id);
   }
 
-  if((AppWindow.mouse == MOUSE_BUTTON_RIGHT) && (AppWindow.action == PRESS))
+  if((WinData.mouse == MOUSE_BUTTON_RIGHT) && (WinData.action == PRESS))
   {
-    AppWindow.action = -1;
+    WinData.action = -1;
     Area4->remove(vertex_id);
   }
 }

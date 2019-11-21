@@ -16,7 +16,7 @@ namespace tr
   float zFar  = 10000.f;      // расстояние до дальней плоскости матрицы проекции
 
   std::string AppPathDir {};  // Абсолютный путь к исполняемому файлу приложения
-  win_data AppWindow     {};  // параметры окна приложения
+  win_data WinData     {};  // параметры окна приложения
   camera_3d Eye          {};  // главная камера 3D вида
 }
 
@@ -42,13 +42,13 @@ int main(int, char* argv[])
   try
   {
     cfg::load();
-    AppWindow.layout_set(cfg::WinLayout);
-    MatProjection = glm::perspective(1.118f, AppWindow.aspect, zNear, zFar);
+    WinData.layout_set(cfg::WinLayout);
+    MatProjection = glm::perspective(1.118f, WinData.aspect, zNear, zFar);
 
     gui AppGUI {};
     AppGUI.show();
 
-    cfg::save(AppWindow.Layout); // Сохранение положения окна
+    cfg::save(WinData.Layout); // Сохранение положения окна
   }
   catch(std::exception & e)
   {

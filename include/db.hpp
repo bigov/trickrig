@@ -63,21 +63,21 @@ class win_data: public IWindowInput
     int action = -1;
     int key = -1;
 
+    virtual void error_event(const char* message);
     virtual void mouse_event(int _button, int _action, int _mods);
     virtual void keyboard_event(int _key, int _scancode, int _action, int _mods);
     virtual void reposition_event(int left, int top);
     virtual void resize_event(GLsizei width, GLsizei height);
-    virtual void cursor_position_event(double x, double y);
-    virtual void sight_position_event(double x, double y);
+    virtual void cursor_event(double x, double y);
     virtual void close_event(void);
-    virtual void cursor_hide(void);
-    virtual void cursor_show(void);
 
+    void cursor_hide(void);
+    void cursor_restore(void);
     void layout_set(const layout &L);
 
 };
 
-extern win_data AppWindow;
+extern win_data WinData;
 
 
 class db
