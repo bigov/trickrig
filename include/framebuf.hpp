@@ -33,7 +33,7 @@ class gl_texture
     GLuint id(void) const;
 };
 
-class frame_buffer: public IWindowInput
+class frame_buffer: public interface_gl_context
 {
 private:
   GLuint id = 0;
@@ -44,16 +44,12 @@ private:
   GLenum ident_format = 0;
   GLenum ident_type = 0;
 
-#ifndef NDEBUG
-  GLint fb_w = 0, fb_h = 0; // размеры буфера
-#endif
-
 public:
   frame_buffer(void) {}
   ~frame_buffer(void);
 
   bool init(GLsizei w, GLsizei h);
-  virtual void resize_event(GLsizei w, GLsizei h);
+  virtual void resize_event(int w, int h);
   void read_pixel(GLint screen_coord_x, GLint screen_coord_y, void* pixel_data);
   void bind(void);
   void unbind(void);

@@ -5,6 +5,7 @@
 #include "wglfw.hpp"
 #include "config.hpp"
 #include "space.hpp"
+#include "winpar.hpp"
 
 namespace tr {
 
@@ -16,25 +17,45 @@ enum BUTTON_STATE {
   ST_OFF
 };
 
-enum GUI_MODES {    // режимы окна
-  GUI_3D_MODE,      // основной режим - без шторки
-  GUI_MENU_START,   // начальное меню
-  GUI_MENU_LSELECT, // выбор игры
-  GUI_MENU_CREATE,  // создание нового района
-  GUI_MENU_CONFIG,  // настройки
-};
 
-
-class gui: public IWindowInput
+class gui: public interface_gl_context
 {
   public:
-    gui(void);
+    gui(wglfw* glContext);
     ~gui(void);
 
     void show(void);
     virtual void character_event(u_int ch);
 
   private:
+    enum GUI_MODES {    // режимы окна
+      GUI_3D_MODE,      // основной режим - без шторки
+      GUI_MENU_START,   // начальное меню
+      GUI_MENU_LSELECT, // выбор игры
+      GUI_MENU_CREATE,  // создание нового района
+      GUI_MENU_CONFIG,  // настройки
+    };
+    enum ELEMENT_ID {   // Идентификаторы кнопок GIU
+      BTN_OPEN,
+      BTN_CANCEL,
+      BTN_CONFIG,
+      BTN_LOCATION,
+      BTN_MAP_DELETE,
+      BTN_CREATE,
+      BTN_ENTER_NAME,
+      ROW_MAP_NAME,
+      NONE
+    };
+    struct map{
+        map(const std::string &f, const std::string &n): Folder(f), Name(n){}
+        std::string Folder;
+        std::string Name;
+    };
+
+    win_params WinParams {};  // параметры окна приложения
+    std::unique_ptr<space> Space = nullptr;
+    std::unique_ptr<wglfw> GlContext = nullptr;
+
     bool text_mode = false;                  // режим ввода текста
     std::string StringBuffer {};             // строка ввода пользователя
 
@@ -46,26 +67,8 @@ class gui: public IWindowInput
 
     GLuint gui_texture = 0;                  // id тектуры HUD
 
-    struct map{
-        map(const std::string &f, const std::string &n): Folder(f), Name(n){}
-        std::string Folder;
-        std::string Name;
-    };
-
     std::vector<map> Maps {};            // список карт
     GUI_MODES GuiMode = GUI_MENU_START;  // режим окна приложения
-    enum ELEMENT_ID {                    // Идентификаторы кнопок GIU
-      BTN_OPEN,
-      BTN_CANCEL,
-      BTN_CONFIG,
-      BTN_LOCATION,
-      BTN_MAP_DELETE,
-      BTN_CREATE,
-      BTN_ENTER_NAME,
-      ROW_MAP_NAME,
-      NONE
-    };
-
     ELEMENT_ID element_over = NONE;  // Над какой GIU кнопкой курсор
     size_t row_selected = 0;         // какая строка выбрана
 
@@ -85,9 +88,7 @@ class gui: public IWindowInput
     img Font18s { "../assets/font_10x18_sh.png", f_len }; //шрифт 10x18 (тень)
     img Font18l { "../assets/font_10x18_lt.png", f_len }; //шрифт 10x18 (светл)
 
-    std::unique_ptr<space> Space = nullptr;
     GLuint vao_quad_id  = 0;
-    //std::unique_ptr<glsl> screenShaderProgram = nullptr; // шейдерная программа обработки текстуры рендера
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
     void hud_load(void);

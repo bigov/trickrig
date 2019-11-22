@@ -16,9 +16,7 @@ namespace tr
   float zFar  = 10000.f;      // расстояние до дальней плоскости матрицы проекции
 
   std::string AppPathDir {};  // Абсолютный путь к исполняемому файлу приложения
-  win_data WinData     {};  // параметры окна приложения
   camera_3d Eye          {};  // главная камера 3D вида
-  wglfw GLWindow {};
 }
 
 
@@ -42,26 +40,12 @@ int main(int, char* argv[])
 
   try
   {
-    cfg::load();
-    WinData.layout_set(cfg::WinLayout);
+    wglfw MainOpenGLContext {};
+    if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
+    if(!gladLoadGL()) { ERR("FAILURE: can't load GLAD."); }
 
-    GLWindow.init(WinData.Layout.width, WinData.Layout.height,
-                  WinData.minwidth, WinData.minheight,
-                  WinData.Layout.left, WinData.Layout.top);
-    GLWindow.set_error_observer(WinData);    // отслеживание ошибок
-    GLWindow.set_cursor_observer(WinData);   // курсор мыши в окне
-    GLWindow.set_button_observer(WinData);   // кнопки мыши
-    GLWindow.set_keyboard_observer(WinData); // клавиши клавиатуры
-    GLWindow.set_position_observer(WinData); // положение окна
-    GLWindow.add_size_observer(WinData);     // размер окна
-    GLWindow.set_close_observer(WinData);    // закрытие окна
-
-    MatProjection = glm::perspective(1.118f, WinData.aspect, zNear, zFar);
-
-    gui AppGUI {};
+    gui AppGUI { &MainOpenGLContext };
     AppGUI.show();
-
-    cfg::save(WinData.Layout); // Сохранение положения окна
   }
   catch(std::exception & e)
   {

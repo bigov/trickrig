@@ -11,7 +11,7 @@ class wglfw
   static std::string title;
 
   public:
-      wglfw() = default;
+      wglfw(void);
       ~wglfw(void);
 
       // Запретить копирование объекта
@@ -22,32 +22,34 @@ class wglfw
       wglfw(wglfw&&) = delete;
       wglfw& operator=(wglfw&&) = delete;
 
-      void init(u_int width=0, u_int height=0, u_int min_w=0, u_int min_h=0, u_int left=0, u_int top=0);
+      void set_window(u_int width=10, u_int height=10, u_int min_w=0,
+                      u_int min_h=0, u_int left=0, u_int top=0);
       void swap_buffers(void);
       void cursor_hide(void);
       void cursor_restore(void);
       void set_cursor_pos(double x, double y);
+      void get_frame_buffer_size(int* width, int* height);
 
-      void set_error_observer(IWindowInput& ref);    // отслеживание ошибок
-      void set_cursor_observer(IWindowInput& ref);   // курсор мыши в окне
-      void set_button_observer(IWindowInput& ref);   // кнопки мыши
-      void set_keyboard_observer(IWindowInput& ref); // клавиши клавиатуры
-      void set_position_observer(IWindowInput& ref); // положение окна
-      void add_size_observer(IWindowInput& ref);     // размер окна
-      void set_char_observer(IWindowInput& ref);     // ввод текста (символ)
-      void set_close_observer(IWindowInput& ref);    // закрытие окна
+      void set_error_observer(interface_gl_context& ref);    // отслеживание ошибок
+      void set_cursor_observer(interface_gl_context& ref);   // курсор мыши в окне
+      void set_button_observer(interface_gl_context& ref);   // кнопки мыши
+      void set_keyboard_observer(interface_gl_context& ref); // клавиши клавиатуры
+      void set_position_observer(interface_gl_context& ref); // положение окна
+      void add_size_observer(interface_gl_context& ref);     // размер окна
+      void set_char_observer(interface_gl_context& ref);     // ввод текста (символ)
+      void set_close_observer(interface_gl_context& ref);    // закрытие окна
 
     private:
       static GLFWwindow* win_ptr;
 
-      static IWindowInput* error_observer;
-      static IWindowInput* cursor_observer;
-      static IWindowInput* button_observer;
-      static IWindowInput* keyboard_observer;
-      static IWindowInput* position_observer;
-      static std::list<IWindowInput*> size_observers;
-      static IWindowInput* char_observer;
-      static IWindowInput* close_observer;
+      static interface_gl_context* error_observer;
+      static interface_gl_context* cursor_observer;
+      static interface_gl_context* button_observer;
+      static interface_gl_context* keyboard_observer;
+      static interface_gl_context* position_observer;
+      static std::list<interface_gl_context*> size_observers;
+      static interface_gl_context* char_observer;
+      static interface_gl_context* close_observer;
 
       static void callback_error(int error_id, const char* description);
       static void callback_cursor(GLFWwindow* window, double xpos, double ypos);

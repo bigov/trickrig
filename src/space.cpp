@@ -28,8 +28,11 @@ static const std::chrono::seconds one_second(1);
 /// \brief space::space
 /// \details Формирование 3D пространства
 ///
-space::space(void)
+space::space(wglfw* OpenGLContext)
 {
+  assert(nullptr != OpenGLContext);
+
+  OglContext = OpenGLContext;
   light_direction = glm::normalize(glm::vec3(0.3f, 0.45f, 0.4f)); // направление (x,y,z)
   light_bright = glm::vec3(0.99f, 0.99f, 1.00f);                  // цвет        (r,g,b)
 
@@ -60,11 +63,12 @@ space::space(void)
 
   Prog3d.unuse();
 
-  // настройка рендер-буфера с двумя текстурами
-  if(!RenderBuffer.init(
-              static_cast<GLsizei>(WinData.Layout.width),
-              static_cast<GLsizei>(WinData.Layout.height)))
-    ERR("Error on creating Render Buffer.");
+  // настройка рендер-буфера
+  GLsizei width, height;
+  OglContext->get_frame_buffer_size(&width, &height);
+  if(!RenderBuffer.init(width, height)) ERR("Error on creating Render Buffer.");
+
+  OglContext->add_size_observer(RenderBuffer);
 
   // загрузка основной текстуры
   load_texture(GL_TEXTURE0, cfg::app_key(PNG_TEXTURE0));
@@ -72,11 +76,43 @@ space::space(void)
 
 
 ///
-/// \brief space::init
+/// \brief space::~space
 ///
-void space::area3d_load(void)
+space::~space(void)
 {
-  Area4 = std::make_unique<area>(size_v4, border_dist_b4);
+  Prog3d.destroy();
+}
+
+
+///
+/// \brief space::enable
+///
+void space::enable(void)
+{
+  if(nullptr == Area4) Area4 = std::make_unique<area>(size_v4, border_dist_b4);
+
+  GLsizei width, height;
+  OglContext->get_frame_buffer_size(&width, &height);
+
+  xpos = width/2;  // Рассчитать координаты центра экрана
+  ypos = height/2;
+
+  OglContext->cursor_hide();  // выключить отображение курсора мыши в окне
+  OglContext->set_cursor_pos(xpos, ypos);
+                                          // Подключить обработчики:
+  OglContext->set_cursor_observer(*this);   // курсора мыши
+  OglContext->set_button_observer(*this);   // кнопки мыши
+  OglContext->set_keyboard_observer(*this); // и клавиатуры
+
+  on_front = 0; // клавиша вперед
+  on_back  = 0; // клавиша назад
+  on_right = 0; // клавиша вправо
+  on_left  = 0; // клавиша влево
+  on_up    = 0; // клавиша вверх
+  on_down  = 0; // клавиша вниз
+  fb_way   = 0; // движение вперед
+  ud_way   = 0; // движение вверх
+  rl_way   = 0; // движение в сторону
 }
 
 
@@ -117,13 +153,13 @@ void space::load_texture(unsigned gl_texture_index, const std::string& FileName)
 ///
 void space::calc_position(void)
 {
-  Eye.look_a -= Eye.speed_rotate * WinData.dx;
-  WinData.dx = 0.f;
+  Eye.look_a -= Eye.speed_rotate * dx;
+  dx = 0.f;
   if(Eye.look_a > dPi) Eye.look_a -= dPi;
   if(Eye.look_a < 0) Eye.look_a += dPi;
 
-  Eye.look_t -= Eye.speed_rotate * WinData.dy;
-  WinData.dy = 0.f;
+  Eye.look_t -= Eye.speed_rotate * dy;
+  dy = 0.f;
   if(Eye.look_t > up_max) Eye.look_t = up_max;
   if(Eye.look_t < down_max) Eye.look_t = down_max;
 
@@ -131,9 +167,9 @@ void space::calc_position(void)
 
   float dist  = Eye.speed_moving *
           static_cast<float>(cycle_time) * size_v4; // Дистанция перемещения
-  rl = dist * WinData.rl;
-  fb = dist * WinData.fb;   // по трем нормалям от камеры
-  ud = dist * WinData.ud;
+  rl = dist * rl_way;
+  fb = dist * fb_way;   // по трем нормалям от камеры
+  ud = dist * ud_way;
 
   // промежуточные скаляры для ускорения расчета координат точек вида
   float
@@ -160,16 +196,16 @@ void space::calc_render_time(void)
 {
   std::chrono::time_point<sys_clock> t_frame = sys_clock::now();
 
-  static int fps = 0;
+  static int _fps = 0;
   static std::chrono::time_point<sys_clock> cycle_start = t_frame;
   static std::chrono::time_point<sys_clock> fps_start = t_frame;
 
-  fps++;
+  _fps++;
   if (t_frame - fps_start >= one_second)
   {
     fps_start = t_frame;
-    WinData.fps = fps;
-    fps = 0;
+    FPS = _fps;
+    _fps = 0;
   }
 
   // время (в секундах) прошедшее после предыдущего вызова данный функции
@@ -181,12 +217,11 @@ void space::calc_render_time(void)
 ///
 /// Функция, вызываемая из цикла окна для рендера сцены
 ///
-void space::render(void)
+bool space::render(void)
 {
   calc_render_time();
   calc_position();
   Area4->recalc_borders();
-  check_keys();
 
   glBindVertexArray(Area4->vao_id());
   RenderBuffer.bind();
@@ -215,7 +250,107 @@ void space::render(void)
   Prog3d.unuse(); // отключить шейдерную программу
   RenderBuffer.unbind();
   glBindVertexArray(0);
- }
+
+  return check_keys();
+}
+
+
+///
+/// \brief space::cursor_event
+/// \param x
+/// \param y
+///
+void space::cursor_event(double x, double y)
+{
+  // Накапливаем дистанцию смещения мыши между кадрами рендера.
+  // Чем больше значение, тем выше скрость поворота камеры.
+  dx += static_cast<float>(x - xpos);
+  dy += static_cast<float>(y - ypos);
+
+  // После получения значения счетчика восстановить позицию курсора
+  OglContext->set_cursor_pos(xpos, ypos);
+}
+
+
+///
+/// \brief space::mouse_event
+/// \param _button
+/// \param _action
+/// \param _mods
+///
+void space::mouse_event(int _button, int _action, int _mods)
+{
+  mods   = _mods;
+  mouse  = _button;
+  action = _action;
+}
+
+
+///
+/// \brief space::keyboard_event
+/// \param _key
+/// \param _scancode
+/// \param _action
+/// \param _mods
+///
+void space::keyboard_event(int _key, int _scancode, int _action, int _mods)
+{
+  mouse    = -1;
+  key      = _key;
+  scancode = _scancode;
+  action   = _action;
+  mods     = _mods;
+
+  if (PRESS == _action) {
+    switch(_key) {
+      case KEY_MOVE_UP:
+        on_up = 1;
+        break;
+      case KEY_MOVE_DOWN:
+        on_down = 1;
+        break;
+      case KEY_MOVE_FRONT:
+        on_front = 1;
+        break;
+      case KEY_MOVE_BACK:
+        on_back = 1;
+        break;
+      case KEY_MOVE_LEFT:
+        on_left = 1;
+        break;
+      case KEY_MOVE_RIGHT:
+        on_right = 1;
+        break;
+      default: break;
+    }
+  } else if (RELEASE == _action) {
+    switch(_key) {
+      case KEY_MOVE_UP:
+        on_up = 0;
+        break;
+      case KEY_MOVE_DOWN:
+        on_down = 0;
+        break;
+      case KEY_MOVE_FRONT:
+        on_front = 0;
+        break;
+      case KEY_MOVE_BACK:
+        on_back = 0;
+        break;
+      case KEY_MOVE_LEFT:
+        on_left = 0;
+        break;
+      case KEY_MOVE_RIGHT:
+        on_right = 0;
+        break;
+      default: break;
+    }
+  }
+
+  fb_way = on_front - on_back;
+  ud_way = on_down  - on_up;
+  rl_way = on_left  - on_right;
+}
 
 
 ///
@@ -224,43 +359,41 @@ void space::render(void)
 ///
 /// Скан-коды клавиш:
 /// [S] == 31; [C] == 46
-void space::check_keys()
+bool space::check_keys()
 {
+  if((key == KEY_ESCAPE) && (action == RELEASE))
+  {
+    key    = -1;
+    action = -1;
+    return false;
+  }
+
   u_int vertex_id = 0;
-  RenderBuffer.read_pixel(
-              GLint(WinData.Sight.x), GLint(WinData.Sight.y), &vertex_id);
+  RenderBuffer.read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
 
   id_point_0 = vertex_id - (vertex_id % vertices_per_side);
   id_point_8 = id_point_0 + vertices_per_side - 1;
 
   //DEBUG: Нажатие на [C] выводит в консоль номер вершины-индикатора
-  if((46 == WinData.scancode) && (WinData.action == PRESS))
+  if((46 == scancode) && (action == PRESS))
   {
-    WinData.action = -1;
-    WinData.scancode = -1;
+    action = -1;
+    scancode = -1;
     std::cout << "ID=" << vertex_id << " ";
   }
 
-  if((WinData.mouse == MOUSE_BUTTON_LEFT) && (WinData.action == PRESS))
+  if((mouse == MOUSE_BUTTON_LEFT) && (action == PRESS))
   {
-    WinData.action = -1;
+    action = -1;
     Area4->append(vertex_id);
   }
 
-  if((WinData.mouse == MOUSE_BUTTON_RIGHT) && (WinData.action == PRESS))
+  if((mouse == MOUSE_BUTTON_RIGHT) && (action == PRESS))
   {
-    WinData.action = -1;
+    action = -1;
     Area4->remove(vertex_id);
   }
-}
-
-
-///
-/// \brief space::~space
-///
-space::~space(void)
-{
-  Prog3d.destroy();
+  return true;
 }
 
 } // namespace tr

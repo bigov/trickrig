@@ -15,41 +15,47 @@ namespace tr
 GLFWwindow* wglfw::win_ptr = nullptr;
 std::string wglfw::title = "TrickRig: v.development";
 
-IWindowInput* wglfw::error_observer = nullptr;
-IWindowInput* wglfw::cursor_observer = nullptr;
-IWindowInput* wglfw::button_observer = nullptr;
-IWindowInput* wglfw::keyboard_observer = nullptr;
-IWindowInput* wglfw::position_observer = nullptr;
-std::list<IWindowInput*> wglfw::size_observers {};
-IWindowInput* wglfw::char_observer = nullptr;
-IWindowInput* wglfw::close_observer = nullptr;
+interface_gl_context* wglfw::error_observer = nullptr;
+interface_gl_context* wglfw::cursor_observer = nullptr;
+interface_gl_context* wglfw::button_observer = nullptr;
+interface_gl_context* wglfw::keyboard_observer = nullptr;
+interface_gl_context* wglfw::position_observer = nullptr;
+std::list<interface_gl_context*> wglfw::size_observers {};
+interface_gl_context* wglfw::char_observer = nullptr;
+interface_gl_context* wglfw::close_observer = nullptr;
+
 
 ///
-/// Создание нового окна с обработчиками ввода и настройка контекста
-/// отображения OpenGL
+/// \brief wglfw::wglfw
 ///
-void wglfw::init(u_int width, u_int height, u_int min_w, u_int min_h, u_int left, u_int top)
+wglfw::wglfw(void)
 {
-  glfwSetErrorCallback(callback_error);
   if (!glfwInit()) ERR("Error init GLFW lib.");
-
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, 0);
 
-  #ifndef NDEBUG
+#ifndef NDEBUG
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
-  #endif
+#endif
 
   //  Создание 3D окна
   glfwWindowHint(GLFW_VISIBLE, 0);
-  win_ptr = glfwCreateWindow(static_cast<int>(width), static_cast<int>(height),
-                             title.c_str(), nullptr, nullptr);
+  win_ptr = glfwCreateWindow(1, 1, "", nullptr, nullptr);
   if (nullptr == win_ptr) ERR("Creating Window fail.");
+  glfwMakeContextCurrent(win_ptr);
+}
 
+
+///
+/// Настройка окна и обработчиков ввода
+///
+void wglfw::set_window(u_int width, u_int height, u_int min_w, u_int min_h, u_int left, u_int top)
+{
+  glfwSetErrorCallback(callback_error);
   glfwSetWindowSizeLimits(win_ptr, static_cast<int>(min_w), static_cast<int>(min_h),
                           GLFW_DONT_CARE, GLFW_DONT_CARE);
+  glfwSetWindowSize(win_ptr, static_cast<int>(width), static_cast<int>(height));
   glfwSetWindowPos(win_ptr, static_cast<int>(left), static_cast<int>(top));
   glfwShowWindow(win_ptr);
   glfwMakeContextCurrent(win_ptr);
@@ -61,10 +67,6 @@ void wglfw::init(u_int width, u_int height, u_int min_w, u_int min_h, u_int left
   glfwSetFramebufferSizeCallback(win_ptr, callback_size);
   glfwSetWindowPosCallback(win_ptr, callback_position);
   glfwSetWindowCloseCallback(win_ptr, callback_close);
-
-  if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
-  if(!gladLoadGL()) { ERR("FAILURE: can't load GLAD."); }
-
   glfwSetInputMode(win_ptr, GLFW_STICKY_KEYS, 0);
 }
 
@@ -80,35 +82,35 @@ wglfw::~wglfw()
 }
 
 
-void wglfw::set_error_observer(IWindowInput& ref)
+void wglfw::set_error_observer(interface_gl_context& ref)
 {
   error_observer = &ref;
 }
-void wglfw::set_cursor_observer(IWindowInput& ref)
+void wglfw::set_cursor_observer(interface_gl_context& ref)
 {
   cursor_observer = &ref;
 }
-void wglfw::set_button_observer(IWindowInput& ref)
+void wglfw::set_button_observer(interface_gl_context& ref)
 {
   button_observer = &ref;
 }
-void wglfw::set_keyboard_observer(IWindowInput& ref)
+void wglfw::set_keyboard_observer(interface_gl_context& ref)
 {
   keyboard_observer = &ref;
 }
-void wglfw::set_position_observer(IWindowInput& ref)
+void wglfw::set_position_observer(interface_gl_context& ref)
 {
   position_observer = &ref;
 }
-void wglfw::add_size_observer(IWindowInput& ref)
+void wglfw::add_size_observer(interface_gl_context& ref)
 {
   size_observers.push_back(&ref);
 }
-void wglfw::set_char_observer(IWindowInput& ref)
+void wglfw::set_char_observer(interface_gl_context& ref)
 {
   char_observer = &ref;
 }
-void wglfw::set_close_observer(IWindowInput& ref)
+void wglfw::set_close_observer(interface_gl_context& ref)
 {
   close_observer = &ref;
 }
@@ -156,6 +158,17 @@ void wglfw::cursor_restore(void)
 void wglfw::set_cursor_pos(double x, double y)
 {
   glfwSetCursorPos(win_ptr, x, y);
+}
+
+
+///
+/// \brief wglfw::get_frame_buffer_size
+/// \param width
+/// \param height
+///
+void wglfw::get_frame_buffer_size(int* width, int* height)
+{
+  glfwGetFramebufferSize(win_ptr, width, height);
 }
 
 

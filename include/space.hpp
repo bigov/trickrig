@@ -16,27 +16,57 @@ using sys_clock = std::chrono::system_clock;
 
 namespace tr
 {
-  class space
+  class space: public interface_gl_context
   {
     public:
-      space(void);
+      space(wglfw* OpenGLContext);
       ~space(void);
-      void area3d_load(void);
-      void render(void);
 
-      frame_buffer RenderBuffer {};    // рендер-буфер окна
+      void enable(void);
+      bool render(void);
+
+      virtual void cursor_event(double x, double y);
+      virtual void mouse_event(int _button, int _action, int _mods);
+      virtual void keyboard_event(int _key, int _scancode, int _action, int _mods);
+
+      int FPS = 500;     // частота кадров (для коррекции скорости движения)
 
     private:
       space(const space &);
       space operator=(const space &);
 
-      double cycle_time;  // время (в секундах) на рендер кадра
+      wglfw* OglContext = nullptr;
+
+      float dx = 0.f;    // Cмещение мыши в активном окне между кадрами
+      float dy = 0.f;    // в режиме 3D (режим прицела) при скрытом курсоре.
+      double xpos = 0.0; // позиция указателя относительно левой границы
+      double ypos = 0.0; // позиция указателя относительно верхней границы
+
+      int fb_way = 0;    // 3D движение front/back
+      int rl_way = 0;    // -- right/left
+      int ud_way = 0;    // -- up/down
+
+      int on_front = 0;  // нажата клавиша вперед
+      int on_back  = 0;  // нажата клавиша назад
+      int on_right = 0;  // нажата клавиша вправо
+      int on_left  = 0;  // нажата клавиша влево
+      int on_up    = 0;  // нажата клавиша вверх
+      int on_down  = 0;  // нажата клавиша вниз
+
+      int mouse = -1;
+      int key = -1;
+      int scancode = -1;
+      int action = -1;
+      int mods = -1;
+
+      frame_buffer RenderBuffer {}; // рендер-буфер окна
+      double cycle_time;            // время (в секундах) на рендер кадра
 
       glm::vec3 light_direction {}; // направление освещения
       glm::vec3 light_bright {};    // яркость света
       // Индексы вершин подсвечиваемого вокселя, на который направлен курсор (центр экрана)
-      u_int id_point_0 = 0;           // индекс начальной вершины
-      u_int id_point_8 = 0;           // индекс последней вершины
+      u_int id_point_0 = 0;         // индекс начальной вершины
+      u_int id_point_8 = 0;         // индекс последней вершины
 
       // GPU control
       GLuint texture_id = 0;
@@ -57,7 +87,7 @@ namespace tr
       void calc_render_time(void);
       void load_texture(unsigned gl_texture_index, const std::string& fname);
       void calc_position();
-      void check_keys();
+      bool check_keys();
   };
 
 } //namespace

@@ -71,10 +71,6 @@ GLuint gl_texture::id(void) const
 ///
 bool frame_buffer::init(GLsizei w, GLsizei h)
 {
-#ifndef NDEBUG
-  fb_w = w; fb_h = h;
-#endif
-
   glGenFramebuffers(1, &id);
   glBindFramebuffer(GL_FRAMEBUFFER, id);
 
@@ -111,12 +107,8 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
 /// \param width
 /// \param height
 ///
-void frame_buffer::resize_event(GLsizei w, GLsizei h)
+void frame_buffer::resize_event(int w, int h)
 {
-#ifndef NDEBUG
-  fb_w = w; fb_h = h;
-#endif
-
   glViewport(0, 0, w, h); // пересчет Viewport
 
   // Текстура индентификации примитивов (канал RED)
@@ -148,18 +140,7 @@ void frame_buffer::bind(void)
 ///
 void frame_buffer::read_pixel(GLint x, GLint y, void* pixel_data)
 {
-#ifndef NDEBUG
-  if((x > fb_w) || (y > fb_h))
-  {
-    info("frame_buffer::read_pixel - overflow size of frame!");
-    x = fb_w; y = fb_h;
-  }
-  if((x < 0) || (y < 0))
-  {
-    info("frame_buffer::read_pixel - negative coordinates!");
-    x = 0; y = 0;
-  }
-#endif
+  assert((x >= 0) && (y >= 0));
 
   glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
   glReadBuffer(GL_COLOR_ATTACHMENT1);
