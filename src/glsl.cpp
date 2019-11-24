@@ -206,7 +206,7 @@ namespace tr {
   ////////
   // Передача в шейдер вектора
   //
-  void glsl::set_uniform(const char * name, const glm::vec3 & m)
+  void glsl::set_uniform(const char* name, const glm::vec3& m)
   {
     GLint loc;
     loc = uniform_location_get(name);

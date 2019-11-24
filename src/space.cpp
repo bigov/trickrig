@@ -89,8 +89,6 @@ space::~space(void)
 ///
 void space::enable(void)
 {
-  if(nullptr == Area4) Area4 = std::make_unique<area>(size_v4, border_dist_b4);
-
   GLsizei width, height;
   OglContext->get_frame_buffer_size(&width, &height);
 
@@ -99,10 +97,13 @@ void space::enable(void)
 
   OglContext->cursor_hide();  // выключить отображение курсора мыши в окне
   OglContext->set_cursor_pos(xpos, ypos);
-                                          // Подключить обработчики:
-  OglContext->set_cursor_observer(*this);   // курсора мыши
-  OglContext->set_button_observer(*this);   // кнопки мыши
-  OglContext->set_keyboard_observer(*this); // и клавиатуры
+
+  // Продолжительная по времени операция - загрузка в память сцены
+  if(nullptr == Area4) Area4 = std::make_unique<area>(size_v4, border_dist_b4);
+
+  OglContext->set_cursor_observer(*this);   // Подключить обработчики: курсора мыши
+  OglContext->set_button_observer(*this);   //  -- кнопки мыши
+  OglContext->set_keyboard_observer(*this); //  -- клавиатуры
 
   on_front = 0; // клавиша вперед
   on_back  = 0; // клавиша назад
@@ -113,6 +114,8 @@ void space::enable(void)
   fb_way   = 0; // движение вперед
   ud_way   = 0; // движение вверх
   rl_way   = 0; // движение в сторону
+
+  ready = true;
 }
 
 

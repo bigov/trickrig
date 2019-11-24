@@ -24,6 +24,7 @@ namespace tr
 
       void enable(void);
       bool render(void);
+      bool is_ready(void) const {return ready;}
 
       virtual void cursor_event(double x, double y);
       virtual void mouse_event(int _button, int _action, int _mods);
@@ -37,6 +38,7 @@ namespace tr
 
       wglfw* OglContext = nullptr;
 
+      bool ready = false;
       float dx = 0.f;    // Cмещение мыши в активном окне между кадрами
       float dy = 0.f;    // в режиме 3D (режим прицела) при скрытом курсоре.
       double xpos = 0.0; // позиция указателя относительно левой границы

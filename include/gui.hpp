@@ -5,7 +5,6 @@
 #include "wglfw.hpp"
 #include "config.hpp"
 #include "space.hpp"
-#include "winpar.hpp"
 
 namespace tr {
 
@@ -24,8 +23,22 @@ class gui: public interface_gl_context
     gui(wglfw* glContext);
     ~gui(void);
 
+    // Запретить копирование и перенос экземпляра класса
+    gui(const gui&) = delete;
+    gui& operator=(const gui&) = delete;
+    gui(gui&&) = delete;
+    gui& operator=(gui&&) = delete;
+
     void show(void);
+
+    virtual void reposition_event(int left, int top);
+    virtual void resize_event(int width, int height);
     virtual void character_event(u_int ch);
+    virtual void cursor_event(double x, double y);
+    virtual void close_event(void);
+    virtual void error_event(const char* message);
+    virtual void mouse_event(int _button, int _action, int _mods);
+    virtual void keyboard_event(int _key, int _scancode, int _action, int _mods);
 
   private:
     enum GUI_MODES {    // режимы окна
@@ -52,16 +65,32 @@ class gui: public interface_gl_context
         std::string Name;
     };
 
-    win_params WinParams {};  // параметры окна приложения
+    glm::vec3 Cursor3D = { 200.f, 200.f, 0.f };           // положение и размер прицела
+    const u_int BUTTTON_WIDTH = 120;                      // ширина кнопки GUI
+    const u_int BUTTTON_HEIGHT = 36;                      // высота кнопки GUI
+    const u_int MIN_GUI_WIDTH = (BUTTTON_WIDTH + 16) * 4; // минимально допустимая ширина окна
+    const u_int MIN_GUI_HEIGHT = BUTTTON_HEIGHT * 4 + 8;  // минимально допустимая высота окна
+
+    int scancode = -1;
+    int mods = -1;
+    int mouse_button = -1;
+    int action = -1;
+    int key = -1;
+
+    bool is_open = true;                     // состояние окна
+    layout Layout {400, 400, 0, 0};          // размеры и положение
+    float aspect = 1.0f;                     // соотношение размеров окна
     std::unique_ptr<space> Space = nullptr;
     std::unique_ptr<wglfw> GlContext = nullptr;
 
     bool text_mode = false;                  // режим ввода текста
     std::string StringBuffer {};             // строка ввода пользователя
+    double mouse_x = 0.0;                    // позиция указателя относительно левой границы
+    double mouse_y = 0.0;                    // позиция указателя относительно верхней границы
 
     px bg      {0xE0, 0xE0, 0xE0, 0xC0};     // фон заполнения неактивного окна
     px bg_hud  {0x00, 0x88, 0x00, 0x40};     // фон панелей HUD (активного окна)
-    img WinGui { 0, 0 };                     // GUI/HUD текстура окна приложения
+    img ImageGUI { 0, 0 };                   // GUI/HUD текстура окна приложения
     px color_title {0xFF, 0xFF, 0xDD, 0xFF}; // фон заголовка
     bool mouse_press_left = false;           // нажатие на левую кнопку мыши
 
@@ -112,8 +141,11 @@ class gui: public interface_gl_context
     void button_click(ELEMENT_ID);
     void cancel(void);
     void hud_draw(void);      // обновление кадра
+    void render_screen(void);
     void create_map(void);
     void remove_map(void);
+    void layout_set(const layout &L);
+
 };
 
 } //tr

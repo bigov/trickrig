@@ -9,13 +9,9 @@ namespace tr {
 gui::gui(wglfw* glContext)
 {
   cfg::load();
-  WinParams.layout_set(cfg::WinLayout);
-
-  glContext->set_window(WinParams.Layout.width, WinParams.Layout.height,
-                WinParams.minwidth, WinParams.minheight,
-                WinParams.Layout.left, WinParams.Layout.top);
-
-  MatProjection = glm::perspective(1.118f, WinParams.aspect, zNear, zFar);
+  layout_set(cfg::WinLayout);
+  glContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
+  MatProjection = glm::perspective(1.118f, aspect, zNear, zFar);
   Space = std::make_unique<space>(glContext);
   FontMap1_len = static_cast<u_int>(FontMap1.length());
   TimeStart = std::chrono::system_clock::now();
@@ -33,8 +29,7 @@ gui::gui(wglfw* glContext)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glBindTexture(GL_TEXTURE_2D, 0);
 
-  WinGui.resize(WinParams.Layout.width, WinParams.Layout.height);
-  WinParams.pWinGui = &WinGui;
+  ImageGUI.resize(Layout.width, Layout.height);
 
   /// Инициализация GLSL программы обработки текстуры фреймбуфера.
   ///
@@ -97,7 +92,7 @@ gui::~gui(void)
 {
   screenShaderProgram.destroy();
   Space = nullptr;
-  cfg::save(WinParams.Layout); // Сохранение положения окна
+  cfg::save(Layout); // Сохранение положения окна
 }
 
 
@@ -107,11 +102,11 @@ gui::~gui(void)
 ///
 void gui::title(const std::string &title)
 {
-  img label{ WinGui.w_summ - 4, Font18s.h_cell * 2 - 4, color_title};
+  img label{ ImageGUI.w_summ - 4, Font18s.h_cell * 2 - 4, color_title};
 
-  u_long x = WinGui.w_summ/2 - utf8_size(title) * Font18s.w_cell / 2;
+  u_long x = ImageGUI.w_summ/2 - utf8_size(title) * Font18s.w_cell / 2;
   textstring_place(Font18s, title, label, x, Font18s.h_cell/2);
-  label.copy(0, 0, WinGui, 2, 2);
+  label.copy(0, 0, ImageGUI, 2, 2);
 }
 
 
@@ -168,7 +163,7 @@ void gui::textstring_place(const img &FontImg, const std::string &TextString,
 void gui::input_text_line(const img &Font)
 {
   px color = {0xF0, 0xF0, 0xF0, 0xFF};
-  u_int row_width = WinGui.w_summ - Font.w_cell * 2;
+  u_int row_width = ImageGUI.w_summ - Font.w_cell * 2;
   u_int row_height = Font.h_cell * 2;
   img RowInput{ row_width, row_height, color };
 
@@ -178,9 +173,9 @@ void gui::input_text_line(const img &Font)
   cursor_text_row(Font, RowInput, utf8_size(StringBuffer));
 
   // скопировать на экран изображение поля ввода с добавленым текстом
-  auto x = (WinGui.w_summ - RowInput.w_summ) / 2;
-  y = WinGui.h_summ / 2 - 2 * WinParams.btn_h;
-  RowInput.copy(0, 0, WinGui, x, y);
+  auto x = (ImageGUI.w_summ - RowInput.w_summ) / 2;
+  y = ImageGUI.h_summ / 2 - 2 * BUTTTON_HEIGHT;
+  RowInput.copy(0, 0, ImageGUI, x, y);
 }
 
 
@@ -232,7 +227,7 @@ void gui::row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::str
   px bg_color = normal;
 
   // Если указатель находится над строкой
-  if(WinParams.xpos >= x && WinParams.xpos <= x+w && WinParams.ypos >= y && WinParams.ypos <= y+h)
+  if(mouse_x >= x && mouse_x <= x+w && mouse_y >= y && mouse_y <= y+h)
   {
     element_over = ROW_MAP_NAME; // для обработки в "menu_selector"
     bg_color = over;
@@ -249,7 +244,7 @@ void gui::row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::str
 
   img Row { w, h, bg_color };
   textstring_place(Font18n, text, Row, Font18n.w_cell/2, 6);
-  Row.copy(0, 0, WinGui, x, y);
+  Row.copy(0, 0, ImageGUI, x, y);
 }
 
 
@@ -260,7 +255,7 @@ void gui::row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::str
 void gui::select_list(u_int lx, u_int ly, u_int lw, u_int lh)
 {
   img ListImg {lw, lh, {0xDD, 0xDD, 0xDD, 0xFF}};             // изображение списка
-  ListImg.copy(0, 0, WinGui, lx, ly);
+  ListImg.copy(0, 0, ImageGUI, lx, ly);
 
   u_int rh = Font18n.h_cell * 1.5f;     // высота строки
   u_int rw = lw - 4;                    // ширина строки
@@ -280,16 +275,19 @@ void gui::select_list(u_int lx, u_int ly, u_int lw, u_int lh)
 ///
 void gui::cancel(void)
 {
+  key    = -1;
+  action = -1;
+
   switch (GuiMode)
   {
     case GUI_3D_MODE:
       cfg::map_view_save();
       GuiMode = GUI_MENU_LSELECT;
-      WinParams.Sight[2] = 0.0f;                  // Убрать прицел
-      GlContext->cursor_restore();                 // Включить указатель мыши
-      GlContext->set_cursor_observer(WinParams);   // переключить обработчик смещения курсора
-      GlContext->set_button_observer(WinParams);   // обработчик кнопок мыши
-      GlContext->set_keyboard_observer(WinParams); // и клавиатуры
+      Cursor3D[2] = 0.0f;                         // Спрятать прицел
+      GlContext->cursor_restore();             // Включить указатель мыши
+      GlContext->set_cursor_observer(*this);   // переключить обработчик смещения курсора
+      GlContext->set_button_observer(*this);   // обработчик кнопок мыши
+      GlContext->set_keyboard_observer(*this); // и клавиатуры
       break;
     case GUI_MENU_LSELECT:
       GuiMode = GUI_MENU_START;
@@ -301,7 +299,7 @@ void gui::cancel(void)
       GuiMode = GUI_MENU_START;
       break;
     case GUI_MENU_START:
-      WinParams.is_open = false;
+      is_open = false;
       break;
   }
 }
@@ -322,9 +320,9 @@ void gui::cancel(void)
 void gui::sub_img(const img &Image, GLint x, GLint y)
 {
 #ifndef NDEBUG
-  if(x > static_cast<int>(WinGui.w_summ) - static_cast<int>(Image.w_summ))
+  if(x > static_cast<int>(ImageGUI.w_summ) - static_cast<int>(Image.w_summ))
     ERR ("giu::sub_img - overload X");
-  if(y > static_cast<int>(WinGui.h_summ) - static_cast<int>(Image.h_summ))
+  if(y > static_cast<int>(ImageGUI.h_summ) - static_cast<int>(Image.h_summ))
     ERR ("giu::sub_img - overload Y");
 #endif
 
@@ -347,15 +345,15 @@ void gui::hud_draw(void)
   px bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения
   u_int fps_length = 4;               // количество символов в надписи
   img Fps {fps_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
-  char line[5];                   // the expected string plus 1 null terminator
+  char line[5];                       // длина строки с '\0'
   std::sprintf(line, "%.4i", Space->FPS);
   textstring_place(Font15n, line, Fps, 2, 1);
-  sub_img(Fps, 2, static_cast<GLint>(WinParams.Layout.height - Fps.h_summ - 2));
+  sub_img(Fps, 2, static_cast<GLint>(Layout.height - Fps.h_summ - 2));
 
   // Координаты в пространстве
   u_int c_length = 60;               // количество символов в надписи
   img Coord {c_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
-  char ln[60];                    // the expected string plus 1 null terminator
+  char ln[60];                       // длина строки с '\0'
   std::sprintf(ln, "X:%+3.1f, Y:%+03.1f, Z:%+03.1f, a:%+04.3f, t:%+04.3f",
                   Eye.ViewFrom.x, Eye.ViewFrom.y, Eye.ViewFrom.z, Eye.look_a, Eye.look_t);
   textstring_place(Font15n, ln, Coord, 2, 1);
@@ -377,15 +375,15 @@ void gui::hud_draw(void)
 void gui::hud_load(void)
 {
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-           static_cast<GLint>(WinParams.Layout.width), static_cast<GLint>(WinParams.Layout.height),
-           0, GL_RGBA, GL_UNSIGNED_BYTE, WinGui.uchar());
+           static_cast<GLint>(Layout.width), static_cast<GLint>(Layout.height),
+           0, GL_RGBA, GL_UNSIGNED_BYTE, ImageGUI.uchar());
 
   // Панель инструментов для HUD в нижней части окна
-  u_int h = 48;                            // высота панели инструментов HUD
-  if(h > WinGui.h_summ) h = WinGui.h_summ; // не может быть выше GuiImg
-  img HudPanel {WinGui.w_summ, h, bg_hud};
+  u_int h = 48;                                 // высота панели инструментов HUD
+  if(h > ImageGUI.h_summ) h = ImageGUI.h_summ;  // не может быть выше GuiImg
+  img HudPanel {ImageGUI.w_summ, h, bg_hud};
   sub_img(HudPanel, 0,
-          static_cast<GLint>(WinGui.h_summ) -
+          static_cast<GLint>(ImageGUI.h_summ) -
           static_cast<GLint>(HudPanel.h_summ));
 }
 
@@ -396,10 +394,10 @@ void gui::hud_load(void)
 void gui::obscure_screen(void)
 {
   size_t i = 0;
-  size_t max = WinGui.Data.size();
+  size_t max = ImageGUI.Data.size();
   while(i < max)
   {
-    WinGui.Data[i++] = bg;
+    ImageGUI.Data[i++] = bg;
   }
 }
 
@@ -476,11 +474,20 @@ void gui::button_click(ELEMENT_ID id)
     case BTN_OPEN:
       cfg::map_view_load(Maps[row_selected - 1].Folder);
       GuiMode = GUI_3D_MODE;
-
-      WinGui.clear();            // очистка элементов GUI окна
-      hud_load();
-      WinParams.Sight[2] = 4.0f; // активировать прицел
+      ImageGUI.clear();        // очистка элементов GUI окна
+      {
+        auto& Font = Font18s;
+        char message[] = "ЗАГРУЗКА КАРТЫ ..."; // В сообщении 18 символов
+        u_int message_width =  18 * Font.w_cell;
+        u_int message_height = Font.h_cell;
+        img Banner {Layout.width, Layout.height, {0xD0, 0xDD, 0xEE, 0xFF}};
+        textstring_place(Font, message, Banner, (Layout.width - message_width)/2, (Layout.height - message_height)/2);
+        sub_img(Banner, 0, 0);
+      }
+      render_screen();
       Space->enable();
+      Cursor3D[2] = 4.0f;         // активировать прицел
+      hud_load();
       break;
     case BTN_CONFIG:
       GuiMode = GUI_MENU_CONFIG;
@@ -615,13 +622,13 @@ void gui::button_make_body(img &D, BUTTON_STATE s)
 void gui::button(ELEMENT_ID btn_id, u_long x, u_long y,
                      const std::string &Name, bool button_is_active)
 {
-  img Btn { WinParams.btn_w, WinParams.btn_h };
+  img Btn { BUTTTON_WIDTH, BUTTTON_HEIGHT };
 
   if(button_is_active)
   {
     // Если указатель находится над кнопкой
-    if( WinParams.xpos >= x && WinParams.xpos <= x + WinParams.btn_w &&
-        WinParams.ypos >= y && WinParams.ypos <= y + WinParams.btn_h)
+    if( mouse_x >= x && mouse_x <= x + BUTTTON_WIDTH &&
+        mouse_y >= y && mouse_y <= y + BUTTTON_HEIGHT)
     {
       element_over = btn_id;
 
@@ -650,15 +657,15 @@ void gui::button(ELEMENT_ID btn_id, u_long x, u_long y,
 
   if(button_is_active)
   {
-    textstring_place(Font18s, Name, Btn, WinParams.btn_w/2 - t_width/2,
-           WinParams.btn_h/2 - t_height/2);
+    textstring_place(Font18s, Name, Btn, BUTTTON_WIDTH/2 - t_width/2,
+           BUTTTON_HEIGHT/2 - t_height/2);
   }
   else
   {
-    textstring_place(Font18l, Name, Btn, WinParams.btn_w/2 - t_width/2,
-           WinParams.btn_h/2 - t_height/2);
+    textstring_place(Font18l, Name, Btn, BUTTTON_WIDTH/2 - t_width/2,
+           BUTTTON_HEIGHT/2 - t_height/2);
   }
-  Btn.copy(0, 0, WinGui, x, y);
+  Btn.copy(0, 0, ImageGUI, x, y);
 }
 
 
@@ -670,15 +677,15 @@ void gui::menu_start(void)
   obscure_screen();
   title("Trick Rig");
 
-  u_int x = WinParams.Layout.width/2 - WinParams.btn_w/2;   // X координата кнопки
-  u_int y = WinParams.Layout.height/2 - WinParams.btn_h/2;  // Y координата кнопки
-  button(BTN_CONFIG, x, y, u8"Настроить");
+  u_int x = Layout.width/2 - BUTTTON_WIDTH/2;   // X координата кнопки
+  u_int y = Layout.height/2 - BUTTTON_HEIGHT/2;  // Y координата кнопки
+  button(BTN_CONFIG, x, y, "Настроить");
 
-  y -= 1.5 * WinParams.btn_h;
-  button(BTN_LOCATION, x, y, u8"Играть");
+  y -= 1.5 * BUTTTON_HEIGHT;
+  button(BTN_LOCATION, x, y, "Играть");
 
-  y += 3 * WinParams.btn_h;
-  button(BTN_CANCEL, x, y, u8"Закрыть");
+  y += 3 * BUTTTON_HEIGHT;
+  button(BTN_CANCEL, x, y, "Закрыть");
 }
 
 
@@ -694,20 +701,20 @@ void gui::menu_map_select(void)
   // расстоянии 1/8 высоты окна сверху и снизу, и 1/8 ширины окна по бокам.
   // Расстояние между списком и кнопками равно половине высоты кнопки.
 
-  u_int y = WinParams.Layout.height/8; // отступ сверху (и снизу)
-  u_int list_h = WinParams.Layout.height - y * 2 - WinParams.btn_h * 1.5f;
-  u_int list_w = WinParams.minwidth - 4;
-  u_int x = (WinParams.Layout.width - list_w)/2;  // отступ слева (и справа)
+  u_int y = Layout.height/8; // отступ сверху (и снизу)
+  u_int list_h = Layout.height - y * 2 - BUTTTON_HEIGHT * 1.5f;
+  u_int list_w = MIN_GUI_WIDTH - 4;
+  u_int x = (Layout.width - list_w)/2;  // отступ слева (и справа)
 
   select_list(x, y, list_w, list_h);
 
-  x = WinGui.w_summ / 2 + 8;
-  y = y + list_h + WinParams.btn_h/2;
+  x = ImageGUI.w_summ / 2 + 8;
+  y = y + list_h + BUTTTON_HEIGHT/2;
 
   button(BTN_CANCEL, x, y, "Отмена");
-  button(BTN_MAP_DELETE, x + WinParams.btn_w + 16, y, "Удалить", row_selected > 0);
-  button(BTN_OPEN, x - (WinParams.btn_w + 16), y, "Старт", row_selected > 0);
-  button(BTN_CREATE, x - (WinParams.btn_w + 16)*2, y, "Создать");
+  button(BTN_MAP_DELETE, x + BUTTTON_WIDTH + 16, y, "Удалить", row_selected > 0);
+  button(BTN_OPEN, x - (BUTTTON_WIDTH + 16), y, "Старт", row_selected > 0);
+  button(BTN_CREATE, x - (BUTTTON_WIDTH + 16)*2, y, "Создать");
 
 }
 
@@ -724,8 +731,8 @@ void gui::menu_map_create(void)
   obscure_screen();
   title("ВВЕДИТЕ НАЗВАНИЕ");
 
-  if((WinParams.key == KEY_BACKSPACE) && // Удаление введенных символов
-    ((WinParams.action == PRESS)||(WinParams.action == REPEAT)))
+  if((key == KEY_BACKSPACE) && // Удаление введенных символов
+    ((action == PRESS)||(action == REPEAT)))
   {
     if (StringBuffer.length() == 0) return;
     if(char_type(StringBuffer[StringBuffer.size()-1]) != SINGLE)
@@ -738,11 +745,11 @@ void gui::menu_map_create(void)
   input_text_line(Font18n);
 
   // две кнопки
-  auto x = WinGui.w_summ / 2 - static_cast<u_long>(WinParams.btn_w * 1.25);
-  auto y = WinGui.h_summ / 2;
+  auto x = ImageGUI.w_summ / 2 - static_cast<u_long>(BUTTTON_WIDTH * 1.25);
+  auto y = ImageGUI.h_summ / 2;
   button(BTN_ENTER_NAME, x, y, "OK", StringBuffer.length() > 0);
 
-  x += WinParams.btn_w * 1.5;  // X координата кнопки
+  x += BUTTTON_WIDTH * 1.5;  // X координата кнопки
   button(BTN_LOCATION, x, y, "Отмена");
 }
 
@@ -755,8 +762,8 @@ void gui::menu_config(void)
   obscure_screen();
   title("НАСТРОЙКИ");
 
-  int x = WinGui.w_summ / 2 - static_cast<u_long>(WinParams.btn_w/2);
-  int y = WinGui.h_summ / 2;
+  int x = ImageGUI.w_summ / 2 - static_cast<u_long>(BUTTTON_WIDTH/2);
+  int y = ImageGUI.h_summ / 2;
   button(BTN_CANCEL, x, y, "Отмена");
 }
 
@@ -768,7 +775,7 @@ void gui::menu_draw(void)
 {
   glBindTexture(GL_TEXTURE_2D, gui_texture);
 
-  mouse_press_left = (WinParams.mouse == MOUSE_BUTTON_LEFT) && (WinParams.action == PRESS);
+  mouse_press_left = (mouse_button == MOUSE_BUTTON_LEFT) && (action == PRESS);
 
   switch (GuiMode)
   {
@@ -789,22 +796,22 @@ void gui::menu_draw(void)
 
   // каждый кадр на текстуре окна обновляем изображение меню
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-               static_cast<GLint>(WinParams.Layout.width),
-               static_cast<GLint>(WinParams.Layout.height),
-               0, GL_RGBA, GL_UNSIGNED_BYTE, WinGui.uchar());
+               static_cast<GLint>(Layout.width),
+               static_cast<GLint>(Layout.height),
+               0, GL_RGBA, GL_UNSIGNED_BYTE, ImageGUI.uchar());
 
-  if((WinParams.mouse == MOUSE_BUTTON_LEFT) &&
-     (WinParams.action == RELEASE) &&
+  if((mouse_button == MOUSE_BUTTON_LEFT) &&
+     (action == RELEASE) &&
      (element_over != NONE))
   {
     button_click(element_over);
-    WinParams.mouse = -1;   // сбросить флаг кнопки
-    WinParams.action = -1;  // сбросить флаг действия
+    mouse_button = -1;   // сбросить флаг кнопки
+    action = -1;  // сбросить флаг действия
   }
 
   if(element_over == NONE)
   {
-    WinParams.mouse = -1;   // сбросить флаг кнопки
+    mouse_button = -1;   // сбросить флаг кнопки
     //AppWin.action = -1; // флаг действия потребуется при вводе названия карты
   }
 
@@ -831,48 +838,89 @@ void gui::menu_draw(void)
 void gui::show(void)
 {
   GlContext->set_char_observer(*this);
-  GlContext->set_error_observer(WinParams);    // отслеживание ошибок
-  GlContext->set_cursor_observer(WinParams);   // курсор мыши в окне
-  GlContext->set_button_observer(WinParams);   // кнопки мыши
-  GlContext->set_keyboard_observer(WinParams); // клавиши клавиатуры
-  GlContext->set_position_observer(WinParams); // положение окна
-  GlContext->add_size_observer(WinParams);     // размер окна
-  GlContext->set_close_observer(WinParams);    // закрытие окна
+  GlContext->set_error_observer(*this);    // отслеживание ошибок
+  GlContext->set_cursor_observer(*this);   // курсор мыши в окне
+  GlContext->set_button_observer(*this);   // кнопки мыши
+  GlContext->set_keyboard_observer(*this); // клавиши клавиатуры
+  GlContext->set_position_observer(*this); // положение окна
+  GlContext->add_size_observer(*this);     // размер окна
+  GlContext->set_close_observer(*this);    // закрытие окна
 
-  while(WinParams.is_open)
+  while(is_open)
   {
-    if((WinParams.key == KEY_ESCAPE) && (WinParams.action == RELEASE))
-    {
-      cancel();
-      WinParams.key    = -1;
-      WinParams.action = -1;
-    }
+    if((key == KEY_ESCAPE) && (action == RELEASE)) cancel();
 
     if(GuiMode == GUI_3D_MODE)
     {
-      if(!Space->render()) cancel();
+      if(!Space->render()) cancel();         // генерация сцены в 3D режиме
       hud_draw();
     } else {
+      if(Space->is_ready()) Space->render(); // генерация фоновой картинки для меню
       menu_draw();
     }
 
-    /// Рендер окна с текстурами фреймбуфера и GIU
-    ///
-    /// Кадр сцены рендерится в изображение на (2D) "холсте"
-    /// фреймбуфера, после чего это изображение в виде текстуры накладывается на
-    /// прямоугольник окна. Курсор и дополнительные (HUD) элементы окна
-    /// изображаются как наложеные сверху дополнительные текстуры
-    glBindVertexArray(vao_quad_id);
-    glDisable(GL_DEPTH_TEST);
-    screenShaderProgram.use();
-    screenShaderProgram.set_uniform("Cursor", WinParams.Sight);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-    screenShaderProgram.unuse();
-
-    // переключить буфер окна и получить данные ввода пользователя
-    GlContext->swap_buffers();
+    render_screen();
   }
+}
 
+
+///
+/// \brief gui::render_screen
+///
+/// \details Рендер окна с текстурами фреймбуфера и GIU
+/// Кадр сцены рендерится в изображение на (2D) "холсте" фреймбуфера,
+/// после чего это изображение в виде текстуры накладывается на
+/// прямоугольник окна. Курсор и дополнительные (HUD) элементы окна
+/// изображаются как наложеные сверху дополнительные текстуры
+///
+void gui::render_screen(void)
+{
+  glBindVertexArray(vao_quad_id);
+  glDisable(GL_DEPTH_TEST);
+  screenShaderProgram.use();
+  screenShaderProgram.set_uniform("Cursor", Cursor3D);
+  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  screenShaderProgram.unuse();
+
+  // переключить буфер рендера
+  GlContext->swap_buffers();
+}
+
+///
+/// \brief gui::window_pos_event
+/// \param left
+/// \param top
+///
+void gui::reposition_event(int _left, int _top)
+{
+  Layout.left = static_cast<u_int>(_left);
+  Layout.top = static_cast<u_int>(_top);
+}
+
+
+///
+/// \brief gui::resize_event
+/// \param width
+/// \param height
+///
+void gui::resize_event(int w, int h)
+{
+  assert(w >= 0);
+  assert(h >= 0);
+
+  Layout.width  = static_cast<u_int>(w);
+  Layout.height = static_cast<u_int>(h);
+
+  // пересчет позции координат прицела (центр окна)
+  Cursor3D.x = static_cast<float>(w/2);
+  Cursor3D.y = static_cast<float>(h/2);
+
+  // пересчет матрицы проекции
+  aspect = static_cast<float>(w) / static_cast<float>(h);
+  MatProjection = glm::perspective(1.118f, aspect, zNear, zFar);
+
+  // пересчет размеров изображения GUI
+  ImageGUI.resize(w,h);
 }
 
 
@@ -895,6 +943,84 @@ void gui::character_event(u_int ch)
     if(str.size() > 2) str = "_"; // блокировка 3-х байтных символов
     StringBuffer += str;
   }
+}
+
+
+///
+/// \brief gui::cursor_position_event
+/// \param x
+/// \param y
+///
+void gui::cursor_event(double x, double y)
+{
+  mouse_x = x;
+  mouse_y = y;
+}
+
+
+///
+/// \brief win_data::close_event
+///
+void gui::close_event(void)
+{
+  is_open = false;
+}
+
+
+///
+/// \brief win_data::error_event
+/// \param message
+///
+void gui::error_event(const char* message)
+{
+  info(std::string(message));
+}
+
+
+///
+/// \brief ev_input::mouse_event
+/// \param _button
+/// \param _action
+/// \param _mods
+///
+void gui::mouse_event(int _button, int _action, int _mods)
+{
+  mods   = _mods;
+  mouse_button  = _button;
+  action = _action;
+}
+
+
+///
+/// \brief ev_input::keyboard_event
+/// \param key
+/// \param scancode
+/// \param action
+/// \param mods
+///
+void gui::keyboard_event(int _key, int _scancode, int _action, int _mods)
+{
+  mouse_button    = -1;
+  key      = _key;
+  scancode = _scancode;
+  action   = _action;
+  mods     = _mods;
+}
+
+
+///
+/// \brief gui::set_location
+/// \param width
+/// \param height
+/// \param left
+/// \param top
+///
+void gui::layout_set(const layout &L)
+{
+  Layout = L;
+  Cursor3D.x = static_cast<float>(L.width/2);
+  Cursor3D.y = static_cast<float>(L.height/2);
+  aspect  = static_cast<float>(L.width/L.height);
 }
 
 } //tr
