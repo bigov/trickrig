@@ -15,15 +15,6 @@
 namespace tr
 {
 
-const float
-  hPi = static_cast<float>(acos(0)), // половина константы "Пи"
-  Pi  = 2 * hPi,                   // константа "Пи"
-  dPi = 2 * Pi;                    // двойная "Пи
-const float up_max = hPi - 0.001f; // Максимальный угол вверх
-const float down_max = -up_max;    // Максимальный угол вниз
-static const std::chrono::seconds one_second(1);
-
-
 ///
 /// \brief space::space
 /// \details Формирование 3D пространства
@@ -67,8 +58,7 @@ space::space(wglfw* OpenGLContext)
   GLsizei width, height;
   OglContext->get_frame_buffer_size(&width, &height);
   if(!RenderBuffer.init(width, height)) ERR("Error on creating Render Buffer.");
-
-  OglContext->add_size_observer(RenderBuffer);
+  OglContext->add_size_observer(RenderBuffer); // пересчет буфера при изменении размеров
 
   // загрузка основной текстуры
   load_texture(GL_TEXTURE0, cfg::app_key(PNG_TEXTURE0));
@@ -89,8 +79,12 @@ space::~space(void)
 ///
 void space::enable(void)
 {
+  // Настройка матрицы проекции
   GLsizei width, height;
   OglContext->get_frame_buffer_size(&width, &height);
+  auto aspect = static_cast<float>(width) / static_cast<float>(height);
+  MatProjection = glm::perspective(fovy, aspect, zNear, zFar);
+  OglContext->add_size_observer(*this); //пересчет матрицы проекции при изменении размера
 
   xpos = width/2;  // Рассчитать координаты центра экрана
   ypos = height/2;
@@ -104,6 +98,8 @@ void space::enable(void)
   OglContext->set_cursor_observer(*this);   // Подключить обработчики: курсора мыши
   OglContext->set_button_observer(*this);   //  -- кнопки мыши
   OglContext->set_keyboard_observer(*this); //  -- клавиатуры
+  OglContext->set_focuslost_observer(*this);    // Реакция на потерю окном фокуса ввода
+  focus_is_on = true;
 
   on_front = 0; // клавиша вперед
   on_back  = 0; // клавиша назад
@@ -202,6 +198,7 @@ void space::calc_render_time(void)
   static int _fps = 0;
   static std::chrono::time_point<sys_clock> cycle_start = t_frame;
   static std::chrono::time_point<sys_clock> fps_start = t_frame;
+  static const std::chrono::seconds one_second(1);
 
   _fps++;
   if (t_frame - fps_start >= one_second)
@@ -255,6 +252,19 @@ bool space::render(void)
   glBindVertexArray(0);
 
   return check_keys();
+}
+
+
+///
+/// \brief space::resize_event
+/// \param width
+/// \param height
+///
+void space::resize_event(int width, int height)
+{
+  // пересчет матрицы проекции
+  auto aspect = static_cast<float>(width) / static_cast<float>(height);
+  MatProjection = glm::perspective(fovy, aspect, zNear, zFar);
 }
 
 
@@ -357,6 +367,16 @@ void space::keyboard_event(int _key, int _scancode, int _action, int _mods)
 
 
 ///
+/// \brief space::focus_event
+/// \details Потеря окном фокуса равноценно нажатию [Esc]
+///
+void space::focus_lost_event()
+{
+  focus_is_on = false;
+}
+
+
+///
 /// \brief space::check_keys
 /// \param ev
 ///
@@ -364,6 +384,8 @@ void space::keyboard_event(int _key, int _scancode, int _action, int _mods)
 /// [S] == 31; [C] == 46
 bool space::check_keys()
 {
+  if(!focus_is_on) return false; // если окно не в фокусе
+
   if((key == KEY_ESCAPE) && (action == RELEASE))
   {
     key    = -1;

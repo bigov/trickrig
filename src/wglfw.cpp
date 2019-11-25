@@ -23,6 +23,7 @@ interface_gl_context* wglfw::position_observer = nullptr;
 std::list<interface_gl_context*> wglfw::size_observers {};
 interface_gl_context* wglfw::char_observer = nullptr;
 interface_gl_context* wglfw::close_observer = nullptr;
+interface_gl_context* wglfw::focuslost_observer = nullptr;
 
 
 ///
@@ -53,13 +54,6 @@ wglfw::wglfw(void)
 void wglfw::set_window(u_int width, u_int height, u_int min_w, u_int min_h, u_int left, u_int top)
 {
   glfwSetErrorCallback(callback_error);
-  glfwSetWindowSizeLimits(win_ptr, static_cast<int>(min_w), static_cast<int>(min_h),
-                          GLFW_DONT_CARE, GLFW_DONT_CARE);
-  glfwSetWindowSize(win_ptr, static_cast<int>(width), static_cast<int>(height));
-  glfwSetWindowPos(win_ptr, static_cast<int>(left), static_cast<int>(top));
-  glfwShowWindow(win_ptr);
-  glfwMakeContextCurrent(win_ptr);
-  glfwSwapInterval(0);  // Vertical sync is "OFF". When param is 1 - will be ON
   glfwSetKeyCallback(win_ptr, callback_keyboard);
   glfwSetCharCallback(win_ptr, callback_char);
   glfwSetMouseButtonCallback(win_ptr, callback_button);
@@ -67,6 +61,16 @@ void wglfw::set_window(u_int width, u_int height, u_int min_w, u_int min_h, u_in
   glfwSetFramebufferSizeCallback(win_ptr, callback_size);
   glfwSetWindowPosCallback(win_ptr, callback_position);
   glfwSetWindowCloseCallback(win_ptr, callback_close);
+  glfwSetWindowFocusCallback(win_ptr, callback_focus);
+
+  glfwSetWindowSizeLimits(win_ptr, static_cast<int>(min_w), static_cast<int>(min_h),
+                          GLFW_DONT_CARE, GLFW_DONT_CARE);
+  glfwSetWindowSize(win_ptr, static_cast<int>(width), static_cast<int>(height));
+  glfwSetWindowPos(win_ptr, static_cast<int>(left), static_cast<int>(top));
+  glfwShowWindow(win_ptr);
+  glfwMakeContextCurrent(win_ptr);
+  glfwSwapInterval(0);  // Vertical sync is "OFF". When param is 1 - will be ON
+
   glfwSetInputMode(win_ptr, GLFW_STICKY_KEYS, 0);
 }
 
@@ -113,6 +117,10 @@ void wglfw::set_char_observer(interface_gl_context& ref)
 void wglfw::set_close_observer(interface_gl_context& ref)
 {
   close_observer = &ref;
+}
+void wglfw::set_focuslost_observer(interface_gl_context& ref)
+{
+  focuslost_observer = &ref;
 }
 
 
@@ -271,6 +279,20 @@ void wglfw::callback_close(GLFWwindow* w)
 {
   assert(w == win_ptr);
   if(close_observer != nullptr) close_observer->close_event();
+}
+
+
+///
+/// \brief wglfw::window_focus_callback
+/// \param w
+///
+void wglfw::callback_focus(GLFWwindow* w,  int focused)
+{
+  assert(w == win_ptr);
+  if(0 == focused)
+  {
+    if(focuslost_observer != nullptr) focuslost_observer->focus_lost_event();
+  }
 }
 
 } //namespace tr

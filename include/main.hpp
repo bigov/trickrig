@@ -104,10 +104,6 @@ struct layout
 // структура для обращения в тексте программы к индексам данных вершин по названиям
 enum SIDE_DATA_ID { X, Y, Z, R, G, B, A, NX, NY, NZ, U, V, SIDE_DATA_SIZE };
 
-extern glm::mat4 MatProjection; // Матрица проекции для рендера 3D-окна
-extern float zNear;
-extern float zFar;
-
 // Настройка значений параметров для сравнения mouse_button и mouse_action
 // будут выполнены в классе управления окном
 const int MOUSE_BUTTON_LEFT  = GLFW_MOUSE_BUTTON_LEFT;

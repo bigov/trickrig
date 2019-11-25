@@ -11,7 +11,6 @@ gui::gui(wglfw* glContext)
   cfg::load();
   layout_set(cfg::WinLayout);
   glContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
-  MatProjection = glm::perspective(1.118f, aspect, zNear, zFar);
   Space = std::make_unique<space>(glContext);
   FontMap1_len = static_cast<u_int>(FontMap1.length());
   TimeStart = std::chrono::system_clock::now();
@@ -354,7 +353,7 @@ void gui::hud_draw(void)
   u_int c_length = 60;               // количество символов в надписи
   img Coord {c_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
   char ln[60];                       // длина строки с '\0'
-  std::sprintf(ln, "X:%+3.1f, Y:%+03.1f, Z:%+03.1f, a:%+04.3f, t:%+04.3f",
+  std::sprintf(ln, "X:%+06.1f, Y:%+06.1f, Z:%+06.1f, a:%+04.3f, t:%+04.3f",
                   Eye.ViewFrom.x, Eye.ViewFrom.y, Eye.ViewFrom.z, Eye.look_a, Eye.look_t);
   textstring_place(Font15n, ln, Coord, 2, 1);
   sub_img(Coord, 2, 2);
@@ -914,10 +913,6 @@ void gui::resize_event(int w, int h)
   // пересчет позции координат прицела (центр окна)
   Cursor3D.x = static_cast<float>(w/2);
   Cursor3D.y = static_cast<float>(h/2);
-
-  // пересчет матрицы проекции
-  aspect = static_cast<float>(w) / static_cast<float>(h);
-  MatProjection = glm::perspective(1.118f, aspect, zNear, zFar);
 
   // пересчет размеров изображения GUI
   ImageGUI.resize(w,h);

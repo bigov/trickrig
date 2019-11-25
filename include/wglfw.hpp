@@ -38,6 +38,7 @@ class wglfw
       void add_size_observer(interface_gl_context& ref);     // размер окна
       void set_char_observer(interface_gl_context& ref);     // ввод текста (символ)
       void set_close_observer(interface_gl_context& ref);    // закрытие окна
+      void set_focuslost_observer(interface_gl_context& ref);    // смена фокуса
 
     private:
       static GLFWwindow* win_ptr;
@@ -50,6 +51,7 @@ class wglfw
       static std::list<interface_gl_context*> size_observers;
       static interface_gl_context* char_observer;
       static interface_gl_context* close_observer;
+      static interface_gl_context* focuslost_observer;
 
       static void callback_error(int error_id, const char* description);
       static void callback_cursor(GLFWwindow* window, double xpos, double ypos);
@@ -59,7 +61,7 @@ class wglfw
       static void callback_size(GLFWwindow*, int, int);
       static void callback_char(GLFWwindow*, unsigned int);
       static void callback_close(GLFWwindow*);
-
+      static void callback_focus(GLFWwindow*, int focused);
   };
 
 } //namespace tr

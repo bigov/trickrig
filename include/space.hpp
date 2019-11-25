@@ -26,9 +26,11 @@ namespace tr
       bool render(void);
       bool is_ready(void) const {return ready;}
 
+      virtual void resize_event(int width, int height);
       virtual void cursor_event(double x, double y);
       virtual void mouse_event(int _button, int _action, int _mods);
       virtual void keyboard_event(int _key, int _scancode, int _action, int _mods);
+      virtual void focus_lost_event();
 
       int FPS = 500;     // частота кадров (для коррекции скорости движения)
 
@@ -39,6 +41,7 @@ namespace tr
       wglfw* OglContext = nullptr;
 
       bool ready = false;
+      bool focus_is_on = false;
       float dx = 0.f;    // Cмещение мыши в активном окне между кадрами
       float dy = 0.f;    // в режиме 3D (режим прицела) при скрытом курсоре.
       double xpos = 0.0; // позиция указателя относительно левой границы
@@ -61,6 +64,13 @@ namespace tr
       int action = -1;
       int mods = -1;
 
+      const float
+        hPi = static_cast<float>(acos(0)), // половина константы "Пи" (90 градусов)
+        Pi  = 2 * hPi,                     // константа "Пи"
+        dPi = 2 * Pi;                      // двойная "Пи
+      const float up_max = hPi - 0.001f; // Максимальный угол вверх
+      const float down_max = -up_max;    // Максимальный угол вниз
+
       frame_buffer RenderBuffer {}; // рендер-буфер окна
       double cycle_time;            // время (в секундах) на рендер кадра
 
@@ -80,11 +90,17 @@ namespace tr
 
       // Camera control
       float rl=0.f, ud=0.f, fb=0.f; // скорость движения по направлениям
-      glm::mat4 MatMVP  {};         // Матрица преобразования
-      glm::mat4 MatView {};         // матрица вида
+
+      float vision_angle = 50.f;   // угол зрения для расчета матрицы проекции
+      float fovy = (hPi/90.f)*vision_angle;
+      float zNear = 1.f;          // расстояние до ближней плоскости матрицы проекции
+      float zFar  = 10000.f;      // расстояние до дальней плоскости матрицы проекции
+      glm::mat4 MatProjection {}; // матрица проекции 3D сцены
+      glm::mat4 MatMVP  {};       // Матрица преобразования
+      glm::mat4 MatView {};       // матрица вида
       glm::vec3
-        UpWard {0.0, -1.0, 0.0},    // направление наверх
-        ViewTo {};                  // направление взгляда
+        UpWard {0.0, -1.0, 0.0},  // направление наверх
+        ViewTo {};                // направление взгляда
 
       void calc_render_time(void);
       void load_texture(unsigned gl_texture_index, const std::string& fname);
