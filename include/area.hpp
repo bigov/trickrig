@@ -36,7 +36,7 @@ class area
     void redraw_borders_z(void);
 
   public:
-    explicit area(int length, int count);
+    explicit area(int length, int count, const glm::vec3 &ViewFrom);
     ~area(void) {}
 
     // Запретить копирование и перенос экземпляров класса
@@ -47,7 +47,7 @@ class area
     GLuint vao_id(void);
 
     u_int render_indices(void);
-    void recalc_borders(void);
+    void recalc_borders(const glm::vec3& ViewFrom);
     void queue_release(void);
     void append(u_int);
     void remove(u_int);

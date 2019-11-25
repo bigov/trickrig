@@ -18,15 +18,15 @@ namespace tr
 /// \param count - число вокселей от камеры (или внутренней границы)
 /// до внешней границы области
 ///
-area::area(int side_length, int count_elements_to_border)
+area::area(int side_length, int count_elements_to_border, const glm::vec3& ViewFrom)
 {
   vox_side_len = side_length;
   lod_dist_far = count_elements_to_border * side_length;
 
   // Origin вокселя, в котором расположена камера
-  Location = { static_cast<int>(floorf(Eye.ViewFrom.x / vox_side_len)) * vox_side_len,
-               static_cast<int>(floorf(Eye.ViewFrom.y / vox_side_len)) * vox_side_len,
-               static_cast<int>(floorf(Eye.ViewFrom.z / vox_side_len)) * vox_side_len };
+  Location = { static_cast<int>(floorf(ViewFrom.x / vox_side_len)) * vox_side_len,
+               static_cast<int>(floorf(ViewFrom.y / vox_side_len)) * vox_side_len,
+               static_cast<int>(floorf(ViewFrom.z / vox_side_len)) * vox_side_len };
   MoveFrom = Location;
 
   i3d P0 { Location.x - lod_dist_far,
@@ -155,12 +155,12 @@ void area::redraw_borders_z(void)
 /// границу запуска перерисовки границ) можно процедуры "redraw_borders_?"
 /// разбить по две части - вперед/назад.
 ///
-void area::recalc_borders(void)
+void area::recalc_borders(const glm::vec3& ViewFrom)
 {
   // Origin вокселя, в котором расположена камера
-  Location = { static_cast<int>(floorf(Eye.ViewFrom.x / vox_side_len)) * vox_side_len,
-               static_cast<int>(floorf(Eye.ViewFrom.y / vox_side_len)) * vox_side_len,
-               static_cast<int>(floorf(Eye.ViewFrom.z / vox_side_len)) * vox_side_len };
+  Location = { static_cast<int>(floorf(ViewFrom.x / vox_side_len)) * vox_side_len,
+               static_cast<int>(floorf(ViewFrom.y / vox_side_len)) * vox_side_len,
+               static_cast<int>(floorf(ViewFrom.z / vox_side_len)) * vox_side_len };
 
   if(Location.x != MoveFrom.x) redraw_borders_x();
   if(Location.z != MoveFrom.z) redraw_borders_z();
@@ -187,7 +187,7 @@ void area::queue_release(void)
     // Загрузка элементов пространства в графический буфер
     if(!QueueLoad.empty())
     {
-      VoxBuffer->vox_load(QueueLoad.front());  // Загрузка данных имеет приоритет. Пока вся очередь
+      VoxBuffer->vox_load(QueueLoad.front()); // Загрузка данных имеет приоритет. Пока вся очередь
       QueueLoad.pop();                        // загрузки не очистится, очередь выгрузки ждет.
       continue;
     }

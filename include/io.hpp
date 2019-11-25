@@ -38,7 +38,7 @@ namespace tr
       r(int_to_uchar(R)),
       g(int_to_uchar(G)),
       b(int_to_uchar(B)),
-      a(int_to_uchar(A)) {};
+      a(int_to_uchar(A)) {}
   };
 
   extern bool operator== (const px &A, const px &B);
@@ -76,6 +76,7 @@ namespace tr
       // публичные методы
       void resize(u_int width, u_int height);
       void clear(void);
+      void fill(const px&);
       u_char* uchar(void) const;
       px* px_data(void) const;
       void load(const std::string &filename);
@@ -87,6 +88,23 @@ namespace tr
   extern int get_msec(void);   // число миллисекунд от начала суток.
   extern int random_int(void);
   extern std::list<std::string> dirs_list(const std::string &path);
+  extern void textstring_place(const img& FontImg, const std::string& TextString,
+                     img& Dst, u_long x, u_long y);
+
+  // Настройка пиксельных шрифтов
+  // ----------------------------
+  // "FontMap1" - однобайтовые символы
+  extern const std::string FontMap1;
+  // "FontMap2" - каждый символ занимает по два байта
+  extern const std::string FontMap2;
+  extern u_int FontMap1_len; // значение будет присвоено в конструкторе класса
+
+  extern u_int f_len; // количество символов в текстуре шрифта
+  extern img Font12n; //шрифт 07х12 (норм)
+  extern img Font15n; //шрифт 08х15 (норм)
+  extern img Font18n; //шрифт 10x18 (норм)
+  extern img Font18s; //шрифт 10x18 (тень)
+  extern img Font18l; //шрифт 10x18 (светл)
 
 }
 

@@ -101,38 +101,18 @@ class gui: public interface_gl_context
     ELEMENT_ID element_over = NONE;  // Над какой GIU кнопкой курсор
     size_t row_selected = 0;         // какая строка выбрана
 
-    // "FontMap1" - однобайтовые символы
-    const std::string FontMap1 { "_'\"~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghi"
-                                 "jklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0"
-                                 "123456789 "};
-    // "FontMap2" - каждый символ занимает по два байта
-    const std::string FontMap2 { "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗ"
-                                 "ИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };
-    u_int FontMap1_len = 0; // значение будет присвоено в конструкторе класса
-
-    u_int f_len = 160; // количество символов в текстуре шрифта
-    img Font12n { "../assets/font_07x12_nr.png", f_len }; //шрифт 07х12 (норм)
-    img Font15n { "../assets/font_08x15_nr.png", f_len }; //шрифт 08х15 (норм)
-    img Font18n { "../assets/font_10x18_nr.png", f_len }; //шрифт 10x18 (норм)
-    img Font18s { "../assets/font_10x18_sh.png", f_len }; //шрифт 10x18 (тень)
-    img Font18l { "../assets/font_10x18_lt.png", f_len }; //шрифт 10x18 (светл)
-
     GLuint vao_quad_id  = 0;
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
     void hud_load(void);
-    void obscure_screen(void);
     void button(ELEMENT_ID id, u_long x, u_long y, const std::string& Name,
                 bool button_is_active = true );
     void button_make_body(img &Data, BUTTON_STATE);
-    void textstring_place(const img &FontImg, const std::string& TextString,
-                  img& Data, u_long x, u_long y);
     void cursor_text_row(const img &_Fn, img &_Dst, size_t position);
     void title(const std::string& title);
     void input_text_line(const img &_Fn);
     void row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &);
     void select_list(u_int x, u_int y, u_int w, u_int h);
-    void sub_img(const img &Image, GLint x, GLint y);
     void menu_draw(void);
     void menu_map_create(void);
     void menu_map_select(void);

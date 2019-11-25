@@ -118,6 +118,8 @@ void vbo_base::attrib_i(GLuint index, GLint d_size, GLenum type,
 ///
 vbo_ext::vbo_ext(GLenum type): vbo_base(type)
 {
+  // Тут создается промежуточный буфер, через который производится обмен данными
+  // между GPU и CPU памятью.
   glGenBuffers(1, &id_subbuf);
   glBindBuffer(GL_COPY_WRITE_BUFFER, id_subbuf);
   glBufferData(GL_COPY_WRITE_BUFFER, bytes_per_side, nullptr, GL_STATIC_DRAW);
@@ -220,7 +222,7 @@ void vbo_ext::data_get(GLintptr offset, GLsizeiptr sz, GLvoid* dst)
   glBindBuffer(GL_COPY_READ_BUFFER, id_subbuf);
   //glGetBufferSubData(GL_COPY_WRITE_BUFFER, offset, sz, dst);
   GLvoid* ptr = glMapBufferRange(GL_COPY_READ_BUFFER, 0, sz, GL_MAP_READ_BIT);
-  memcpy(dst, ptr, sz);
+  memcpy(dst, ptr, size_t(sz));
   glUnmapBuffer(GL_COPY_READ_BUFFER);
   glBindBuffer(GL_COPY_READ_BUFFER, 0);
 

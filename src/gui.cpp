@@ -110,49 +110,6 @@ void gui::title(const std::string &title)
 
 
 ///
-/// \brief Добавление текста из текстурного атласа
-///
-/// \param текстура шрифта
-/// \param строка текста
-/// \param массив пикселей, в который добавляется текст
-/// \param х - координата
-/// \param y - координата
-///
-void gui::textstring_place(const img &FontImg, const std::string &TextString,
-                   img& Dst, u_long x, u_long y)
-{
-  #ifndef NDEBUG
-  if(x > Dst.w_summ - utf8_size(TextString) * FontImg.w_cell)
-    ERR ("gui::add_text - X overflow");
-  if(y > Dst.h_summ - FontImg.h_cell)
-    ERR ("gui::add_text - Y overflow");
-  #endif
-
-  u_int row = 0;                        // номер строки в текстуре шрифта
-  u_int n = 0;                          // номер буквы в выводимой строке
-  size_t text_size = TextString.size(); // число байт в строке
-
-  for(size_t i = 0; i < text_size; ++i)
-  {
-    auto t = char_type(TextString[i]);
-    if(t == SINGLE)
-    {
-      size_t col = FontMap1.find(TextString[i]);
-      if(col == std::string::npos) col = 0;
-      FontImg.copy(col, row, Dst, x + (n++) * FontImg.w_cell, y);
-    }
-    else if(t == UTF8_FIRST)
-    {
-      size_t col = FontMap2.find(TextString.substr(i,2));
-      if(col == std::string::npos) col = 0;
-      else col = FontMap1_len + col/2;
-      FontImg.copy(col, row, Dst, x + (n++) * FontImg.w_cell, y);
-    }
-  }
-}
-
-
-///
 /// \brief Нарисовать поле ввода текстовой строки
 /// \param _Fn - шрифт
 ///
@@ -305,35 +262,6 @@ void gui::cancel(void)
 
 
 ///
-/// \brief Перенос данных в указанную область графической памяти
-///
-/// \details Прямоугольный фрагмент передается напрямую в память GPU поверх
-/// текстуры HUD используя метод glTexSubImage2D. За счет этого весь HUD не
-/// перерисовывается целиком каждый кадр заново, а только те его фрагменты
-/// которые именяются, что дает более высокий FPS.
-///
-/// \param Image
-/// \param x
-/// \param y
-///
-void gui::sub_img(const img &Image, GLint x, GLint y)
-{
-#ifndef NDEBUG
-  if(x > static_cast<int>(ImageGUI.w_summ) - static_cast<int>(Image.w_summ))
-    ERR ("giu::sub_img - overload X");
-  if(y > static_cast<int>(ImageGUI.h_summ) - static_cast<int>(Image.h_summ))
-    ERR ("giu::sub_img - overload Y");
-#endif
-
-  glTexSubImage2D(GL_TEXTURE_2D, 0, x, y,            // top, left
-                static_cast<GLsizei>(Image.w_summ),  // width
-                static_cast<GLsizei>(Image.h_summ),  // height
-                GL_RGBA, GL_UNSIGNED_BYTE,           // mode
-                Image.uchar());                      // data
-}
-
-
-///
 /// \brief gui::update
 ///
 void gui::hud_draw(void)
@@ -347,7 +275,12 @@ void gui::hud_draw(void)
   char line[5];                       // длина строки с '\0'
   std::sprintf(line, "%.4i", Space->FPS);
   textstring_place(Font15n, line, Fps, 2, 1);
-  sub_img(Fps, 2, static_cast<GLint>(Layout.height - Fps.h_summ - 2));
+
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 2, static_cast<GLint>(Layout.height - Fps.h_summ - 2),
+                static_cast<GLsizei>(Fps.w_summ),  // width
+                static_cast<GLsizei>(Fps.h_summ),  // height
+                GL_RGBA, GL_UNSIGNED_BYTE,         // mode
+                Fps.uchar());                      // data
 
   // Координаты в пространстве
   u_int c_length = 60;               // количество символов в надписи
@@ -356,7 +289,12 @@ void gui::hud_draw(void)
   std::sprintf(ln, "X:%+06.1f, Y:%+06.1f, Z:%+06.1f, a:%+04.3f, t:%+04.3f",
                   Eye.ViewFrom.x, Eye.ViewFrom.y, Eye.ViewFrom.z, Eye.look_a, Eye.look_t);
   textstring_place(Font15n, ln, Coord, 2, 1);
-  sub_img(Coord, 2, 2);
+
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 2, 2,            // top, left
+                static_cast<GLsizei>(Coord.w_summ),  // width
+                static_cast<GLsizei>(Coord.h_summ),  // height
+                GL_RGBA, GL_UNSIGNED_BYTE,           // mode
+                Coord.uchar());                      // data
 }
 
 
@@ -381,23 +319,13 @@ void gui::hud_load(void)
   u_int h = 48;                                 // высота панели инструментов HUD
   if(h > ImageGUI.h_summ) h = ImageGUI.h_summ;  // не может быть выше GuiImg
   img HudPanel {ImageGUI.w_summ, h, bg_hud};
-  sub_img(HudPanel, 0,
-          static_cast<GLint>(ImageGUI.h_summ) -
-          static_cast<GLint>(HudPanel.h_summ));
-}
 
-
-///
-/// \brief Затенить текстуру GIU
-///
-void gui::obscure_screen(void)
-{
-  size_t i = 0;
-  size_t max = ImageGUI.Data.size();
-  while(i < max)
-  {
-    ImageGUI.Data[i++] = bg;
-  }
+  auto y = static_cast<GLint>(ImageGUI.h_summ - HudPanel.h_summ); // верхняя граница панели
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, y,
+                static_cast<GLsizei>(HudPanel.w_summ), // width
+                static_cast<GLsizei>(HudPanel.h_summ), // height
+                GL_RGBA, GL_UNSIGNED_BYTE,             // mode
+                HudPanel.uchar());                     // data
 }
 
 
@@ -473,19 +401,22 @@ void gui::button_click(ELEMENT_ID id)
     case BTN_OPEN:
       cfg::map_view_load(Maps[row_selected - 1].Folder);
       GuiMode = GUI_3D_MODE;
-      ImageGUI.clear();        // очистка элементов GUI окна
+      ImageGUI.fill({0xD0, 0xDD, 0xEE, 0xFF});      // заливка окна фоном
       {
         auto& Font = Font18s;
-        char message[] = "ЗАГРУЗКА КАРТЫ ..."; // В сообщении 18 символов
-        u_int message_width =  18 * Font.w_cell;
-        u_int message_height = Font.h_cell;
-        img Banner {Layout.width, Layout.height, {0xD0, 0xDD, 0xEE, 0xFF}};
-        textstring_place(Font, message, Banner, (Layout.width - message_width)/2, (Layout.height - message_height)/2);
-        sub_img(Banner, 0, 0);
+        char message[] = "ЗАГРУЗКА ДАННЫХ ...";     // В сообщении 19 символов
+        textstring_place( Font, message, ImageGUI,
+                        ( Layout.width - 19 * Font.w_cell)/2,
+                        ( Layout.height - Font.h_cell)    /2 );
       }
-      render_screen();
-      Space->enable();
-      Cursor3D[2] = 4.0f;         // активировать прицел
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,       // скопировать в графический буфер
+                   static_cast<GLint>(Layout.width),
+                   static_cast<GLint>(Layout.height),
+                   0, GL_RGBA, GL_UNSIGNED_BYTE, ImageGUI.uchar());
+      render_screen();     // Вывести на экран сообщение о загрузке
+      Space->enable();     // Загрузка занимает некоторое время ...
+      Cursor3D[2] = 4.0f;  // Активировать прицел
+      ImageGUI.clear();    // Очистить фоновое изображение
       hud_load();
       break;
     case BTN_CONFIG:
@@ -673,7 +604,7 @@ void gui::button(ELEMENT_ID btn_id, u_long x, u_long y,
 ///
 void gui::menu_start(void)
 {
-  obscure_screen();
+  ImageGUI.fill(bg);
   title("Trick Rig");
 
   u_int x = Layout.width/2 - BUTTTON_WIDTH/2;   // X координата кнопки
@@ -693,7 +624,7 @@ void gui::menu_start(void)
 ///
 void gui::menu_map_select(void)
 {
-  obscure_screen();
+  ImageGUI.fill(bg);
   title("ВЫБОР КАРТЫ");
 
   // Список фиксированой ширины и один ряд кнопок размещается в центре окна на
@@ -727,7 +658,7 @@ void gui::menu_map_select(void)
 ///
 void gui::menu_map_create(void)
 {
-  obscure_screen();
+  ImageGUI.fill(bg);
   title("ВВЕДИТЕ НАЗВАНИЕ");
 
   if((key == KEY_BACKSPACE) && // Удаление введенных символов
@@ -758,7 +689,7 @@ void gui::menu_map_create(void)
 ///
 void gui::menu_config(void)
 {
-  obscure_screen();
+  ImageGUI.fill(bg);
   title("НАСТРОЙКИ");
 
   int x = ImageGUI.w_summ / 2 - static_cast<u_long>(BUTTTON_WIDTH/2);

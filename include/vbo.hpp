@@ -43,7 +43,7 @@ class vbo_base
 class vbo_ext: public vbo_base
 {
   protected:
-  GLuint id_subbuf = 0;
+  GLuint id_subbuf = 0; // промежуточный GPU буфер для обмена данными с CPU
 
   public:
     vbo_ext(GLenum type);

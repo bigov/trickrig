@@ -93,7 +93,7 @@ void space::enable(void)
   OglContext->set_cursor_pos(xpos, ypos);
 
   // Продолжительная по времени операция - загрузка в память сцены
-  if(nullptr == Area4) Area4 = std::make_unique<area>(size_v4, border_dist_b4);
+  if(nullptr == Area4) Area4 = std::make_unique<area>(size_v4, border_dist_b4, Eye.ViewFrom);
 
   OglContext->set_cursor_observer(*this);   // Подключить обработчики: курсора мыши
   OglContext->set_button_observer(*this);   //  -- кнопки мыши
@@ -221,7 +221,7 @@ bool space::render(void)
 {
   calc_render_time();
   calc_position();
-  Area4->recalc_borders();
+  Area4->recalc_borders(Eye.ViewFrom);
 
   glBindVertexArray(Area4->vao_id());
   RenderBuffer.bind();

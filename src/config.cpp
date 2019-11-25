@@ -31,6 +31,7 @@ std::string cfg::UserDir   {}; // папка конфигов пользоват
 std::string cfg::DS        {}; // символ разделителя папок
 std::string cfg::CfgFname  {}; // конфиг, выбранный пользователем
 layout    cfg::WinLayout {}; // размер и положение главного окна
+
 tr::glsl screenShaderProgram {};
 tr::glsl Prog3d {};
 

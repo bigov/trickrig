@@ -11,6 +11,24 @@
 namespace tr
 {
 
+// Настройка пиксельных шрифтов
+// ----------------------------
+// "FontMap1" - однобайтовые символы
+const std::string FontMap1 { "_'\"~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghi"
+                               "jklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0"
+                               "123456789 "};
+// "FontMap2" - каждый символ занимает по два байта
+const std::string FontMap2 { "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗ"
+                               "ИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };
+u_int FontMap1_len = 0; // значение будет присвоено в конструкторе класса
+
+u_int f_len = 160; // количество символов в текстуре шрифта
+img Font12n { "../assets/font_07x12_nr.png", f_len }; //шрифт 07х12 (норм)
+img Font15n { "../assets/font_08x15_nr.png", f_len }; //шрифт 08х15 (норм)
+img Font18n { "../assets/font_10x18_nr.png", f_len }; //шрифт 10x18 (норм)
+img Font18s { "../assets/font_10x18_sh.png", f_len }; //шрифт 10x18 (тень)
+img Font18l { "../assets/font_10x18_lt.png", f_len }; //шрифт 10x18 (светл)
+
 ///
 /// \brief dir_list
 /// \param path
@@ -217,6 +235,19 @@ bool operator== (const px &A, const px &B)
 
 
   ///
+  /// \brief img::fill
+  /// \param color
+  ///
+  void img::fill(const px& color)
+  {
+    std::vector<px> empty {};
+    Data.clear();
+    Data.swap(empty);
+    Data.resize(_w * _h, color);
+  }
+
+
+  ///
   /// \brief img::uchar_data
   /// \return
   ///
@@ -305,6 +336,49 @@ bool operator== (const px &A, const px &B)
 
       dst_i += dst.w_summ; // переход на следующую строку приемника
       frag_i += w_summ;    // переход на следующую строку источника
+    }
+  }
+
+
+  ///
+  /// \brief Добавление текста из текстурного атласа
+  ///
+  /// \param текстура шрифта
+  /// \param строка текста
+  /// \param массив пикселей, в который добавляется текст
+  /// \param х - координата
+  /// \param y - координата
+  ///
+  void textstring_place(const img &FontImg, const std::string &TextString,
+                     img& Dst, u_long x, u_long y)
+  {
+    #ifndef NDEBUG
+    if(x > Dst.w_summ - utf8_size(TextString) * FontImg.w_cell)
+      ERR ("gui::add_text - X overflow");
+    if(y > Dst.h_summ - FontImg.h_cell)
+      ERR ("gui::add_text - Y overflow");
+    #endif
+
+    u_int row = 0;                        // номер строки в текстуре шрифта
+    u_int n = 0;                          // номер буквы в выводимой строке
+    size_t text_size = TextString.size(); // число байт в строке
+
+    for(size_t i = 0; i < text_size; ++i)
+    {
+      auto t = char_type(TextString[i]);
+      if(t == SINGLE)
+      {
+        size_t col = FontMap1.find(TextString[i]);
+        if(col == std::string::npos) col = 0;
+        FontImg.copy(col, row, Dst, x + (n++) * FontImg.w_cell, y);
+      }
+      else if(t == UTF8_FIRST)
+      {
+        size_t col = FontMap2.find(TextString.substr(i,2));
+        if(col == std::string::npos) col = 0;
+        else col = FontMap1_len + col/2;
+        FontImg.copy(col, row, Dst, x + (n++) * FontImg.w_cell, y);
+      }
     }
   }
 

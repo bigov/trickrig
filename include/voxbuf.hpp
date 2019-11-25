@@ -18,19 +18,17 @@ class vox_buffer
     u_int get_render_indices(void);
     void vox_load(const i3d& P0);   // загрузить вокс из базы данных в буфер и рендер
     void vox_unload(const i3d& P0); // выгрузить вокс из буфера и из рендера
-    void append(u_int);               // добавить объем по индексу снипа
-    void remove(u_int);               // удалить объем по индексу снипа
-    void init_vao(void);
+    void append(u_int);             // добавить объем по индексу поверхности
+    void remove(u_int);             // удалить объем по индексу поверхности
+    void init_vao(int border_dist);
 
-    GLuint vao_id = 0;                               // VAO ID
+    GLuint vao_id = 0;              // VAO ID
 
   private:
     std::vector<std::unique_ptr<vox>> data {};
     std::unique_ptr<vbo_ext> pVBO = nullptr; // VBO вершин поверхности
     u_int render_indices = 0;                // сумма индексов, необходимых для рендера всех примитивов
     int vox_side_len = 0;                    // Длина стороны вокса
-    int border_dist = 0;               // число элементов от камеры до отображаемой границы
-
 
     vox* vox_by_vbo(GLsizeiptr);
     vox* vox_by_i3d(const i3d&);

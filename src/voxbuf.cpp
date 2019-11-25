@@ -33,10 +33,8 @@ u_char side_opposite(u_char s)
 vox_buffer::vox_buffer(int side_len, int b_dist, const i3d P0, const i3d P1)
 {
   vox_side_len = side_len;
-  border_dist = b_dist;
 
-  pVBO = std::make_unique<vbo_ext> (GL_ARRAY_BUFFER);
-  init_vao();
+  init_vao(b_dist);
 
   i3d vP {};
   for(vP.x = P0.x; vP.x<= P1.x; vP.x += vox_side_len)
@@ -47,15 +45,17 @@ vox_buffer::vox_buffer(int side_len, int b_dist, const i3d P0, const i3d P1)
 
 ///
 /// \brief vox_buffer::init_vao
+/// \param border_dist - число элементов от камеры до отображаемой границы
 ///
-void vox_buffer::init_vao(void)
+void vox_buffer::init_vao(int border_dist)
 {
+  pVBO = std::make_unique<vbo_ext> (GL_ARRAY_BUFFER);
   pVBO->clear();
 
   glGenVertexArrays(1, &vao_id);
   glBindVertexArray(vao_id);
 
-  // Число элементов в кубе с длиной стороны LOD (2*dist_xx) элементов:
+  // Число сторон куба в объеме с длиной стороны LOD (2*dist_xx) элементов:
   u_int n = static_cast<u_int>(pow((border_dist + border_dist + 1), 3));
 
   // Размер данных VBO для размещения сторон вокселей:
@@ -278,10 +278,8 @@ void vox_buffer::vox_draw(vox* pVox)
 
 
 ///
-/// \brief rdb::remove_from_vbo
-/// \param x
-/// \param y
-/// \param z
+/// \brief vox_buffer::vox_wipe
+/// \param vox* pVox
 /// \details Убрать вокс из рендера
 ///
 void vox_buffer::vox_wipe(vox* pVox)
