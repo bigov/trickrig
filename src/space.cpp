@@ -94,9 +94,11 @@ void space::enable(void)
   OglContext->cursor_hide();  // выключить отображение курсора мыши в окне
   OglContext->set_cursor_pos(xpos, ypos);
 
+  init_vao();
+
   // Продолжительная по времени операция - загрузка в память сцены
-  if(nullptr == Area4) Area4 =
-      std::make_unique<area>(size_v4, border_dist_b4, Eye.ViewFrom, Program3d->AtribsList);
+  if(nullptr == Area4)
+    Area4 = std::make_unique<area>(size_v4, border_dist_b4, Eye.ViewFrom, &VBO);
 
   OglContext->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
   OglContext->set_button_observer(*this);    //  -- кнопки мыши
@@ -202,7 +204,44 @@ void space::calc_position(void)
 
 
 ///
-/// \brief gui::calc_render_time
+/// \brief vox_buffer::init_vao
+/// \param border_dist - число элементов от камеры до отображаемой границы
+///
+void space::init_vao(void)
+{
+  glGenVertexArrays(1, &vao_id);
+  glBindVertexArray(vao_id);
+
+  // Число сторон куба в объеме с длиной стороны LOD (2*dist_xx) элементов:
+  u_int n = static_cast<u_int>(pow((border_dist_b4 + border_dist_b4 + 1), 3));
+
+  // Размер данных VBO для размещения сторон вокселей:
+  VBO.allocate(n * bytes_per_side);
+
+  // настройка положения атрибутов GLSL программы
+  VBO.set_attributes(Program3d->AtribsList);
+
+  // Так как все четырехугольники сторон индексируются одинаково, то индексный массив
+  // заполняем один раз "под завязку" и забываем про него. Число используемых индексов
+  // будет всегда соответствовать числу элементов, передаваемых в процедру "glDraw..."
+  //
+  size_t idx_size = static_cast<size_t>(6 * n * sizeof(GLuint)); // Размер индексного массива
+  GLuint *idx_data = new GLuint[idx_size];                       // данные для заполнения
+  GLuint idx[6] = {0, 1, 2, 2, 3, 0};                            // шаблон четырехугольника
+  GLuint stride = 0;                                             // число описаных вершин
+  for(size_t i = 0; i < idx_size; i += 6) {                      // заполнить массив для VBO
+    for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
+    stride += 4;                                                 // по 4 вершины на сторону
+  }
+  vbo_base VBOindex = { GL_ELEMENT_ARRAY_BUFFER };               // индексный буфер
+  VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data);   // и заполнить данными.
+  delete[] idx_data;                                             // Удалить исходный массив.
+  glBindVertexArray(0);
+}
+
+
+///
+/// \brief space::calc_render_time
 ///
 void space::calc_render_time(void)
 {
@@ -236,7 +275,7 @@ bool space::render(void)
   calc_position();
   Area4->recalc_borders(Eye.ViewFrom);
 
-  glBindVertexArray(Area4->vao_id());
+  glBindVertexArray(vao_id);
   RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
@@ -250,7 +289,7 @@ bool space::render(void)
 
   for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
 
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(Area4->render_indices()), GL_UNSIGNED_INT, nullptr);
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(Area4->get_render_indices()), GL_UNSIGNED_INT, nullptr);
 
   for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
 

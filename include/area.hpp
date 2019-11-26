@@ -11,9 +11,8 @@
 
 #include <queue>
 #include "glsl.hpp"
-#include "voxbuf.hpp"
 #include "vbo.hpp"
-
+#include "config.hpp"
 
 namespace tr
 {
@@ -22,22 +21,8 @@ namespace tr
 /// \details Управление картой воксов
 class area
 {
-  private:
-    std::unique_ptr<vox_buffer> VoxBuffer = nullptr;
-    std::queue<i3d> QueueLoad {}; // адреса загружаемых воксов
-    std::queue<i3d> QueueWipe {}; // адреса выгружаемах воксов
-
-    int vox_side_len = 0;   // Длина стороны вокса
-    int lod_dist_far = 0;   // Расстояние от камеры до внешней границы LOD, кратное размеру вокса
-    i3d Location {0, 0, 0}; // Origin вокса, над которым камера
-    i3d MoveFrom {0, 0, 0}; // Origin вокса, с которого камера ушла
-
-    void redraw_borders_x(void);
-    void redraw_borders_z(void);
-
   public:
-    explicit area(int length, int count, const glm::vec3 &ViewFrom,
-                  const std::list<glsl_attributes> &AtribsList);
+    explicit area(int length, int count, const glm::vec3 &ViewFrom, vbo_ext* V);
     ~area(void) {}
 
     // Запретить копирование и перенос экземпляров класса
@@ -46,12 +31,37 @@ class area
     area(area&&) = delete;
     area& operator=(area&&) = delete;
 
-    GLuint vao_id(void);
-    u_int render_indices(void);
+    u_int get_render_indices(void);
     void recalc_borders(const glm::vec3& ViewFrom);
+    void append(u_int);             // добавить объем по индексу поверхности
+    void remove(u_int);             // удалить объем по индексу поверхности
+
+  private:
+    std::vector<std::unique_ptr<vox>> MemArea {};
+    vbo_ext* pVBO = nullptr;      // VBO вершин поверхности
+
+    std::queue<i3d> QueueLoad {}; // адреса загружаемых воксов
+    std::queue<i3d> QueueWipe {}; // адреса выгружаемах воксов
+
+    u_int render_indices = 0;     // сумма индексов, необходимых для рендера всех примитивов
+    int vox_side_len = 0;         // Длина стороны вокса
+    int lod_dist_far = 0;         // Расстояние от камеры до внешней границы LOD, кратное размеру вокса
+    i3d Location {0, 0, 0};       // Origin вокса, над которым камера
+    i3d MoveFrom {0, 0, 0};       // Origin вокса, с которого камера ушла
+
     void queue_release(void);
-    void append(u_int);
-    void remove(u_int);
+    void redraw_borders_x(void);
+    void redraw_borders_z(void);
+    void vox_load(const i3d& P0);   // загрузить вокс из базы данных в буфер и рендер
+    void vox_unload(const i3d& P0); // выгрузить вокс из буфера и из рендера
+    vox* vox_by_vbo(GLsizeiptr);
+    vox* vox_by_i3d(const i3d&);
+    vox* vox_add_in_db(const i3d&); // создать в указанной точке вокс и записать в БД
+    void vox_draw(vox*);            // разместить вокс в VBO буфере
+    void vox_wipe(vox*);            // убрать из VBO
+    i3d i3d_near(const i3d& P, u_char side);
+    void recalc_around_visibility(i3d);
+    void recalc_vox_visibility(vox*);
 };
 
 

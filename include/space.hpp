@@ -42,10 +42,13 @@ namespace tr
       wglfw* OglContext = nullptr;
       std::unique_ptr<glsl> Program3d = nullptr;
 
+      vbo_ext VBO { GL_ARRAY_BUFFER };
+
       img ImHUD { 0, 0 };      // Текстура HUD окна приложения
       GLuint texture_hud = 0;  // ID HUD текстуры в GPU
 
       px bg_hud  {0x00, 0x88, 0x00, 0x40}; // Фон панели HUD
+      GLuint vao_id = 0;                   // VAO ID
 
       bool ready = false;
       bool focus_is_on = false;
@@ -113,6 +116,7 @@ namespace tr
         UpWard {0.0, -1.0, 0.0},  // направление наверх
         ViewTo {};                // направление взгляда
 
+      void init_vao(void);
       void calc_render_time(void);
       void load_textures(void);
       void calc_position();
