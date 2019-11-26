@@ -36,7 +36,8 @@ class area
     void redraw_borders_z(void);
 
   public:
-    explicit area(int length, int count, const glm::vec3 &ViewFrom);
+    explicit area(int length, int count, const glm::vec3 &ViewFrom,
+                  const std::list<glsl_attributes> &AtribsList);
     ~area(void) {}
 
     // Запретить копирование и перенос экземпляров класса
@@ -44,8 +45,8 @@ class area
     area& operator=(const area&) = delete;
     area(area&&) = delete;
     area& operator=(area&&) = delete;
-    GLuint vao_id(void);
 
+    GLuint vao_id(void);
     u_int render_indices(void);
     void recalc_borders(const glm::vec3& ViewFrom);
     void queue_release(void);

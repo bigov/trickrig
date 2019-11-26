@@ -71,6 +71,16 @@ void vbo_base::allocate(GLsizeiptr al, const GLvoid* data)
 
 
 ///
+/// \brief vbo_base::set_attributes
+/// \param AtribsList
+///
+void vbo_base::set_attributes(const std::list<glsl_attributes>& AtribsList)
+{
+  for(auto& A: AtribsList) attrib(A.index, A.d_size, A.type, A.normalized, A.stride, A.pointer);
+}
+
+
+///
 /// \brief vbo::attrib
 /// \param index
 /// \param d_size

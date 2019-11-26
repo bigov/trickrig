@@ -16,11 +16,8 @@ namespace tr
   class glsl
   {
     public:
-      glsl(void);
+      glsl(const std::list<std::pair<GLenum, std::string>>& L);
       ~glsl(void);
-
-      void init(void);
-      void destroy(void);
 
       // Запретить копирование и перенос экземпляров класса
       glsl(const glsl&) = delete;
@@ -28,23 +25,12 @@ namespace tr
       glsl(glsl&&) = delete;
       glsl& operator=(glsl&&) = delete;
 
-      void attach_shader(GLenum shader_type, 
-        const std::string& file_name);
-
-      void attach_shaders(
-        const std::string& vertex_shader_filename,
-        const std::string& fragment_shader_filename);
-
-      //void attach_shaders(
-      //  const std::string& vertex_shader_filename,
-      //  const std::string& geometric_shader_filename,
-      //  const std::string& fragment_shader_filename);
+      // Список описаний атрибутов для VBO
+      std::list<glsl_attributes> AtribsList {};
 
       GLuint get_id(void);
-      std::map<std::string, GLuint> Atrib {};
-
-      GLuint attrib_location_get(const char *);
-      GLint uniform_location_get(const char *);
+      GLuint attrib(const char *);
+      GLint uniform(const char *);
       void set_uniform(const char*, const glm::mat4 &);
       void set_uniform(const char*, const glm::vec3 &);
       void set_uniform(const char*, const glm::vec4 &);
@@ -60,11 +46,8 @@ namespace tr
       GLuint id = 0;
       GLint isLinked = 0;
       std::vector<GLuint> Shaders {};
-
+      void attach_shader(GLenum shader_type, const std::string& file_name);
   };
-
-extern glsl Prog3d;
-extern glsl screenShaderProgram;
 
 } //namespace tr
 #endif

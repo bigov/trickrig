@@ -55,29 +55,31 @@ gui::gui(wglfw* glContext)
   glGenVertexArrays(1, &vao_quad_id);
   glBindVertexArray(vao_quad_id);
 
-  screenShaderProgram.init();
-  screenShaderProgram.attach_shaders(
-        cfg::app_key(SHADER_VERT_SCREEN), cfg::app_key(SHADER_FRAG_SCREEN) );
-  screenShaderProgram.use();
+  std::list<std::pair<GLenum, std::string>> Shaders {};
+  Shaders.push_back({ GL_VERTEX_SHADER, cfg::app_key(SHADER_VERT_SCREEN) });
+  Shaders.push_back({ GL_FRAGMENT_SHADER, cfg::app_key(SHADER_FRAG_SCREEN) });
+
+  Program2d = std::make_unique<glsl>(Shaders);
+  Program2d->use();
 
   vbo_base VboPosition { GL_ARRAY_BUFFER };
 
   VboPosition.allocate( sizeof(Position), Position );
-  VboPosition.attrib( screenShaderProgram.attrib_location_get("position"),
+  VboPosition.attrib( Program2d->attrib("position"),
       2, GL_FLOAT, GL_FALSE, 0, 0);
 
   vbo_base VboTexcoord { GL_ARRAY_BUFFER };
 
   VboTexcoord.allocate( sizeof(Texcoord), Texcoord );
-  VboTexcoord.attrib( screenShaderProgram.attrib_location_get("texcoord"),
+  VboTexcoord.attrib( Program2d->attrib("texcoord"),
       2, GL_FLOAT, GL_FALSE, 0, 0);
 
   // GL_TEXTURE1
-  glUniform1i(screenShaderProgram.uniform_location_get("texFramebuffer"), 1);
+  glUniform1i(Program2d->uniform("texFramebuffer"), 1);
   // GL_TEXTURE2
-  glUniform1i(screenShaderProgram.uniform_location_get("texHUD"), 2);
+  glUniform1i(Program2d->uniform("texHUD"), 2);
 
-  screenShaderProgram.unuse();
+  Program2d->unuse();
   glBindVertexArray(0);
 }
 
@@ -87,8 +89,6 @@ gui::gui(wglfw* glContext)
 ///
 gui::~gui(void)
 {
-  screenShaderProgram.destroy();
-  Space = nullptr;
   cfg::save(Layout); // Сохранение положения окна
 }
 
@@ -733,10 +733,10 @@ void gui::render_screen(void)
 {
   glBindVertexArray(vao_quad_id);
   glDisable(GL_DEPTH_TEST);
-  screenShaderProgram.use();
-  screenShaderProgram.set_uniform("Cursor", Cursor3D);
+  Program2d->use();
+  Program2d->set_uniform("Cursor", Cursor3D);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-  screenShaderProgram.unuse();
+  Program2d->unuse();
 
   // переключить буфер рендера
   GlContext->swap_buffers();

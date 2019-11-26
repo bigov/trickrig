@@ -30,11 +30,10 @@ u_char side_opposite(u_char s)
 /// \param P1          - 3D точка конца области
 /// \details Запрос из базы данных воксов и передача их в рендер
 ///
-vox_buffer::vox_buffer(int side_len, int b_dist, const i3d P0, const i3d P1)
+vox_buffer::vox_buffer(int side_len, int b_dist, const i3d P0, const i3d P1, const std::list<glsl_attributes>& AtribsList)
 {
   vox_side_len = side_len;
-
-  init_vao(b_dist);
+  init_vao(b_dist, AtribsList);
 
   i3d vP {};
   for(vP.x = P0.x; vP.x<= P1.x; vP.x += vox_side_len)
@@ -47,7 +46,7 @@ vox_buffer::vox_buffer(int side_len, int b_dist, const i3d P0, const i3d P1)
 /// \brief vox_buffer::init_vao
 /// \param border_dist - число элементов от камеры до отображаемой границы
 ///
-void vox_buffer::init_vao(int border_dist)
+void vox_buffer::init_vao(int border_dist, const std::list<glsl_attributes>& AtribsList)
 {
   pVBO = std::make_unique<vbo_ext> (GL_ARRAY_BUFFER);
   pVBO->clear();
@@ -61,17 +60,9 @@ void vox_buffer::init_vao(int border_dist)
   // Размер данных VBO для размещения сторон вокселей:
   pVBO->allocate(n * bytes_per_side);
 
-  // настройка положения атрибутов
-  pVBO->attrib(Prog3d.Atrib["position"],
-    3, GL_FLOAT, GL_FALSE, bytes_per_vertex, 0 * sizeof(GLfloat));
-  pVBO->attrib(Prog3d.Atrib["color"],
-    4, GL_FLOAT, GL_TRUE, bytes_per_vertex, 3 * sizeof(GLfloat));
-  pVBO->attrib(Prog3d.Atrib["normal"],
-    3, GL_FLOAT, GL_TRUE, bytes_per_vertex, 7 * sizeof(GLfloat));
-  pVBO->attrib(Prog3d.Atrib["fragment"],
-    2, GL_FLOAT, GL_TRUE, bytes_per_vertex, 10 * sizeof(GLfloat));
+  // настройка положения атрибутов GLSL программы
+  pVBO->set_attributes(AtribsList);
 
-  //
   // Так как все четырехугольники сторон индексируются одинаково, то индексный массив
   // заполняем один раз "под завязку" и забываем про него. Число используемых индексов
   // будет всегда соответствовать числу элементов, передаваемых в процедру "glDraw..."

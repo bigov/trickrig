@@ -93,6 +93,7 @@ enum MAP_INIT {
   MAP_INIT_SIZE
 };
 
+// Хранение данных положения и размера прямоугольника (используется окном)
 struct layout
 {
   u_int width  = 0;
@@ -100,6 +101,18 @@ struct layout
   u_int left = 0;
   u_int top = 0;
 };
+
+// Обмен данными между glsl-программой и VBO
+struct glsl_attributes
+{
+  GLuint index;
+  GLint d_size;
+  GLenum type;
+  GLboolean normalized;
+  GLsizei stride;
+  size_t pointer;
+};
+
 
 // структура для обращения в тексте программы к индексам данных вершин по названиям
 enum SIDE_DATA_ID { X, Y, Z, R, G, B, A, NX, NY, NZ, U, V, SIDE_DATA_SIZE };

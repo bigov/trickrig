@@ -18,7 +18,7 @@ namespace tr
 /// \param count - число вокселей от камеры (или внутренней границы)
 /// до внешней границы области
 ///
-area::area(int side_length, int count_elements_to_border, const glm::vec3& ViewFrom)
+area::area(int side_length, int count_elements_to_border, const glm::vec3& ViewFrom, const std::list<glsl_attributes>& AtribsList)
 {
   vox_side_len = side_length;
   lod_dist_far = count_elements_to_border * side_length;
@@ -36,7 +36,7 @@ area::area(int side_length, int count_elements_to_border, const glm::vec3& ViewF
            Location.y + lod_dist_far,
            Location.z + lod_dist_far };
 
-  VoxBuffer = std::make_unique<vox_buffer> (side_length, count_elements_to_border, P0, P1);
+  VoxBuffer = std::make_unique<vox_buffer> (side_length, count_elements_to_border, P0, P1, AtribsList);
 }
 
 

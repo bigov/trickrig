@@ -10,40 +10,15 @@
 
 namespace tr {
 
-  ////////
-  // Конструктор шейдерной программы
-  //
-  glsl::glsl()
-  {
-    Atrib.clear();
-  }
-
-
   ///
   /// \brief glsl::init
   ///
-  void glsl::init(void)
+  glsl::glsl(const std::list<std::pair<GLenum, std::string>>& L)
   {
-    if( id > 0 ) return;
-
+    assert(0 == id);
     id = glCreateProgram();
     if (glGetError()) ERR("Can't create GLSL program");
-  }
-
-
-  ///
-  /// \brief glsl::destroy
-  ///
-  void glsl::destroy(void)
-  {
-    unuse();
-    for(auto shader_id: Shaders)
-    {
-      glDetachShader(id, shader_id);
-      glDeleteShader(shader_id);
-    }
-    glDeleteProgram(id);
-    id = 0;
+    for(auto& P: L) attach_shader(P.first, P.second);
   }
 
 
@@ -52,7 +27,13 @@ namespace tr {
   ///
   glsl::~glsl(void)
   {
-    if(id != 0) info("ALERT: the glsl::destroy() method was missing!");
+    unuse();
+    for(auto shader_id: Shaders)
+    {
+      glDetachShader(id, shader_id);
+      glDeleteShader(shader_id);
+    }
+    glDeleteProgram(id);
   }
 
 
@@ -145,7 +126,7 @@ namespace tr {
   ////////
   // Получение индекса атрибута шейдера по имени
   //
-  GLuint glsl::attrib_location_get(const char * name )
+  GLuint glsl::attrib(const char * name )
   {
     if(!isLinked)
     {
@@ -162,16 +143,13 @@ namespace tr {
       msg += name;
       ERR(msg);
     }
-
-    auto result = static_cast<GLuint>( l );
-    Atrib[name] = result;
-    return result;
+    return static_cast<GLuint>(l);
   }
   
   ////////
   // Получение индекса переменной uniform по имени
   //
-  GLint glsl::uniform_location_get(const char * name )
+  GLint glsl::uniform(const char * name )
   {
     if(!isLinked)
     {
@@ -198,7 +176,7 @@ namespace tr {
   void glsl::set_uniform(const char * name, const glm::mat4 & m)
   {
     GLint loc;
-    loc = uniform_location_get(name);
+    loc = uniform(name);
     glUniformMatrix4fv(loc, 1, GL_FALSE, &m[0][0]);
     return;
   }
@@ -209,7 +187,7 @@ namespace tr {
   void glsl::set_uniform(const char* name, const glm::vec3& m)
   {
     GLint loc;
-    loc = uniform_location_get(name);
+    loc = uniform(name);
     glUniform3fv(loc, 1, glm::value_ptr(m));
     return;
   }
@@ -220,7 +198,7 @@ namespace tr {
   void glsl::set_uniform(const char * name, const glm::vec4 & m)
   {
     GLint loc;
-    loc = uniform_location_get(name);
+    loc = uniform(name);
     glUniform4fv(loc, 1, glm::value_ptr(m));
     return;
   }
@@ -232,7 +210,7 @@ namespace tr {
   void glsl::set_uniform(const char * name, GLint u)
   {
     GLint loc;
-    loc = uniform_location_get(name);
+    loc = uniform(name);
     glUniform1i(loc, u);
     return;
   }
@@ -243,7 +221,7 @@ namespace tr {
   //
   void glsl::set_uniform1ui(const char* name, GLuint u)
   {
-    GLint loc = uniform_location_get(name);
+    GLint loc = uniform(name);
     glUniform1ui(loc, u);
     return;
   }
@@ -255,14 +233,19 @@ namespace tr {
   void glsl::set_uniform(const char * name, GLfloat u)
   {
     GLint loc;
-    loc = uniform_location_get(name);
+    loc = uniform(name);
     glUniform1f(loc, u);
     return;
   }
   
-  ////////
-  // Считывание из файла и подключение шейдера
-  //
+
+  ///
+  /// \brief glsl::attach_shader
+  /// \param type - GL_VERTEX_SHADER | GL_FRAGMENT_SHADER | GL_GEOMETRY_SHADER | GL_TESS_CONTROL_SHADER | GL_TESS_EVALUATION_SHADER
+  /// \param fname
+  /// \details
+  ///
+  ///
   void glsl::attach_shader(GLenum type, const std::string &fname)
   {
 #ifndef NDEBUG
@@ -295,33 +278,5 @@ namespace tr {
   
     return;
   }
-  
-  //## Считывание из файлов и подключение шейдеров
-  //
-  void glsl::attach_shaders(
-      const std::string & vert_fn,
-      const std::string & frag_fn
-    )
-  {
-    attach_shader(GL_VERTEX_SHADER,   vert_fn);
-    attach_shader(GL_FRAGMENT_SHADER, frag_fn);
-    return;
-  }
-  
-/*
-  //## Считывание из файлов и подключение шейдеров
-  //
-  void glsl::attach_shaders(
-      const std::string & vert_fn,
-      const std::string & geom_fn,
-      const std::string & frag_fn
-    )
-  {
-    attach_shader(GL_VERTEX_SHADER,   vert_fn);
-    attach_shader(GL_GEOMETRY_SHADER, geom_fn);
-    attach_shader(GL_FRAGMENT_SHADER, frag_fn);
-    return;
-  }
-*/
 
 } // namespace tr

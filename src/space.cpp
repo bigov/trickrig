@@ -41,18 +41,25 @@ space::space(wglfw* OpenGLContext)
   glEnable(GL_BLEND);      // поддержка прозрачности
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  // компиляция GLSL программы
-  Prog3d.init();
-  Prog3d.attach_shaders( cfg::app_key(SHADER_VERT_SCENE), cfg::app_key(SHADER_FRAG_SCENE) );
-  Prog3d.use();
+  //GL_VERTEX_SHADER | GL_FRAGMENT_SHADER
+  std::list<std::pair<GLenum, std::string>> Shaders {};
+  Shaders.push_back({ GL_VERTEX_SHADER, cfg::app_key(SHADER_VERT_SCENE) });
+  Shaders.push_back({ GL_FRAGMENT_SHADER, cfg::app_key(SHADER_FRAG_SCENE) });
 
-  // Заполнить карту атрибутов для более быстрого доступа
-  Prog3d.attrib_location_get("position");
-  Prog3d.attrib_location_get("color");
-  Prog3d.attrib_location_get("normal");
-  Prog3d.attrib_location_get("fragment");
+  Program3d = std::make_unique<glsl>(Shaders);
+  Program3d->use();
 
-  Prog3d.unuse();
+  // Заполнить список атрибутов GLSL программы
+  Program3d->AtribsList.push_back(
+    { Program3d->attrib("position"), 3, GL_FLOAT, GL_FALSE,bytes_per_vertex, 0 * sizeof(GLfloat) });
+  Program3d->AtribsList.push_back(
+    { Program3d->attrib("color"),    4, GL_FLOAT, GL_TRUE, bytes_per_vertex, 3 * sizeof(GLfloat) });
+  Program3d->AtribsList.push_back(
+    { Program3d->attrib("normal"),   3, GL_FLOAT, GL_TRUE, bytes_per_vertex, 7 * sizeof(GLfloat) });
+  Program3d->AtribsList.push_back(
+    { Program3d->attrib("fragment"), 2, GL_FLOAT, GL_TRUE, bytes_per_vertex, 10 * sizeof(GLfloat)});
+
+  Program3d->unuse();
 
   // настройка рендер-буфера
   GLsizei width, height;
@@ -67,15 +74,6 @@ space::space(wglfw* OpenGLContext)
   load_textures();
 
   OglContext->add_size_observer(*this); //пересчет при изменении размера
-}
-
-
-///
-/// \brief space::~space
-///
-space::~space(void)
-{
-  Prog3d.destroy();
 }
 
 
@@ -97,7 +95,8 @@ void space::enable(void)
   OglContext->set_cursor_pos(xpos, ypos);
 
   // Продолжительная по времени операция - загрузка в память сцены
-  if(nullptr == Area4) Area4 = std::make_unique<area>(size_v4, border_dist_b4, Eye.ViewFrom);
+  if(nullptr == Area4) Area4 =
+      std::make_unique<area>(size_v4, border_dist_b4, Eye.ViewFrom, Program3d->AtribsList);
 
   OglContext->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
   OglContext->set_button_observer(*this);    //  -- кнопки мыши
@@ -242,26 +241,20 @@ bool space::render(void)
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
-  Prog3d.use();   // включить шейдерную программу
-  Prog3d.set_uniform("mvp", MatMVP);
-  Prog3d.set_uniform("light_direction", light_direction); // направление
-  Prog3d.set_uniform("light_bright", light_bright);       // цвет/яркость
-  Prog3d.set_uniform("MinId", GLint(id_point_0));         // начальная вершина активного вокселя
-  Prog3d.set_uniform("MaxId", GLint(id_point_8));         // последняя вершина активного вокселя
+  Program3d->use();   // включить шейдерную программу
+  Program3d->set_uniform("mvp", MatMVP);
+  Program3d->set_uniform("light_direction", light_direction); // направление
+  Program3d->set_uniform("light_bright", light_bright);       // цвет/яркость
+  Program3d->set_uniform("MinId", GLint(id_point_0));         // начальная вершина активного вокселя
+  Program3d->set_uniform("MaxId", GLint(id_point_8));         // последняя вершина активного вокселя
 
-  glEnableVertexAttribArray(Prog3d.Atrib["position"]);    // координаты вершин
-  glEnableVertexAttribArray(Prog3d.Atrib["color"]);       // цвет
-  glEnableVertexAttribArray(Prog3d.Atrib["normal"]);      // нормаль
-  glEnableVertexAttribArray(Prog3d.Atrib["fragment"]);    // текстура
+  for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
 
   glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(Area4->render_indices()), GL_UNSIGNED_INT, nullptr);
 
-  glDisableVertexAttribArray(Prog3d.Atrib["position"]);
-  glDisableVertexAttribArray(Prog3d.Atrib["color"]);
-  glDisableVertexAttribArray(Prog3d.Atrib["normal"]);
-  glDisableVertexAttribArray(Prog3d.Atrib["fragment"]);
+  for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
 
-  Prog3d.unuse(); // отключить шейдерную программу
+  Program3d->unuse(); // отключить шейдерную программу
   RenderBuffer->unbind();
   glBindVertexArray(0);
 

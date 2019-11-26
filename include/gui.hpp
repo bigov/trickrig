@@ -64,7 +64,7 @@ class gui: public interface_gl_context
         std::string Folder;
         std::string Name;
     };
-
+    std::unique_ptr<glsl> Program2d = nullptr;            // Шейдерная программа GUI
     glm::vec3 Cursor3D = { 200.f, 200.f, 0.f };           // положение и размер прицела
     const u_int BUTTTON_WIDTH = 120;                      // ширина кнопки GUI
     const u_int BUTTTON_HEIGHT = 36;                      // высота кнопки GUI
