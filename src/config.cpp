@@ -50,7 +50,7 @@ std::string cfg::user_dir(void)
 ///
 /// Загрузка параметров сессии карты
 ///
-void cfg::map_view_load(const std::string &DirName)
+void cfg::map_view_load(const std::string &DirName, camera_3d& Eye)
 {
   MapParams = DataBase.map_open(DirName + DS);
 
@@ -168,7 +168,7 @@ void cfg::save(const layout& WindowLayout)
 ///
 /// Сохранить настройки положения камеры и закрыть карту
 ///
-void cfg::map_view_save(void)
+void cfg::map_view_save(const camera_3d &Eye)
 {
   DataBase.map_close(Eye);
 }

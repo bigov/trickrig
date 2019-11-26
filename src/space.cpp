@@ -57,11 +57,16 @@ space::space(wglfw* OpenGLContext)
   // настройка рендер-буфера
   GLsizei width, height;
   OglContext->get_frame_buffer_size(&width, &height);
-  if(!RenderBuffer.init(width, height)) ERR("Error on creating Render Buffer.");
-  OglContext->add_size_observer(RenderBuffer); // пересчет буфера при изменении размеров
 
-  // загрузка основной текстуры
-  load_texture(GL_TEXTURE0, cfg::app_key(PNG_TEXTURE0));
+  ImHUD.resize( static_cast<u_int>(width), static_cast<u_int>(height));
+
+  RenderBuffer = std::make_unique<frame_buffer> ();
+  if(!RenderBuffer->init(width, height)) ERR("Error on creating Render Buffer.");
+
+  // загрузка текстур
+  load_textures();
+
+  OglContext->add_size_observer(*this); //пересчет при изменении размера
 }
 
 
@@ -84,7 +89,6 @@ void space::enable(void)
   OglContext->get_frame_buffer_size(&width, &height);
   auto aspect = static_cast<float>(width) / static_cast<float>(height);
   MatProjection = glm::perspective(fovy, aspect, zNear, zFar);
-  OglContext->add_size_observer(*this); //пересчет матрицы проекции при изменении размера
 
   xpos = width/2;  // Рассчитать координаты центра экрана
   ypos = height/2;
@@ -95,10 +99,10 @@ void space::enable(void)
   // Продолжительная по времени операция - загрузка в память сцены
   if(nullptr == Area4) Area4 = std::make_unique<area>(size_v4, border_dist_b4, Eye.ViewFrom);
 
-  OglContext->set_cursor_observer(*this);   // Подключить обработчики: курсора мыши
-  OglContext->set_button_observer(*this);   //  -- кнопки мыши
-  OglContext->set_keyboard_observer(*this); //  -- клавиатуры
-  OglContext->set_focuslost_observer(*this);    // Реакция на потерю окном фокуса ввода
+  OglContext->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
+  OglContext->set_button_observer(*this);    //  -- кнопки мыши
+  OglContext->set_keyboard_observer(*this);  //  -- клавиатуры
+  OglContext->set_focuslost_observer(*this); // Реакция на потерю окном фокуса ввода
   focus_is_on = true;
 
   on_front = 0; // клавиша вперед
@@ -111,6 +115,7 @@ void space::enable(void)
   ud_way   = 0; // движение вверх
   rl_way   = 0; // движение в сторону
 
+  hud_load();
   ready = true;
 }
 
@@ -120,11 +125,12 @@ void space::enable(void)
 /// \param index
 /// \param fname
 ///
-void space::load_texture(unsigned gl_texture_index, const std::string& FileName)
+void space::load_textures(void)
 {
-  img ImgTex0 { FileName };
+  // Загрузка текстур поверхностей воксов
+  glActiveTexture(GL_TEXTURE0);
+  img ImgTex0 { cfg::app_key(PNG_TEXTURE0) };
   glGenTextures(1, &texture_id);
-  glActiveTexture(gl_texture_index); // можно загрузить не меньше 48
   glBindTexture(GL_TEXTURE_2D, texture_id);
 
   GLint level_of_details = 0;
@@ -134,13 +140,21 @@ void space::load_texture(unsigned gl_texture_index, const std::string& FileName)
                static_cast<GLsizei>(ImgTex0.h_summ),
                frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgTex0.uchar());
 
-  // Установка опций отрисовки текстур
+  // Установка опций отрисовки
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
   glGenerateMipmap(GL_TEXTURE_2D);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  // Настройка текстуры для отрисовки HUD
+  glActiveTexture(GL_TEXTURE2);
+  glGenTextures(1, &texture_hud);
+  glBindTexture(GL_TEXTURE_2D, texture_hud);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 
@@ -152,19 +166,19 @@ void space::load_texture(unsigned gl_texture_index, const std::string& FileName)
 ///
 void space::calc_position(void)
 {
-  Eye.look_a -= Eye.speed_rotate * dx;
+  Eye.look_a -= speed_rotate * dx;
   dx = 0.f;
   if(Eye.look_a > dPi) Eye.look_a -= dPi;
   if(Eye.look_a < 0) Eye.look_a += dPi;
 
-  Eye.look_t -= Eye.speed_rotate * dy;
+  Eye.look_t -= speed_rotate * dy;
   dy = 0.f;
   if(Eye.look_t > up_max) Eye.look_t = up_max;
   if(Eye.look_t < down_max) Eye.look_t = down_max;
 
   //if (!space_is_empty(Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
 
-  float dist  = Eye.speed_moving *
+  float dist  = speed_moving *
           static_cast<float>(cycle_time) * size_v4; // Дистанция перемещения
   rl = dist * rl_way;
   fb = dist * fb_way;   // по трем нормалям от камеры
@@ -224,7 +238,7 @@ bool space::render(void)
   Area4->recalc_borders(Eye.ViewFrom);
 
   glBindVertexArray(Area4->vao_id());
-  RenderBuffer.bind();
+  RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
@@ -235,7 +249,7 @@ bool space::render(void)
   Prog3d.set_uniform("MinId", GLint(id_point_0));         // начальная вершина активного вокселя
   Prog3d.set_uniform("MaxId", GLint(id_point_8));         // последняя вершина активного вокселя
 
-  glEnableVertexAttribArray(Prog3d.Atrib["position"]);    // положение 3D
+  glEnableVertexAttribArray(Prog3d.Atrib["position"]);    // координаты вершин
   glEnableVertexAttribArray(Prog3d.Atrib["color"]);       // цвет
   glEnableVertexAttribArray(Prog3d.Atrib["normal"]);      // нормаль
   glEnableVertexAttribArray(Prog3d.Atrib["fragment"]);    // текстура
@@ -248,9 +262,10 @@ bool space::render(void)
   glDisableVertexAttribArray(Prog3d.Atrib["fragment"]);
 
   Prog3d.unuse(); // отключить шейдерную программу
-  RenderBuffer.unbind();
+  RenderBuffer->unbind();
   glBindVertexArray(0);
 
+  hud_draw();
   return check_keys();
 }
 
@@ -265,6 +280,11 @@ void space::resize_event(int width, int height)
   // пересчет матрицы проекции
   auto aspect = static_cast<float>(width) / static_cast<float>(height);
   MatProjection = glm::perspective(fovy, aspect, zNear, zFar);
+
+  // Пересчет размера HUD
+  ImHUD.resize( static_cast<u_int>(width), static_cast<u_int>(height));
+
+  RenderBuffer->resize(width, height);
 }
 
 
@@ -394,7 +414,7 @@ bool space::check_keys()
   }
 
   u_int vertex_id = 0;
-  RenderBuffer.read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
+  RenderBuffer->read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
 
   id_point_0 = vertex_id - (vertex_id % vertices_per_side);
   id_point_8 = id_point_0 + vertices_per_side - 1;
@@ -419,6 +439,78 @@ bool space::check_keys()
     Area4->remove(vertex_id);
   }
   return true;
+}
+
+
+///
+/// \brief загрузка HUD в GPU
+///
+/// \details Пока HUD имеет упрощенный вид в форме полупрозрачной прямоугольной
+/// области в нижней части окна. Эта область формируется в ранее очищеной HUD
+/// текстуре окна и зазгружается в память GPU. Загрузка производится разово
+/// в момент открытия штроки (cover_) за счет обработки флага "renew". Далее,
+/// в процессе взаимодействия с окруженим трехмерной сцены, текструра хранится
+/// в памяти. Небольшие локальные фрагменты (вроде FPS-счетчика) обновляются
+/// напрямую через память GPU.
+///
+void space::hud_load(void)
+{
+  glBindTexture(GL_TEXTURE_2D, texture_hud);
+
+  auto width = static_cast<GLint>(ImHUD.w_summ);
+  auto height = static_cast<GLint>(ImHUD.h_summ);
+
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
+           0, GL_RGBA, GL_UNSIGNED_BYTE, ImHUD.uchar());
+
+  // Панель инструментов для HUD в нижней части окна
+  u_int h = 48;                           // высота панели инструментов HUD
+  if(h > ImHUD.h_summ) h = ImHUD.h_summ;   // не может быть выше GuiImg
+  img HudPanel {ImHUD.w_summ, h, bg_hud};
+
+  auto y = static_cast<GLint>(ImHUD.h_summ - HudPanel.h_summ); // верхняя граница панели
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, y,
+                static_cast<GLsizei>(HudPanel.w_summ), // width
+                static_cast<GLsizei>(HudPanel.h_summ), // height
+                GL_RGBA, GL_UNSIGNED_BYTE,             // mode
+                HudPanel.uchar());                     // data
+}
+
+
+///
+/// \brief space::hud_draw
+///
+void space::hud_draw(void)
+{
+  glBindTexture(GL_TEXTURE_2D, texture_hud);
+
+  // счетчик FPS
+  px bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения
+  u_int fps_length = 4;               // количество символов в надписи
+  img Fps {fps_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
+  char line[5];                       // длина строки с '\0'
+  std::sprintf(line, "%.4i", FPS);
+  textstring_place(Font15n, line, Fps, 2, 1);
+
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 2, static_cast<GLint>(ImHUD.h_summ - Fps.h_summ - 2),
+                static_cast<GLsizei>(Fps.w_summ),  // width
+                static_cast<GLsizei>(Fps.h_summ),  // height
+                GL_RGBA, GL_UNSIGNED_BYTE,         // mode
+                Fps.uchar());                      // data
+
+  // Координаты в пространстве
+  u_int c_length = 60;               // количество символов в надписи
+  img Coord {c_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
+  char ln[60];                       // длина строки с '\0'
+  std::sprintf(ln, "X:%+06.1f, Y:%+06.1f, Z:%+06.1f, a:%+04.3f, t:%+04.3f",
+                  Eye.ViewFrom.x, Eye.ViewFrom.y, Eye.ViewFrom.z, Eye.look_a, Eye.look_t);
+  textstring_place(Font15n, ln, Coord, 2, 1);
+
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 2, 2,            // top, left
+                static_cast<GLsizei>(Coord.w_summ),  // width
+                static_cast<GLsizei>(Coord.h_summ),  // height
+                GL_RGBA, GL_UNSIGNED_BYTE,           // mode
+                Coord.uchar());                      // data
 }
 
 } // namespace tr

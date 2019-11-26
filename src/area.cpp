@@ -49,6 +49,7 @@ GLuint area::vao_id(void)
   return VoxBuffer->vao_id;
 }
 
+
 ///
 /// \brief area::append
 /// \param i
@@ -67,6 +68,7 @@ void area::remove(u_int i)
 {
   VoxBuffer->remove(i);
 }
+
 
 ///
 /// \brief area::render_indices

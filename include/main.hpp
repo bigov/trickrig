@@ -126,14 +126,8 @@ const int KEY_MOVE_LEFT  = GLFW_KEY_A;
     float look_a = 0.0f;       // азимут (0 - X)
     float look_t = 0.0f;       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
 
-    // TODO: измерять средний за 10 сек. fps, и пропорционально менять скорость перемещения
-    float speed_rotate = 0.001f; // скорость поворота (радиан в секунду) камеры
-    float speed_moving = 10.f;   // скорость перемещения (в секунду) камеры
-
     glm::vec3 ViewFrom = {};   // 3D координаты точки положения
   };
-
-  extern camera_3d Eye;
 
   // число вершин в прямоугольнике
   static const u_int vertices_per_side = 4;

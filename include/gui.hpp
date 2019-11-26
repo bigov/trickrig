@@ -89,22 +89,20 @@ class gui: public interface_gl_context
     double mouse_y = 0.0;                    // позиция указателя относительно верхней границы
 
     px bg      {0xE0, 0xE0, 0xE0, 0xC0};     // фон заполнения неактивного окна
-    px bg_hud  {0x00, 0x88, 0x00, 0x40};     // фон панелей HUD (активного окна)
-    img ImageGUI { 0, 0 };                   // GUI/HUD текстура окна приложения
+    img ImgGUI { 0, 0 };                     // GUI текстура окна приложения
     px color_title {0xFF, 0xFF, 0xDD, 0xFF}; // фон заголовка
     bool mouse_press_left = false;           // нажатие на левую кнопку мыши
 
-    GLuint gui_texture = 0;                  // id тектуры HUD
+    GLuint texture_gui = 0;                  // id тектуры HUD
 
-    std::vector<map> Maps {};            // список карт
-    GUI_MODES GuiMode = GUI_MENU_START;  // режим окна приложения
-    ELEMENT_ID element_over = NONE;  // Над какой GIU кнопкой курсор
-    size_t row_selected = 0;         // какая строка выбрана
+    std::vector<map> Maps {};           // список карт
+    GUI_MODES GuiMode = GUI_MENU_START; // режим окна приложения
+    ELEMENT_ID element_over = NONE;     // Над какой GIU кнопкой курсор
+    size_t row_selected = 0;            // какая строка выбрана
 
     GLuint vao_quad_id  = 0;
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
-    void hud_load(void);
     void button(ELEMENT_ID id, u_long x, u_long y, const std::string& Name,
                 bool button_is_active = true );
     void button_make_body(img &Data, BUTTON_STATE);
@@ -120,7 +118,6 @@ class gui: public interface_gl_context
     void menu_config(void);
     void button_click(ELEMENT_ID);
     void cancel(void);
-    void hud_draw(void);      // обновление кадра
     void render_screen(void);
     void create_map(void);
     void remove_map(void);

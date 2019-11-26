@@ -175,7 +175,7 @@ void db::map_name_save(const std::string &Dir, const std::string &MapName)
 /// \brief db::save
 /// \param Eye
 ///
-void db::map_close(const tr::camera_3d &Eye)
+void db::map_close(const camera_3d &Eye)
 {
   SqlDb.close_in_ram(MapPFName); // закрыть файл данных пространства вокселей
 

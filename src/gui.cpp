@@ -22,13 +22,13 @@ gui::gui(wglfw* glContext)
   // настройка текстуры для HUD
   glActiveTexture(GL_TEXTURE2);
 
-  glGenTextures(1, &gui_texture);
-  glBindTexture(GL_TEXTURE_2D, gui_texture);
+  glGenTextures(1, &texture_gui);
+  glBindTexture(GL_TEXTURE_2D, texture_gui);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glBindTexture(GL_TEXTURE_2D, 0);
 
-  ImageGUI.resize(Layout.width, Layout.height);
+  ImgGUI.resize(Layout.width, Layout.height);
 
   /// Инициализация GLSL программы обработки текстуры фреймбуфера.
   ///
@@ -51,8 +51,6 @@ gui::gui(wglfw* glContext)
     0.f, 0.f, //1
     1.f, 0.f, //2
   };
-
-//  screenShaderProgram = std::make_unique<glsl>();
 
   glGenVertexArrays(1, &vao_quad_id);
   glBindVertexArray(vao_quad_id);
@@ -101,11 +99,11 @@ gui::~gui(void)
 ///
 void gui::title(const std::string &title)
 {
-  img label{ ImageGUI.w_summ - 4, Font18s.h_cell * 2 - 4, color_title};
+  img label{ ImgGUI.w_summ - 4, Font18s.h_cell * 2 - 4, color_title};
 
-  u_long x = ImageGUI.w_summ/2 - utf8_size(title) * Font18s.w_cell / 2;
+  u_long x = ImgGUI.w_summ/2 - utf8_size(title) * Font18s.w_cell / 2;
   textstring_place(Font18s, title, label, x, Font18s.h_cell/2);
-  label.copy(0, 0, ImageGUI, 2, 2);
+  label.copy(0, 0, ImgGUI, 2, 2);
 }
 
 
@@ -119,7 +117,7 @@ void gui::title(const std::string &title)
 void gui::input_text_line(const img &Font)
 {
   px color = {0xF0, 0xF0, 0xF0, 0xFF};
-  u_int row_width = ImageGUI.w_summ - Font.w_cell * 2;
+  u_int row_width = ImgGUI.w_summ - Font.w_cell * 2;
   u_int row_height = Font.h_cell * 2;
   img RowInput{ row_width, row_height, color };
 
@@ -129,9 +127,9 @@ void gui::input_text_line(const img &Font)
   cursor_text_row(Font, RowInput, utf8_size(StringBuffer));
 
   // скопировать на экран изображение поля ввода с добавленым текстом
-  auto x = (ImageGUI.w_summ - RowInput.w_summ) / 2;
-  y = ImageGUI.h_summ / 2 - 2 * BUTTTON_HEIGHT;
-  RowInput.copy(0, 0, ImageGUI, x, y);
+  auto x = (ImgGUI.w_summ - RowInput.w_summ) / 2;
+  y = ImgGUI.h_summ / 2 - 2 * BUTTTON_HEIGHT;
+  RowInput.copy(0, 0, ImgGUI, x, y);
 }
 
 
@@ -200,7 +198,7 @@ void gui::row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::str
 
   img Row { w, h, bg_color };
   textstring_place(Font18n, text, Row, Font18n.w_cell/2, 6);
-  Row.copy(0, 0, ImageGUI, x, y);
+  Row.copy(0, 0, ImgGUI, x, y);
 }
 
 
@@ -211,7 +209,7 @@ void gui::row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::str
 void gui::select_list(u_int lx, u_int ly, u_int lw, u_int lh)
 {
   img ListImg {lw, lh, {0xDD, 0xDD, 0xDD, 0xFF}};             // изображение списка
-  ListImg.copy(0, 0, ImageGUI, lx, ly);
+  ListImg.copy(0, 0, ImgGUI, lx, ly);
 
   u_int rh = Font18n.h_cell * 1.5f;     // высота строки
   u_int rw = lw - 4;                    // ширина строки
@@ -237,9 +235,9 @@ void gui::cancel(void)
   switch (GuiMode)
   {
     case GUI_3D_MODE:
-      cfg::map_view_save();
+      cfg::map_view_save(Space->Eye);
       GuiMode = GUI_MENU_LSELECT;
-      Cursor3D[2] = 0.0f;                         // Спрятать прицел
+      Cursor3D[2] = 0.0f;                      // Спрятать прицел
       GlContext->cursor_restore();             // Включить указатель мыши
       GlContext->set_cursor_observer(*this);   // переключить обработчик смещения курсора
       GlContext->set_button_observer(*this);   // обработчик кнопок мыши
@@ -258,74 +256,6 @@ void gui::cancel(void)
       is_open = false;
       break;
   }
-}
-
-
-///
-/// \brief gui::update
-///
-void gui::hud_draw(void)
-{
-  glBindTexture(GL_TEXTURE_2D, gui_texture);
-
-  // счетчик FPS
-  px bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения
-  u_int fps_length = 4;               // количество символов в надписи
-  img Fps {fps_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
-  char line[5];                       // длина строки с '\0'
-  std::sprintf(line, "%.4i", Space->FPS);
-  textstring_place(Font15n, line, Fps, 2, 1);
-
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 2, static_cast<GLint>(Layout.height - Fps.h_summ - 2),
-                static_cast<GLsizei>(Fps.w_summ),  // width
-                static_cast<GLsizei>(Fps.h_summ),  // height
-                GL_RGBA, GL_UNSIGNED_BYTE,         // mode
-                Fps.uchar());                      // data
-
-  // Координаты в пространстве
-  u_int c_length = 60;               // количество символов в надписи
-  img Coord {c_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
-  char ln[60];                       // длина строки с '\0'
-  std::sprintf(ln, "X:%+06.1f, Y:%+06.1f, Z:%+06.1f, a:%+04.3f, t:%+04.3f",
-                  Eye.ViewFrom.x, Eye.ViewFrom.y, Eye.ViewFrom.z, Eye.look_a, Eye.look_t);
-  textstring_place(Font15n, ln, Coord, 2, 1);
-
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 2, 2,            // top, left
-                static_cast<GLsizei>(Coord.w_summ),  // width
-                static_cast<GLsizei>(Coord.h_summ),  // height
-                GL_RGBA, GL_UNSIGNED_BYTE,           // mode
-                Coord.uchar());                      // data
-}
-
-
-///
-/// \brief загрузка HUD в GPU
-///
-/// \details Пока HUD имеет упрощенный вид в форме полупрозрачной прямоугольной
-/// области в нижней части окна. Эта область формируется в ранее очищеной HUD
-/// текстуре окна и зазгружается в память GPU. Загрузка производится разово
-/// в момент открытия штроки (cover_) за счет обработки флага "renew". Далее,
-/// в процессе взаимодействия с окруженим трехмерной сцены, текструра хранится
-/// в памяти. Небольшие локальные фрагменты (вроде FPS-счетчика) обновляются
-/// напрямую через память GPU.
-///
-void gui::hud_load(void)
-{
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-           static_cast<GLint>(Layout.width), static_cast<GLint>(Layout.height),
-           0, GL_RGBA, GL_UNSIGNED_BYTE, ImageGUI.uchar());
-
-  // Панель инструментов для HUD в нижней части окна
-  u_int h = 48;                                 // высота панели инструментов HUD
-  if(h > ImageGUI.h_summ) h = ImageGUI.h_summ;  // не может быть выше GuiImg
-  img HudPanel {ImageGUI.w_summ, h, bg_hud};
-
-  auto y = static_cast<GLint>(ImageGUI.h_summ - HudPanel.h_summ); // верхняя граница панели
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, y,
-                static_cast<GLsizei>(HudPanel.w_summ), // width
-                static_cast<GLsizei>(HudPanel.h_summ), // height
-                GL_RGBA, GL_UNSIGNED_BYTE,             // mode
-                HudPanel.uchar());                     // data
 }
 
 
@@ -399,25 +329,23 @@ void gui::button_click(ELEMENT_ID id)
   switch(id)
   {
     case BTN_OPEN:
-      cfg::map_view_load(Maps[row_selected - 1].Folder);
+      cfg::map_view_load(Maps[row_selected - 1].Folder, Space->Eye);
       GuiMode = GUI_3D_MODE;
-      ImageGUI.fill({0xD0, 0xDD, 0xEE, 0xFF});      // заливка окна фоном
+      ImgGUI.fill({0xD0, 0xDD, 0xEE, 0xFF});      // заливка окна фоном
       {
         auto& Font = Font18s;
         char message[] = "ЗАГРУЗКА ДАННЫХ ...";     // В сообщении 19 символов
-        textstring_place( Font, message, ImageGUI,
+        textstring_place( Font, message, ImgGUI,
                         ( Layout.width - 19 * Font.w_cell)/2,
                         ( Layout.height - Font.h_cell)    /2 );
       }
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,       // скопировать в графический буфер
                    static_cast<GLint>(Layout.width),
                    static_cast<GLint>(Layout.height),
-                   0, GL_RGBA, GL_UNSIGNED_BYTE, ImageGUI.uchar());
+                   0, GL_RGBA, GL_UNSIGNED_BYTE, ImgGUI.uchar());
       render_screen();     // Вывести на экран сообщение о загрузке
       Space->enable();     // Загрузка занимает некоторое время ...
       Cursor3D[2] = 4.0f;  // Активировать прицел
-      ImageGUI.clear();    // Очистить фоновое изображение
-      hud_load();
       break;
     case BTN_CONFIG:
       GuiMode = GUI_MENU_CONFIG;
@@ -595,7 +523,7 @@ void gui::button(ELEMENT_ID btn_id, u_long x, u_long y,
     textstring_place(Font18l, Name, Btn, BUTTTON_WIDTH/2 - t_width/2,
            BUTTTON_HEIGHT/2 - t_height/2);
   }
-  Btn.copy(0, 0, ImageGUI, x, y);
+  Btn.copy(0, 0, ImgGUI, x, y);
 }
 
 
@@ -604,7 +532,7 @@ void gui::button(ELEMENT_ID btn_id, u_long x, u_long y,
 ///
 void gui::menu_start(void)
 {
-  ImageGUI.fill(bg);
+  ImgGUI.fill(bg);
   title("Trick Rig");
 
   u_int x = Layout.width/2 - BUTTTON_WIDTH/2;   // X координата кнопки
@@ -624,7 +552,7 @@ void gui::menu_start(void)
 ///
 void gui::menu_map_select(void)
 {
-  ImageGUI.fill(bg);
+  ImgGUI.fill(bg);
   title("ВЫБОР КАРТЫ");
 
   // Список фиксированой ширины и один ряд кнопок размещается в центре окна на
@@ -638,7 +566,7 @@ void gui::menu_map_select(void)
 
   select_list(x, y, list_w, list_h);
 
-  x = ImageGUI.w_summ / 2 + 8;
+  x = ImgGUI.w_summ / 2 + 8;
   y = y + list_h + BUTTTON_HEIGHT/2;
 
   button(BTN_CANCEL, x, y, "Отмена");
@@ -658,7 +586,7 @@ void gui::menu_map_select(void)
 ///
 void gui::menu_map_create(void)
 {
-  ImageGUI.fill(bg);
+  ImgGUI.fill(bg);
   title("ВВЕДИТЕ НАЗВАНИЕ");
 
   if((key == KEY_BACKSPACE) && // Удаление введенных символов
@@ -675,8 +603,8 @@ void gui::menu_map_create(void)
   input_text_line(Font18n);
 
   // две кнопки
-  auto x = ImageGUI.w_summ / 2 - static_cast<u_long>(BUTTTON_WIDTH * 1.25);
-  auto y = ImageGUI.h_summ / 2;
+  auto x = ImgGUI.w_summ / 2 - static_cast<u_long>(BUTTTON_WIDTH * 1.25);
+  auto y = ImgGUI.h_summ / 2;
   button(BTN_ENTER_NAME, x, y, "OK", StringBuffer.length() > 0);
 
   x += BUTTTON_WIDTH * 1.5;  // X координата кнопки
@@ -689,11 +617,11 @@ void gui::menu_map_create(void)
 ///
 void gui::menu_config(void)
 {
-  ImageGUI.fill(bg);
+  ImgGUI.fill(bg);
   title("НАСТРОЙКИ");
 
-  int x = ImageGUI.w_summ / 2 - static_cast<u_long>(BUTTTON_WIDTH/2);
-  int y = ImageGUI.h_summ / 2;
+  int x = ImgGUI.w_summ / 2 - static_cast<u_long>(BUTTTON_WIDTH/2);
+  int y = ImgGUI.h_summ / 2;
   button(BTN_CANCEL, x, y, "Отмена");
 }
 
@@ -703,8 +631,6 @@ void gui::menu_config(void)
 ///
 void gui::menu_draw(void)
 {
-  glBindTexture(GL_TEXTURE_2D, gui_texture);
-
   mouse_press_left = (mouse_button == MOUSE_BUTTON_LEFT) && (action == PRESS);
 
   switch (GuiMode)
@@ -725,10 +651,11 @@ void gui::menu_draw(void)
    }
 
   // каждый кадр на текстуре окна обновляем изображение меню
+  glBindTexture(GL_TEXTURE_2D, texture_gui);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                static_cast<GLint>(Layout.width),
                static_cast<GLint>(Layout.height),
-               0, GL_RGBA, GL_UNSIGNED_BYTE, ImageGUI.uchar());
+               0, GL_RGBA, GL_UNSIGNED_BYTE, ImgGUI.uchar());
 
   if((mouse_button == MOUSE_BUTTON_LEFT) &&
      (action == RELEASE) &&
@@ -783,7 +710,6 @@ void gui::show(void)
     if(GuiMode == GUI_3D_MODE)
     {
       if(!Space->render()) cancel();         // генерация сцены в 3D режиме
-      hud_draw();
     } else {
       if(Space->is_ready()) Space->render(); // генерация фоновой картинки для меню
       menu_draw();
@@ -846,7 +772,7 @@ void gui::resize_event(int w, int h)
   Cursor3D.y = static_cast<float>(h/2);
 
   // пересчет размеров изображения GUI
-  ImageGUI.resize(w,h);
+  ImgGUI.resize(w,h);
 }
 
 

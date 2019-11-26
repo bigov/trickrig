@@ -97,7 +97,7 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  resize_event(w, h);
+  resize(w, h);
   return glGetError() == GL_NO_ERROR;
 }
 
@@ -107,12 +107,11 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
 /// \param width
 /// \param height
 ///
-void frame_buffer::resize_event(int w, int h)
+void frame_buffer::resize(int w, int h)
 {
   glViewport(0, 0, w, h); // пересчет Viewport
 
-  // Текстура индентификации примитивов (канал RED)
-  TexIdent->resize(w, h);
+  TexIdent->resize(w, h); // Текстура индентификации примитивов (канал RED)
   TexColor->resize(w, h);
 
   // настройка размера рендербуфера

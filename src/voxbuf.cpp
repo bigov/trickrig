@@ -64,13 +64,10 @@ void vox_buffer::init_vao(int border_dist)
   // настройка положения атрибутов
   pVBO->attrib(Prog3d.Atrib["position"],
     3, GL_FLOAT, GL_FALSE, bytes_per_vertex, 0 * sizeof(GLfloat));
-
   pVBO->attrib(Prog3d.Atrib["color"],
     4, GL_FLOAT, GL_TRUE, bytes_per_vertex, 3 * sizeof(GLfloat));
-
   pVBO->attrib(Prog3d.Atrib["normal"],
     3, GL_FLOAT, GL_TRUE, bytes_per_vertex, 7 * sizeof(GLfloat));
-
   pVBO->attrib(Prog3d.Atrib["fragment"],
     2, GL_FLOAT, GL_TRUE, bytes_per_vertex, 10 * sizeof(GLfloat));
 

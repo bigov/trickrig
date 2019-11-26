@@ -33,7 +33,7 @@ class gl_texture
     GLuint id(void) const;
 };
 
-class frame_buffer: public interface_gl_context
+class frame_buffer
 {
 private:
   GLuint id = 0;
@@ -49,7 +49,7 @@ public:
   ~frame_buffer(void);
 
   bool init(GLsizei w, GLsizei h);
-  virtual void resize_event(int w, int h);
+  void resize(int w, int h);
   void read_pixel(GLint screen_coord_x, GLint screen_coord_y, void* pixel_data);
   void bind(void);
   void unbind(void);
