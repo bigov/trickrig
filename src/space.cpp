@@ -467,13 +467,22 @@ bool space::check_keys()
   if((mouse == MOUSE_BUTTON_LEFT) && (action == PRESS))
   {
     action = -1;
-    Area4->append(vertex_id);
+    if(vertex_id <= (VoxesDB->render_indices/indices_per_side) * bytes_per_side)
+    { // по номеру группы найдем адрес смещения в VBO
+      GLsizeiptr offset = (vertex_id/vertices_per_side) * bytes_per_side;
+      VoxesDB->append(offset);
+    }
   }
 
   if((mouse == MOUSE_BUTTON_RIGHT) && (action == PRESS))
   {
     action = -1;
-    Area4->remove(vertex_id);
+    if(vertex_id <= (VoxesDB->render_indices/indices_per_side) * bytes_per_side)
+    { // по номеру группы найдем адрес смещения в VBO
+      GLsizeiptr offset = (vertex_id/vertices_per_side) * bytes_per_side;
+      VoxesDB->remove(offset);
+    }
+
   }
   return true;
 }

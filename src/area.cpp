@@ -70,35 +70,6 @@ void area::recalc_borders(const glm::vec3& ViewFrom)
 
 
 ///
-/// \brief vox_buffer::append
-/// \param i
-///
-/// \details Добавление вокса к указанной стороне
-///
-void area::append(u_int id)
-{
-  if(id > (Voxes->render_indices/indices_per_side) * bytes_per_side) return;
-  GLsizeiptr offset = (id/vertices_per_side) * bytes_per_side;
-
-  Voxes->append(offset);
-}
-
-
-///
-/// \brief vox_buffer::remove
-/// \param i - порядковый номер группы данных из буфера
-///
-/// \details Удаление вокса
-///
-void area::remove(u_int i)
-{
-  if(i > (Voxes->render_indices/indices_per_side) * bytes_per_side) return;
-  GLsizeiptr offset = (i/vertices_per_side) * bytes_per_side; // по номеру группы - адрес смещения в VBO
-  Voxes->remove(offset);
-}
-
-
-///
 /// \brief area::queue_release
 ///
 /// \details Операции с базой данных по скорости гораздо медленнее, чем рендер объектов из

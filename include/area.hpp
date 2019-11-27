@@ -32,8 +32,6 @@ class area
 
     void load(const glm::vec3& ViewFrom);
     void recalc_borders(const glm::vec3& ViewFrom);
-    void append(u_int);             // добавить объем по индексу поверхности
-    void remove(u_int);             // удалить объем по индексу поверхности
 
   private:
     std::shared_ptr<voxesdb> Voxes;
