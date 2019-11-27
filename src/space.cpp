@@ -94,11 +94,12 @@ void space::enable(void)
   OglContext->cursor_hide();  // выключить отображение курсора мыши в окне
   OglContext->set_cursor_pos(xpos, ypos);
 
-  init_vao();
-
-  // Продолжительная по времени операция - загрузка в память сцены
-  if(nullptr == Area4)
-    Area4 = std::make_unique<area>(size_v4, border_dist_b4, Eye.ViewFrom, &VBO);
+  if(!VoxesDB)
+  {
+    VoxesDB = std::make_shared<voxesdb>(init_vbo());
+    Area4 = std::make_unique<area>(size_v4, border_dist_b4, VoxesDB);
+    Area4->load(Eye.ViewFrom); //!!! Продолжительная по времени загрузка сцены
+  }
 
   OglContext->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
   OglContext->set_button_observer(*this);    //  -- кнопки мыши
@@ -179,8 +180,7 @@ void space::calc_position(void)
 
   //if (!space_is_empty(Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
 
-  float dist  = speed_moving *
-          static_cast<float>(cycle_time) * size_v4; // Дистанция перемещения
+  float dist  = speed_moving * static_cast<float>(cycle_time); // Дистанция перемещения
   rl = dist * rl_way;
   fb = dist * fb_way;   // по трем нормалям от камеры
   ud = dist * ud_way;
@@ -191,9 +191,13 @@ void space::calc_position(void)
     _sa = static_cast<float>(sinf(Eye.look_a)),
     _ct = static_cast<float>(cosf(Eye.look_t));
 
-  glm::vec3 LookDir {_ca*_ct, sinf(Eye.look_t), _sa*_ct}; //Направление взгляда
-  Eye.ViewFrom += glm::vec3(fb *_ca + rl*sinf(Eye.look_a - Pi), ud,  fb*_sa + rl*_ca);
-  ViewTo = Eye.ViewFrom + LookDir;
+  // Вектор смещения камеры за время прошедшее между кадрами
+  auto StepFrame = glm::vec3(fb *_ca + rl*sinf(Eye.look_a - Pi), ud,  fb*_sa + rl*_ca);
+
+  Eye.ViewFrom += StepFrame;
+  MovingDist += StepFrame;
+
+  ViewTo = Eye.ViewFrom + glm::vec3(_ca*_ct, sinf(Eye.look_t), _sa*_ct); //Направление взгляда
 
   // Расчет матрицы вида
   MatView = glm::lookAt(Eye.ViewFrom, ViewTo, UpWard);
@@ -207,7 +211,7 @@ void space::calc_position(void)
 /// \brief vox_buffer::init_vao
 /// \param border_dist - число элементов от камеры до отображаемой границы
 ///
-void space::init_vao(void)
+vbo_ext *space::init_vbo(void)
 {
   glGenVertexArrays(1, &vao_id);
   glBindVertexArray(vao_id);
@@ -237,6 +241,7 @@ void space::init_vao(void)
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data);   // и заполнить данными.
   delete[] idx_data;                                             // Удалить исходный массив.
   glBindVertexArray(0);
+  return &VBO;
 }
 
 
@@ -289,7 +294,7 @@ bool space::render(void)
 
   for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
 
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(Area4->get_render_indices()), GL_UNSIGNED_INT, nullptr);
+  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(VoxesDB->render_indices), GL_UNSIGNED_INT, nullptr);
 
   for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
 

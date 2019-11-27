@@ -134,13 +134,15 @@ const int KEY_MOVE_DOWN  = GLFW_KEY_SPACE;
 const int KEY_MOVE_RIGHT = GLFW_KEY_D;
 const int KEY_MOVE_LEFT  = GLFW_KEY_A;
 
-  // Настройка параметров главной камеры 3D вида
-  struct camera_3d {
-    float look_a = 0.0f;       // азимут (0 - X)
-    float look_t = 0.0f;       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
+// Настройка параметров главной камеры 3D вида
+struct camera_3d {
+  float look_a = 0.0f;       // азимут (0 - X)
+  float look_t = 0.0f;       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
 
-    glm::vec3 ViewFrom = {};   // 3D координаты точки положения
-  };
+  glm::vec3 ViewFrom {};   // 3D координаты точки положения
+};
+
+static glm::vec3 MovingDist { 0.f, 0.f, 0.f };   // 3D координаты точки положения
 
   // число вершин в прямоугольнике
   static const u_int vertices_per_side = 4;

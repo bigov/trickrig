@@ -42,7 +42,8 @@ namespace tr
       wglfw* OglContext = nullptr;
       std::unique_ptr<glsl> Program3d = nullptr;
 
-      vbo_ext VBO { GL_ARRAY_BUFFER };
+      vbo_ext VBO { GL_ARRAY_BUFFER };            // управление данными в буфере GPU
+      std::shared_ptr<voxesdb> VoxesDB = nullptr; // Управление массивом воксов в CPU
 
       img ImHUD { 0, 0 };      // Текстура HUD окна приложения
       GLuint texture_hud = 0;  // ID HUD текстуры в GPU
@@ -103,7 +104,7 @@ namespace tr
 
       // TODO: измерять средний за 10 сек. fps, и пропорционально менять скорость перемещения
       float speed_rotate = 0.001f; // скорость поворота (радиан в секунду) камеры
-      float speed_moving = 10.f;   // скорость перемещения (в секунду) камеры
+      float speed_moving = 50.f;   // скорость перемещения (в секунду) камеры
 
       float vision_angle = 50.f;   // угол зрения для расчета матрицы проекции
       float fovy = (hPi/90.f)*vision_angle;
@@ -116,7 +117,7 @@ namespace tr
         UpWard {0.0, -1.0, 0.0},  // направление наверх
         ViewTo {};                // направление взгляда
 
-      void init_vao(void);
+      vbo_ext* init_vbo(void);
       void calc_render_time(void);
       void load_textures(void);
       void calc_position();
