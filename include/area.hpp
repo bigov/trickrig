@@ -16,6 +16,20 @@
 
 namespace tr
 {
+
+class voxesdb: public std::vector<std::unique_ptr<vox>>
+{
+public:
+  voxesdb(void): std::vector<std::unique_ptr<vox>>{}{}
+
+  vox* vox_add_in_db(const i3d&, int side_len); // создать в указанной точке вокс и записать в БД
+  vox* push_back(std::unique_ptr<vox>);
+  vox* vox_by_vbo(GLsizeiptr);
+  vox* vox_by_i3d(const i3d&);
+  void recalc_vox_visibility(vox*);
+  void recalc_around_visibility(i3d, int side_len);
+};
+
 ///
 /// \brief class area
 /// \details Управление картой воксов
@@ -37,7 +51,7 @@ class area
     void remove(u_int);             // удалить объем по индексу поверхности
 
   private:
-    std::vector<std::unique_ptr<vox>> MemArea {};
+    voxesdb Voxes {};
     vbo_ext* pVBO = nullptr;      // VBO вершин поверхности
 
     std::queue<i3d> QueueLoad {}; // адреса загружаемых воксов
@@ -54,14 +68,8 @@ class area
     void redraw_borders_z(void);
     void vox_load(const i3d& P0);   // загрузить вокс из базы данных в буфер и рендер
     void vox_unload(const i3d& P0); // выгрузить вокс из буфера и из рендера
-    vox* vox_by_vbo(GLsizeiptr);
-    vox* vox_by_i3d(const i3d&);
-    vox* vox_add_in_db(const i3d&); // создать в указанной точке вокс и записать в БД
     void vox_draw(vox*);            // разместить вокс в VBO буфере
     void vox_wipe(vox*);            // убрать из VBO
-    i3d i3d_near(const i3d& P, u_char side);
-    void recalc_around_visibility(i3d);
-    void recalc_vox_visibility(vox*);
 };
 
 

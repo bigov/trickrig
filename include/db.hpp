@@ -30,7 +30,7 @@ class db
     void save_vox(vox*);
     void erase_vox(vox*);
     void init_map_config(const std::string &);
-    std::unique_ptr<vox> get_vox(const i3d&, int);
+    std::unique_ptr<vox> get_vox(const i3d&);
 
   private:
     std::string MapDir       {}; // директория текущей карты (со слэшем в конце)

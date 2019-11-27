@@ -108,17 +108,28 @@ v_ch db::map_name_read(const std::string & dbFile)
 /// вокса, то в оперативной памяти создается объект с полученными
 /// параметрами и возвращается уникальный указатель на него.
 ///
-std::unique_ptr<vox> db::get_vox(const i3d& P, int size)
+std::unique_ptr<vox> db::get_vox(const i3d& P)
 {
   char query[255];
-  sprintf(query, "SELECT * FROM voxels WHERE x=%d AND y=%d AND z=%d AND size=%d;",
-          P.x, P.y, P.z, size);
+  sprintf(query, "SELECT * FROM voxels WHERE x=%d AND y=%d AND z=%d;",
+          P.x, P.y, P.z);
   SqlDb.exec(query);
 
   if(!SqlDb.Table_rows.empty())
+  {
+    auto it = SqlDb.Table_rows.front().begin();
+    //int texture, color, size, z, y, x;
+    //texture = atoi(it->second.data());           // индекс текстуры
+    it++;
+    //color   = atoi(it->second.data());           // цвет вершин
+    it++;
+    int size = atoi(it->second.data()); //it++;    // размер стороны
+    //z       = atoi(it->second.data()); it++;     // координата Z
+    //y       = atoi(it->second.data()); it++;     // координата Y
+    //x       = atoi(it->second.data()); it++;     // координата X
     return std::make_unique<vox>(P, size);
-  else
-    return nullptr;
+  }
+  else return nullptr;
 }
 
 

@@ -53,7 +53,7 @@ private:
   GLfloat v_sz = 0.125f;               // размер ячейки текстуры по V
   uch2 tex_id[SIDES_COUNT];            // Индексы текстур сторон
   GLsizeiptr vbo_addr[SIDES_COUNT] {}; // Адреса смещения в буфере GPU массивов данных по каждой из сторон
-  GLfloat data[digits_per_voxel] {};
+  GLfloat data[digits_per_voxel] {};   // Данные вершин (координаты, цвет, нормали, текстуры)
 
   bool visible[SIDES_COUNT] {true}; // Видимость сторон
 
