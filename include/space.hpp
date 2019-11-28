@@ -53,8 +53,8 @@ namespace tr
 
       bool ready = false;
       bool focus_is_on = false;
-      float dx = 0.f;    // Cмещение мыши в активном окне между кадрами
-      float dy = 0.f;    // в режиме 3D (режим прицела) при скрытом курсоре.
+      float cursor_dx = 0.f;    // Cмещение мыши в активном окне между кадрами
+      float cursor_dy = 0.f;    // в режиме 3D (режим прицела) при скрытом курсоре.
       double xpos = 0.0; // позиция указателя относительно левой границы
       double ypos = 0.0; // позиция указателя относительно верхней границы
 
@@ -83,7 +83,7 @@ namespace tr
       const float down_max = -up_max;      // Максимальный угол вниз
 
       std::unique_ptr<frame_buffer> RenderBuffer = nullptr; // рендер-буфер окна
-      double cycle_time;            // время (в секундах) на рендер кадра
+      double frame_time;            // время (в секундах) на рендер кадра
 
       glm::vec3 light_direction {}; // направление освещения
       glm::vec3 light_bright {};    // яркость света

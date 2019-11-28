@@ -142,7 +142,7 @@ struct camera_3d {
   glm::vec3 ViewFrom {};   // 3D координаты точки положения
 };
 
-static glm::vec3 MovingDist { 0.f, 0.f, 0.f };   // 3D координаты точки положения
+extern glm::vec3 MovingDist;   // Вектор смещения между кадрами
 
   // число вершин в прямоугольнике
   static const u_int vertices_per_side = 4;

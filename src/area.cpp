@@ -17,37 +17,31 @@ namespace tr
 /// \param count - число вокселей от камеры (или внутренней границы)
 /// до внешней границы области
 ///
-area::area(int len, int elements, std::shared_ptr<voxesdb> V): Voxes(V)
+area::area(int len, int elements, std::shared_ptr<voxesdb> V, const glm::vec3& Pt): Voxes(V)
 {
   assert(Voxes);
-  vox_side_len = len;
-  lod_dist_far = elements * len;
-}
+  side_len = len;
+  f_side_len = len * 1.f;
+  lod_dist = elements * len;
 
-
-///
-/// \brief area::load
-/// \param ViewFrom
-///
-void area::load(const glm::vec3& ViewFrom)
-{
   // Origin вокселя, в котором расположена камера
-  Location = { static_cast<int>(floorf(ViewFrom.x / vox_side_len)) * vox_side_len,
-               static_cast<int>(floorf(ViewFrom.y / vox_side_len)) * vox_side_len,
-               static_cast<int>(floorf(ViewFrom.z / vox_side_len)) * vox_side_len };
-  MoveFrom = Location;
+  Location = { static_cast<int>(floorf(Pt.x / side_len)) * side_len,
+               static_cast<int>(floorf(Pt.y / side_len)) * side_len,
+               static_cast<int>(floorf(Pt.z / side_len)) * side_len };
 
-  i3d P0 { Location.x - lod_dist_far,
-           Location.y - lod_dist_far,
-           Location.z - lod_dist_far };
-  i3d P1 { Location.x + lod_dist_far,
-           Location.y + lod_dist_far,
-           Location.z + lod_dist_far };
+  i3d P0 { Location.x - lod_dist,
+           Location.y - lod_dist,
+           Location.z - lod_dist };
+  i3d P1 { Location.x + lod_dist,
+           Location.y + lod_dist,
+           Location.z + lod_dist };
 
+  // Загрузка пространства вокруг точки Pt
   i3d vP {};
-  for(vP.x = P0.x; vP.x<= P1.x; vP.x += vox_side_len)
-  for(vP.y = P0.y; vP.y<= P1.y; vP.y += vox_side_len)
-  for(vP.z = P0.z; vP.z<= P1.z; vP.z += vox_side_len) Voxes->load(vP);
+  for(vP.x = P0.x; vP.x<= P1.x; vP.x += side_len)
+    for(vP.y = P0.y; vP.y<= P1.y; vP.y += side_len)
+      for(vP.z = P0.z; vP.z<= P1.z; vP.z += side_len)
+        Voxes->load(vP);
 }
 
 
@@ -55,17 +49,63 @@ void area::load(const glm::vec3& ViewFrom)
 /// \brief space::recalc_borders
 /// \details Перестроение границ активной области при перемещении камеры
 ///
-void area::recalc_borders(const glm::vec3& ViewFrom)
+void area::recalc_borders(const glm::vec3&)
 {
-  // Origin вокселя, в котором расположена камера
-  Location = { static_cast<int>(floorf(ViewFrom.x / vox_side_len)) * vox_side_len,
-               static_cast<int>(floorf(ViewFrom.y / vox_side_len)) * vox_side_len,
-               static_cast<int>(floorf(ViewFrom.z / vox_side_len)) * vox_side_len };
+  if(MovingDist.x > f_side_len)
+  {
+      MovingDist.x -= f_side_len;
+      Location.x += side_len;
+      redraw_borders_x(Location.x + lod_dist, Location.x - lod_dist - side_len);
+  } else if(MovingDist.x < -f_side_len)
+  {
+      MovingDist.x += f_side_len;
+      Location.x -= side_len;
+      redraw_borders_x(Location.x - lod_dist, Location.x + lod_dist + side_len);
+  }
 
-  if(Location.x != MoveFrom.x) redraw_borders_x();
-  if(Location.z != MoveFrom.z) redraw_borders_z();
+  if(MovingDist.z > f_side_len)
+  {
+      MovingDist.z -= f_side_len;
+      Location.z += side_len;
+      redraw_borders_z(Location.z + lod_dist, Location.z - lod_dist - side_len);
+  } else if(MovingDist.z < -f_side_len)
+  {
+      MovingDist.z += f_side_len;
+      Location.z -= side_len;
+      redraw_borders_z(Location.z - lod_dist, Location.z + lod_dist + side_len);
+  }
 
   queue_release();
+}
+
+
+///
+/// \brief area::redraw_borders_x
+/// \details Перестроение границ LOD при перемещении по оси X
+///
+void area::redraw_borders_x(int add, int del)
+{
+  for(int y = -lod_dist; y <= lod_dist; y += side_len)
+    for(int z = Location.z - lod_dist, max = Location.z + lod_dist; z <= max; z += side_len)
+    {
+      QueueWipe.push({del, y, z});
+      QueueLoad.push({add, y, z});
+    }
+}
+
+
+///
+/// \brief area::redraw_borders_z
+/// \details Перестроение границ LOD при перемещении по оси Z
+///
+void area::redraw_borders_z(int add, int del)
+{
+  for(int y = -lod_dist; y <= lod_dist; y += side_len)
+    for(int x = Location.x - lod_dist, max = Location.x + lod_dist; x <= max; x += side_len)
+    {
+      QueueWipe.push({x, y, del});
+      QueueLoad.push({x, y, add});
+    }
 }
 
 
@@ -101,74 +141,5 @@ void area::queue_release(void)
     } else { return; }
   }
 }
-
-
-///
-/// \brief space::redraw_borders_x
-/// \details Построение границы области по оси X по ходу движения
-///
-void area::redraw_borders_x(void)
-{
-  int x_show, x_hide;
-  if(Location.x > MoveFrom.x)
-  {        // Если направление движение по оси Х
-    x_show = Location.x + lod_dist_far; // X-линия вставки вокселей на границе LOD
-    x_hide = MoveFrom.x - lod_dist_far; // X-линия удаления вокселей на границе
-  } else { // Если направление движение против оси Х
-    x_show = Location.x - lod_dist_far; // X-линия вставки вокселей на границе LOD
-    x_hide = MoveFrom.x + lod_dist_far; // X-линия удаления вокселей на границе
-  }
-
-  for(int y = -lod_dist_far; y <= lod_dist_far; y += vox_side_len)
-  {
-    // Скрыть элементы с задней границы области
-    for(int z = MoveFrom.z - lod_dist_far, lod = MoveFrom.z + lod_dist_far;
-        z <= lod; z += vox_side_len) QueueWipe.push({x_hide, y, z});
-
-    // Добавить линию элементов по направлению движения
-    for(int z = Location.z - lod_dist_far, lod = Location.z + lod_dist_far;
-        z <= lod; z += vox_side_len) QueueLoad.push({x_show, y, z});
-  }
-
-  MoveFrom.x = Location.x;
-}
-
-
-///
-/// \brief space::redraw_borders_z
-/// \details Построение границы области по оси Z по ходу движения
-///
-void area::redraw_borders_z(void)
-{
-  int yMin = -lod_dist_far;              // Y-граница LOD
-  int yMax =  lod_dist_far;
-
-  int z_show, z_hide;
-  if(Location.z > MoveFrom.z)
-  {        // Если направление движение по оси Z
-    z_show = Location.z + lod_dist_far; // Z-линия вставки вокселей на границе LOD
-    z_hide = MoveFrom.z - lod_dist_far; // Z-линия удаления вокселей на границе
-  } else { // Если направление движение против оси Z
-    z_show = Location.z - lod_dist_far; // Z-линия вставки вокселей на границе LOD
-    z_hide = MoveFrom.z + lod_dist_far; // Z-линия удаления вокселей на границе
-  }
-
-  int xMin, xMax;
-
-  // Скрыть элементы с задней границы области
-  xMin = MoveFrom.x - lod_dist_far;
-  xMax = MoveFrom.x + lod_dist_far;
-  for(int y = yMin; y <= yMax; y += vox_side_len)
-    for(int x = xMin; x <= xMax; x += vox_side_len) QueueWipe.push({x, y, z_hide});
-
-  // Добавить линию элементов по направлению движения
-  xMin = Location.x - lod_dist_far;
-  xMax = Location.x + lod_dist_far;
-  for(int y = yMin; y <= yMax; y += vox_side_len)
-    for(int x = xMin; x <= xMax; x += vox_side_len) QueueLoad.push({x, y, z_show});
-
-  MoveFrom.z = Location.z;
-}
-
 
 } //namespace

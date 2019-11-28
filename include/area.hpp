@@ -21,7 +21,7 @@ namespace tr
 class area
 {
   public:
-    explicit area(int length, int count, std::shared_ptr<voxesdb> V);
+    explicit area(int length, int count, std::shared_ptr<voxesdb> V, const glm::vec3 &L);
     ~area(void) {}
 
     // Запретить копирование и перенос экземпляров класса
@@ -30,7 +30,6 @@ class area
     area(area&&) = delete;
     area& operator=(area&&) = delete;
 
-    void load(const glm::vec3& ViewFrom);
     void recalc_borders(const glm::vec3& ViewFrom);
 
   private:
@@ -39,14 +38,14 @@ class area
     std::queue<i3d> QueueLoad {}; // адреса загружаемых воксов
     std::queue<i3d> QueueWipe {}; // адреса выгружаемах воксов
 
-    int vox_side_len = 0;         // Длина стороны вокса
-    int lod_dist_far = 0;         // Расстояние от камеры до внешней границы LOD, кратное размеру вокса
-    i3d Location {0, 0, 0};       // Origin вокса, над которым камера
-    i3d MoveFrom {0, 0, 0};       // Origin вокса, с которого камера ушла
+    int side_len     = 0;     // Длина стороны вокса
+    float f_side_len = 0.f;   // Длина стороны вокса
+    int lod_dist = 0;         // Расстояние от камеры до границы LOD, кратное vox_side_len
+    i3d Location {0, 0, 0};   // Origin вокса, над которым камера
 
     void queue_release(void);
-    void redraw_borders_x(void);
-    void redraw_borders_z(void);
+    void redraw_borders_x(int, int);
+    void redraw_borders_z(int, int);
 };
 
 

@@ -97,8 +97,8 @@ void space::enable(void)
   if(!VoxesDB)
   {
     VoxesDB = std::make_shared<voxesdb>(init_vbo());
-    Area4 = std::make_unique<area>(size_v4, border_dist_b4, VoxesDB);
-    Area4->load(Eye.ViewFrom); //!!! Продолжительная по времени загрузка сцены
+    //!---------- Продолжительная по времени загрузка сцены --------------------!//
+    Area4 = std::make_unique<area>(size_v4, border_dist_b4, VoxesDB, Eye.ViewFrom);
   }
 
   OglContext->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
@@ -168,19 +168,19 @@ void space::load_textures(void)
 ///
 void space::calc_position(void)
 {
-  Eye.look_a -= speed_rotate * dx;
-  dx = 0.f;
+  Eye.look_a -= speed_rotate * cursor_dx;
+  cursor_dx = 0.f;
   if(Eye.look_a > dPi) Eye.look_a -= dPi;
   if(Eye.look_a < 0) Eye.look_a += dPi;
 
-  Eye.look_t -= speed_rotate * dy;
-  dy = 0.f;
+  Eye.look_t -= speed_rotate * cursor_dy;
+  cursor_dy = 0.f;
   if(Eye.look_t > up_max) Eye.look_t = up_max;
   if(Eye.look_t < down_max) Eye.look_t = down_max;
 
   //if (!space_is_empty(Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
 
-  float dist  = speed_moving * static_cast<float>(cycle_time); // Дистанция перемещения
+  float dist  = speed_moving * static_cast<float>(frame_time); // Дистанция перемещения
   rl = dist * rl_way;
   fb = dist * fb_way;   // по трем нормалям от камеры
   ud = dist * ud_way;
@@ -195,7 +195,7 @@ void space::calc_position(void)
   auto StepFrame = glm::vec3(fb *_ca + rl*sinf(Eye.look_a - Pi), ud,  fb*_sa + rl*_ca);
 
   Eye.ViewFrom += StepFrame;
-  MovingDist += StepFrame;
+  MovingDist += StepFrame;     // Суммарный вектор перемещения между запросами
 
   ViewTo = Eye.ViewFrom + glm::vec3(_ca*_ct, sinf(Eye.look_t), _sa*_ct); //Направление взгляда
 
@@ -266,7 +266,7 @@ void space::calc_render_time(void)
   }
 
   // время (в секундах) прошедшее после предыдущего вызова данный функции
-  cycle_time = std::chrono::duration_cast<std::chrono::microseconds>(t_frame - cycle_start).count() / 1000000.0;
+  frame_time = std::chrono::duration_cast<std::chrono::microseconds>(t_frame - cycle_start).count() / 1000000.0;
   cycle_start = t_frame;
 }
 
@@ -334,8 +334,8 @@ void space::cursor_event(double x, double y)
 {
   // Накапливаем дистанцию смещения мыши между кадрами рендера.
   // Чем больше значение, тем выше скрость поворота камеры.
-  dx += static_cast<float>(x - xpos);
-  dy += static_cast<float>(y - ypos);
+  cursor_dx += static_cast<float>(x - xpos);
+  cursor_dy += static_cast<float>(y - ypos);
 
   // После получения значения счетчика восстановить позицию курсора
   OglContext->set_cursor_pos(xpos, ypos);
