@@ -13,6 +13,8 @@ namespace tr
 // ---
 
 GLFWwindow* wglfw::win_ptr = nullptr;
+GLFWwindow* wglfw::win_shared = nullptr;
+
 std::string wglfw::title = "TrickRig: v.development";
 
 interface_gl_context* wglfw::error_observer = nullptr;
@@ -29,7 +31,7 @@ interface_gl_context* wglfw::focuslost_observer = nullptr;
 ///
 /// \brief wglfw::wglfw
 ///
-wglfw::wglfw(void)
+wglfw::wglfw(GLFWwindow* SharedContext)
 {
   if (!glfwInit()) ERR("Error init GLFW lib.");
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -40,9 +42,11 @@ wglfw::wglfw(void)
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
 #endif
 
+  win_shared = SharedContext;
+
   //  Создание 3D окна
   glfwWindowHint(GLFW_VISIBLE, 0);
-  win_ptr = glfwCreateWindow(1, 1, "", nullptr, nullptr);
+  win_ptr = glfwCreateWindow(1, 1, "", nullptr, SharedContext);
   if (nullptr == win_ptr) ERR("Creating Window fail.");
   glfwMakeContextCurrent(win_ptr);
 }
@@ -177,6 +181,16 @@ void wglfw::set_cursor_pos(double x, double y)
 void wglfw::get_frame_buffer_size(int* width, int* height)
 {
   glfwGetFramebufferSize(win_ptr, width, height);
+}
+
+
+///
+/// \brief wglfw::get_win_id
+/// \return
+///
+GLFWwindow* wglfw::get_win_id(void) const
+{
+  return win_ptr;
 }
 
 

@@ -112,10 +112,10 @@ void vox::side_normals_set(u_int side)
 void vox::side_position_set(u_int side)
 {
   // относительные координаты всех вершин вокселя
-  f3d P[8] = {{side_len, side_len, 0}, {side_len, side_len, side_len}, {side_len, 0, side_len},
+  i3d P[8] = {{side_len, side_len, 0}, {side_len, side_len, side_len}, {side_len, 0, side_len},
               {side_len, 0, 0}, {0, side_len, side_len}, {0, side_len, 0}, {0, 0, 0}, {0, 0, side_len}};
 
-  f3d sh[4]; // смещения 4-х образующих вершин выбранной стороны вокселя
+  i3d sh[4]; // смещения 4-х образующих вершин выбранной стороны вокселя
   switch (side) {
     case SIDE_XP:
       sh[0] = P[0]; sh[1] = P[1]; sh[2] = P[2]; sh[3] = P[3];

@@ -12,7 +12,14 @@ namespace tr
 {
   // Инициализация глобальных объектов
   std::string AppPathDir {}; // Абсолютный путь к исполняемому файлу приложения
-  glm::vec3 MovingDist {};   // Вектор смещения между кадрами
+  std::atomic<int> render_indices = 0;
+
+  //glm::vec3 MovingDist {};    // Вектор смещения между кадрами
+  f3d MovingDist {};
+  std::mutex mutex_mdist;
+  std::mutex mutex_voxes_db; // разделение доступа к буферу вершин
+  std::mutex mutex_vbo;      // разделение доступа к VBO
+
 }
 
 
@@ -26,7 +33,8 @@ int main(int, char* argv[])
 
   fs::path p = argv[0];
   // Путь к папке исполняемого файла (со слэшем в конце)
-  AppPathDir = fs::absolute(p).remove_filename().u8string();
+  //AppPathDir = fs::absolute(p).remove_filename().u8string();
+  AppPathDir = fs::absolute(p).remove_filename().string();
 
 #ifndef NDEBUG
   assert(sizeof(GLfloat) == 4);
@@ -36,9 +44,11 @@ int main(int, char* argv[])
 
   try
   {
-    wglfw MainOpenGLContext {};
+    wglfw TreadingGLContext {};
     if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
     if(!gladLoadGL()) { ERR("FAILURE: can't load GLAD."); }
+
+    wglfw MainOpenGLContext { TreadingGLContext.get_win_id() };
 
     gui AppGUI { &MainOpenGLContext };
     AppGUI.show();

@@ -9,6 +9,8 @@
 namespace tr
 {
 
+//using vecdb_t = std::vector<std::unique_ptr<vox>>;
+
 class voxesdb: public std::vector<std::unique_ptr<vox>>
 {
   public:
@@ -21,7 +23,6 @@ class voxesdb: public std::vector<std::unique_ptr<vox>>
     voxesdb& operator=(voxesdb&&) = delete;
 
     vbo_ext* pVBO;             // VBO вершин поверхности
-    u_int render_indices = 0;  // сумма индексов, необходимых для рендера всех примитивов
 
     void append(GLsizeiptr offset);
     void remove(GLsizeiptr offset);
@@ -29,6 +30,8 @@ class voxesdb: public std::vector<std::unique_ptr<vox>>
     void unload(const i3d& P0); // выгрузить вокс из буфера и из рендера
 
   private:
+    //vecdb_t::iterator FindResult {};
+
     vox* push_db(std::unique_ptr<vox>);    // Добавить вокс к вектору
     vox* create(const i3d&, int side_len); // создать в указанной точке вокс и записать в БД
     void append_in_vbo(vox*);              // разместить вокс в VBO буфере

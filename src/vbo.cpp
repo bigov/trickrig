@@ -169,6 +169,7 @@ GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
   }
   else
   {
+    std::lock_guard<std::mutex> Hasp{mutex_vbo};
     glBindBuffer(gl_buffer_type, id);
     glCopyBufferSubData(gl_buffer_type, gl_buffer_type, src, dest, data_size);
     glBindBuffer(gl_buffer_type, 0);
@@ -197,6 +198,7 @@ GLsizeiptr vbo_ext::append(const GLvoid* data, GLsizeiptr data_size)
   if(data == nullptr) ERR("VBO::SubDataAppend nullptr");
   #endif //------------------------------------------------------------------
 
+  std::lock_guard<std::mutex> Hasp{mutex_vbo};
   glBindBuffer(gl_buffer_type, id);
   glBufferSubData(gl_buffer_type, hem, data_size, data);
   glBindBuffer(gl_buffer_type, 0);
@@ -222,6 +224,8 @@ void vbo_ext::data_get(GLintptr offset, GLsizeiptr sz, GLvoid* dst)
 #ifndef NDEBUG
   if(sz > bytes_per_side) ERR("vbo_ext::data_get > bytes_per_snip");
 #endif
+
+  std::lock_guard<std::mutex> Hasp{mutex_vbo};
 
   glBindBuffer(GL_COPY_WRITE_BUFFER, id_subbuf);
   glBindBuffer(GL_COPY_READ_BUFFER, id);

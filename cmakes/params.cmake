@@ -24,7 +24,7 @@ endif()
 
 SET( EXEC_NAME "app${SUFFIX}" )
 
-SET( MY_FLAGS "-m64 -std=c++17 -fexceptions -Werror -Wpedantic \
+SET( MY_FLAGS "-m64 -std=c++2a -O3 -latomic -lpthread -fexceptions -Werror -Wpedantic \
   -Wextra -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor -Wall\
   -Winit-self -Wunreachable-code" )
 

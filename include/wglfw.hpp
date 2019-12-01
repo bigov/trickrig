@@ -11,7 +11,7 @@ class wglfw
   static std::string title;
 
   public:
-      wglfw(void);
+      wglfw(GLFWwindow* SharedContext = nullptr);
       ~wglfw(void);
 
       // Запретить копирование объекта
@@ -22,6 +22,8 @@ class wglfw
       wglfw(wglfw&&) = delete;
       wglfw& operator=(wglfw&&) = delete;
 
+      static GLFWwindow* win_shared;
+
       void set_window(u_int width=10, u_int height=10, u_int min_w=0,
                       u_int min_h=0, u_int left=0, u_int top=0);
       void swap_buffers(void);
@@ -29,6 +31,7 @@ class wglfw
       void cursor_restore(void);
       void set_cursor_pos(double x, double y);
       void get_frame_buffer_size(int* width, int* height);
+      GLFWwindow* get_win_id(void) const;
 
       void set_error_observer(interface_gl_context& ref);    // отслеживание ошибок
       void set_cursor_observer(interface_gl_context& ref);   // курсор мыши в окне
@@ -38,7 +41,7 @@ class wglfw
       void add_size_observer(interface_gl_context& ref);     // размер окна
       void set_char_observer(interface_gl_context& ref);     // ввод текста (символ)
       void set_close_observer(interface_gl_context& ref);    // закрытие окна
-      void set_focuslost_observer(interface_gl_context& ref);    // смена фокуса
+      void set_focuslost_observer(interface_gl_context& ref);// смена фокуса
 
     private:
       static GLFWwindow* win_ptr;

@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <any>
 #include <array>
+#include <atomic>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
@@ -24,8 +25,10 @@
 #include <locale>
 #include <memory>
 #include <map>
+#include <mutex>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <valarray>
 #include <vector>
 #include <unordered_map>
@@ -51,6 +54,14 @@ namespace fs = std::filesystem;
 namespace tr {
 
 extern std::string AppPathDir; // путь размещения программы
+extern std::atomic<GLsizei> render_indices;
+
+struct f3d { float x=0.f, y=0.f, z=0.f; };
+extern f3d MovingDist;    // Вектор смещения между кадрами
+
+extern std::mutex mutex_mdist;
+extern std::mutex mutex_voxes_db; // разделение доступа к буферу вершин
+extern std::mutex mutex_vbo;      // разделение доступа к VBO
 
 using u_char = unsigned char;
 using u_int  = unsigned int;
@@ -142,13 +153,11 @@ struct camera_3d {
   glm::vec3 ViewFrom {};   // 3D координаты точки положения
 };
 
-extern glm::vec3 MovingDist;   // Вектор смещения между кадрами
-
   // число вершин в прямоугольнике
   static const u_int vertices_per_side = 4;
 
   // число индексов в одном снипе
-  static const u_int indices_per_side = 6;
+  static const int indices_per_side = 6;
 
   // количество чисел (GLfloat) в блоке данных одной вершины
   static const size_t digits_per_vertex = 12;
@@ -195,29 +204,6 @@ extern glm::vec3 MovingDist;   // Вектор смещения между ка�
     i3d(int X, int Y, int Z): x(X), y(Y), z(Z) {}
   };
   extern bool operator== (const i3d&, const i3d&);
-
-  struct f3d
-  {
-    float x = 0.f, y = 0.f, z = 0.f;
-
-    f3d(void) {};
-    // конструкторы для обеспечения инициализации разными типами данных
-    f3d(float x, float y, float z): x(x), y(y), z(z) {}
-
-    f3d(double x, double y, double z): x(static_cast<float>(x)),
-                                       y(static_cast<float>(y)),
-                                       z(static_cast<float>(z)) {}
-
-    f3d(const i3d& P): x(static_cast<float>(P.x)),
-                       y(static_cast<float>(P.y)),
-                       z(static_cast<float>(P.z)) {}
-
-    f3d(int x, int y, int z): x(static_cast<float>(x)),
-                              y(static_cast<float>(y)),
-                              z(static_cast<float>(z)) {}
-
-    f3d(glm::vec3 v): x(v.x), y(v.y), z(v.z) {}
-  };
 
 }
 

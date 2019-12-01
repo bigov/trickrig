@@ -20,7 +20,7 @@ namespace tr
   {
     public:
       space(wglfw* OpenGLContext);
-      ~space(void) {}
+      ~space(void);
 
       void enable(void);
       bool render(void);
@@ -38,6 +38,8 @@ namespace tr
     private:
       space(const space &);
       space operator=(const space &);
+
+      area Area4 {};
 
       wglfw* OglContext = nullptr;
       std::unique_ptr<glsl> Program3d = nullptr;
@@ -95,7 +97,7 @@ namespace tr
       GLuint texture_id = 0;
 
       // LOD control
-      std::unique_ptr<area> Area4 = nullptr; // Управление пространством вокселей
+      //std::unique_ptr<area> Area4 = nullptr; // Управление пространством вокселей
       const int size_v4 = 32;                // размер стороны вокселя
       const int border_dist_b4 = 24;         // число элементов от камеры до отображаемой границы
 
@@ -104,7 +106,7 @@ namespace tr
 
       // TODO: измерять средний за 10 сек. fps, и пропорционально менять скорость перемещения
       float speed_rotate = 0.001f; // скорость поворота (радиан в секунду) камеры
-      float speed_moving = 50.f;   // скорость перемещения (в секунду) камеры
+      float speed_moving = 80.f;   // скорость перемещения (в секунду) камеры
 
       float vision_angle = 50.f;   // угол зрения для расчета матрицы проекции
       float fovy = (hPi/90.f)*vision_angle;

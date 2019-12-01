@@ -41,7 +41,6 @@ space::space(wglfw* OpenGLContext)
   glEnable(GL_BLEND);      // поддержка прозрачности
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  //GL_VERTEX_SHADER | GL_FRAGMENT_SHADER
   std::list<std::pair<GLenum, std::string>> Shaders {};
   Shaders.push_back({ GL_VERTEX_SHADER, cfg::app_key(SHADER_VERT_SCENE) });
   Shaders.push_back({ GL_FRAGMENT_SHADER, cfg::app_key(SHADER_FRAG_SCENE) });
@@ -77,6 +76,8 @@ space::space(wglfw* OpenGLContext)
 }
 
 
+space::~space() { }
+
 ///
 /// \brief space::enable
 ///
@@ -94,11 +95,11 @@ void space::enable(void)
   OglContext->cursor_hide();  // выключить отображение курсора мыши в окне
   OglContext->set_cursor_pos(xpos, ypos);
 
-  if(!VoxesDB)
+  if(nullptr == VoxesDB)
   {
     VoxesDB = std::make_shared<voxesdb>(init_vbo());
-    //!---------- Продолжительная по времени загрузка сцены --------------------!//
-    Area4 = std::make_unique<area>(size_v4, border_dist_b4, VoxesDB, Eye.ViewFrom);
+    std::thread A(std::ref(Area4), VoxesDB, size_v4, border_dist_b4, Eye.ViewFrom, OglContext->win_shared);
+    A.detach();
   }
 
   OglContext->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
@@ -195,7 +196,12 @@ void space::calc_position(void)
   auto StepFrame = glm::vec3(fb *_ca + rl*sinf(Eye.look_a - Pi), ud,  fb*_sa + rl*_ca);
 
   Eye.ViewFrom += StepFrame;
-  MovingDist += StepFrame;     // Суммарный вектор перемещения между запросами
+
+  mutex_mdist.lock();
+  MovingDist.x += StepFrame.x;     // Суммарный вектор перемещения между запросами
+  MovingDist.y += StepFrame.y;     // Суммарный вектор перемещения между запросами
+  MovingDist.z += StepFrame.z;     // Суммарный вектор перемещения между запросами
+  mutex_mdist.unlock();
 
   ViewTo = Eye.ViewFrom + glm::vec3(_ca*_ct, sinf(Eye.look_t), _sa*_ct); //Направление взгляда
 
@@ -211,7 +217,7 @@ void space::calc_position(void)
 /// \brief vox_buffer::init_vao
 /// \param border_dist - число элементов от камеры до отображаемой границы
 ///
-vbo_ext *space::init_vbo(void)
+vbo_ext* space::init_vbo(void)
 {
   glGenVertexArrays(1, &vao_id);
   glBindVertexArray(vao_id);
@@ -278,8 +284,8 @@ bool space::render(void)
 {
   calc_render_time();
   calc_position();
-  Area4->recalc_borders(Eye.ViewFrom);
 
+  mutex_vbo.lock();
   glBindVertexArray(vao_id);
   RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -294,13 +300,15 @@ bool space::render(void)
 
   for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
 
-  glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(VoxesDB->render_indices), GL_UNSIGNED_INT, nullptr);
+
+  glDrawElements(GL_TRIANGLES, render_indices, GL_UNSIGNED_INT, nullptr);
 
   for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
 
   Program3d->unuse(); // отключить шейдерную программу
   RenderBuffer->unbind();
   glBindVertexArray(0);
+  mutex_vbo.unlock();
 
   hud_draw();
   return check_keys();
@@ -467,7 +475,7 @@ bool space::check_keys()
   if((mouse == MOUSE_BUTTON_LEFT) && (action == PRESS))
   {
     action = -1;
-    if(vertex_id <= (VoxesDB->render_indices/indices_per_side) * bytes_per_side)
+    if(vertex_id <= (render_indices/indices_per_side) * bytes_per_side)
     { // по номеру группы найдем адрес смещения в VBO
       GLsizeiptr offset = (vertex_id/vertices_per_side) * bytes_per_side;
       VoxesDB->append(offset);
@@ -477,7 +485,7 @@ bool space::check_keys()
   if((mouse == MOUSE_BUTTON_RIGHT) && (action == PRESS))
   {
     action = -1;
-    if(vertex_id <= (VoxesDB->render_indices/indices_per_side) * bytes_per_side)
+    if(vertex_id <= (render_indices/indices_per_side) * bytes_per_side)
     { // по номеру группы найдем адрес смещения в VBO
       GLsizeiptr offset = (vertex_id/vertices_per_side) * bytes_per_side;
       VoxesDB->remove(offset);

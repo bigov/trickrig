@@ -54,6 +54,8 @@ i3d i3d_near(const i3d& P, u_char side, int side_len)
 ///
 void voxesdb::append(GLsizeiptr offset)
 {
+  std::lock_guard<std::mutex> Hasp{mutex_voxes_db};
+
   vox* pVox = get(offset);
   if (nullptr == pVox) return;
   auto vox_side_len = pVox->side_len;
@@ -79,6 +81,8 @@ void voxesdb::append(GLsizeiptr offset)
 ///
 void voxesdb::remove(GLsizeiptr offset)
 {
+  std::lock_guard<std::mutex> Hasp{mutex_voxes_db};
+
   vox* V = get(offset);
   if(nullptr == V) ERR("Error: try to remove unexisted vox");
   auto vox_side_len = V->side_len;
@@ -87,9 +91,12 @@ void voxesdb::remove(GLsizeiptr offset)
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера воксы вокруг
     remove_from_vbo(get(i3d_near(P0, side, vox_side_len)));
 
-  remove_from_vbo(V);                   // Выделенный вокс убрать из рендера
-  cfg::DataBase.erase_vox(V);    // удалить из базы данных,
-  unload(P0);                // удалить из буфера
+  remove_from_vbo(V);                          // Выделенный вокс убрать из рендера
+  cfg::DataBase.erase_vox(V);                  // удалить из базы данных,
+
+  auto it = std::find_if(begin(), end(), [&P0](const auto& V){ return V->Origin == P0; });
+  if(it != end()) erase(it);
+
   recalc_around_visibility(P0, vox_side_len);  // пересчитать видимость вокселей вокруг
 
   for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксели
@@ -136,15 +143,15 @@ vox* voxesdb::push_db(std::unique_ptr<vox> V)
 /// \details Поиск вокса, у которого сторона размещена в VBO по указанному адресу
 vox* voxesdb::get(GLsizeiptr addr)
 {
-  auto it = std::find_if( begin(), end(),
+  auto FindResult = std::find_if( begin(), end(),
     [&addr](auto& V)
     {
       if(!V->in_vbo) return false;
       return V->side_id_by_offset(addr) < SIDES_COUNT;
     }
   );
-  if (it == end()) return nullptr;
-  else return it->get();
+  if (FindResult == end()) return nullptr;
+  else return FindResult->get();
 }
 
 
@@ -239,7 +246,9 @@ void voxesdb::append_in_vbo(vox* pVox)
     if(!pVox->side_fill_data(side_id, buffer)) continue;
     vbo_addr = pVBO->append(buffer, bytes_per_side);
     pVox->offset_write(side_id, vbo_addr);     // запомнить адрес смещения стороны в VBO
+
     render_indices += indices_per_side;        // увеличить число точек рендера
+
   }
   pVox->in_vbo = true;
 }
@@ -292,6 +301,8 @@ void voxesdb::remove_from_vbo(vox* pVox)
 ///
 void voxesdb::load(const i3d& P0)
 {
+  std::lock_guard<std::mutex> Hasp{mutex_voxes_db};
+
   auto pVox = cfg::DataBase.get_vox(P0);
 
   if(nullptr != pVox)
@@ -317,8 +328,9 @@ void voxesdb::load(const i3d& P0)
 ///
 void voxesdb::unload(const i3d& P0)
 {
-  auto it = std::find_if(begin(), end(),
-                         [&P0](const auto& V){ return V->Origin == P0; });
+  std::lock_guard<std::mutex> Hasp{mutex_voxes_db};
+
+  auto it = std::find_if(begin(), end(), [&P0](const auto& V){ return V->Origin == P0; });
   if(it == end()) return; // в этой точке вокса нет
   vox* V = it->get();
   if(V->in_vbo) remove_from_vbo(V);
