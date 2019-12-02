@@ -23,6 +23,7 @@ class wglfw
       wglfw& operator=(wglfw&&) = delete;
 
       static GLFWwindow* win_shared;
+      static GLFWwindow* win_ptr;
 
       void set_window(u_int width=10, u_int height=10, u_int min_w=0,
                       u_int min_h=0, u_int left=0, u_int top=0);
@@ -44,7 +45,7 @@ class wglfw
       void set_focuslost_observer(interface_gl_context& ref);// смена фокуса
 
     private:
-      static GLFWwindow* win_ptr;
+      //static GLFWwindow* win_ptr;
 
       static interface_gl_context* error_observer;
       static interface_gl_context* cursor_observer;

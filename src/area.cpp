@@ -33,6 +33,8 @@ void area::init(const glm::vec3& Pt)
 
   // Загрузка пространства вокруг точки Pt
   i3d vP {};
+  std::lock_guard<std::mutex> Hasp{mutex_loading};
+
   for(vP.x = P0.x; vP.x<= P1.x; vP.x += side_len)
     for(vP.y = P0.y; vP.y<= P1.y; vP.y += side_len)
       for(vP.z = P0.z; vP.z<= P1.z; vP.z += side_len)
@@ -52,27 +54,24 @@ void area::init(const glm::vec3& Pt)
 ///
 void area::operator() (std::shared_ptr<voxesdb> V, int len, int elements, const glm::vec3& Pt, GLFWwindow* Context)
 {
+  auto t0 = std::chrono::milliseconds(1);
+
   Voxes = V;
   side_len = len;
   f_side_len = len * 1.f;
   lod_dist = elements * len;
 
   glfwMakeContextCurrent(Context);
+  std::this_thread::sleep_for(t0);
 
   init(Pt);
-  start_loop();
-}
 
-
-///
-/// \brief area::run
-///
-void area::start_loop(void)
-{
-  auto t0 = std::chrono::milliseconds(1);
+  //mutex_mdist.lock();
+  //MovingDist = {0.f, 0.f, 0.f};
+  //mutex_mdist.unlock();
 
   while (nullptr != Voxes) {
-    recalc_borders();
+    //recalc_borders();
     std::this_thread::sleep_for(t0);
   }
 }
@@ -90,11 +89,19 @@ void area::recalc_borders(void)
   mutex_mdist.lock();
   if(MovingDist.x > f_side_len)
   {
+      // DEBUG -->
+      std::cout << MovingDist.x;
+      // <-- DEBUG
+
       MovingDist.x -= f_side_len;
       Location.x += side_len;
       need_redraw_px = true;
   } else if(MovingDist.x < -f_side_len)
   {
+      // DEBUG -->
+      std::cout << MovingDist.x;
+      // <-- DEBUG
+
       MovingDist.x += f_side_len;
       Location.x -= side_len;
       need_redraw_nx = true;
@@ -102,11 +109,19 @@ void area::recalc_borders(void)
 
   if(MovingDist.z > f_side_len)
   {
+      // DEBUG -->
+      std::cout << MovingDist.z;
+      // <-- DEBUG
+
       MovingDist.z -= f_side_len;
       Location.z += side_len;
       need_redraw_pz = true;
   } else if(MovingDist.z < -f_side_len)
   {
+      // DEBUG -->
+      std::cout << MovingDist.z;
+      // <-- DEBUG
+
       MovingDist.z += f_side_len;
       Location.z -= side_len;
       need_redraw_nz = true;

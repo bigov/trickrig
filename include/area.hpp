@@ -32,8 +32,6 @@ class area
 
     void operator() (std::shared_ptr<voxesdb> V, int length, int count, const glm::vec3& L, GLFWwindow* Context);
     void init(const glm::vec3& CameraLocation);
-
-    void start_loop(void);
     void recalc_borders(void);
 
   private:

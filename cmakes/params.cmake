@@ -24,9 +24,9 @@ endif()
 
 SET( EXEC_NAME "app${SUFFIX}" )
 
-SET( MY_FLAGS "-m64 -std=c++2a -O3 -latomic -lpthread -fexceptions -Werror -Wpedantic \
+SET( MY_FLAGS "-m64 -std=c++2a -latomic -lpthread -fexceptions -Werror -Wpedantic \
   -Wextra -Woverloaded-virtual -Wctor-dtor-privacy -Wnon-virtual-dtor -Wall\
-  -Winit-self -Wunreachable-code" )
+  -Winit-self -Wunreachable-code" ) ## -O3
 
 ## Пока работаем без установки программы
 SET( SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE )

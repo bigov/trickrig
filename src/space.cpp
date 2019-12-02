@@ -101,6 +101,10 @@ void space::enable(void)
     std::thread A(std::ref(Area4), VoxesDB, size_v4, border_dist_b4, Eye.ViewFrom, OglContext->win_shared);
     A.detach();
   }
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+  glfwMakeContextCurrent(OglContext->win_ptr);
+
+  std::lock_guard<std::mutex> Hasp{mutex_loading}; // Подождать завершения загрузки сцены из БД в GPU
 
   OglContext->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
   OglContext->set_button_observer(*this);    //  -- кнопки мыши

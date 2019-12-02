@@ -19,7 +19,7 @@ namespace tr
   std::mutex mutex_mdist;
   std::mutex mutex_voxes_db; // разделение доступа к буферу вершин
   std::mutex mutex_vbo;      // разделение доступа к VBO
-
+  std::mutex mutex_loading;  // ожидание загрузки сцены из базы данных в GPU
 }
 
 

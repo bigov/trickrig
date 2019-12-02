@@ -62,6 +62,7 @@ extern f3d MovingDist;    // Вектор смещения между кадра
 extern std::mutex mutex_mdist;
 extern std::mutex mutex_voxes_db; // разделение доступа к буферу вершин
 extern std::mutex mutex_vbo;      // разделение доступа к VBO
+extern std::mutex mutex_loading;  // ожидание загрузки сцены из базы данных в GPU
 
 using u_char = unsigned char;
 using u_int  = unsigned int;
