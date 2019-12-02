@@ -308,6 +308,7 @@ bool space::render(void)
   Program3d->unuse(); // отключить шейдерную программу
   RenderBuffer->unbind();
   glBindVertexArray(0);
+
   mutex_vbo.unlock();
 
   hud_draw();

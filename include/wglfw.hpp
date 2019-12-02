@@ -11,7 +11,7 @@ class wglfw
   static std::string title;
 
   public:
-      wglfw(GLFWwindow* SharedContext = nullptr);
+      wglfw(void);
       ~wglfw(void);
 
       // Запретить копирование объекта

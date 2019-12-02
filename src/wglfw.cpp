@@ -31,7 +31,7 @@ interface_gl_context* wglfw::focuslost_observer = nullptr;
 ///
 /// \brief wglfw::wglfw
 ///
-wglfw::wglfw(GLFWwindow* SharedContext)
+wglfw::wglfw(void)
 {
   if (!glfwInit()) ERR("Error init GLFW lib.");
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -42,13 +42,20 @@ wglfw::wglfw(GLFWwindow* SharedContext)
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
 #endif
 
-  win_shared = SharedContext;
-
-  //  Создание 3D окна
   glfwWindowHint(GLFW_VISIBLE, 0);
-  win_ptr = glfwCreateWindow(1, 1, "", nullptr, SharedContext);
+
+  // Создание окна для потокового контекста
+  win_shared = glfwCreateWindow(1, 1, "", nullptr, nullptr);
+  if (nullptr == win_shared) ERR("Creating Window fail.");
+
+  //  Создание 3D окна приложения
+  win_ptr = glfwCreateWindow(1, 1, "", nullptr, win_shared);
   if (nullptr == win_ptr) ERR("Creating Window fail.");
   glfwMakeContextCurrent(win_ptr);
+
+  if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
+  if(!gladLoadGL()) { ERR("FAILURE: can't load GLAD."); }
+
 }
 
 

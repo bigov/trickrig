@@ -44,12 +44,7 @@ int main(int, char* argv[])
 
   try
   {
-    wglfw TreadingGLContext {};
-    if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
-    if(!gladLoadGL()) { ERR("FAILURE: can't load GLAD."); }
-
-    wglfw MainOpenGLContext { TreadingGLContext.get_win_id() };
-
+    wglfw MainOpenGLContext {};
     gui AppGUI { &MainOpenGLContext };
     AppGUI.show();
   }
