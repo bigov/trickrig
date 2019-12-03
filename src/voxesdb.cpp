@@ -313,7 +313,7 @@ void voxesdb::load(const i3d& P0)
       remove_from_vbo(get(i3d_near(P0, side, V->side_len)));   // вокруг точки добавления вокса
 
     recalc_vox_visibility(V); // пересчитать видимость сторон
-    append_in_vbo(V);              // добавить в рендер
+    append_in_vbo(V);         // добавить в рендер
 
     for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксы
       append_in_vbo(get(i3d_near(P0, side, V->side_len)));

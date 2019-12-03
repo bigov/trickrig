@@ -125,11 +125,16 @@ void vbo_base::attrib_i(GLuint index, GLint d_size, GLenum type,
 ///
 /// \brief vbo_ext::vbo_ext
 /// \param type
+/// \details Если читать из рендер-буфера напрямую в ОЗУ, то после первого-же
+/// считывания OpenGL автоматически устанавливает скорость операции перемещения
+/// данных внутри памяти GPU равной скорости обмена с CPU, которая в разы ниже,
+/// что сразу становится заметно визуально. Чтобы это обойти, создается
+/// промежуточный (id_subbuf) буфер, через который производится чтение данных.
 ///
 vbo_ext::vbo_ext(GLenum type): vbo_base(type)
 {
-  // Тут создается промежуточный буфер, через который производится обмен данными
-  // между GPU и CPU памятью.
+  // Создание промежуточного буфера, через который будет
+  // производится обмен данными между GPU и CPU.
   glGenBuffers(1, &id_subbuf);
   glBindBuffer(GL_COPY_WRITE_BUFFER, id_subbuf);
   glBufferData(GL_COPY_WRITE_BUFFER, bytes_per_side, nullptr, GL_STATIC_DRAW);
@@ -175,6 +180,7 @@ GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
     glBindBuffer(gl_buffer_type, 0);
     hem = src;
   }
+  glFinish(); // для синхронизации изменений между потоками
   return hem;
 }
 
@@ -204,6 +210,7 @@ GLsizeiptr vbo_ext::append(const GLvoid* data, GLsizeiptr data_size)
   glBindBuffer(gl_buffer_type, 0);
   GLsizeiptr res = hem;
   hem += data_size;
+  glFinish(); // для синхронизации изменений между потоками
   return res;
 }
 

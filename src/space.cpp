@@ -89,7 +89,7 @@ void space::enable(void)
   auto aspect = static_cast<float>(width) / static_cast<float>(height);
   MatProjection = glm::perspective(fovy, aspect, zNear, zFar);
 
-  xpos = width/2;  // Рассчитать координаты центра экрана
+  xpos = width/2;  // координаты центра экрана
   ypos = height/2;
 
   OglContext->cursor_hide();  // выключить отображение курсора мыши в окне
@@ -100,11 +100,11 @@ void space::enable(void)
     VoxesDB = std::make_shared<voxesdb>(init_vbo());
     std::thread A(std::ref(Area4), VoxesDB, size_v4, border_dist_b4, Eye.ViewFrom, OglContext->win_shared);
     A.detach();
-  }
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-  glfwMakeContextCurrent(OglContext->win_ptr);
 
-  std::lock_guard<std::mutex> Hasp{mutex_loading}; // Подождать завершения загрузки сцены из БД в GPU
+    // Подождать завершения загрузки сцены из БД в GPU
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::lock_guard<std::mutex> Hasp{mutex_loading};
+  }
 
   OglContext->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
   OglContext->set_button_observer(*this);    //  -- кнопки мыши
@@ -289,7 +289,6 @@ bool space::render(void)
   calc_render_time();
   calc_position();
 
-  mutex_vbo.lock();
   glBindVertexArray(vao_id);
   RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -304,7 +303,6 @@ bool space::render(void)
 
   for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
 
-
   glDrawElements(GL_TRIANGLES, render_indices, GL_UNSIGNED_INT, nullptr);
 
   for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
@@ -312,8 +310,6 @@ bool space::render(void)
   Program3d->unuse(); // отключить шейдерную программу
   RenderBuffer->unbind();
   glBindVertexArray(0);
-
-  mutex_vbo.unlock();
 
   hud_draw();
   return check_keys();
