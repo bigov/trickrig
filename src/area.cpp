@@ -66,8 +66,8 @@ void area::operator() (std::shared_ptr<voxesdb> V, int len, int elements, const 
   auto t0 = std::chrono::milliseconds(1);
 
   while (nullptr != Voxes) {
-    recalc_borders();
-    std::this_thread::sleep_for(t0);
+    if(!recalc_borders())
+      std::this_thread::sleep_for(t0); // чтобы не грузить процессор
   }
 }
 
@@ -76,10 +76,13 @@ void area::operator() (std::shared_ptr<voxesdb> V, int len, int elements, const 
 /// \brief space::recalc_borders
 /// \details Перестроение границ активной области при перемещении камеры
 ///
-void area::recalc_borders(void)
+bool area::recalc_borders(void)
 {
-  bool need_redraw_px = false, need_redraw_pz = false;
-  bool need_redraw_nx = false, need_redraw_nz = false;
+  bool
+    need_redraw_px = false,
+    need_redraw_pz = false,
+    need_redraw_nx = false,
+    need_redraw_nz = false;
 
   mutex_mdist.lock();
   if(MovingDist.x > f_side_len)
@@ -111,6 +114,8 @@ void area::recalc_borders(void)
   if(need_redraw_nx) redraw_borders_x(Location.x - lod_dist, Location.x + lod_dist + side_len);
   if(need_redraw_pz) redraw_borders_z(Location.z + lod_dist, Location.z - lod_dist - side_len);
   if(need_redraw_nz) redraw_borders_z(Location.z - lod_dist, Location.z + lod_dist + side_len);
+
+  return (need_redraw_px or need_redraw_pz or need_redraw_nx or need_redraw_nz);
 }
 
 
