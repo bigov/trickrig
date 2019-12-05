@@ -61,8 +61,8 @@ void voxesdb::append(GLsizeiptr offset)
   auto vox_side_len = pVox->side_len;
   i3d P0 = i3d_near(pVox->Origin, pVox->side_id_by_offset(offset), vox_side_len); // координаты нового вокса
 
-  for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера воксы
-    remove_from_vbo(get(i3d_near(P0, side, vox_side_len)));   // вокруг точки добавления вокса
+  for (u_char side = 0; side < SIDES_COUNT; ++side)         // Временно убрать из рендера воксы
+    remove_from_vbo(get(i3d_near(P0, side, vox_side_len))); // вокруг точки добавления вокса
 
   // Добавить вокс в БД и в рендер VBO
   vox* V = create(P0, vox_side_len);
@@ -269,7 +269,7 @@ void voxesdb::remove_from_vbo(vox* pVox)
   {
     if(!pVox->is_visible(side_id)) continue;      // если сторона невидима, то пропустить цикл
     GLsizeiptr dest = pVox->offset_read(side_id); // адрес освобождаемого блока данных
-    pVox->offset_write(side_id, -1);              // чтобы функция поиска больше не нвходила этот вокс
+    pVox->offset_write(side_id, -1);              // чтобы функция поиска больше не находила этот вокс
 
     // free - новый адрес границы VBO (отсюда данные были перенесены по адресу "dest")
     GLsizeiptr free = pVBO->remove(dest, bytes_per_side); // переписать в VBO блок данных по адресу "dest"

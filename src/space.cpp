@@ -298,8 +298,8 @@ bool space::render(void)
   Program3d->set_uniform("mvp", MatMVP);
   Program3d->set_uniform("light_direction", light_direction); // направление
   Program3d->set_uniform("light_bright", light_bright);       // цвет/яркость
-  Program3d->set_uniform("MinId", GLint(id_point_0));         // начальная вершина активного вокселя
-  Program3d->set_uniform("MaxId", GLint(id_point_8));         // последняя вершина активного вокселя
+  Program3d->set_uniform("MinId", GLint(hl_point_id_from));   // начальная вершина активного вокселя
+  Program3d->set_uniform("MaxId", GLint(hl_point_id_end));    // последняя вершина активного вокселя
 
   for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
 
@@ -459,11 +459,15 @@ bool space::check_keys()
     return false;
   }
 
-  u_int vertex_id = 0;
+  u_int vertex_id = 0; // переменная для хранения ID вершины
   RenderBuffer->read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
 
-  id_point_0 = vertex_id - (vertex_id % vertices_per_side);
-  id_point_8 = id_point_0 + vertices_per_side - 1;
+  // Так как вершины располагаются группами по 4 шт. (обход через 6 индексов),
+  // то можно, по номеру любой вершины из группы, используя остаток от деления
+  // на число вершин в группе, определить какая по номеру из вершин начинает
+  // эту группу и какая заканчивает.
+  hl_point_id_from = vertex_id - (vertex_id % vertices_per_side);
+  hl_point_id_end = hl_point_id_from + vertices_per_side - 1;
 
   //DEBUG: Нажатие на [C] выводит в консоль номер вершины-индикатора
   if((46 == scancode) && (action == PRESS))
