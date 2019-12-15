@@ -10,15 +10,26 @@
 namespace tr
 {
 
-void vbo_base::bind(void)
+void vbo_base::bind (void)
 {
   glBindBuffer(gl_buffer_type, id);
 }
 
-void vbo_base::unbind(void)
+void vbo_base::unbind (void)
 {
   glBindBuffer(gl_buffer_type, 0);
 }
+
+
+///
+/// \brief vbo_base::max_size
+/// \return
+///
+GLsizeiptr vbo_base::max_size (void)
+{
+  return allocated;
+}
+
 
 ///
 /// \brief vbo::allocate
@@ -26,7 +37,7 @@ void vbo_base::unbind(void)
 ///
 /// \details Cоздание нового буфера указанного в параметре размера
 ///
-void vbo_base::allocate(GLsizeiptr need_size)
+void vbo_base::allocate (GLsizeiptr need_size)
 {
   if(0 != id) ERR("VBO::Allocate trying to re-init exist object.");
   allocated = need_size;

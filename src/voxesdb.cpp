@@ -47,6 +47,17 @@ i3d i3d_near(const i3d& P, u_char side, int side_len)
 
 
 ///
+/// \brief voxesdb::voxesdb
+/// \param V
+///
+voxesdb::voxesdb (vbo_ext* V): pVBO(V)
+{
+  // Зарезервировать место в соответствии с размером буфера VBO
+  GpuMap.resize(pVBO->max_size()/bytes_per_side);
+}
+
+
+///
 /// \brief voxesdb::append
 /// \param offset
 /// \details Добавление вокса к строне существующего вокса
@@ -247,6 +258,8 @@ void voxesdb::append_in_vbo(vox* pVox)
     vbo_addr = pVBO->append(buffer, bytes_per_side);
     pVox->offset_write(side_id, vbo_addr);     // запомнить адрес смещения стороны в VBO
 
+    GpuMap[vbo_addr/bytes_per_side] = pVox->Origin;
+
     render_indices += indices_per_side;        // увеличить число точек рендера
 
   }
@@ -285,6 +298,8 @@ void voxesdb::remove_from_vbo(vox* pVox)
       vox* V = get(free); // Найти вокс, чьи данные были перенесены
       if(nullptr == V) ERR("vox_wipe: find_in_buffer(" + std::to_string(free) + ")");
       V->offset_replace(free, dest); // скорректировать адрес размещения данных
+
+      GpuMap[dest/bytes_per_side] = GpuMap[free/bytes_per_side];
     }
     // Если free == dest, то удаляемый блок данных был в конце VBO,
     // поэтому только уменьшаем число точек рендера
