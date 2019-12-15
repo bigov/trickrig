@@ -86,9 +86,13 @@ void cfg::load(char** argv)
 #endif
 
   fs::path p = argv[0];
-  p = p.parent_path().parent_path();  // Путь к папке приложения "../_bin/app_dbg"
 
-  AssetsDir = fs::absolute(p).string() + DS + "assets";
+  // Путь к папке приложения "../_bin/app_dbg"
+  if(p.parent_path().string() == ".")
+    AssetsDir = fs::absolute(p).parent_path().parent_path().parent_path().string() + DS + "assets";
+  else
+    AssetsDir = fs::absolute(p).parent_path().parent_path().string() + DS + "assets";
+
   set_user_dir();
   AppParams = DataBase.open_app(UserDir + DS);
 
