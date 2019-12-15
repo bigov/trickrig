@@ -17,7 +17,7 @@ namespace tr
 /// \param count - число вокселей от камеры (или внутренней границы)
 /// до внешней границы области
 ///
-void area::init(std::shared_ptr<voxesdb> V, int len, int elements, const glm::vec3& Pt)
+void area::init (std::shared_ptr<voxesdb> V, int len, int elements, const glm::vec3& Pt)
 {
   Voxes = V;
   side_len = len;
@@ -51,12 +51,14 @@ void area::init(std::shared_ptr<voxesdb> V, int len, int elements, const glm::ve
 
 
 ///
-/// \brief area::operator ()
-/// \param V
-/// \param len
-/// \param elements
-/// \param Pt
-/// \param Sh
+/// \brief area::operator()
+/// \param V          // адрес базы данных контроля вокселей
+/// \param len        // размер стороны вокселя текущего LOD
+/// \param elements   // количество вокселей до границы LOD
+/// \param Pt         // Положение камеры в пространстве
+/// \param Context    // OpenGL контекст назначенный текущему потоку
+///
+/// \details Данный метод класса вызывается при создании потока
 ///
 void area::operator() (std::shared_ptr<voxesdb> V, int len, int elements, const glm::vec3& Pt, GLFWwindow* Context)
 {
@@ -76,7 +78,7 @@ void area::operator() (std::shared_ptr<voxesdb> V, int len, int elements, const 
 /// \brief space::recalc_borders
 /// \details Перестроение границ активной области при перемещении камеры
 ///
-bool area::recalc_borders(void)
+bool area::recalc_borders (void)
 {
   bool
     need_redraw_px = false,

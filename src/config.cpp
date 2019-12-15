@@ -30,7 +30,7 @@ std::string cfg::AssetsDir {}; // папка служебных файлов
 std::string cfg::UserDir   {}; // папка конфигов пользователя
 std::string cfg::DS        {}; // символ разделителя папок
 std::string cfg::CfgFname  {}; // конфиг, выбранный пользователем
-layout    cfg::WinLayout {}; // размер и положение главного окна
+layout      cfg::WinLayout {}; // размер и положение главного окна
 
 ///
 /// \brief cfg::user_dir
@@ -77,11 +77,23 @@ std::string cfg::map_name(const std::string &FolderName)
 ///
 /// Загрузка параметров приложения
 ///
-void cfg::load(void)
+void cfg::load(char** argv)
 {
+#ifdef _WIN32_WINNT
+  DS = "\\";
+#else
+  DS = "/";
+#endif
+
+  fs::path p = argv[0];
+  p = p.parent_path().parent_path();  // Путь к папке приложения "../_bin/app_dbg"
+
+  AssetsDir = fs::absolute(p).string() + DS + "assets";
   set_user_dir();
-  AssetsDir = ".." + DS + "assets";
   AppParams = DataBase.open_app(UserDir + DS);
+
+  if(std::stoi(AppParams[APP_VER_MAJOR]) != VER_MAJOR) ERR("Incompatible APP_MAJOR database version");
+  if(std::stoi(AppParams[APP_VER_MINOR]) != VER_MINOR) ERR("Incompatible APP_MINOR database version");
 
   WinLayout.width = static_cast<u_int>(std::stoi(AppParams[WINDOW_WIDTH]));
   WinLayout.height = static_cast<u_int>(std::stoi(AppParams[WINDOW_HEIGHT]));
@@ -95,13 +107,15 @@ void cfg::load(void)
 ///
 void cfg::set_user_dir(void)
 {
+#ifndef NDEBUG
+  info("+------------+\n| Debug mode |\n+------------+\n\n");
+  // На время разработки конфиг пользователя и база данных данных расположена в папке приложения
+  UserDir = AssetsDir + DS + "tmp.database";
+  if(!fs::exists(UserDir)) fs::create_directory(UserDir);
+  return;
+#endif
+
 #ifdef _WIN32_WINNT
-  DS = "\\";
-
-//    const char *env_p = getenv("USERPROFILE");
-//    if(nullptr == env_p) ERR("config::set_user_dir: can't setup users directory");
-//    UserDir = std::string(env_p) + std::string("\\AppData\\Roaming");
-
   char env_key[] = "USERPROFILE";
   size_t requiredSize;
   getenv_s( &requiredSize, nullptr, 0, env_key);
@@ -109,16 +123,15 @@ void cfg::set_user_dir(void)
   libvar.resize(requiredSize);
   getenv_s( &requiredSize, libvar.data(), requiredSize, env_key );
   UserDir = std::string(libvar.data()) + std::string("\\AppData\\Roaming");
-
 #else
   DS = "/";
   const char *env_p = getenv("HOME");
   if(nullptr == env_p) ERR("config::set_user_dir: can't setup users directory");
   UserDir = std::string(env_p);
+  UserDir += DS +".config";
 #endif
 
-  UserDir += DS +".config";
-   if(!fs::exists(UserDir)) fs::create_directory(UserDir);
+  if(!fs::exists(UserDir)) fs::create_directory(UserDir);
   UserDir += DS + "TrickRig";
   if(!fs::exists(UserDir)) fs::create_directory(UserDir);
   if(!fs::exists(UserDir)) ERR("Can't create: " + UserDir);

@@ -6,12 +6,12 @@ namespace tr {
 ///
 /// \brief gui::gui
 ///
-gui::gui(wglfw* glContext)
+gui::gui(wglfw* GLObject)
 {
-  cfg::load();
+  GlContext = GLObject;
   layout_set(cfg::WinLayout);
-  glContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
-  Space = std::make_unique<space>(glContext);
+  GlContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
+  Space = std::make_unique<space>(GlContext);
   FontMap1_len = static_cast<u_int>(FontMap1.length());
   TimeStart = std::chrono::system_clock::now();
 

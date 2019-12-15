@@ -342,6 +342,15 @@ void db::init_app_config(const std::string &FilePName)
   sprintf(q, tpl, WINDOW_TOP,         "50");                 Q += q;
   sprintf(q, tpl, WINDOW_LEFT,        "100");                Q += q;
 
+  sprintf(q, "INSERT INTO init (key, val) VALUES (%d, %d);", APP_VER_MAJOR, VER_MAJOR);
+  Q += q;
+  sprintf(q, "INSERT INTO init (key, val) VALUES (%d, %d);", APP_VER_MINOR, VER_MINOR);
+  Q += q;
+  sprintf(q, "INSERT INTO init (key, val) VALUES (%d, %d);", APP_VER_PATCH, VER_PATCH);
+  Q += q;
+  sprintf(q, "INSERT INTO init (key, val) VALUES (%d, %d);", APP_VER_TWEAK, VER_TWEAK);
+  Q += q;
+
   if(!SqlDb.open(FilePName)) ERR("Can't create dbfile: " + FilePName);
   SqlDb.exec(Q.c_str());
 #ifndef NDEBUG

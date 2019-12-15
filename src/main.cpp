@@ -11,7 +11,6 @@
 namespace tr
 {
   // Инициализация глобальных объектов
-  std::string AppPathDir {}; // Абсолютный путь к исполняемому файлу приложения
   std::atomic<int> render_indices = 0;
 
   f3d MovingDist {};         // Вектор смещения между кадрами
@@ -30,21 +29,12 @@ int main(int, char* argv[])
 {
   using namespace tr;
 
-  fs::path p = argv[0];
-  // Путь к папке исполняемого файла (со слэшем в конце)
-  AppPathDir = fs::absolute(p).remove_filename().string();
-
-#ifndef NDEBUG
-  assert(sizeof(GLfloat) == 4);
-  info("--- --- ---\nExec path: " + AppPathDir);
-  info("Debug mode: ON\n--- --- ---\n");
-#endif
-
   try
   {
-    wglfw MainOpenGLContext {};
-    gui AppGUI { &MainOpenGLContext };
-    AppGUI.show();
+    cfg::load(argv);                    // Начальная загрузка конфигурации
+    wglfw MainOpenGLContext {};         // Создать OpenGL контекст
+    gui AppGUI { &MainOpenGLContext };  // Создать окно приложения
+    AppGUI.show();                      // Главный цикл
   }
   catch(std::exception & e)
   {

@@ -20,7 +20,7 @@ enum BUTTON_STATE {
 class gui: public interface_gl_context
 {
   public:
-    gui(wglfw* glContext);
+    gui(wglfw* GLObject);
     ~gui(void);
 
     // Запретить копирование и перенос экземпляра класса
@@ -81,7 +81,8 @@ class gui: public interface_gl_context
     layout Layout {400, 400, 0, 0};          // размеры и положение
     float aspect = 1.0f;                     // соотношение размеров окна
     std::unique_ptr<space> Space = nullptr;
-    std::unique_ptr<wglfw> GlContext = nullptr;
+    //std::unique_ptr<wglfw> GlContext = nullptr;
+    wglfw* GlContext = nullptr;
 
     bool text_mode = false;                  // режим ввода текста
     std::string StringBuffer {};             // строка ввода пользователя

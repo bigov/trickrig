@@ -35,7 +35,6 @@
 #include <utility>
 #include <filesystem>
 
-#include "glad.h"
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
@@ -46,14 +45,15 @@
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "glad.h"
 #include "i_win.hpp"
+#include "version.hpp"
 
 #define ERR throw std::runtime_error
 namespace fs = std::filesystem;
 
 namespace tr {
 
-extern std::string AppPathDir; // путь размещения программы
 extern std::atomic<GLsizei> render_indices;
 
 struct f3d { float x=0.f, y=0.f, z=0.f; };
@@ -78,8 +78,8 @@ using a_f4   = std::array<float, 4>;
 using a_uch4 = std::array<unsigned char, 4>;
 using a_int3 = std::array<int, 3>;
 
-enum APP_INIT {      // вначале списка идут названия файлов
-  PNG_TEXTURE0,
+enum APP_INIT {
+  PNG_TEXTURE0,   // вначале списка идут названия файлов
   DB_TPL_FNAME,
   SHADER_VERT_SCENE,
   SHADER_GEOM_SCENE,
@@ -92,7 +92,11 @@ enum APP_INIT {      // вначале списка идут названия ф
   WINDOW_HEIGHT,
   WINDOW_TOP,
   WINDOW_LEFT,
-  APP_INIT_SIZE
+  APP_VER_MAJOR,
+  APP_VER_MINOR,
+  APP_VER_PATCH,
+  APP_VER_TWEAK,
+  APP_INIT_SIZE  // размер списка
 };
 
 enum MAP_INIT {

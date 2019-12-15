@@ -16,8 +16,20 @@
 # https://cmake.org/Wiki/CMake_Useful_Variables
 #
 
-cmake_minimum_required( VERSION 3.0 )
-project( trickrig )
+cmake_minimum_required( VERSION "3.16" )
+#project( trickrig )
+
+#project(<PROJECT-NAME>
+#        [VERSION <major>[.<minor>[.<patch>[.<tweak>]]]]
+#        [LANGUAGES <language-name>...])
+
+project(
+  TrickRig VERSION "0.0.1.1"
+  DESCRIPTION "Graphical engine project"
+  HOMEPAGE_URL "https://www.trickrig.net"
+  LANGUAGES "CXX"
+  )
+
 set(PROJECT_AUTHOR "bigov")
 set(PROJECT_AUTHOR_EMAIL "bigov@yandex.ru")
 
@@ -33,6 +45,9 @@ endif()
 SET( SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE )
 
 SET( CMAKE_VERBOSE_MAKEFILE OFF )
+
+configure_file("${CMAKE_SOURCE_DIR}/cmakes/version_hpp.cmake" "${CMAKE_CURRENT_BINARY_DIR}/version.hpp")
+include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
 SET( trCMAKES "${CMAKE_SOURCE_DIR}/cmakes" )
 SET( trEXT_LIBS_DIR "${CMAKE_SOURCE_DIR}/3rdlibs" )
