@@ -15,7 +15,7 @@ namespace tr
 GLFWwindow* wglfw::win_ptr = nullptr;
 GLFWwindow* wglfw::win_shared = nullptr;
 
-std::string wglfw::title = "TrickRig: v.development";
+std::string wglfw::title = std::string(APP_NAME);
 
 interface_gl_context* wglfw::error_observer = nullptr;
 interface_gl_context* wglfw::cursor_observer = nullptr;
@@ -38,8 +38,10 @@ wglfw::wglfw(void)
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
+  title += "  v." + std::string(APP_VERSION);
 #ifndef NDEBUG
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
+  title += " (debug)";
 #endif
 
   glfwWindowHint(GLFW_VISIBLE, 0);
@@ -49,7 +51,7 @@ wglfw::wglfw(void)
   if (nullptr == win_shared) ERR("Creating Window fail.");
 
   //  Создание 3D окна приложения
-  win_ptr = glfwCreateWindow(1, 1, "", nullptr, win_shared);
+  win_ptr = glfwCreateWindow(1, 1, title.c_str(), nullptr, win_shared);
   if (nullptr == win_ptr) ERR("Creating Window fail.");
   glfwMakeContextCurrent(win_ptr);
 

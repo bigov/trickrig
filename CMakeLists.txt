@@ -16,7 +16,7 @@
 # https://cmake.org/Wiki/CMake_Useful_Variables
 #
 
-cmake_minimum_required( VERSION "3.16" )
+cmake_minimum_required( VERSION "3.15" )
 #project( trickrig )
 
 #project(<PROJECT-NAME>
