@@ -12,7 +12,9 @@
 #include "sqlite3.h"
 
 namespace tr{
-  
+
+using GetResult = std::forward_list<std::list<std::vector<u_int8_t>>>;
+
 struct query_data {
   int type;
   std::string db_name;
@@ -31,9 +33,6 @@ class wsql
            std::forward_list<std::pair<std::string, std::vector<char>>>> Table_rows;
     static int num_rows; // число строк в результате запроса
 
-    // Результат выполнения запроса "request_get"
-    std::forward_list<std::vector<std::any>> Rows;
-
     std::forward_list<std::string> ErrorsList = {};
     static tr::query_data Result;
 
@@ -46,12 +45,15 @@ class wsql
     void exec(const char *);
     void write(const char *);
     void request_put(const char *, const void *, int);
-    void request_put(const char *, const float *, size_t);
-    void request_get(const char *);
+    void request_put_float(const char *, const float *, size_t);
+    GetResult request_get(const char *);
 
   private:
     wsql(const wsql &) = delete;
     wsql& operator=(const wsql &) = delete;
+
+    // Результат выполнения запроса "request_get"
+    GetResult Rows;
 
     static char empty;
     sqlite3 *db = nullptr;

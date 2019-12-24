@@ -22,6 +22,7 @@ namespace tr
 space::space(wglfw* OpenGLContext)
 {
   assert(nullptr != OpenGLContext);
+  ViewFrom = std::make_shared<glm::vec3> ();
 
   OglContext = OpenGLContext;
   light_direction = glm::normalize(glm::vec3(0.3f, 0.45f, 0.4f)); // направление (x,y,z)
@@ -98,7 +99,7 @@ void space::enable(void)
   if(nullptr == VoxesDB)
   {
     VoxesDB = std::make_shared<voxesdb>(init_vbo());
-    std::thread A(std::ref(Area4), VoxesDB, size_v4, border_dist_b4, Eye.ViewFrom, OglContext->win_shared);
+    std::thread A(std::ref(Area4), VoxesDB, size_v4, border_dist_b4, ViewFrom, OglContext->win_shared);
     A.detach();
 
     // Подождать завершения загрузки сцены из БД в GPU
@@ -173,15 +174,15 @@ void space::load_textures(void)
 ///
 void space::calc_position(void)
 {
-  Eye.look_a -= speed_rotate * cursor_dx;
+  look_dir[0] -= speed_rotate * cursor_dx;
   cursor_dx = 0.f;
-  if(Eye.look_a > dPi) Eye.look_a -= dPi;
-  if(Eye.look_a < 0) Eye.look_a += dPi;
+  if(look_dir[0] > dPi) look_dir[0] -= dPi;
+  if(look_dir[0] < 0) look_dir[0] += dPi;
 
-  Eye.look_t -= speed_rotate * cursor_dy;
+  look_dir[1] -= speed_rotate * cursor_dy;
   cursor_dy = 0.f;
-  if(Eye.look_t > up_max) Eye.look_t = up_max;
-  if(Eye.look_t < down_max) Eye.look_t = down_max;
+  if(look_dir[1] > up_max) look_dir[1] = up_max;
+  if(look_dir[1] < down_max) look_dir[1] = down_max;
 
   //if (!space_is_empty(Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
 
@@ -192,25 +193,21 @@ void space::calc_position(void)
 
   // промежуточные скаляры для ускорения расчета координат точек вида
   float
-    _ca = static_cast<float>(cosf(Eye.look_a)),
-    _sa = static_cast<float>(sinf(Eye.look_a)),
-    _ct = static_cast<float>(cosf(Eye.look_t));
+    _ca = static_cast<float>(cosf(look_dir[0])),
+    _sa = static_cast<float>(sinf(look_dir[0])),
+    _ct = static_cast<float>(cosf(look_dir[1]));
 
   // Вектор смещения камеры за время прошедшее между кадрами
-  auto StepFrame = glm::vec3(fb *_ca + rl*sinf(Eye.look_a - Pi), ud,  fb*_sa + rl*_ca);
+  auto StepFrame = glm::vec3(fb *_ca + rl*sinf(look_dir[0] - Pi), ud,  fb*_sa + rl*_ca);
 
-  Eye.ViewFrom += StepFrame;
+  mutex_viewfrom.lock();
+  *ViewFrom.get() += StepFrame;
+  mutex_viewfrom.unlock();
 
-  mutex_mdist.lock();
-  MovingDist.x += StepFrame.x;     // Суммарный вектор перемещения между запросами
-  MovingDist.y += StepFrame.y;     // Суммарный вектор перемещения между запросами
-  MovingDist.z += StepFrame.z;     // Суммарный вектор перемещения между запросами
-  mutex_mdist.unlock();
-
-  ViewTo = Eye.ViewFrom + glm::vec3(_ca*_ct, sinf(Eye.look_t), _sa*_ct); //Направление взгляда
+  ViewTo = *ViewFrom.get() + glm::vec3(_ca*_ct, sinf(look_dir[1]), _sa*_ct); //Направление взгляда
 
   // Расчет матрицы вида
-  MatView = glm::lookAt(Eye.ViewFrom, ViewTo, UpWard);
+  MatView = glm::lookAt(*ViewFrom.get(), ViewTo, UpWard);
 
   // Матрица преобразования
   MatMVP =  MatProjection * MatView;
@@ -303,7 +300,10 @@ bool space::render(void)
 
   for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
 
+  mutex_vbo.lock();
   glDrawElements(GL_TRIANGLES, render_indices, GL_UNSIGNED_INT, nullptr);
+  mutex_vbo.unlock();
+
 
   for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
 
@@ -562,7 +562,7 @@ void space::hud_draw(void)
   img Coord {c_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
   char ln[60];                       // длина строки с '\0'
   std::sprintf(ln, "X:%+06.1f, Y:%+06.1f, Z:%+06.1f, a:%+04.3f, t:%+04.3f",
-                  Eye.ViewFrom.x, Eye.ViewFrom.y, Eye.ViewFrom.z, Eye.look_a, Eye.look_t);
+                  ViewFrom->x, ViewFrom->y, ViewFrom->z, look_dir[0], look_dir[1]);
   textstring_place(Font15n, ln, Coord, 2, 1);
 
   glTexSubImage2D(GL_TEXTURE_2D, 0, 2, 2,            // top, left

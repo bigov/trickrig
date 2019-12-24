@@ -9,9 +9,10 @@
 #define MAIN_HPP
 
 #include <sys/stat.h>
-#include <any>
+//#include <any>
 #include <array>
 #include <atomic>
+#include <bitset>
 #include <cassert>
 #include <cstdint>
 #include <cstring>
@@ -56,15 +57,11 @@ namespace tr {
 
 extern std::atomic<GLsizei> render_indices;
 
-struct f3d { float x=0.f, y=0.f, z=0.f; };
-extern f3d MovingDist;    // Вектор смещения между кадрами
-
-extern std::mutex mutex_mdist;
-extern std::mutex mutex_voxes_db; // разделение доступа к буферу вершин
-extern std::mutex mutex_vbo;      // разделение доступа к VBO
+extern std::mutex mutex_viewfrom; // Доступ к значению положения камеры
+extern std::mutex mutex_voxes_db; // Доступ к буферу вершин
+extern std::mutex mutex_vbo;      // Доступ к VBO
 extern std::mutex mutex_loading;  // ожидание загрузки сцены из базы данных в GPU
 
-using u_char = unsigned char;
 using u_int  = unsigned int;
 using u_long = unsigned long;
 using v_str  = std::vector<std::string>;
@@ -133,6 +130,8 @@ struct glsl_attributes
 // структура для обращения в тексте программы к индексам данных вершин по названиям
 enum SIDE_DATA_ID { X, Y, Z, R, G, B, A, NX, NY, NZ, U, V, SIDE_DATA_SIZE };
 
+const int sizeof_y = sizeof (int); // размер (в байтах) координаты Y вокса
+
 // Настройка значений параметров для сравнения mouse_button и mouse_action
 // будут выполнены в классе управления окном
 const int MOUSE_BUTTON_LEFT  = GLFW_MOUSE_BUTTON_LEFT;
@@ -150,16 +149,8 @@ const int KEY_MOVE_DOWN  = GLFW_KEY_SPACE;
 const int KEY_MOVE_RIGHT = GLFW_KEY_D;
 const int KEY_MOVE_LEFT  = GLFW_KEY_A;
 
-// Настройка параметров главной камеры 3D вида
-struct camera_3d {
-  float look_a = 0.0f;       // азимут (0 - X)
-  float look_t = 0.0f;       // тангаж (0 - горизОнталь, пи/2 - вертикаль)
-
-  glm::vec3 ViewFrom {};   // 3D координаты точки положения
-};
-
-  // число вершин в прямоугольнике
-  static const u_int vertices_per_side = 4;
+// число вершин в прямоугольнике
+static const u_int vertices_per_side = 4;
 
   // число индексов в одном снипе
   static const int indices_per_side = 6;

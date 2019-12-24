@@ -166,6 +166,8 @@ vbo_ext::vbo_ext(GLenum type): vbo_base(type)
 ///
 GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
 {
+  std::lock_guard<std::mutex> Hasp{mutex_vbo};
+
   if(data_size >= hem) hem = 0;
   if(hem == 0) return hem;
 
@@ -185,7 +187,6 @@ GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
   }
   else
   {
-    std::lock_guard<std::mutex> Hasp{mutex_vbo};
     glBindBuffer(gl_buffer_type, id);
     glCopyBufferSubData(gl_buffer_type, gl_buffer_type, src, dest, data_size);
     glBindBuffer(gl_buffer_type, 0);
@@ -210,12 +211,13 @@ GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
 ///
 GLsizeiptr vbo_ext::append(const GLvoid* data, GLsizeiptr data_size)
 {
+  std::lock_guard<std::mutex> Hasp{mutex_vbo};
+
   #ifndef NDEBUG // проверка свободного места в буфере----------------------
   if((allocated - hem) < data_size) ERR("VBO::SubDataAppend got overflow buffer");
   if(data == nullptr) ERR("VBO::SubDataAppend nullptr");
   #endif //------------------------------------------------------------------
 
-  std::lock_guard<std::mutex> Hasp{mutex_vbo};
   glBindBuffer(gl_buffer_type, id);
   glBufferSubData(gl_buffer_type, hem, data_size, data);
   glBindBuffer(gl_buffer_type, 0);
@@ -239,11 +241,11 @@ GLsizeiptr vbo_ext::append(const GLvoid* data, GLsizeiptr data_size)
 ///
 void vbo_ext::data_get(GLintptr offset, GLsizeiptr sz, GLvoid* dst)
 {
+  std::lock_guard<std::mutex> Hasp{mutex_vbo};
+
 #ifndef NDEBUG
   if(sz > bytes_per_side) ERR("vbo_ext::data_get > bytes_per_snip");
 #endif
-
-  std::lock_guard<std::mutex> Hasp{mutex_vbo};
 
   glBindBuffer(GL_COPY_WRITE_BUFFER, id_subbuf);
   glBindBuffer(GL_COPY_READ_BUFFER, id);

@@ -8,7 +8,7 @@ namespace tr
 /// \param s
 /// \return номер стороны, противоположной указанной в параметре
 ///
-u_char side_opposite(u_char s)
+uint8_t side_opposite(uint8_t s)
 {
   switch (s)
   {
@@ -32,7 +32,7 @@ u_char side_opposite(u_char s)
 ///
 ///  Координаты опорной точки соседнего вокселя относительно указанной стороны
 ///
-i3d i3d_near(const i3d& P, u_char side, int side_len)
+i3d i3d_near(const i3d& P, uint8_t side, int side_len)
 {
   switch (side) {
     case SIDE_XP: return i3d{ P.x + side_len, P.y, P.z };
@@ -65,22 +65,38 @@ voxesdb::voxesdb (vbo_ext* V): pVBO(V)
 ///
 void voxesdb::append(GLsizeiptr offset)
 {
+  //debug |->
+  return;
+  //debug ->|
+
   std::lock_guard<std::mutex> Hasp{mutex_voxes_db};
 
   vox* pVox = get(offset);
   if (nullptr == pVox) return;
   auto vox_side_len = pVox->side_len;
   i3d P0 = i3d_near(pVox->Origin, pVox->side_id_by_offset(offset), vox_side_len); // координаты нового вокса
+  vox_create(P0, vox_side_len);
+}
 
-  for (u_char side = 0; side < SIDES_COUNT; ++side)         // Временно убрать из рендера воксы
+
+///
+/// \brief voxesdb::vox_create
+/// \param P0
+/// \param vox_side_len
+///
+void voxesdb::vox_create(const i3d&P0, int vox_side_len)
+{
+  for (uint8_t side = 0; side < SIDES_COUNT; ++side)        // Временно убрать из рендера воксы
     remove_from_vbo(get(i3d_near(P0, side, vox_side_len))); // вокруг точки добавления вокса
 
-  // Добавить вокс в БД и в рендер VBO
-  vox* V = create(P0, vox_side_len);
-  recalc_vox_visibility(V);
-  append_in_vbo(V);
+  auto upVox = std::make_unique<vox> (P0, vox_side_len);    // Новый вокс
+  //cfg::DataBase.save_vox(upVox.get());                      // Записать в БД
+  push_back(std::move(upVox));                              // Записать в буфер
+  vox* V = back().get();
+  recalc_vox_visibility(V);                                 // пересчитать видимость сторон
+  append_in_vbo(V);                                         // добавить в VBO на рендер
 
-  for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксы
+  for (uint8_t side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксы
     append_in_vbo(get(i3d_near(P0, side, vox_side_len)));
 }
 
@@ -92,6 +108,10 @@ void voxesdb::append(GLsizeiptr offset)
 ///
 void voxesdb::remove(GLsizeiptr offset)
 {
+  //debug |->
+  return;
+  //debug ->|
+
   std::lock_guard<std::mutex> Hasp{mutex_voxes_db};
 
   vox* V = get(offset);
@@ -99,51 +119,20 @@ void voxesdb::remove(GLsizeiptr offset)
   auto vox_side_len = V->side_len;
   i3d P0 = V->Origin;
 
-  for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера воксы вокруг
+  for (uint8_t side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера воксы вокруг
     remove_from_vbo(get(i3d_near(P0, side, vox_side_len)));
 
   remove_from_vbo(V);                          // Выделенный вокс убрать из рендера
   cfg::DataBase.erase_vox(V);                  // удалить из базы данных,
+  cfg::DataBase.vox_data_delete(V->Origin.x, V->Origin.y, V->Origin.z);
 
   auto it = std::find_if(begin(), end(), [&P0](const auto& V){ return V->Origin == P0; });
   if(it != end()) erase(it);
 
   recalc_around_visibility(P0, vox_side_len);  // пересчитать видимость вокселей вокруг
 
-  for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксели
+  for (uint8_t side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксели
     append_in_vbo(get(i3d_near(P0, side, vox_side_len)));
-}
-
-
-///
-/// \brief voxesdb::vox_add_in_db
-/// \param P
-/// \param side_len
-/// \return
-/// \details В указанной 3D точке генерирует новый вокс c пересчетом
-/// видимости своих сторон и окружающих воксов и вносит его в базу данных
-///
-vox* voxesdb::create(const i3d& P, int side_len)
-{
-  auto pVox = cfg::DataBase.get_vox(P);
-  if (nullptr == pVox)
-  {
-    pVox = std::make_unique<vox> (P, side_len);
-    cfg::DataBase.save_vox(pVox.get());
-  }
-  return push_db(std::move(pVox));
-}
-
-
-///
-/// \brief voxesdb::push_back
-/// \param V
-/// \return
-///
-vox* voxesdb::push_db(std::unique_ptr<vox> V)
-{
-  push_back(std::move(V));
-  return back().get();
 }
 
 
@@ -183,26 +172,32 @@ vox* voxesdb::get(const i3d& P0)
 
 ///
 /// \brief voxesdb::recalc_vox_visibility
-/// \param R0
-/// \details Пересчет видимости сторон вокса и его соседей вокруг него
+/// \param pVox - ссылка на вокс
+///
+/// \details Пересчет видимости сторон вокса и прилегающих сторон соседей. Если
+/// после пересчета видимость сторон изменяется, то информация в БД обновляется.
 ///
 void voxesdb::recalc_vox_visibility(vox* pVox)
 {
   if (nullptr == pVox) return;
+  auto VoxSides = pVox->get_visibility();
 
   // С каждой стороны вокса проверить наличие соседа
-  for (u_char side = 0; side < SIDES_COUNT; ++side)
+  for (uint8_t side = 0; side < SIDES_COUNT; ++side)
   {
     vox* pNear = get(i3d_near(pVox->Origin, side, pVox->side_len));
     if (nullptr != pNear)                      // Если есть соседний,
     {                                          // то соприкасающиеся
+      auto NearSides = pNear->get_visibility();
       pVox->visible_off(side);                 // стороны невидимы
       pNear->visible_off(side_opposite(side)); // у обоих воксов.
+      if(NearSides != pNear->get_visibility()) cfg::DataBase.vox_data_save(pNear);
     } else
     {
       pVox->visible_on(side);                  // Иначе - сторона видимая.
     }
   }
+  if (VoxSides != pVox->get_visibility()) cfg::DataBase.vox_data_save(pVox);
 }
 
 
@@ -222,16 +217,21 @@ void voxesdb::recalc_around_visibility(i3d P0, int side_len)
 
   // Если в указанной точке пусто, то у воксов вокруг нее
   // надо включить видимость прилегающих сторон
-  for (u_char side = 0; side < SIDES_COUNT; ++side)
+  for (uint8_t side = 0; side < SIDES_COUNT; ++side)
   {
     pVox = get(i3d_near(P0, side, side_len));
-    if (nullptr != pVox) pVox->visible_on(side_opposite(side));
+    if (nullptr != pVox)
+    {
+      auto VoxSides = pVox->get_visibility();
+      pVox->visible_on(side_opposite(side));
+      if(VoxSides != pVox->get_visibility()) cfg::DataBase.vox_data_save(pVox);
+    }
   }
 }
 
 
 ///
-/// \brief voxesdb::vox_draw
+/// \brief voxesdb::append_in_vbo
 ///
 /// \details Добавление в графический буфер элементов
 ///
@@ -252,7 +252,7 @@ void voxesdb::append_in_vbo(vox* pVox)
   GLfloat buffer[digits_per_side];
 
   // каждая сторона вокса обрабатывается отдельно
-  for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
+  for(uint8_t side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
     if(!pVox->side_fill_data(side_id, buffer)) continue;
     vbo_addr = pVBO->append(buffer, bytes_per_side);
@@ -260,15 +260,36 @@ void voxesdb::append_in_vbo(vox* pVox)
 
     GpuMap[vbo_addr/bytes_per_side] = pVox->Origin;
 
-    render_indices += indices_per_side;        // увеличить число точек рендера
-
+    render_indices.fetch_add(indices_per_side);        // увеличить число точек рендера
   }
   pVox->in_vbo = true;
 }
 
 
 ///
-/// \brief voxesdb::vox_wipe
+/// \brief voxesdb::vbo_expand
+/// \param data  блок данных видимых сторон
+/// \param n     количество (видимых) сторон
+/// \param P     координаты вокса
+///
+/// \details     Размещение вокса в VBO. При вызове указывается адрес
+/// размещения данных, число сторон в блоке и 3D координаты вокса
+///
+void voxesdb::vbo_expand(uint8_t* data, uint8_t n, const i3d& P)
+{
+  GLsizeiptr vbo_addr = 0;
+  while (n > 0) {
+    n--;
+    vbo_addr = pVBO->append(data, bytes_per_side); // добавить данные стороны в VBO
+    GpuMap[vbo_addr/bytes_per_side] = P;           // запомнить положение блока данных
+    render_indices.fetch_add(indices_per_side);    // увеличить число точек рендера
+    data += bytes_per_side;                        // переключить на следующую сторону
+  }
+}
+
+
+///
+/// \brief voxesdb::remove_from_vbo
 /// \param vox* pVox
 /// \details Убрать вокс из рендера
 ///
@@ -278,7 +299,7 @@ void voxesdb::remove_from_vbo(vox* pVox)
   if(!pVox->in_vbo) return;
 
   // Данные каждой из сторон перезаписываются данными воксов с хвоста VBO
-  for(u_char side_id = 0; side_id < SIDES_COUNT; ++side_id)
+  for(uint8_t side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
     if(!pVox->is_visible(side_id)) continue;      // если сторона невидима, то пропустить цикл
     GLsizeiptr dest = pVox->offset_read(side_id); // адрес освобождаемого блока данных
@@ -303,53 +324,67 @@ void voxesdb::remove_from_vbo(vox* pVox)
     }
     // Если free == dest, то удаляемый блок данных был в конце VBO,
     // поэтому только уменьшаем число точек рендера
-    render_indices -= indices_per_side;
+    render_indices.fetch_sub(indices_per_side);
   }
   pVox->in_vbo = false;
 }
 
 
 ///
-/// \brief voxesdb::vox_load
-/// \param P0
-/// \details Загрузить вокс из базы данных в буфер и в рендер
+/// \brief voxesdb::vbo_truncate
+/// \param P
+/// \details Удаляет из рендера данные воксов с линии (x,z)
 ///
-void voxesdb::load(const i3d& P0)
+void voxesdb::vbo_truncate(int x, int z)
 {
-  std::lock_guard<std::mutex> Hasp{mutex_voxes_db};
+  if (render_indices < indices_per_side) return;
+  GLsizeiptr dest, moved_from;
+  i3d Pt {0,0,0};
 
-  auto pVox = cfg::DataBase.get_vox(P0);
-
-  if(nullptr != pVox)
+  size_t id = render_indices/indices_per_side;
+  while(id > 0)
   {
-    vox* V = push_db(std::move(pVox));
-
-    for (u_char side = 0; side < SIDES_COUNT; ++side) // Временно убрать из рендера воксы
-      remove_from_vbo(get(i3d_near(P0, side, V->side_len)));   // вокруг точки добавления вокса
-
-    recalc_vox_visibility(V); // пересчитать видимость сторон
-    append_in_vbo(V);         // добавить в рендер
-
-    for (u_char side = 0; side < SIDES_COUNT; ++side) // Вернуть в рендер соседние воксы
-      append_in_vbo(get(i3d_near(P0, side, V->side_len)));
+    id -= 1;
+    Pt = GpuMap[id];
+    if((Pt.x == x) and (Pt.z == z)) // Данные вокса есть в GPU
+    {
+      dest = id * bytes_per_side;                      // адрес удаляемого блока данных
+      moved_from = pVBO->remove(dest, bytes_per_side); // адрес хвоста VBO (данными отсюда
+                                                       // перезаписываются данные по адресу "dest")
+      // Если c адреса "free" на "dest" данные были перенесены, то обновить координты Origin
+      if (moved_from != dest) GpuMap[dest/bytes_per_side] = GpuMap[moved_from/bytes_per_side];
+      // Если free == dest, то удаляемый блок данных был в конце VBO и просто "отбрасывается"
+      render_indices.fetch_sub(indices_per_side); // уменьшаем число точек рендера
+    }
   }
 }
 
 
 ///
-/// \brief voxesdb::vox_unload
+/// \brief voxesdb::vox_load
 /// \param P0
-/// \details Выгрузить данные вокса из памяти, и убрать из рендера
+/// \details Загрузить вокс из базы данных в рендер
 ///
-void voxesdb::unload(const i3d& P0)
+void voxesdb::load(int x, int z)
 {
   std::lock_guard<std::mutex> Hasp{mutex_voxes_db};
 
-  auto it = std::find_if(begin(), end(), [&P0](const auto& V){ return V->Origin == P0; });
-  if(it == end()) return; // в этой точке вокса нет
-  vox* V = it->get();
-  if(V->in_vbo) remove_from_vbo(V);
-  erase(it);
+  // Загрузка из БД
+  auto VoxData = cfg::DataBase.load_vox_data(x, z);
+  if(VoxData.empty()) return;
+
+  int y = 0;
+  size_t offset = 0;
+  size_t offset_max = VoxData.size() - sizeof_y - 1;
+  while (offset < offset_max)
+  {
+    memcpy(&y, VoxData.data() + offset, sizeof_y);             // Координата "y"
+    offset += sizeof_y;
+    std::bitset<6> m(VoxData[offset]);                         // Маcка видимых сторон
+    offset += 1;
+    vbo_expand(VoxData.data() + offset, m.count(), {x, y, z}); // Занести данные в VBO
+    offset += m.count() * bytes_per_side;                      // Перейти к следующему блоку
+  }
 }
 
 } // namespace tr

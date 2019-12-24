@@ -235,7 +235,7 @@ void gui::cancel(void)
   switch (GuiMode)
   {
     case GUI_3D_MODE:
-      cfg::map_view_save(Space->Eye);
+      cfg::map_view_save(Space->ViewFrom, Space->look_dir);
       GuiMode = GUI_MENU_LSELECT;
       Cursor3D[2] = 0.0f;                      // Спрятать прицел
       GlContext->cursor_restore();             // Включить указатель мыши
@@ -329,7 +329,7 @@ void gui::button_click(ELEMENT_ID id)
   switch(id)
   {
     case BTN_OPEN:
-      cfg::map_view_load(Maps[row_selected - 1].Folder, Space->Eye);
+      cfg::map_view_load(Maps[row_selected - 1].Folder, Space->ViewFrom, Space->look_dir);
       GuiMode = GUI_3D_MODE;
       ImgGUI.fill({0xD0, 0xDD, 0xEE, 0xFF});      // заливка окна фоном
       {
@@ -448,7 +448,7 @@ void gui::button_make_body(img &D, BUTTON_STATE s)
     {
       np = 0;
       nr += 1.0;
-      S = static_cast<u_char>(nr * step);
+      S = static_cast<uint8_t>(nr * step);
     }
 
   }

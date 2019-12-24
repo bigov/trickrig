@@ -38,8 +38,7 @@ namespace tr {
 
 struct uch2
 {
-  u_char
-  u = 0, v = 0;
+  uint8_t u = 0, v = 0;
 };
 
 
@@ -55,13 +54,13 @@ private:
   GLsizeiptr vbo_addr[SIDES_COUNT] {}; // Адреса смещения в буфере GPU массивов данных по каждой из сторон
   GLfloat data[digits_per_voxel] {};   // Данные вершин (координаты, цвет, нормали, текстуры)
 
-  bool visible[SIDES_COUNT] {true}; // Видимость сторон
+  std::bitset<6> visibility {0x00};    // Видимость сторон
 
   void init_data(void);
-  void side_color_set(u_int side, color C);
-  void side_normals_set(u_int side);
-  void side_texture_set(u_int side);
-  void side_position_set(u_int side);
+  void side_color_set(uint8_t side, color C);
+  void side_normals_set(uint8_t side);
+  void side_texture_set(uint8_t side);
+  void side_position_set(uint8_t side);
 
   vox(void)                   = delete; // конструктор без параметров
   vox(const vox&)             = delete; // дублирующий конструктор
@@ -76,16 +75,17 @@ public:
   int side_len;     // размер стороны
   int born;         // метка времени создания
 
-  void visible_on(u_char side_id);
-  void visible_off(u_char side_id);
-  bool is_visible(u_char side_id);
+  void visible_on(uint8_t side_id);
+  void visible_off(uint8_t side_id);
+  bool is_visible(uint8_t side_id);
+  uint8_t get_visibility(void) { return static_cast<u_int8_t>(visibility.to_ulong()); }
 
   bool in_vbo = false;              // данные помещены в VBO
 
-  u_char side_id_by_offset(GLsizeiptr dst);
-  bool side_fill_data(u_char side_id, GLfloat* data);
-  void offset_write(u_char side_id, GLsizeiptr n);
-  GLsizeiptr offset_read(u_char side_id);
+  uint8_t side_id_by_offset(GLsizeiptr dst);
+  bool side_fill_data(uint8_t side_id, GLfloat* data);
+  void offset_write(uint8_t side_id, GLsizeiptr n);
+  GLsizeiptr offset_read(uint8_t side_id);
   void offset_replace(GLsizeiptr old_n, GLsizeiptr new_n);
 };
 

@@ -146,11 +146,11 @@ bool operator== (const px &A, const px &B)
   ///
   /// \brief Вспомогательная функция для структуры "px"
   ///
-  u_char int_to_uchar(int v)
+  uint8_t int_to_uchar(int v)
   {
     if(v < 0)         return 0x00;
     else if (v > 255) return 0xFF;
-    else return static_cast<u_char>(v);
+    else return static_cast<uint8_t>(v);
   }
 
   ///
@@ -251,9 +251,9 @@ bool operator== (const px &A, const px &B)
   /// \brief img::uchar_data
   /// \return
   ///
-  u_char* img::uchar(void) const
+  uint8_t* img::uchar(void) const
   {
-    return reinterpret_cast<u_char*>(px_data());
+    return reinterpret_cast<uint8_t*>(px_data());
   }
 
 

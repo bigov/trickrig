@@ -36,8 +36,8 @@ namespace tr
       static std::string CfgFname; // конфиг текущей сесии
       static layout WinLayout;     // размер и положение главного окна
 
-      static void map_view_load(const std::string &DirName, camera_3d &Eye);
-      static void map_view_save(const camera_3d& Eye);
+      static void map_view_load(const std::string& DirName, std::shared_ptr<glm::vec3> ViewFrom, float* look);
+      static void map_view_save(std::shared_ptr<glm::vec3> View, float* look);
       static void load(char** argv);
       static void save(const layout& WindowLayout);
       static std::string create_map(const std::string &MapName);

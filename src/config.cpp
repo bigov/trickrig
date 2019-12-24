@@ -47,16 +47,23 @@ std::string cfg::user_dir(void)
 ///
 /// Загрузка параметров сессии карты
 ///
-void cfg::map_view_load(const std::string &DirName, camera_3d& Eye)
+void cfg::map_view_load(const std::string &DirName, std::shared_ptr<glm::vec3> ViewFrom, float* look)
 {
   MapParams = DataBase.map_open(DirName + DS);
 
   // Загрузка настроек камеры вида
-  Eye.ViewFrom.x = std::stof(MapParams[VIEW_FROM_X]);
-  Eye.ViewFrom.y = std::stof(MapParams[VIEW_FROM_Y]);
-  Eye.ViewFrom.z = std::stof(MapParams[VIEW_FROM_Z]);
-  Eye.look_a = std::stof(MapParams[LOOK_AZIM]);
-  Eye.look_t = std::stof(MapParams[LOOK_TANG]);
+  ViewFrom->x = std::stof(MapParams[VIEW_FROM_X]);
+  ViewFrom->y = std::stof(MapParams[VIEW_FROM_Y]);
+  ViewFrom->z = std::stof(MapParams[VIEW_FROM_Z]);
+  look[0] = std::stof(MapParams[LOOK_AZIM]);
+
+  // Если взгляд направлен выше линии горизонта (look[1] > 0), то при загрузке карты
+  // сориентироваться в пространстве не сразу удобно. Комфортнее, если взгляд будет
+  // направлен немного вниз, "под ноги":
+
+  // look[1] = std::stof(MapParams[LOOK_TANG]);
+  // if(look[1] > 0) look[1] = -0.2f;
+  look[1] = -0.25f;
 }
 
 
@@ -182,9 +189,9 @@ void cfg::save(const layout& WindowLayout)
 ///
 /// Сохранить настройки положения камеры и закрыть карту
 ///
-void cfg::map_view_save(const camera_3d &Eye)
+void cfg::map_view_save(std::shared_ptr<glm::vec3> View, float* look)
 {
-  DataBase.map_close(Eye);
+  DataBase.map_close(View, look);
 }
 
 

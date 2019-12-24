@@ -30,6 +30,7 @@ class vbo_base
 
     void allocate (GLsizeiptr allocated);
     GLsizeiptr max_size(void);
+
     void allocate (GLsizeiptr allocated, const GLvoid* data);
     void set_attributes (const std::list<glsl_attributes>&);
     void attrib (GLuint, GLint, GLenum, GLboolean, GLsizei, size_t);

@@ -27,13 +27,13 @@ namespace tr
   extern size_t utf8_size(const std::string &Text);
   extern std::string wstring2string(const std::wstring &w);
 
-  extern u_char int_to_uchar(int v); // Вспомогательная функция для структуры "px"
+  extern uint8_t int_to_uchar(int v); // Вспомогательная функция для структуры "px"
 
   struct px
   {
-    u_char r, g, b, a;
+    uint8_t r, g, b, a;
     px(void): r(0x00), g(0x00), b(0x00), a(0x00) {}
-    px(u_char vr, u_char vg, u_char vb, u_char va): r(vr), g(vg), b(vb), a(va) {}
+    px(uint8_t vr, uint8_t vg, uint8_t vb, uint8_t va): r(vr), g(vg), b(vb), a(va) {}
     px(int R, int G, int B, int A):
       r(int_to_uchar(R)),
       g(int_to_uchar(G)),
@@ -77,7 +77,7 @@ namespace tr
       void resize(u_int width, u_int height);
       void clear(void);
       void fill(const px&);
-      u_char* uchar(void) const;
+      uint8_t* uchar(void) const;
       px* px_data(void) const;
       void load(const std::string &filename);
       void copy(u_int col, u_int row, img &dst, u_long dst_x, u_long dst_y) const;

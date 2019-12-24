@@ -13,8 +13,7 @@ namespace tr
   // Инициализация глобальных объектов
   std::atomic<int> render_indices = 0;
 
-  f3d MovingDist {};         // Вектор смещения между кадрами
-  std::mutex mutex_mdist;
+  std::mutex mutex_viewfrom; // Доступ к положению камеры
   std::mutex mutex_voxes_db; // разделение доступа к буферу вершин
   std::mutex mutex_vbo;      // разделение доступа к VBO
   std::mutex mutex_loading;  // ожидание загрузки сцены из базы данных в GPU

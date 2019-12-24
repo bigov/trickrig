@@ -18,7 +18,6 @@ namespace tr {
   int wsql::num_rows = 0;
   tr::query_data wsql::Result = {0, "", "", 0};
 
-
   ///
   /// \brief loadOrSaveDb
   /// \param pInMemory
@@ -137,10 +136,12 @@ namespace tr {
   /// \return
   /// \details Обработчик результатов запроса sql3_exec()
   ///
+  /// !ВНИМАНИЕ! НЕ ИСПОЛЬЗОВАТЬ ДЛЯ ПОЛУЧЕНИЯ ДАННЫХ ИЗ ПОЛЕЙ ТИПА BLOB
+  ///
   int wsql::callback(void *x, int count, char **value, char **name)
   {
-    std::vector<char> col_value = {};
-    std::forward_list<std::pair<std::string, std::vector<char>>> Row = {};
+    std::vector<char> col_value {};
+    std::forward_list<std::pair<std::string, std::vector<char>>> Row {};
 
     for(int i = 0; i < count; i++)
     {
@@ -151,6 +152,8 @@ namespace tr {
       else
       {
         size_t k = 0;
+
+        // Если поле типа BLOB и есть значения '\0', то они все будут потеряны.
         while(value[i][k] != '\0') col_value.push_back(value[i][k++]);
         col_value.push_back(value[i][k]); // завершить массив символом '\0'
       }
@@ -170,51 +173,40 @@ namespace tr {
   ///
   void wsql::save_row_data(void)
   {
-    size_t data_bytes = 0;
-    std::vector<std::any> Row {};
-    std::vector<char> Ch_ceil {};
-    std::vector<unsigned char> Uch_ceil {};
+    size_t lgth = 0;
+    std::list<std::vector<u_int8_t>> RowData {}; // Строка ячеек таблицы результата запроса
 
-    //int col = sqlite3_column_count(pStmt); // Число колонок в результирующем наборе
     int col = sqlite3_data_count(pStmt);     // Число колонок в строке результата
-
     if(col < 1) return;
 
-
-    for (int i = 0; i < col; i++)
+    for (int n = 0; n < col; n++)
     {
-      int data_type = sqlite3_column_type(pStmt, i);
-      Ch_ceil.clear();
-      Uch_ceil.clear();
+      lgth = sqlite3_column_bytes(pStmt, n);    // размер ячейки результата в байтах
+      std::vector<u_int8_t> CeilData(lgth, 0);  // массив для приема данных
 
-      switch (data_type)
+      int i; double d;
+      switch (sqlite3_column_type(pStmt, n))
       {
         case SQLITE_INTEGER:
-          Row.push_back(std::any(sqlite3_column_int(pStmt, i)));
+          i = sqlite3_column_int(pStmt, n);
+          memcpy(CeilData.data(), &i, lgth);
           break;
         case SQLITE_FLOAT:
-          Row.push_back(std::any(sqlite3_column_double(pStmt, i)));
+          d = sqlite3_column_double(pStmt, n);
+          memcpy(CeilData.data(), &d, lgth);
           break;
         case SQLITE_TEXT:
-          data_bytes = sqlite3_column_bytes(pStmt, i);
-          Ch_ceil.resize(data_bytes + 1, '\0');
-          memcpy(Ch_ceil.data(), sqlite3_column_text(pStmt, i), data_bytes);
-          Row.push_back(std::any(Ch_ceil));
+          memcpy(CeilData.data(), sqlite3_column_text(pStmt, n), lgth);
           break;
         case SQLITE_BLOB:
-          data_bytes = sqlite3_column_bytes(pStmt, i);
-          Uch_ceil.resize(data_bytes + 1, '\0');
-          memcpy(Uch_ceil.data(), sqlite3_column_blob(pStmt, i), data_bytes);
-          Row.push_back(std::any(Uch_ceil));
+          memcpy(CeilData.data(), sqlite3_column_blob(pStmt, n), lgth);
           break;
-        case SQLITE_NULL:
-          Row.push_back(std::any(NULL));
-          break;
-        default:
+        case SQLITE_NULL: default:
           break;
       }
+      RowData.push_back(std::move(CeilData));
     }
-    Rows.push_front(Row);
+    Rows.push_front(std::move(RowData));
     return;
   }
 
@@ -224,9 +216,11 @@ namespace tr {
   /// \param request
   /// \details Обработчик запросов на получение данных
   ///
-  void wsql::request_get(const char *request)
+  GetResult wsql::request_get(const char *request)
   {
+#ifndef NDEBUG
     assert(is_open);
+#endif
 
     bool complete = false;
 
@@ -268,7 +262,7 @@ namespace tr {
     for(auto &msg: ErrorsList) tr::info(msg);
     #endif
 
-    return;
+    return Rows;
   }
 
 
@@ -334,12 +328,13 @@ namespace tr {
   ///
   /// Бинарные данные записываются в поле, обозначенное в тексте запроса символом '?'
   ///
-  /// четвертый параметр - это количество байтов в значении, а не количество символов.
+  /// Функция "sqlite3_bind_blob"
+  /// ---------------------------
+  /// Четвертый параметр - это размер массива в байтах
   ///
-  /// Пятым аргументом можно указать адрес функции деструктора бинарных данных.
-  ///
-  /// Если пятым аргументом указать значение SQLITE_STATIC, то SQLite предполагает,
-  /// что информация (принятые бинарные данные) находится в статическом, неуправляемом
+  /// Пятым аргументом можно указать адрес функции деструктора бинарных данных. Если
+  /// пятым аргументом указать значение SQLITE_STATIC, то SQLite предполагает, что
+  /// информация (принятые бинарные данные) находится в статическом, неуправляемом
   /// пространстве и не нуждается в освобождении.
   ///
   /// Если пятый аргумент имеет значение SQLITE_TRANSIENT, SQLite делает свою
@@ -370,18 +365,17 @@ namespace tr {
     #ifndef NDEBUG
     for(auto &msg: ErrorsList) tr::info(msg);
     #endif
-
   }
 
 
   ///
-  /// \brief wsql::request_put
+  /// \brief wsql::request_put_float
   /// \param request
   /// \param fl
   /// \param fl_size
   /// \details Запись бинарных данных переданых в виде массива float и его размера
   ///
-  void wsql::request_put(const char * request, const float * fl, size_t fl_size)
+  void wsql::request_put_float(const char* request, const float* fl, size_t fl_size)
   {
     auto data_chars_size = fl_size * sizeof(float);
     std::unique_ptr<char[]> data {new char[data_chars_size]};
@@ -462,9 +456,13 @@ namespace tr {
   ///
   /// \details Выполнение запроса
   ///
-  void wsql::exec(const char *query)
+  /// !ВНИМАНИЕ! НЕ УМЕЕТ ОБРАБАТЫВАТЬ ДАННЫЕ ТИПА BLOB
+  ///
+  void wsql::exec(const char* query)
   {
-    assert(is_open);
+#ifndef NDEBUG
+  assert(is_open);
+#endif
 
     char* err_msg = nullptr;
     ErrorsList.clear();
@@ -483,9 +481,9 @@ namespace tr {
       }
     }
 
-    #ifndef NDEBUG
-    for(auto &msg: ErrorsList) info(msg);
-    #endif
+#ifndef NDEBUG
+  for(auto& msg: ErrorsList) info(msg);
+#endif
   }
 
 

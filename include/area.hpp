@@ -30,12 +30,18 @@ class area
     area(area&&) = delete;
     area& operator=(area&&) = delete;
 
-    void operator() (std::shared_ptr<voxesdb> V, int length, int count, const glm::vec3& L, GLFWwindow* Context);
-    void init(std::shared_ptr<voxesdb> V, int len, int elements, const glm::vec3& CameraLocation);
+    void operator() (std::shared_ptr<voxesdb> V, int length, int count,
+                      std::shared_ptr<glm::vec3> CameraLocation, GLFWwindow* Context);
+    void init(std::shared_ptr<voxesdb> V, int len, int elements, std::shared_ptr<glm::vec3> CameraLocation);
     bool recalc_borders(void);
 
   private:
     std::shared_ptr<voxesdb> Voxes = nullptr;
+    std::shared_ptr<glm::vec3> ViewFrom = nullptr;
+
+    float last[3]      = {0.f, 0.f, 0.f};  // последнее считанное положение камеры
+    float curr[3]      = {0.f, 0.f, 0.f};  // текущее положение камеры
+    float move_dist[3] = {0.f, 0.f, 0.f};  // расстояние, пройденное между запросами
 
     int side_len     = 0;     // Длина стороны вокса
     float f_side_len = 0.f;   // Длина стороны вокса

@@ -9,7 +9,14 @@
 namespace tr
 {
 
-//using vecdb_t = std::vector<std::unique_ptr<vox>>;
+// структура для хранения информации в БД
+struct vox_data
+{
+  int y;                       // положение вокса по оси Y (для учета Y-LOD)
+  uint8_t visible_sides_map;    // бинарная маска видимых сторон (для пересчета видимости)
+  uint8_t data[bytes_per_side]; // данные видимых сторон для размещения в VBO
+};
+
 
 class voxesdb: public std::vector<std::unique_ptr<vox>>
 {
@@ -24,30 +31,31 @@ class voxesdb: public std::vector<std::unique_ptr<vox>>
 
     void append (GLsizeiptr offset);
     void remove (GLsizeiptr offset);
-    void load (const i3d& P0);   // загрузить вокс из базы данных в буфер и рендер
-    void unload (const i3d& P0); // выгрузить вокс из буфера и из рендера
+    void load (int x, int z);         // загрузить воксы из базы данных в рендер
+    void vbo_truncate(int x, int z);  // Удаление вокса из VBO
 
   private:
     //vecdb_t::iterator FindResult {};
     vbo_ext* pVBO;              // VBO вершин поверхности
 
-    // В этот массив записываются значения Origin видимых сторон воксов в порядке
-    // их размещения в VBO. Соответственно, размер массива должен соотвествовать
-    // зарезервированному размеру VBO. Адрес размещения определяется умножением
-    // индекса элемента в массиве на размер блока данных одной стороны. Так как
-    // все видимые стороны вокса одновременно размещается GPU и одновременно
-    // удаляются из нее, то нет необходимости различать каждую из сторон персонально -
-    // для каждой из сторон в массив заносится одино и то-же значение Origin вокса.
-    std::vector<i3d> GpuMap {};
+    // В контрольный массив (GpuMap) записываются координаты Origin видимых сторон воксов,
+    // переданных в VBO в порядке их размещения. Соответственно, размер массива должен
+    // соотвествовать зарезервированному размеру VBO. Адрес размещения определяется
+    // умножением значения индекса элемента в массиве на размер блока данных стороны.
+    // Так как все видимые стороны вокса одновременно размещается GPU и одновременно
+    // удаляются из нее, то нет необходимости различать каждую из сторон вокса - для каждой
+    // в массив заносится одино и то-же значение координта Origin.
+    std::vector<i3d> GpuMap {};             // Контрольный массив
 
-    vox* push_db (std::unique_ptr<vox>);    // Добавить вокс к вектору
-    vox* create (const i3d&, int side_len); // создать в указанной точке вокс и записать в БД
     void append_in_vbo (vox*);              // разместить вокс в VBO буфере
     void remove_from_vbo (vox*);            // убрать из VBO
     void recalc_vox_visibility (vox*);
     void recalc_around_visibility (i3d, int side_len);
     vox* get (GLsizeiptr);
     vox* get (const i3d&);
+
+    void vbo_expand(uint8_t* data, uint8_t n, const i3d& P); // Размещение вокса в VBO
+    void vox_create(const i3d& P, int vox_side_len);         // Создание вокса
 };
 
 

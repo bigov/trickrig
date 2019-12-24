@@ -98,6 +98,7 @@ v_ch db::map_name_read(const std::string & dbFile)
 }
 
 
+/*
 ///
 /// \brief db::get_voxel
 /// \param i3d P
@@ -117,21 +118,13 @@ std::unique_ptr<vox> db::get_vox(const i3d& P)
 
   if(!SqlDb.Table_rows.empty())
   {
-    auto it = SqlDb.Table_rows.front().begin();
-    //int texture, color, size, z, y, x;
-    //texture = atoi(it->second.data());           // индекс текстуры
-    it++;
-    //color   = atoi(it->second.data());           // цвет вершин
-    it++;
+    auto it = SqlDb.Table_rows.front().begin(); it++; it++;
     int size = atoi(it->second.data()); //it++;    // размер стороны
-    //z       = atoi(it->second.data()); it++;     // координата Z
-    //y       = atoi(it->second.data()); it++;     // координата Y
-    //x       = atoi(it->second.data()); it++;     // координата X
     return std::make_unique<vox>(P, size);
   }
   else return nullptr;
 }
-
+*/
 
 
 ///
@@ -186,7 +179,7 @@ void db::map_name_save(const std::string &Dir, const std::string &MapName)
 /// \brief db::save
 /// \param Eye
 ///
-void db::map_close(const camera_3d &Eye)
+void db::map_close(std::shared_ptr<glm::vec3> ViewFrom, float* look)
 {
   SqlDb.close_in_ram(MapPFName); // закрыть файл данных пространства вокселей
 
@@ -195,23 +188,23 @@ void db::map_close(const camera_3d &Eye)
   std::string p = "";
   std::string Query = "";
 
-  p = std::to_string(Eye.ViewFrom.x);
+  p = std::to_string(ViewFrom->x);
   sprintf(q, tpl, p.c_str(), VIEW_FROM_X);
   Query += q;
 
-  p = std::to_string(Eye.ViewFrom.y);
+  p = std::to_string(ViewFrom->y);
   sprintf(q, tpl, p.c_str(), VIEW_FROM_Y);
   Query += q;
 
-  p = std::to_string(Eye.ViewFrom.z);
+  p = std::to_string(ViewFrom->z);
   sprintf(q, tpl, p.c_str(), VIEW_FROM_Z);
   Query += q;
 
-  p = std::to_string(Eye.look_a);
+  p = std::to_string(look[0]);
   sprintf(q, tpl, p.c_str(), LOOK_AZIM);
   Query += q;
 
-  p = std::to_string(Eye.look_t);
+  p = std::to_string(look[1]);
   sprintf(q, tpl, p.c_str(), LOOK_TANG);
   Query += q;
 
@@ -222,7 +215,7 @@ void db::map_close(const camera_3d &Eye)
   }
 }
 
-
+/*
 ///
 /// \brief db::save_vox
 /// \param V
@@ -234,7 +227,152 @@ void db::save_vox(vox* V)
           V->Origin.x, V->Origin.y, V->Origin.z, V->side_len);
   SqlDb.write(q);
 }
+*/
 
+/// DEBUG
+void out_char_as_hex (const std::vector<char>& V, int n = 8)
+{
+  // Так как std::hex работает только с целыми числами, то надо
+  // скопировать данные из входного массива <char>V в промежуточный <int>Ints
+
+  std::vector<int> Ints(V.size()/sizeof_y + 1); // +1 если поделилось с остатком
+  memcpy(Ints.data(), V.data(), V.size());
+
+  std::cout << "size of array: " << V.size() << "\n"
+    << std::hex << std::uppercase;
+
+  int max = Ints.size();
+  if(max > n) max = n;
+
+  for(int i = 0; i < max; i++) std::cout << std::setw(sizeof_y * 2)
+    << std::setfill('0') << Ints[i] << " ";
+
+  std::cout << std::dec << std::nouppercase << std::endl;
+}
+void out_char_as_hex (const std::vector<u_int8_t>& Vui, int n = 8)
+{
+  std::vector<char> Vch (Vui.size(), 0);
+  memcpy(Vch.data(), Vui.data(), Vui.size());
+  out_char_as_hex(Vch, n);
+}
+
+
+///
+/// \brief db::vox_data_delete
+/// \param rm_y
+/// \param VoxData
+/// \details Удаляет блок данных вокса, расположнного на координате rm_y
+///
+void db::_data_erase(int rm_y, std::vector<u_int8_t>& VoxData)
+{
+  int y = 0;                // Переменная для приема значения координаты Y
+  size_t offset = 0;        // Смещение блока данных вокса в наборе из группы воксов
+  size_t vox_data_size = 0; // Размер блока данных текущего вокса
+
+  bool check = (offset + sizeof_y + 1) < VoxData.size();
+  while (check)
+  {
+    memcpy(&y, VoxData.data() + offset, sizeof_y);            // Координата Y
+    std::bitset<6> m(VoxData[sizeof_y + offset]);             // Маcка видимых сторон
+    vox_data_size = m.count()*bytes_per_side + sizeof_y + 1;  // Размер блока
+    if(y == rm_y) VoxData.erase(VoxData.begin()+offset, VoxData.begin()+offset+vox_data_size);
+    else offset += vox_data_size;                               // Проверить следующий блок
+    // Так как массив может изменяться, то проверяем его размер каждый цикл
+    check = (offset + sizeof_y + 1) < VoxData.size();
+  }
+  return;
+}
+
+
+///
+/// \brief db::vox_data_delete
+/// \param x
+/// \param y
+/// \param z
+///
+void db::vox_data_delete(int x, int y, int z)
+{
+  char query[127] = {'\0'};
+
+  std::vector<u_int8_t> VoxData = load_vox_data(x, z); // Загрузить "колонку" воксов из БД
+  if(VoxData.size() > 0) _data_erase(y, VoxData);      // Удалить блок с координатой у
+
+  if(!VoxData.empty())                                 // Если есть другие воксы, то записать их
+  {
+    std::sprintf(query, "INSERT OR REPLACE INTO area (x, z, b) VALUES (%d, %d, ?);", x, z);
+    SqlDb.request_put(query, VoxData.data(), VoxData.size());
+  } else                                               // Если на этой линии воксов больше
+  {                                                    //  нет, то удалить запись из БД.
+    std::sprintf(query, "DELETE FROM area WHERE( x=%d AND z=%d );", x, z);
+    SqlDb.exec(query);
+  }
+}
+
+///
+/// \brief db::save_vox
+/// \param V
+///
+///  \details Данные вершин видимых сторон воксов, передаваемые для рендера в VBO, хранятся в базе
+/// данных "RAW"-блоками, т.е. в том-же виде, как и записываются в VBO. Для ускорения операций
+/// загрузки данных из БД для идентификации записей используется две из трех координат вокса
+/// "Origin.x" и "Origin.z", поэтому данные всех воксов, расположенных вертикально на одной линии Y,
+/// записываются в одну "blob" ячейку базы данных последовательно блоками в один общий массив.
+///
+/// Значение третьей координаты (Y) записывается в начале каждого блока. Длину блока и видимые
+/// стороны определяются по маске сторон (функция "vox::get_visibility"), которая записывается в начале
+/// каждого блока сразу после значения его координаты Y.
+///
+void db::vox_data_save (vox* pV)
+{
+  int y = pV->Origin.y;
+
+  // Загрузить "колонку" воксов из БД
+  std::vector<u_int8_t> VoxData = load_vox_data(pV->Origin.x, pV->Origin.z);
+
+  // Удалить из набора, если есть, данные вокса с координатой 'y',
+  // так как они будут перезаписаны данными полученного вокса
+  if(VoxData.size() > 0) _data_erase(y, VoxData);
+
+  size_t offset = VoxData.size();
+  VoxData.resize(VoxData.size() + sizeof_y);
+  memcpy(VoxData.data() + offset, &y, sizeof_y);            // Записать координату Y
+  VoxData.push_back(pV->get_visibility());                    // Записать маску видимости сторон
+  offset = VoxData.size();
+  GLfloat buffer[digits_per_side];
+  for(u_int8_t side_id = 0; side_id < SIDES_COUNT; ++side_id)
+  {
+    if(!pV->side_fill_data(side_id, buffer)) continue;
+    VoxData.resize(VoxData.size() + bytes_per_side);
+    memcpy(VoxData.data() + offset, buffer, bytes_per_side);  // Данные вершин видмой стороны
+    offset += bytes_per_side;
+  }
+
+  char query[127] = {'\0'};
+  std::sprintf(query, "INSERT OR REPLACE INTO area (x, z, b) VALUES (%d, %d, ?);", pV->Origin.x, pV->Origin.z);
+  SqlDb.request_put(query, VoxData.data(), VoxData.size());   // Записать в БД
+}
+
+
+///
+/// \brief db::load_vox_data
+/// \param x
+/// \param z
+/// \return
+///
+std::vector<u_int8_t> db::load_vox_data(int x, int z)
+{
+  char query[127] = {0};
+  std::sprintf(query, "SELECT * FROM area WHERE (x=%d AND z=%d);", x, z);
+  auto Rows = SqlDb.request_get(&query[0]);
+
+  if(!Rows.empty())
+  {
+    auto result_row = Rows.front();
+    result_row.reverse();
+    return result_row.front();
+  }
+  return std::vector<u_int8_t> {}; // если данных нет, то возвращается пустой вектор
+}
 
 ///
 /// \brief db::erase_vox

@@ -32,7 +32,9 @@ namespace tr
       virtual void keyboard_event(int _key, int _scancode, int _action, int _mods);
       virtual void focus_lost_event();
 
-      camera_3d Eye {};  // главная камера 3D вида
+      std::shared_ptr<glm::vec3> ViewFrom = nullptr;             // 3D координаты точки положения
+      float look_dir[2] = {0.0f, 0.0f};  // Направление: азимут (0 - X) и тангаж (0 - горизОнталь, пи/2 - вертикаль)
+
       int FPS = 500;     // частота кадров (для коррекции скорости движения)
 
     private:
@@ -57,8 +59,8 @@ namespace tr
       bool focus_is_on = false;
       float cursor_dx = 0.f;    // Cмещение мыши в активном окне между кадрами
       float cursor_dy = 0.f;    // в режиме 3D (режим прицела) при скрытом курсоре.
-      double xpos = 0.0; // позиция указателя относительно левой границы
-      double ypos = 0.0; // позиция указателя относительно верхней границы
+      double xpos = 0.0;        // позиция указателя относительно левой границы
+      double ypos = 0.0;        // позиция указателя относительно верхней границы
 
       int fb_way = 0;    // 3D движение front/back
       int rl_way = 0;    // -- right/left
