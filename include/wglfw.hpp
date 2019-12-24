@@ -25,8 +25,8 @@ class wglfw
       static GLFWwindow* win_shared;
       static GLFWwindow* win_ptr;
 
-      void set_window(u_int width=10, u_int height=10, u_int min_w=0,
-                      u_int min_h=0, u_int left=0, u_int top=0);
+      void set_window(uint width=10, uint height=10, uint min_w=0,
+                      uint min_h=0, uint left=0, uint top=0);
       void swap_buffers(void);
       void cursor_hide(void);
       void cursor_restore(void);

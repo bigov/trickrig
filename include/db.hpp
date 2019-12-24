@@ -30,7 +30,7 @@ class db
     //void save_vox(vox*);
     void vox_data_save(vox*);
     void vox_data_delete(int x, int y, int z);
-    std::vector<u_int8_t> load_vox_data(int x, int z);
+    std::vector<unsigned char> load_vox_data(int x, int z);
     void erase_vox(vox*);
     void init_map_config(const std::string &);
     //std::unique_ptr<vox> get_vox(const i3d&);
@@ -44,7 +44,7 @@ class db
 
     void init_app_config(const std::string &);
     v_str load_config(size_t params_count, const std::string &file_name);
-    void _data_erase(int y, std::vector<u_int8_t>& VoxData);
+    void _data_erase(int y, std::vector<unsigned char>& VoxData);
 };
 
 } //tr

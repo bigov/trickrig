@@ -92,8 +92,8 @@ namespace tr
       glm::vec3 light_direction {}; // направление освещения
       glm::vec3 light_bright {};    // яркость света
       // Индексы вершин подсвечиваемого вокселя, на который направлен курсор (центр экрана)
-      u_int hl_point_id_from = 0;         // индекс начальной вершины
-      u_int hl_point_id_end = 0;         // индекс последней вершины
+      uint hl_point_id_from = 0;         // индекс начальной вершины
+      uint hl_point_id_end = 0;         // индекс последней вершины
 
       // GPU control
       GLuint texture_id = 0;

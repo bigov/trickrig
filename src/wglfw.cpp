@@ -64,7 +64,7 @@ wglfw::wglfw(void)
 ///
 /// Настройка окна и обработчиков ввода
 ///
-void wglfw::set_window(u_int width, u_int height, u_int min_w, u_int min_h, u_int left, u_int top)
+void wglfw::set_window(uint width, uint height, uint min_w, uint min_h, uint left, uint top)
 {
   glfwSetErrorCallback(callback_error);
   glfwSetKeyCallback(win_ptr, callback_keyboard);
@@ -287,7 +287,7 @@ void wglfw::callback_size(GLFWwindow* w, int width, int height)
 /// \param window
 /// \param key
 ///
-void wglfw::callback_char(GLFWwindow* w, u_int ch)
+void wglfw::callback_char(GLFWwindow* w, uint ch)
 {
   assert(w == win_ptr);
   if(char_observer != nullptr) char_observer->character_event(ch);

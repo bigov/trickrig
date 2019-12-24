@@ -39,8 +39,8 @@ void area::init (std::shared_ptr<voxesdb> V, int len, int elements, std::shared_
 
   // Загрузка пространства вокруг точки расположения камеры
   i3d vP {};
-//  std::lock_guard<std::mutex> Hasp{mutex_loading};
 
+  std::lock_guard<std::mutex> Hasp{mutex_voxes_db};
   for(vP.x = P0.x; vP.x<= P1.x; vP.x += side_len)
       for(vP.z = P0.z; vP.z<= P1.z; vP.z += side_len)
       {
@@ -65,11 +65,9 @@ void area::operator() (std::shared_ptr<voxesdb> V, int len, int elements, std::s
   glfwMakeContextCurrent(Context);
   init(V, len, elements, CameraLocation);
 
-  auto t0 = std::chrono::milliseconds(1);
-
   while (nullptr != Voxes) {
     if(!recalc_borders())
-      std::this_thread::sleep_for(t0); // чтобы не грузить процессор
+      std::this_thread::sleep_for(std::chrono::milliseconds(1)); // чтобы не грузить процессор
   }
 }
 
@@ -137,8 +135,13 @@ void area::redraw_borders_x(int x_add, int x_del)
 {
   for(int z = Location.z - lod_dist, max = Location.z + lod_dist; z <= max; z += side_len)
   {
+    mutex_voxes_db.lock();
     Voxes->vbo_truncate(x_del, z);
+    mutex_voxes_db.unlock();
+    std::this_thread::sleep_for(std::chrono::microseconds(1));
+    mutex_voxes_db.lock();
     Voxes->load(x_add, z);
+    mutex_voxes_db.unlock();
   }
 }
 
@@ -151,8 +154,13 @@ void area::redraw_borders_z(int z_add, int z_del)
 {
   for(int x = Location.x - lod_dist, max = Location.x + lod_dist; x <= max; x += side_len)
   {
+    mutex_voxes_db.lock();
     Voxes->vbo_truncate(x, z_del);
+    mutex_voxes_db.unlock();
+    std::this_thread::sleep_for(std::chrono::microseconds(1));
+    mutex_voxes_db.lock();
     Voxes->load(x, z_add);
+    mutex_voxes_db.unlock();
   }
 }
 

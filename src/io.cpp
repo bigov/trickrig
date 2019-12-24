@@ -20,9 +20,9 @@ const std::string FontMap1 { "_'\"~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghi"
 // "FontMap2" - каждый символ занимает по два байта
 const std::string FontMap2 { "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗ"
                                "ИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };
-u_int FontMap1_len = 0; // значение будет присвоено в конструкторе класса
+uint FontMap1_len = 0; // значение будет присвоено в конструкторе класса
 
-u_int f_len = 160; // количество символов в текстуре шрифта
+uint f_len = 160; // количество символов в текстуре шрифта
 img Font12n { "../assets/font_07x12_nr.png", f_len }; //шрифт 07х12 (норм)
 img Font15n { "../assets/font_08x15_nr.png", f_len }; //шрифт 08х15 (норм)
 img Font18n { "../assets/font_10x18_nr.png", f_len }; //шрифт 10x18 (норм)
@@ -146,11 +146,11 @@ bool operator== (const px &A, const px &B)
   ///
   /// \brief Вспомогательная функция для структуры "px"
   ///
-  uint8_t int_to_uchar(int v)
+  unsigned char int_to_uchar(int v)
   {
     if(v < 0)         return 0x00;
     else if (v > 255) return 0xFF;
-    else return static_cast<uint8_t>(v);
+    else return static_cast<unsigned char>(v);
   }
 
   ///
@@ -158,12 +158,12 @@ bool operator== (const px &A, const px &B)
   /// \param width
   /// \param height
   ///
-  img::img(u_long width, u_long height)
+  img::img(ulong width, ulong height)
     : Data(width * height), n_cols(_c), n_rows(_r),
     w_cell(_wc), h_cell(_hc), w_summ(_w), h_summ(_h)
   {
-    _w = static_cast<u_int>(width);  // ширина изображения в пикселях
-    _h = static_cast<u_int>(height); // высота изображения в пикселях
+    _w = static_cast<uint>(width);  // ширина изображения в пикселях
+    _h = static_cast<uint>(height); // высота изображения в пикселях
     _c = 1;      // число ячеек в строке
     _r = 1;      // число строк
     _wc = _w/_c; // ширина ячейки в пикселях
@@ -176,14 +176,14 @@ bool operator== (const px &A, const px &B)
   /// \param height
   /// \param pixel
   ///
-  img::img(u_long width, u_long height, const px &pixel)
+  img::img(ulong width, ulong height, const px &pixel)
     : Data(width * height, pixel), n_cols(_c), n_rows(_r),
     w_cell(_wc), h_cell(_hc), w_summ(_w), h_summ(_h)
   {
     _c = 1;      // число ячеек в строке (по-умолчанию)
     _r = 1;      // число строк (по-умолчанию)
-    _w = static_cast<u_int>(width);  // ширина изображения в пикселях
-    _h = static_cast<u_int>(height); // высота изображения в пикселях
+    _w = static_cast<uint>(width);  // ширина изображения в пикселях
+    _h = static_cast<uint>(height); // высота изображения в пикселях
     _wc = _w/_c; // ширина ячейки в пикселях
     _hc = _h/_r; // высота ячейки в пикселях
   }
@@ -194,7 +194,7 @@ bool operator== (const px &A, const px &B)
   /// \param cols
   /// \param rows
   ///
-  img::img(const std::string &filename, u_int cols, u_int rows)
+  img::img(const std::string &filename, uint cols, uint rows)
     : Data(0),  n_cols(_c), n_rows(_r),
       w_cell(_wc), h_cell(_hc), w_summ(_w), h_summ(_h)
   {
@@ -209,7 +209,7 @@ bool operator== (const px &A, const px &B)
   /// \param W
   /// \param H
   ///
-  void img::resize(u_int width, u_int height)
+  void img::resize(uint width, uint height)
   {
     _w = width;  // ширина изображения в пикселях
     _h = height; // высота изображения в пикселях
@@ -251,9 +251,9 @@ bool operator== (const px &A, const px &B)
   /// \brief img::uchar_data
   /// \return
   ///
-  uint8_t* img::uchar(void) const
+  uchar* img::uchar_t(void) const
   {
-    return reinterpret_cast<uint8_t*>(px_data());
+    return reinterpret_cast<uchar*>(px_data());
   }
 
 
@@ -288,7 +288,7 @@ bool operator== (const px &A, const px &B)
 
     resize(info.width, info.height);
 
-    if (!png_image_finish_read(&info, nullptr, uchar(), 0, nullptr ))
+    if (!png_image_finish_read(&info, nullptr, uchar_t(), 0, nullptr ))
     {
       png_image_free(&info);
       ERR(info.message);
@@ -304,25 +304,25 @@ bool operator== (const px &A, const px &B)
   /// \param X   координата пикселя приемника
   /// \param Y   координата пикселя приемника
   ///
-  void img::copy(u_int C, u_int R, img& dst, u_long X, u_long Y) const
+  void img::copy(uint C, uint R, img& dst, ulong X, ulong Y) const
   {
     if(C >= n_cols) C = 0;
     if(R >= n_rows) R = 0;
 
-    u_int frag_w = w_summ / n_cols;             // ширина фрагмента в пикселях
-    u_int frag_h = h_summ / n_rows;             // высота фрагмента в пикселях
-    u_int frag_sz = frag_h * frag_w;  // число копируемых пикселей
+    uint frag_w = w_summ / n_cols;             // ширина фрагмента в пикселях
+    uint frag_h = h_summ / n_rows;             // высота фрагмента в пикселях
+    uint frag_sz = frag_h * frag_w;  // число копируемых пикселей
 
-    u_int frag_i = C * frag_w + R * frag_h * w_summ; // индекс начала фрагмента
+    uint frag_i = C * frag_w + R * frag_h * w_summ; // индекс начала фрагмента
 
     auto dst_i = X + Y * dst.w_summ;       // индекс начала в приемнике
     //UINT dst_max = dst.w * dst.h;     // число пикселей в приемнике
 
-    u_int i = 0;              // сумма скопированных пикселей
+    uint i = 0;              // сумма скопированных пикселей
     while(i < frag_sz)
     {
       auto d = dst_i;        // текущий индекс приемника
-      u_int s = frag_i;       // текущий индекс источника
+      uint s = frag_i;       // текущий индекс источника
       auto l = d + frag_w;   // конец копируемой строки пикселей
 
       // В данной версии копируются только полностью непрозрачные пиксели
@@ -350,7 +350,7 @@ bool operator== (const px &A, const px &B)
   /// \param y - координата
   ///
   void textstring_place(const img &FontImg, const std::string &TextString,
-                     img& Dst, u_long x, u_long y)
+                     img& Dst, ulong x, ulong y)
   {
     #ifndef NDEBUG
     if(x > Dst.w_summ - utf8_size(TextString) * FontImg.w_cell)
@@ -359,8 +359,8 @@ bool operator== (const px &A, const px &B)
       ERR ("gui::add_text - Y overflow");
     #endif
 
-    u_int row = 0;                        // номер строки в текстуре шрифта
-    u_int n = 0;                          // номер буквы в выводимой строке
+    uint row = 0;                        // номер строки в текстуре шрифта
+    uint n = 0;                          // номер буквы в выводимой строке
     size_t text_size = TextString.size(); // число байт в строке
 
     for(size_t i = 0; i < text_size; ++i)

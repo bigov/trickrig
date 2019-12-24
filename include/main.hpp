@@ -56,24 +56,17 @@ namespace fs = std::filesystem;
 namespace tr {
 
 extern std::atomic<GLsizei> render_indices;
-
 extern std::mutex mutex_viewfrom; // Доступ к значению положения камеры
 extern std::mutex mutex_voxes_db; // Доступ к буферу вершин
 extern std::mutex mutex_vbo;      // Доступ к VBO
 extern std::mutex mutex_loading;  // ожидание загрузки сцены из базы данных в GPU
 
-using u_int  = unsigned int;
-using u_long = unsigned long;
-using v_str  = std::vector<std::string>;
-using v_ch   = std::vector<char>;
-using v_uch  = std::vector<unsigned char>;
-using v_fl   = std::vector<float>;
-using v_flp  = std::vector<float*>;
-using a_f2   = std::array<float, 2>;
-using a_f3   = std::array<float, 3>;
-using a_f4   = std::array<float, 4>;
-using a_uch4 = std::array<unsigned char, 4>;
-using a_int3 = std::array<int, 3>;
+using uchar = unsigned char;
+using uint  = unsigned int;
+using ulong = unsigned long;
+using v_str = std::vector<std::string>;
+using v_ch  = std::vector<char>;
+
 
 enum APP_INIT {
   PNG_TEXTURE0,   // вначале списка идут названия файлов
@@ -109,10 +102,10 @@ enum MAP_INIT {
 // Хранение данных положения и размера прямоугольника (используется окном)
 struct layout
 {
-  u_int width  = 0;
-  u_int height = 0;
-  u_int left = 0;
-  u_int top = 0;
+  uint width  = 0;
+  uint height = 0;
+  uint left = 0;
+  uint top = 0;
 };
 
 // Обмен данными между glsl-программой и VBO
@@ -150,7 +143,7 @@ const int KEY_MOVE_RIGHT = GLFW_KEY_D;
 const int KEY_MOVE_LEFT  = GLFW_KEY_A;
 
 // число вершин в прямоугольнике
-static const u_int vertices_per_side = 4;
+static const uint vertices_per_side = 4;
 
   // число индексов в одном снипе
   static const int indices_per_side = 6;

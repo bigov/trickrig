@@ -43,9 +43,9 @@ void gl_texture::resize(GLsizei width, GLsizei height, const GLvoid* data)
 
   if(data == nullptr)
   {
-    img Blue{static_cast<u_long>(width), static_cast<u_long>(height),
+    img Blue{static_cast<ulong>(width), static_cast<ulong>(height),
       {0x7F, 0xB0, 0xFF, 0xFF}};  // голубой цвет (формат RGBA)
-    glTexImage2D(target, level, internalformat, width, height, border, format, type, Blue.uchar());
+    glTexImage2D(target, level, internalformat, width, height, border, format, type, Blue.uchar_t());
   } else {
     glTexImage2D(target, level, internalformat, width, height, border, format, type, data);
   }

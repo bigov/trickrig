@@ -174,7 +174,7 @@ namespace tr {
   void wsql::save_row_data(void)
   {
     size_t lgth = 0;
-    std::list<std::vector<u_int8_t>> RowData {}; // Строка ячеек таблицы результата запроса
+    std::list<std::vector<unsigned char>> RowData {}; // Строка ячеек таблицы результата запроса
 
     int col = sqlite3_data_count(pStmt);     // Число колонок в строке результата
     if(col < 1) return;
@@ -182,7 +182,7 @@ namespace tr {
     for (int n = 0; n < col; n++)
     {
       lgth = sqlite3_column_bytes(pStmt, n);    // размер ячейки результата в байтах
-      std::vector<u_int8_t> CeilData(lgth, 0);  // массив для приема данных
+      std::vector<unsigned char> CeilData(lgth, 0);  // массив для приема данных
 
       int i; double d;
       switch (sqlite3_column_type(pStmt, n))

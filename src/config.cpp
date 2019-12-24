@@ -106,10 +106,10 @@ void cfg::load(char** argv)
   if(std::stoi(AppParams[APP_VER_MAJOR]) != VER_MAJOR) ERR("Incompatible APP_MAJOR database version");
   if(std::stoi(AppParams[APP_VER_MINOR]) != VER_MINOR) ERR("Incompatible APP_MINOR database version");
 
-  WinLayout.width = static_cast<u_int>(std::stoi(AppParams[WINDOW_WIDTH]));
-  WinLayout.height = static_cast<u_int>(std::stoi(AppParams[WINDOW_HEIGHT]));
-  WinLayout.left = static_cast<u_int>(std::stoi(AppParams[WINDOW_LEFT]));
-  WinLayout.top = static_cast<u_int>(std::stoi(AppParams[WINDOW_TOP]));
+  WinLayout.width = static_cast<uint>(std::stoi(AppParams[WINDOW_WIDTH]));
+  WinLayout.height = static_cast<uint>(std::stoi(AppParams[WINDOW_HEIGHT]));
+  WinLayout.left = static_cast<uint>(std::stoi(AppParams[WINDOW_LEFT]));
+  WinLayout.top = static_cast<uint>(std::stoi(AppParams[WINDOW_TOP]));
 }
 
 

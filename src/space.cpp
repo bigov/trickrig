@@ -65,7 +65,7 @@ space::space(wglfw* OpenGLContext)
   GLsizei width, height;
   OglContext->get_frame_buffer_size(&width, &height);
 
-  ImHUD.resize( static_cast<u_int>(width), static_cast<u_int>(height));
+  ImHUD.resize( static_cast<uint>(width), static_cast<uint>(height));
 
   RenderBuffer = std::make_unique<frame_buffer> ();
   if(!RenderBuffer->init(width, height)) ERR("Error on creating Render Buffer.");
@@ -146,7 +146,7 @@ void space::load_textures(void)
   glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
                static_cast<GLsizei>(ImgTex0.w_summ),
                static_cast<GLsizei>(ImgTex0.h_summ),
-               frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgTex0.uchar());
+               frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgTex0.uchar_t());
 
   // Установка опций отрисовки
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
@@ -224,7 +224,7 @@ vbo_ext* space::init_vbo(void)
   glBindVertexArray(vao_id);
 
   // Число сторон куба в объеме с длиной стороны LOD (2*dist_xx) элементов:
-  u_int n = static_cast<u_int>(pow((border_dist_b4 + border_dist_b4 + 1), 3));
+  uint n = static_cast<uint>(pow((border_dist_b4 + border_dist_b4 + 1), 3));
 
   // Размер данных VBO для размещения сторон вокселей:
   VBO.allocate(n * bytes_per_side);
@@ -328,7 +328,7 @@ void space::resize_event(int width, int height)
   MatProjection = glm::perspective(fovy, aspect, zNear, zFar);
 
   // Пересчет размера HUD
-  ImHUD.resize( static_cast<u_int>(width), static_cast<u_int>(height));
+  ImHUD.resize( static_cast<uint>(width), static_cast<uint>(height));
 
   RenderBuffer->resize(width, height);
 }
@@ -459,7 +459,7 @@ bool space::check_keys()
     return false;
   }
 
-  u_int vertex_id = 0; // переменная для хранения ID вершины
+  uint vertex_id = 0; // переменная для хранения ID вершины
   RenderBuffer->read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
 
   // Так как вершины располагаются группами по 4 шт. (обход через 6 индексов),
@@ -520,10 +520,10 @@ void space::hud_load(void)
   auto height = static_cast<GLint>(ImHUD.h_summ);
 
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
-           0, GL_RGBA, GL_UNSIGNED_BYTE, ImHUD.uchar());
+           0, GL_RGBA, GL_UNSIGNED_BYTE, ImHUD.uchar_t());
 
   // Панель инструментов для HUD в нижней части окна
-  u_int h = 48;                           // высота панели инструментов HUD
+  uint h = 48;                           // высота панели инструментов HUD
   if(h > ImHUD.h_summ) h = ImHUD.h_summ;   // не может быть выше GuiImg
   img HudPanel {ImHUD.w_summ, h, bg_hud};
 
@@ -532,7 +532,7 @@ void space::hud_load(void)
                 static_cast<GLsizei>(HudPanel.w_summ), // width
                 static_cast<GLsizei>(HudPanel.h_summ), // height
                 GL_RGBA, GL_UNSIGNED_BYTE,             // mode
-                HudPanel.uchar());                     // data
+                HudPanel.uchar_t());                     // data
 }
 
 
@@ -545,7 +545,7 @@ void space::hud_draw(void)
 
   // счетчик FPS
   px bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения
-  u_int fps_length = 4;               // количество символов в надписи
+  uint fps_length = 4;               // количество символов в надписи
   img Fps {fps_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
   char line[5];                       // длина строки с '\0'
   std::sprintf(line, "%.4i", FPS);
@@ -555,10 +555,10 @@ void space::hud_draw(void)
                 static_cast<GLsizei>(Fps.w_summ),  // width
                 static_cast<GLsizei>(Fps.h_summ),  // height
                 GL_RGBA, GL_UNSIGNED_BYTE,         // mode
-                Fps.uchar());                      // data
+                Fps.uchar_t());                      // data
 
   // Координаты в пространстве
-  u_int c_length = 60;               // количество символов в надписи
+  uint c_length = 60;               // количество символов в надписи
   img Coord {c_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
   char ln[60];                       // длина строки с '\0'
   std::sprintf(ln, "X:%+06.1f, Y:%+06.1f, Z:%+06.1f, a:%+04.3f, t:%+04.3f",
@@ -569,7 +569,7 @@ void space::hud_draw(void)
                 static_cast<GLsizei>(Coord.w_summ),  // width
                 static_cast<GLsizei>(Coord.h_summ),  // height
                 GL_RGBA, GL_UNSIGNED_BYTE,           // mode
-                Coord.uchar());                      // data
+                Coord.uchar_t());                      // data
 }
 
 } // namespace tr

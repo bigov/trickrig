@@ -25,10 +25,10 @@ vox::vox(const i3d& Or, int sz)
 /// \param side
 /// \param C
 ///
-void vox::side_color_set(uint8_t side, color C)
+void vox::side_color_set(uchar side, color C)
 {
   size_t i = side * digits_per_side;
-  for(u_int v = 0; v < vertices_per_side; ++v)
+  for(uint v = 0; v < vertices_per_side; ++v)
   {
     data[i + R] = C.r;
     data[i + G] = C.g;
@@ -44,7 +44,7 @@ void vox::side_color_set(uint8_t side, color C)
 /// \param side
 /// \param texture
 ///
-void vox::side_texture_set(uint8_t side)
+void vox::side_texture_set(uchar side)
 {
   uch2 texture = tex_id[side];
 
@@ -70,7 +70,7 @@ void vox::side_texture_set(uint8_t side)
 /// \brief voxel::side_normals_set
 /// \param side
 ///
-void vox::side_normals_set(uint8_t side)
+void vox::side_normals_set(uchar side)
 {
   GLfloat nx = 0.f, ny = 0.f, nz = 0.f;
 
@@ -95,7 +95,7 @@ void vox::side_normals_set(uint8_t side)
   }
 
   size_t i =  side * digits_per_side;
-  for(u_int v = 0; v < vertices_per_side; ++v)
+  for(uint v = 0; v < vertices_per_side; ++v)
   {
     data[i + NX] = nx;
     data[i + NY] = ny;
@@ -109,7 +109,7 @@ void vox::side_normals_set(uint8_t side)
 /// \brief voxel::side_position_set
 /// \param side
 ///
-void vox::side_position_set(uint8_t side)
+void vox::side_position_set(uchar side)
 {
   // относительные координаты всех вершин вокселя
   i3d P[8] = {{side_len, side_len, 0}, {side_len, side_len, side_len}, {side_len, 0, side_len},
@@ -137,7 +137,7 @@ void vox::side_position_set(uint8_t side)
   }
 
   size_t i = side * digits_per_side;
-  for(u_int v = 0; v < vertices_per_side; ++v)
+  for(uint v = 0; v < vertices_per_side; ++v)
   {
     data[i + X] = sh[v].x + Origin.x;
     data[i + Y] = sh[v].y + Origin.y;
@@ -153,7 +153,7 @@ void vox::init_data(void)
 {
   color IniColor {1.f, 1.f, 1.f, 1.f};
 
-  for (u_int side = 0; side < SIDES_COUNT; ++side)
+  for (uint side = 0; side < SIDES_COUNT; ++side)
   {
     vbo_addr[side]  = -1;
     visibility.set(side);
@@ -173,7 +173,7 @@ void vox::init_data(void)
 /// \details Заполнение массива стороны данными. Если сторона
 /// скрытая, то данные не записываются и возвращается false
 ///
-bool vox::side_fill_data(uint8_t side, GLfloat* buff)
+bool vox::side_fill_data(uchar side, GLfloat* buff)
 {
   if(!is_visible(side)) return false;
   GLfloat* src = &data[side * digits_per_side];
@@ -188,7 +188,7 @@ bool vox::side_fill_data(uint8_t side, GLfloat* buff)
 /// \param n
 /// \details Запись адреса размещения данных в VBO стороны вокселя
 ///
-void vox::offset_write(uint8_t side_id, GLsizeiptr n)
+void vox::offset_write(uchar side_id, GLsizeiptr n)
 {
 #ifndef NDEBUG
   if(side_id >= SIDES_COUNT) ERR ("voxel::offset_write: side_id >= SIDES_COUNT");
@@ -204,11 +204,11 @@ void vox::offset_write(uint8_t side_id, GLsizeiptr n)
 /// \return
 /// \details По указанному смещению определяет какая сторона там находится
 ///
-uint8_t vox::side_id_by_offset(GLsizeiptr dst)
+uchar vox::side_id_by_offset(GLsizeiptr dst)
 {
   if(dst < 0) ERR("side_id_by_offset: undefined address");
 
-  for (uint8_t side_id = 0; side_id < SIDES_COUNT; ++side_id) {
+  for (unsigned char side_id = 0; side_id < SIDES_COUNT; ++side_id) {
     if(vbo_addr[side_id] == dst) return side_id;
   }
   return SIDES_COUNT;
@@ -222,7 +222,7 @@ uint8_t vox::side_id_by_offset(GLsizeiptr dst)
 /// \details Для указанной стороны, если она видимая, то возвращает записаный адрес
 /// размещения блока данных в VBO. Если не видимая, то -1.
 ///
-GLsizeiptr vox::offset_read(uint8_t side_id)
+GLsizeiptr vox::offset_read(uchar side_id)
 {
   if(!is_visible(side_id)) return -1;
   return vbo_addr[side_id];
@@ -236,7 +236,7 @@ GLsizeiptr vox::offset_read(uint8_t side_id)
 ///
 void vox::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
 {
-  uint8_t side_id;
+  uchar side_id;
   for (side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
     if(vbo_addr[side_id] == old_n)
@@ -259,7 +259,7 @@ void vox::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
 /// \brief vox::visible_on
 /// \param side_id
 ///
-void vox::visible_on(uint8_t side_id)
+void vox::visible_on(uchar side_id)
 {
 #ifndef NDEBUG
   assert(side_id < SIDES_COUNT);
@@ -273,7 +273,7 @@ void vox::visible_on(uint8_t side_id)
 /// \brief vox::visible_off
 /// \param side_id
 ///
-void vox::visible_off(uint8_t side_id)
+void vox::visible_off(uchar side_id)
 {
 #ifndef NDEBUG
   assert(side_id < SIDES_COUNT);
@@ -288,7 +288,7 @@ void vox::visible_off(uint8_t side_id)
 /// \param side_id
 /// \return
 ///
-bool vox::is_visible(uint8_t side_id)
+bool vox::is_visible(uchar side_id)
 {
 #ifndef NDEBUG
   assert(side_id < SIDES_COUNT);

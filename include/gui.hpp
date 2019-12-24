@@ -33,7 +33,7 @@ class gui: public interface_gl_context
 
     virtual void reposition_event(int left, int top);
     virtual void resize_event(int width, int height);
-    virtual void character_event(u_int ch);
+    virtual void character_event(uint ch);
     virtual void cursor_event(double x, double y);
     virtual void close_event(void);
     virtual void error_event(const char* message);
@@ -66,10 +66,10 @@ class gui: public interface_gl_context
     };
     std::unique_ptr<glsl> Program2d = nullptr;            // Шейдерная программа GUI
     glm::vec3 Cursor3D = { 200.f, 200.f, 0.f };           // положение и размер прицела
-    const u_int BUTTTON_WIDTH = 120;                      // ширина кнопки GUI
-    const u_int BUTTTON_HEIGHT = 36;                      // высота кнопки GUI
-    const u_int MIN_GUI_WIDTH = (BUTTTON_WIDTH + 16) * 4; // минимально допустимая ширина окна
-    const u_int MIN_GUI_HEIGHT = BUTTTON_HEIGHT * 4 + 8;  // минимально допустимая высота окна
+    const uint BUTTTON_WIDTH = 120;                      // ширина кнопки GUI
+    const uint BUTTTON_HEIGHT = 36;                      // высота кнопки GUI
+    const uint MIN_GUI_WIDTH = (BUTTTON_WIDTH + 16) * 4; // минимально допустимая ширина окна
+    const uint MIN_GUI_HEIGHT = BUTTTON_HEIGHT * 4 + 8;  // минимально допустимая высота окна
 
     int scancode = -1;
     int mods = -1;
@@ -104,14 +104,14 @@ class gui: public interface_gl_context
     GLuint vao_quad_id  = 0;
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
-    void button(ELEMENT_ID id, u_long x, u_long y, const std::string& Name,
+    void button(ELEMENT_ID id, ulong x, ulong y, const std::string& Name,
                 bool button_is_active = true );
     void button_make_body(img &Data, BUTTON_STATE);
     void cursor_text_row(const img &_Fn, img &_Dst, size_t position);
     void title(const std::string& title);
     void input_text_line(const img &_Fn);
-    void row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &);
-    void select_list(u_int x, u_int y, u_int w, u_int h);
+    void row_text(size_t id, uint x, uint y, uint w, uint h, const std::string &);
+    void select_list(uint x, uint y, uint w, uint h);
     void menu_draw(void);
     void menu_map_create(void);
     void menu_map_select(void);

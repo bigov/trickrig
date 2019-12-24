@@ -12,7 +12,7 @@ gui::gui(wglfw* GLObject)
   layout_set(cfg::WinLayout);
   GlContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
   Space = std::make_unique<space>(GlContext);
-  FontMap1_len = static_cast<u_int>(FontMap1.length());
+  FontMap1_len = static_cast<uint>(FontMap1.length());
   TimeStart = std::chrono::system_clock::now();
 
   // Составить список карт в каталоге пользователя
@@ -101,7 +101,7 @@ void gui::title(const std::string &title)
 {
   img label{ ImgGUI.w_summ - 4, Font18s.h_cell * 2 - 4, color_title};
 
-  u_long x = ImgGUI.w_summ/2 - utf8_size(title) * Font18s.w_cell / 2;
+  ulong x = ImgGUI.w_summ/2 - utf8_size(title) * Font18s.w_cell / 2;
   textstring_place(Font18s, title, label, x, Font18s.h_cell/2);
   label.copy(0, 0, ImgGUI, 2, 2);
 }
@@ -117,12 +117,12 @@ void gui::title(const std::string &title)
 void gui::input_text_line(const img &Font)
 {
   px color = {0xF0, 0xF0, 0xF0, 0xFF};
-  u_int row_width = ImgGUI.w_summ - Font.w_cell * 2;
-  u_int row_height = Font.h_cell * 2;
+  uint row_width = ImgGUI.w_summ - Font.w_cell * 2;
+  uint row_height = Font.h_cell * 2;
   img RowInput{ row_width, row_height, color };
 
   // добавить текст, введенный пользователем
-  u_int y = (row_height - Font.h_cell)/2;
+  uint y = (row_height - Font.h_cell)/2;
   textstring_place(Font, StringBuffer, RowInput, Font.w_cell, y);
   cursor_text_row(Font, RowInput, utf8_size(StringBuffer));
 
@@ -166,7 +166,7 @@ void gui::cursor_text_row(const img &_Fn, img &_Dst, size_t position)
 /// \param text
 /// \details Отобажение тестовой строки, реагирующей на указатель мыши
 ///
-void gui::row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::string &text)
+void gui::row_text(size_t id, uint x, uint y, uint w, uint h, const std::string &text)
 {
   px
     normal = color_title,                   // обычный цвет
@@ -206,16 +206,16 @@ void gui::row_text(size_t id, u_int x, u_int y, u_int w, u_int h, const std::str
 /// \brief gui::draw_list_select
 /// \details Отображение списка выбора
 ///
-void gui::select_list(u_int lx, u_int ly, u_int lw, u_int lh)
+void gui::select_list(uint lx, uint ly, uint lw, uint lh)
 {
   img ListImg {lw, lh, {0xDD, 0xDD, 0xDD, 0xFF}};             // изображение списка
   ListImg.copy(0, 0, ImgGUI, lx, ly);
 
-  u_int rh = Font18n.h_cell * 1.5f;     // высота строки
-  u_int rw = lw - 4;                    // ширина строки
-  u_int max_rows = (lh - 4) / (rh + 2); // число строк, которое может поместиться в списке
+  uint rh = Font18n.h_cell * 1.5f;     // высота строки
+  uint rw = lw - 4;                    // ширина строки
+  uint max_rows = (lh - 4) / (rh + 2); // число строк, которое может поместиться в списке
 
-  u_int id = 0;
+  uint id = 0;
   for(auto &TheMap: Maps)
   {
     row_text(id + 1, lx + 2, ly + id * (rh + 2) + 2, rw, rh, TheMap.Name);
@@ -342,7 +342,7 @@ void gui::button_click(ELEMENT_ID id)
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,       // скопировать в графический буфер
                    static_cast<GLint>(Layout.width),
                    static_cast<GLint>(Layout.height),
-                   0, GL_RGBA, GL_UNSIGNED_BYTE, ImgGUI.uchar());
+                   0, GL_RGBA, GL_UNSIGNED_BYTE, ImgGUI.uchar_t());
       render_screen();     // Вывести на экран сообщение о загрузке
       Space->enable();     // Загрузка занимает некоторое время ...
       Cursor3D[2] = 4.0f;  // Активировать прицел
@@ -433,7 +433,7 @@ void gui::button_make_body(img &D, BUTTON_STATE s)
 
   // основной фон
   int S = 0;         // коэффициент построчного уменьшения яркости
-  u_int np = 0;       // счетчик значений
+  uint np = 0;       // счетчик значений
   double nr = 0.0;   // счетчик строк
 
   max += D.w_summ * (D.h_summ - 3);
@@ -448,7 +448,7 @@ void gui::button_make_body(img &D, BUTTON_STATE s)
     {
       np = 0;
       nr += 1.0;
-      S = static_cast<uint8_t>(nr * step);
+      S = static_cast<unsigned char>(nr * step);
     }
 
   }
@@ -477,7 +477,7 @@ void gui::button_make_body(img &D, BUTTON_STATE s)
 /// Вначале формируется отдельное изображение кнопки, потом оно копируется
 /// в указанное координатами (x,y) место окна.
 ///
-void gui::button(ELEMENT_ID btn_id, u_long x, u_long y,
+void gui::button(ELEMENT_ID btn_id, ulong x, ulong y,
                      const std::string &Name, bool button_is_active)
 {
   img Btn { BUTTTON_WIDTH, BUTTTON_HEIGHT };
@@ -535,8 +535,8 @@ void gui::menu_start(void)
   ImgGUI.fill(bg);
   title("Trick Rig");
 
-  u_int x = Layout.width/2 - BUTTTON_WIDTH/2;   // X координата кнопки
-  u_int y = Layout.height/2 - BUTTTON_HEIGHT/2;  // Y координата кнопки
+  uint x = Layout.width/2 - BUTTTON_WIDTH/2;   // X координата кнопки
+  uint y = Layout.height/2 - BUTTTON_HEIGHT/2;  // Y координата кнопки
   button(BTN_CONFIG, x, y, "Настроить");
 
   y -= 1.5 * BUTTTON_HEIGHT;
@@ -559,10 +559,10 @@ void gui::menu_map_select(void)
   // расстоянии 1/8 высоты окна сверху и снизу, и 1/8 ширины окна по бокам.
   // Расстояние между списком и кнопками равно половине высоты кнопки.
 
-  u_int y = Layout.height/8; // отступ сверху (и снизу)
-  u_int list_h = Layout.height - y * 2 - BUTTTON_HEIGHT * 1.5f;
-  u_int list_w = MIN_GUI_WIDTH - 4;
-  u_int x = (Layout.width - list_w)/2;  // отступ слева (и справа)
+  uint y = Layout.height/8; // отступ сверху (и снизу)
+  uint list_h = Layout.height - y * 2 - BUTTTON_HEIGHT * 1.5f;
+  uint list_w = MIN_GUI_WIDTH - 4;
+  uint x = (Layout.width - list_w)/2;  // отступ слева (и справа)
 
   select_list(x, y, list_w, list_h);
 
@@ -603,7 +603,7 @@ void gui::menu_map_create(void)
   input_text_line(Font18n);
 
   // две кнопки
-  auto x = ImgGUI.w_summ / 2 - static_cast<u_long>(BUTTTON_WIDTH * 1.25);
+  auto x = ImgGUI.w_summ / 2 - static_cast<ulong>(BUTTTON_WIDTH * 1.25);
   auto y = ImgGUI.h_summ / 2;
   button(BTN_ENTER_NAME, x, y, "OK", StringBuffer.length() > 0);
 
@@ -620,7 +620,7 @@ void gui::menu_config(void)
   ImgGUI.fill(bg);
   title("НАСТРОЙКИ");
 
-  int x = ImgGUI.w_summ / 2 - static_cast<u_long>(BUTTTON_WIDTH/2);
+  int x = ImgGUI.w_summ / 2 - static_cast<ulong>(BUTTTON_WIDTH/2);
   int y = ImgGUI.h_summ / 2;
   button(BTN_CANCEL, x, y, "Отмена");
 }
@@ -655,7 +655,7 @@ void gui::menu_draw(void)
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                static_cast<GLint>(Layout.width),
                static_cast<GLint>(Layout.height),
-               0, GL_RGBA, GL_UNSIGNED_BYTE, ImgGUI.uchar());
+               0, GL_RGBA, GL_UNSIGNED_BYTE, ImgGUI.uchar_t());
 
   if((mouse_button == MOUSE_BUTTON_LEFT) &&
      (action == RELEASE) &&
@@ -749,8 +749,8 @@ void gui::render_screen(void)
 ///
 void gui::reposition_event(int _left, int _top)
 {
-  Layout.left = static_cast<u_int>(_left);
-  Layout.top = static_cast<u_int>(_top);
+  Layout.left = static_cast<uint>(_left);
+  Layout.top = static_cast<uint>(_top);
 }
 
 
@@ -764,8 +764,8 @@ void gui::resize_event(int w, int h)
   assert(w >= 0);
   assert(h >= 0);
 
-  Layout.width  = static_cast<u_int>(w);
-  Layout.height = static_cast<u_int>(h);
+  Layout.width  = static_cast<uint>(w);
+  Layout.height = static_cast<uint>(h);
 
   // пересчет позции координат прицела (центр окна)
   Cursor3D.x = static_cast<float>(w/2);
@@ -780,7 +780,7 @@ void gui::resize_event(int w, int h)
 /// \brief gui::character_event
 /// \param ch
 ///
-void gui::character_event(u_int ch)
+void gui::character_event(uint ch)
 {
   if(!text_mode) return;
 

@@ -249,13 +249,15 @@ void out_char_as_hex (const std::vector<char>& V, int n = 8)
 
   std::cout << std::dec << std::nouppercase << std::endl;
 }
+
+/*
 void out_char_as_hex (const std::vector<u_int8_t>& Vui, int n = 8)
 {
   std::vector<char> Vch (Vui.size(), 0);
   memcpy(Vch.data(), Vui.data(), Vui.size());
   out_char_as_hex(Vch, n);
 }
-
+*/
 
 ///
 /// \brief db::vox_data_delete
@@ -263,7 +265,7 @@ void out_char_as_hex (const std::vector<u_int8_t>& Vui, int n = 8)
 /// \param VoxData
 /// \details Удаляет блок данных вокса, расположнного на координате rm_y
 ///
-void db::_data_erase(int rm_y, std::vector<u_int8_t>& VoxData)
+void db::_data_erase(int rm_y, std::vector<unsigned char>& VoxData)
 {
   int y = 0;                // Переменная для приема значения координаты Y
   size_t offset = 0;        // Смещение блока данных вокса в наборе из группы воксов
@@ -294,7 +296,7 @@ void db::vox_data_delete(int x, int y, int z)
 {
   char query[127] = {'\0'};
 
-  std::vector<u_int8_t> VoxData = load_vox_data(x, z); // Загрузить "колонку" воксов из БД
+  std::vector<unsigned char> VoxData = load_vox_data(x, z); // Загрузить "колонку" воксов из БД
   if(VoxData.size() > 0) _data_erase(y, VoxData);      // Удалить блок с координатой у
 
   if(!VoxData.empty())                                 // Если есть другие воксы, то записать их
@@ -327,7 +329,7 @@ void db::vox_data_save (vox* pV)
   int y = pV->Origin.y;
 
   // Загрузить "колонку" воксов из БД
-  std::vector<u_int8_t> VoxData = load_vox_data(pV->Origin.x, pV->Origin.z);
+  std::vector<unsigned char> VoxData = load_vox_data(pV->Origin.x, pV->Origin.z);
 
   // Удалить из набора, если есть, данные вокса с координатой 'y',
   // так как они будут перезаписаны данными полученного вокса
@@ -339,7 +341,7 @@ void db::vox_data_save (vox* pV)
   VoxData.push_back(pV->get_visibility());                    // Записать маску видимости сторон
   offset = VoxData.size();
   GLfloat buffer[digits_per_side];
-  for(u_int8_t side_id = 0; side_id < SIDES_COUNT; ++side_id)
+  for(unsigned char side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
     if(!pV->side_fill_data(side_id, buffer)) continue;
     VoxData.resize(VoxData.size() + bytes_per_side);
@@ -359,7 +361,7 @@ void db::vox_data_save (vox* pV)
 /// \param z
 /// \return
 ///
-std::vector<u_int8_t> db::load_vox_data(int x, int z)
+std::vector<unsigned char> db::load_vox_data(int x, int z)
 {
   char query[127] = {0};
   std::sprintf(query, "SELECT * FROM area WHERE (x=%d AND z=%d);", x, z);
@@ -371,7 +373,7 @@ std::vector<u_int8_t> db::load_vox_data(int x, int z)
     result_row.reverse();
     return result_row.front();
   }
-  return std::vector<u_int8_t> {}; // если данных нет, то возвращается пустой вектор
+  return std::vector<unsigned char> {}; // если данных нет, то возвращается пустой вектор
 }
 
 ///
