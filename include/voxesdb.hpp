@@ -13,8 +13,8 @@ namespace tr
 struct vox_data
 {
   int y;                       // положение вокса по оси Y (для учета Y-LOD)
-  unsigned char visible_sides_map;    // бинарная маска видимых сторон (для пересчета видимости)
-  unsigned char data[bytes_per_side]; // данные видимых сторон для размещения в VBO
+  uchar visible_sides_map;    // бинарная маска видимых сторон (для пересчета видимости)
+  uchar data[bytes_per_side]; // данные видимых сторон для размещения в VBO
 };
 
 
@@ -54,7 +54,7 @@ class voxesdb: public std::vector<std::unique_ptr<vox>>
     vox* get (GLsizeiptr);
     vox* get (const i3d&);
 
-    void vbo_expand(unsigned char* data, unsigned char n, const i3d& P); // Размещение вокса в VBO
+    void vbo_expand(uchar* data, uchar n, const i3d& P); // Размещение вокса в VBO
     void vox_create(const i3d& P, int vox_side_len);         // Создание вокса
 };
 

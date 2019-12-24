@@ -208,7 +208,7 @@ uchar vox::side_id_by_offset(GLsizeiptr dst)
 {
   if(dst < 0) ERR("side_id_by_offset: undefined address");
 
-  for (unsigned char side_id = 0; side_id < SIDES_COUNT; ++side_id) {
+  for (uchar side_id = 0; side_id < SIDES_COUNT; ++side_id) {
     if(vbo_addr[side_id] == dst) return side_id;
   }
   return SIDES_COUNT;

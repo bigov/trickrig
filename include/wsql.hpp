@@ -13,7 +13,7 @@
 
 namespace tr{
 
-using GetResult = std::forward_list<std::list<std::vector<unsigned char>>>;
+using GetResult = std::forward_list<std::list<std::vector<uchar>>>;
 
 struct query_data {
   int type;

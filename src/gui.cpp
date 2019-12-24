@@ -448,7 +448,7 @@ void gui::button_make_body(img &D, BUTTON_STATE s)
     {
       np = 0;
       nr += 1.0;
-      S = static_cast<unsigned char>(nr * step);
+      S = static_cast<uchar>(nr * step);
     }
 
   }
@@ -715,7 +715,10 @@ void gui::show(void)
       menu_draw();
     }
 
+    mutex_voxes_db.lock();
     render_screen();
+    mutex_voxes_db.unlock();
+
   }
 }
 

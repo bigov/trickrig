@@ -286,6 +286,9 @@ bool space::render(void)
   calc_render_time();
   calc_position();
 
+  //mutex_vbo.lock();
+  mutex_voxes_db.lock();
+
   glBindVertexArray(vao_id);
   RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -300,10 +303,7 @@ bool space::render(void)
 
   for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
 
-  mutex_vbo.lock();
   glDrawElements(GL_TRIANGLES, render_indices, GL_UNSIGNED_INT, nullptr);
-  mutex_vbo.unlock();
-
 
   for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
 
@@ -311,7 +311,12 @@ bool space::render(void)
   RenderBuffer->unbind();
   glBindVertexArray(0);
 
+  //mutex_vbo.unlock();
+  mutex_voxes_db.unlock();
+
   hud_draw();
+
+
   return check_keys();
 }
 
@@ -460,7 +465,11 @@ bool space::check_keys()
   }
 
   uint vertex_id = 0; // переменная для хранения ID вершины
+
+  mutex_voxes_db.lock();
   RenderBuffer->read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
+  mutex_voxes_db.unlock();
+
 
   // Так как вершины располагаются группами по 4 шт. (обход через 6 индексов),
   // то можно, по номеру любой вершины из группы, используя остаток от деления

@@ -20,3 +20,11 @@ int ID = r + (g + b * 255) * 255;
 // Корректное С++ приведение к типу (void*)
 auto p = i * bytes_per_vertex + 0 * sizeof(GLfloat);
 glVertexAttribPointer(Prog3d->Atrib["position"], 3, GL_FLOAT, GL_FALSE, bytes_per_vertex, reinterpret_cast<void*>(p));
+
+---------------------------------------------------------------------------
+
+nouveau: kernel rejected pushbuf: Invalid argument
+nouveau: ch7: krec 0 pushes 0 bufs 2 relocs 0
+nouveau: ch7: buf 00000000 00000003 00000004 00000004 00000000
+nouveau: ch7: buf 00000001 00000006 00000004 00000000 00000004
+

@@ -146,11 +146,11 @@ bool operator== (const px &A, const px &B)
   ///
   /// \brief Вспомогательная функция для структуры "px"
   ///
-  unsigned char int_to_uchar(int v)
+  uchar int_to_uchar(int v)
   {
     if(v < 0)         return 0x00;
     else if (v > 255) return 0xFF;
-    else return static_cast<unsigned char>(v);
+    else return static_cast<uchar>(v);
   }
 
   ///
