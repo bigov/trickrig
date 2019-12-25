@@ -45,9 +45,7 @@ namespace tr
 
       wglfw* OglContext = nullptr;
       std::unique_ptr<glsl> Program3d = nullptr;
-
-      vbo_ext VBO { GL_ARRAY_BUFFER };            // управление данными в буфере GPU
-      std::shared_ptr<voxesdb> VoxesDB = nullptr; // Управление массивом воксов в CPU
+      std::unique_ptr<vbo> VBO = nullptr; // VBO GPU
 
       img ImHUD { 0, 0 };      // Текстура HUD окна приложения
       GLuint texture_hud = 0;  // ID HUD текстуры в GPU
@@ -92,8 +90,8 @@ namespace tr
       glm::vec3 light_direction {}; // направление освещения
       glm::vec3 light_bright {};    // яркость света
       // Индексы вершин подсвечиваемого вокселя, на который направлен курсор (центр экрана)
-      uint hl_point_id_from = 0;         // индекс начальной вершины
-      uint hl_point_id_end = 0;         // индекс последней вершины
+      int hl_vertex_id_from = 0;         // индекс начальной вершины
+      int hl_vertex_id_end = 0;         // индекс последней вершины
 
       // GPU control
       GLuint texture_id = 0;
@@ -121,7 +119,7 @@ namespace tr
         UpWard {0.0, -1.0, 0.0},  // направление наверх
         ViewTo {};                // направление взгляда
 
-      vbo_ext* init_vbo(void);
+      void init_vbo(void);
       void calc_render_time(void);
       void load_textures(void);
       void calc_position();

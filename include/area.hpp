@@ -10,7 +10,11 @@
 #define AREA_HPP
 
 #include <queue>
-#include "voxesdb.hpp"
+//#include "voxesdb.hpp"
+#include "vox.hpp"
+#include "glsl.hpp"
+#include "vbo.hpp"
+#include "config.hpp"
 
 namespace tr
 {
@@ -30,14 +34,23 @@ class area
     area(area&&) = delete;
     area& operator=(area&&) = delete;
 
-    void operator() (std::shared_ptr<voxesdb> V, int length, int count,
-                      std::shared_ptr<glm::vec3> CameraLocation, GLFWwindow* Context);
-    void init(std::shared_ptr<voxesdb> V, int len, int elements, std::shared_ptr<glm::vec3> CameraLocation);
+    void operator() (int length, int count, std::shared_ptr<glm::vec3> CameraLocation,
+                     GLFWwindow* Context, GLenum buf_type, GLuint buf_id, GLsizeiptr buf_size);
+    void init(int len, int elements, std::shared_ptr<glm::vec3> CameraLocation);
     bool recalc_borders(void);
 
   private:
-    std::shared_ptr<voxesdb> Voxes = nullptr;
+    std::unique_ptr<vbo_ctrl> VBO = nullptr;
     std::shared_ptr<glm::vec3> ViewFrom = nullptr;
+
+    // В контрольный массив (GpuMap) записываются координаты Origin видимых сторон воксов,
+    // переданных в VBO в порядке их размещения. Соответственно, размер массива должен
+    // соотвествовать зарезервированному размеру VBO. Адрес размещения определяется
+    // умножением значения индекса элемента в массиве на размер блока данных стороны.
+    // Так как все видимые стороны вокса одновременно размещается GPU и одновременно
+    // удаляются из нее, то нет необходимости различать каждую из сторон вокса - для каждой
+    // в массив заносится одино и то-же значение координта Origin.
+    std::vector<i3d> GpuMap {};            // Контрольный массив
 
     float last[3]      = {0.f, 0.f, 0.f};  // последнее считанное положение камеры
     float curr[3]      = {0.f, 0.f, 0.f};  // текущее положение камеры
@@ -50,6 +63,8 @@ class area
 
     void redraw_borders_x(int, int);
     void redraw_borders_z(int, int);
+    void load(int x, int z);
+    void truncate(int x, int z);
 };
 
 

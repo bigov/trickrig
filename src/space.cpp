@@ -77,7 +77,14 @@ space::space(wglfw* OpenGLContext)
 }
 
 
-space::~space() { }
+///
+/// \brief space::~space
+///
+space::~space()
+{
+  render_indices.store(-1); // Индикатор для остановки потока загрузки в рендер из БД
+}
+
 
 ///
 /// \brief space::enable
@@ -96,10 +103,11 @@ void space::enable(void)
   OglContext->cursor_hide();  // выключить отображение курсора мыши в окне
   OglContext->set_cursor_pos(xpos, ypos);
 
-  if(nullptr == VoxesDB)
+  if(nullptr == VBO)
   {
-    VoxesDB = std::make_shared<voxesdb>(init_vbo());
-    std::thread A(std::ref(Area4), VoxesDB, size_v4, border_dist_b4, ViewFrom, OglContext->win_shared);
+    init_vbo();
+    std::thread A(std::ref(Area4), size_v4, border_dist_b4, ViewFrom, OglContext->win_shared,
+                  VBO->get_type(), VBO->get_id(), VBO->get_size());
     A.detach();
 
     // Подождать завершения загрузки сцены из БД в GPU
@@ -218,8 +226,9 @@ void space::calc_position(void)
 /// \brief vox_buffer::init_vao
 /// \param border_dist - число элементов от камеры до отображаемой границы
 ///
-vbo_ext* space::init_vbo(void)
+void space::init_vbo(void)
 {
+  VBO = std::make_unique<vbo> (GL_ARRAY_BUFFER);
   glGenVertexArrays(1, &vao_id);
   glBindVertexArray(vao_id);
 
@@ -227,10 +236,10 @@ vbo_ext* space::init_vbo(void)
   uint n = static_cast<uint>(pow((border_dist_b4 + border_dist_b4 + 1), 3));
 
   // Размер данных VBO для размещения сторон вокселей:
-  VBO.allocate(n * bytes_per_side);
+  VBO->allocate(n * bytes_per_side);
 
   // настройка положения атрибутов GLSL программы
-  VBO.set_attributes(Program3d->AtribsList);
+  VBO->set_attributes(Program3d->AtribsList);
 
   // Так как все четырехугольники сторон индексируются одинаково, то индексный массив
   // заполняем один раз "под завязку" и забываем про него. Число используемых индексов
@@ -244,11 +253,10 @@ vbo_ext* space::init_vbo(void)
     for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
     stride += 4;                                                 // по 4 вершины на сторону
   }
-  vbo_base VBOindex = { GL_ELEMENT_ARRAY_BUFFER };               // индексный буфер
+  vbo VBOindex = { GL_ELEMENT_ARRAY_BUFFER };               // индексный буфер
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data);   // и заполнить данными.
   delete[] idx_data;                                             // Удалить исходный массив.
   glBindVertexArray(0);
-  return &VBO;
 }
 
 
@@ -298,8 +306,8 @@ bool space::render(void)
   Program3d->set_uniform("mvp", MatMVP);
   Program3d->set_uniform("light_direction", light_direction); // направление
   Program3d->set_uniform("light_bright", light_bright);       // цвет/яркость
-  Program3d->set_uniform("MinId", GLint(hl_point_id_from));   // начальная вершина активного вокселя
-  Program3d->set_uniform("MaxId", GLint(hl_point_id_end));    // последняя вершина активного вокселя
+  Program3d->set_uniform("MinId", hl_vertex_id_from);         // начальная вершина активного вокселя
+  Program3d->set_uniform("MaxId", hl_vertex_id_end);          // последняя вершина активного вокселя
 
   for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
 
@@ -464,46 +472,45 @@ bool space::check_keys()
     return false;
   }
 
-  uint vertex_id = 0; // переменная для хранения ID вершины
+  // В "цвете" пикселей буфера рендера хранится информация об индексах
+  // первой вершины образующего примитива (каждый прямоугольник формируется
+  // из двух треугольников). Зная размер блока данных, по индексу можно получить
+  // адрес размещения в буфере VBO данных того геометрического примитива, в
+  // котором расположен данный пиксель.
 
+  uint vertex_id = 0;    // переменная для записи ID вершины в VBO
   mutex_voxes_db.lock();
   RenderBuffer->read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
   mutex_voxes_db.unlock();
-
 
   // Так как вершины располагаются группами по 4 шт. (обход через 6 индексов),
   // то можно, по номеру любой вершины из группы, используя остаток от деления
   // на число вершин в группе, определить какая по номеру из вершин начинает
   // эту группу и какая заканчивает.
-  hl_point_id_from = vertex_id - (vertex_id % vertices_per_side);
-  hl_point_id_end = hl_point_id_from + vertices_per_side - 1;
+  //
+  // Значения переменных hl_point_id_end и hl_point_id_from используются в шейдере
+  // для подсветки текущего прямоугольника (расположенного под прицелом в центре экрана)
+  hl_vertex_id_from = vertex_id - (vertex_id % vertices_per_side);
+  hl_vertex_id_end = hl_vertex_id_from + vertices_per_side - 1;
 
-  //DEBUG: Нажатие на [C] выводит в консоль номер вершины-индикатора
-  if((46 == scancode) && (action == PRESS))
-  {
-    action = -1;
-    scancode = -1;
-    std::cout << "ID=" << vertex_id << " ";
-  }
+  if((hl_vertex_id_end/vertices_per_side)>(render_indices/indices_per_side)) return true;
 
   if((mouse == MOUSE_BUTTON_LEFT) && (action == PRESS))
   {
     action = -1;
-    if(vertex_id <= (render_indices/indices_per_side) * bytes_per_side)
-    { // по номеру группы найдем адрес смещения в VBO
-      GLsizeiptr offset = (vertex_id/vertices_per_side) * bytes_per_side;
-      VoxesDB->append(offset);
-    }
+    /*
+      В этом месте расположить код, который сгенерирует вокс и добавит
+      информацию и нем в базу данных с текущей временной меткой.
+    */
   }
 
   if((mouse == MOUSE_BUTTON_RIGHT) && (action == PRESS))
   {
     action = -1;
-    if(vertex_id <= (render_indices/indices_per_side) * bytes_per_side)
-    { // по номеру группы найдем адрес смещения в VBO
-      GLsizeiptr offset = (vertex_id/vertices_per_side) * bytes_per_side;
-      VoxesDB->remove(offset);
-    }
+    /*
+      В этом месте расположить код, который удалит вокс и запишет
+      информацию в базу данных с текущей временной меткой.
+    */
 
   }
   return true;

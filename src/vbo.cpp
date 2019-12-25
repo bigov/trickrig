@@ -10,22 +10,11 @@
 namespace tr
 {
 
-void vbo_base::bind (void)
-{
-  glBindBuffer(gl_buffer_type, id);
-}
-
-void vbo_base::unbind (void)
-{
-  glBindBuffer(gl_buffer_type, 0);
-}
-
-
 ///
 /// \brief vbo_base::max_size
 /// \return
 ///
-GLsizeiptr vbo_base::max_size (void)
+GLsizeiptr vbo::max_size (void)
 {
   return allocated;
 }
@@ -37,7 +26,7 @@ GLsizeiptr vbo_base::max_size (void)
 ///
 /// \details Cоздание нового буфера указанного в параметре размера
 ///
-void vbo_base::allocate (GLsizeiptr need_size)
+void vbo::allocate (GLsizeiptr need_size)
 {
   if(0 != id) ERR("VBO::Allocate trying to re-init exist object.");
   allocated = need_size;
@@ -62,7 +51,7 @@ void vbo_base::allocate (GLsizeiptr need_size)
 ///
 /// \details Cоздание графического буфера и заполнение его данными
 ///
-void vbo_base::allocate(GLsizeiptr al, const GLvoid* data)
+void vbo::allocate(GLsizeiptr al, const GLvoid* data)
 {
   if(0 != id) ERR("VBO::Allocate trying to re-init exist object.");
   allocated = al;
@@ -85,7 +74,7 @@ void vbo_base::allocate(GLsizeiptr al, const GLvoid* data)
 /// \brief vbo_base::set_attributes
 /// \param AtribsList
 ///
-void vbo_base::set_attributes(const std::list<glsl_attributes>& AtribsList)
+void vbo::set_attributes(const std::list<glsl_attributes>& AtribsList)
 {
   for(auto& A: AtribsList) attrib(A.index, A.d_size, A.type, A.normalized, A.stride, A.pointer);
 }
@@ -102,7 +91,7 @@ void vbo_base::set_attributes(const std::list<glsl_attributes>& AtribsList)
 ///
 /// \details Настройка атрибутов для float
 ///
-void vbo_base::attrib(GLuint index, GLint d_size, GLenum type, GLboolean normalized,
+void vbo::attrib(GLuint index, GLint d_size, GLenum type, GLboolean normalized,
   GLsizei stride, size_t pointer)
 {
   glEnableVertexAttribArray(index);
@@ -123,7 +112,7 @@ void vbo_base::attrib(GLuint index, GLint d_size, GLenum type, GLboolean normali
 ///
 /// \details  Настройка атрибутов для int
 ///
-void vbo_base::attrib_i(GLuint index, GLint d_size, GLenum type,
+void vbo::attrib_i(GLuint index, GLint d_size, GLenum type,
   GLsizei stride, const GLvoid* pointer)
 {
   glEnableVertexAttribArray(index);
@@ -133,23 +122,34 @@ void vbo_base::attrib_i(GLuint index, GLint d_size, GLenum type,
 }
 
 
+// ------------------------------- vbo_ctrl ------------------------------------------
+
+
 ///
-/// \brief vbo_ext::vbo_ext
-/// \param type
-/// \details Если читать из рендер-буфера напрямую в ОЗУ, то после первого-же
-/// считывания OpenGL автоматически устанавливает скорость операции перемещения
-/// данных внутри памяти GPU равной скорости обмена с CPU, которая в разы ниже,
-/// что сразу становится заметно визуально. Чтобы это обойти, создается
-/// промежуточный (id_subbuf) буфер, через который производится чтение данных.
+/// \brief vbo::append
+/// \param d_size
+/// \param data
+/// \return
 ///
-vbo_ext::vbo_ext(GLenum type): vbo_base(type)
+/// \details Добавление данных в конец VBO (с контролем границы размера
+/// буфера). Вносит данные в буфер по указателю границы данных блока (hem),
+/// возвращает положение указателя по которому разместились данные и
+/// сдвигает границу указателя на размер внесенных данных для приема
+/// следующеего блока данных
+///
+GLsizeiptr vbo_ctrl::append(const GLvoid* data, GLsizeiptr data_size)
 {
-  // Создание промежуточного буфера, через который будет
-  // производится обмен данными между GPU и CPU.
-  glGenBuffers(1, &id_subbuf);
-  glBindBuffer(GL_COPY_WRITE_BUFFER, id_subbuf);
-  glBufferData(GL_COPY_WRITE_BUFFER, bytes_per_side, nullptr, GL_STATIC_DRAW);
-  glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+  #ifndef NDEBUG // проверка свободного места в буфере----------------------
+  if((allocated - hem) < data_size) ERR("VBO::SubDataAppend got overflow buffer");
+  if(data == nullptr) ERR("VBO::SubDataAppend nullptr");
+  #endif //------------------------------------------------------------------
+
+  glBindBuffer(gl_buffer_type, id);
+  glBufferSubData(gl_buffer_type, hem, data_size, data);
+  glBindBuffer(gl_buffer_type, 0);
+  GLsizeiptr res = hem;
+  hem += data_size;
+  return res;
 }
 
 
@@ -164,10 +164,8 @@ vbo_ext::vbo_ext(GLenum type): vbo_base(type)
 /// Возвращается значение границы VBO после переноса данных. Она равна
 /// началу адреса блока, данные которого были перемещены.
 ///
-GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
+GLsizeiptr vbo_ctrl::remove(GLsizeiptr dest, GLsizeiptr data_size)
 {
-  //std::lock_guard<std::mutex> Hasp{mutex_vbo};
-
   if(data_size >= hem) hem = 0;
   if(hem == 0) return hem;
 
@@ -197,34 +195,26 @@ GLsizeiptr vbo_ext::remove(GLsizeiptr dest, GLsizeiptr data_size)
 }
 
 
+// -------------------------- vbo_ext ----------------------------------------------
+
+
 ///
-/// \brief vbo::append
-/// \param d_size
-/// \param data
-/// \return
+/// \brief vbo_ext::vbo_ext
+/// \param type
+/// \details Если читать из рендер-буфера напрямую в ОЗУ, то после первого-же
+/// считывания OpenGL автоматически устанавливает скорость операции перемещения
+/// данных внутри памяти GPU равной скорости обмена с CPU, которая в разы ниже,
+/// что сразу становится заметно визуально. Чтобы это обойти, создается
+/// промежуточный (id_subbuf) буфер, через который производится чтение данных.
 ///
-/// \details Добавление данных в конец VBO (с контролем границы размера
-/// буфера). Вносит данные в буфер по указателю границы данных блока (hem),
-/// возвращает положение указателя по которому разместились данные и
-/// сдвигает границу указателя на размер внесенных данных для приема
-/// следующеего блока данных
-///
-GLsizeiptr vbo_ext::append(const GLvoid* data, GLsizeiptr data_size)
+vbo_ext::vbo_ext(GLenum type): vbo(type)
 {
-  //std::lock_guard<std::mutex> Hasp{mutex_vbo};
-
-  #ifndef NDEBUG // проверка свободного места в буфере----------------------
-  if((allocated - hem) < data_size) ERR("VBO::SubDataAppend got overflow buffer");
-  if(data == nullptr) ERR("VBO::SubDataAppend nullptr");
-  #endif //------------------------------------------------------------------
-
-  glBindBuffer(gl_buffer_type, id);
-  glBufferSubData(gl_buffer_type, hem, data_size, data);
-  glBindBuffer(gl_buffer_type, 0);
-  GLsizeiptr res = hem;
-  hem += data_size;
-  glFinish(); // для синхронизации изменений между потоками
-  return res;
+  // Создание промежуточного буфера, через который будет
+  // производится обмен данными между GPU и CPU.
+  glGenBuffers(1, &id_subbuf);
+  glBindBuffer(GL_COPY_WRITE_BUFFER, id_subbuf);
+  glBufferData(GL_COPY_WRITE_BUFFER, bytes_per_side, nullptr, GL_STATIC_DRAW);
+  glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
 

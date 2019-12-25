@@ -62,13 +62,13 @@ gui::gui(wglfw* GLObject)
   Program2d = std::make_unique<glsl>(Shaders);
   Program2d->use();
 
-  vbo_base VboPosition { GL_ARRAY_BUFFER };
+  vbo VboPosition { GL_ARRAY_BUFFER };
 
   VboPosition.allocate( sizeof(Position), Position );
   VboPosition.attrib( Program2d->attrib("position"),
       2, GL_FLOAT, GL_FALSE, 0, 0);
 
-  vbo_base VboTexcoord { GL_ARRAY_BUFFER };
+  vbo VboTexcoord { GL_ARRAY_BUFFER };
 
   VboTexcoord.allocate( sizeof(Texcoord), Texcoord );
   VboTexcoord.attrib( Program2d->attrib("texcoord"),

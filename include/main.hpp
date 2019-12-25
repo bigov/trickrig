@@ -143,7 +143,7 @@ const int KEY_MOVE_RIGHT = GLFW_KEY_D;
 const int KEY_MOVE_LEFT  = GLFW_KEY_A;
 
 // число вершин в прямоугольнике
-static const uint vertices_per_side = 4;
+static const int vertices_per_side = 4;
 
   // число индексов в одном снипе
   static const int indices_per_side = 6;
