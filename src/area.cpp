@@ -37,11 +37,9 @@ void area::init (int len, int elements, std::shared_ptr<glm::vec3> CameraLocatio
            Location.z + lod_dist };
 
   // Загрузка пространства вокруг точки расположения камеры
-  i3d vP {};
-
   std::lock_guard<std::mutex> Hasp{mutex_voxes_db};
-  for(vP.x = P0.x; vP.x<= P1.x; vP.x += side_len) for(vP.z = P0.z; vP.z<= P1.z; vP.z += side_len)
-    load(vP.x, vP.z);
+  for(int x = P0.x; x<= P1.x; x += side_len) for(int z = P0.z; z<= P1.z; z += side_len)
+    load(x, z);
   glFinish(); // синхронизация изменений между потоками
 }
 
@@ -71,7 +69,6 @@ void area::operator() (int len, int elements, std::shared_ptr<glm::vec3> CameraL
   while (render_indices >= 0) {
     if(!recalc_borders()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
-
 }
 
 
@@ -140,13 +137,14 @@ void area::redraw_borders_x(int x_add, int x_del)
   {
     mutex_voxes_db.lock();
     truncate(x_del, z);
+    glFinish(); // синхронизация изменений между потоками
     mutex_voxes_db.unlock();
     std::this_thread::sleep_for(std::chrono::microseconds(1));
     mutex_voxes_db.lock();
     load(x_add, z);
+    glFinish(); // синхронизация изменений между потоками
     mutex_voxes_db.unlock();
   }
-  glFinish(); // синхронизация изменений между потоками
 }
 
 
@@ -160,13 +158,15 @@ void area::redraw_borders_z(int z_add, int z_del)
   {
     mutex_voxes_db.lock();
     truncate(x, z_del);
+    glFinish(); // синхронизация изменений между потоками
     mutex_voxes_db.unlock();
+    // сделать окно для ренедера в основном потоке
     std::this_thread::sleep_for(std::chrono::microseconds(1));
     mutex_voxes_db.lock();
     load(x, z_add);
+    glFinish(); // синхронизация изменений между потоками
     mutex_voxes_db.unlock();
   }
-  glFinish(); // синхронизация изменений между потоками
 }
 
 
@@ -184,26 +184,24 @@ void area::load(int x, int z)
   int y = 0;
   size_t offset = 0;
   size_t offset_max = VoxData.size() - sizeof_y - 1;
-  while (offset < offset_max)
-  {
-    memcpy(&y, VoxData.data() + offset, sizeof_y);  // Координата "y"
+  while (offset < offset_max)                       // Если в блоке несколько воксов, то
+  {                                                 // последовательно передать в VBO все.
+    memcpy(&y, VoxData.data() + offset, sizeof_y);  // Координата "y" вокса, записанная в блоке данных
     offset += sizeof_y;
-    std::bitset<6> m(VoxData[offset]);              // Маcка видимых сторон
+    std::bitset<6> m (VoxData[offset]);             // Маcка видимых сторон
     offset += 1;
-
     uchar* data = VoxData.data()+ offset;
-
     GLsizeiptr vbo_addr = 0;
-    uchar n = m.count();
-    while (n > 0)
-    {                  //TODO: настроить передачу информации в VBO за одно обращение
+    uchar n = m.count();                            // Число видимых сторон текущего вокса
+    while (n > 0)                                   // Все передать стороны передать в VBO.
+    {
       n--;
-      vbo_addr = VBOctrl->append(data, bytes_per_side); // добавить данные стороны в VBO
-      VboMap[vbo_addr/bytes_per_side] = {x, y, z, n};   // запомнить положение блока данных
-      render_indices.fetch_add(indices_per_side);       // увеличить число точек рендера
-      data += bytes_per_side;                           // переключить на следующую сторону
+      vbo_addr = VBOctrl->append(data, bytes_per_side); // Добавить данные стороны в VBO
+      VboMap[vbo_addr/bytes_per_side] = {x, y, z, n};   // Запомнить положение блока данных
+      render_indices.fetch_add(indices_per_side);       // Увеличить число точек рендера
+      data += bytes_per_side;                           // Переключить на следующую сторону
     }
-    offset += m.count() * bytes_per_side;               // Перейти к следующему блоку
+    offset += m.count() * bytes_per_side;               // Перейти к началу блока данных следующего вокса
   }
 }
 

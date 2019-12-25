@@ -103,11 +103,11 @@ void space::enable(void)
   OglContext->cursor_hide();  // выключить отображение курсора мыши в окне
   OglContext->set_cursor_pos(xpos, ypos);
 
-  if(nullptr == VBO)
+  if(nullptr == pVBO)
   {
     init_vbo();
     std::thread A(std::ref(Area4), size_v4, border_dist_b4, ViewFrom, OglContext->win_shared,
-                  VBO->get_type(), VBO->get_id(), VBO->get_size());
+                  pVBO->get_type(), pVBO->get_id(), pVBO->get_size());
     A.detach();
 
     // Подождать завершения загрузки сцены из БД в GPU
@@ -228,18 +228,19 @@ void space::calc_position(void)
 ///
 void space::init_vbo(void)
 {
-  VBO = std::make_unique<vbo> (GL_ARRAY_BUFFER);
-  glGenVertexArrays(1, &vao_id);
+  glGenVertexArrays(1, &vao_id);                  // create VAO
   glBindVertexArray(vao_id);
+
+  pVBO = std::make_unique<vbo> (GL_ARRAY_BUFFER); // create VBO
 
   // Число сторон куба в объеме с длиной стороны LOD (2*dist_xx) элементов:
   uint n = static_cast<uint>(pow((border_dist_b4 + border_dist_b4 + 1), 3));
 
   // Размер данных VBO для размещения сторон вокселей:
-  VBO->allocate(n * bytes_per_side);
+  pVBO->allocate(n * bytes_per_side);
 
   // настройка положения атрибутов GLSL программы
-  VBO->set_attributes(Program3d->AtribsList);
+  pVBO->set_attributes(Program3d->AtribsList);
 
   // Так как все четырехугольники сторон индексируются одинаково, то индексный массив
   // заполняем один раз "под завязку" и забываем про него. Число используемых индексов

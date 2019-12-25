@@ -45,7 +45,7 @@ namespace tr
 
       wglfw* OglContext = nullptr;
       std::unique_ptr<glsl> Program3d = nullptr;
-      std::unique_ptr<vbo> VBO = nullptr; // VBO GPU
+      std::unique_ptr<vbo> pVBO = nullptr; // VBO GPU
 
       img ImHUD { 0, 0 };      // Текстура HUD окна приложения
       GLuint texture_hud = 0;  // ID HUD текстуры в GPU
