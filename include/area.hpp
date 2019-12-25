@@ -40,7 +40,7 @@ class area
     bool recalc_borders(void);
 
   private:
-    std::unique_ptr<vbo_ctrl> VBO = nullptr;
+    std::unique_ptr<vbo_ctrl> VBOctrl = nullptr;
     std::shared_ptr<glm::vec3> ViewFrom = nullptr;
 
     // В контрольный массив (GpuMap) записываются координаты Origin видимых сторон воксов,
@@ -50,7 +50,12 @@ class area
     // Так как все видимые стороны вокса одновременно размещается GPU и одновременно
     // удаляются из нее, то нет необходимости различать каждую из сторон вокса - для каждой
     // в массив заносится одино и то-же значение координта Origin.
-    std::vector<i3d> GpuMap {};            // Контрольный массив
+    struct vbo_map
+    {
+      int x, y, z;
+      uchar side;
+    };
+    std::unique_ptr<vbo_map[]> VboMap = nullptr; // Контрольный массив
 
     float last[3]      = {0.f, 0.f, 0.f};  // последнее считанное положение камеры
     float curr[3]      = {0.f, 0.f, 0.f};  // текущее положение камеры

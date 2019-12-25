@@ -59,10 +59,11 @@ void area::init (int len, int elements, std::shared_ptr<glm::vec3> CameraLocatio
 void area::operator() (int len, int elements, std::shared_ptr<glm::vec3> CameraLocation,
                        GLFWwindow* Context, GLenum buf_type, GLuint buf_id, GLsizeiptr buf_size)
 {
-  VBO = std::make_unique<vbo_ctrl> (buf_type, buf_id, buf_size);
+  VBOctrl = std::make_unique<vbo_ctrl> (buf_type, buf_id, buf_size);
 
   // Зарезервировать место в соответствии с размером буфера VBO
-  GpuMap.resize(buf_size/bytes_per_side);
+  VboMap = std::unique_ptr<vbo_map[]> {new vbo_map[buf_size/bytes_per_side]};
+
 
   glfwMakeContextCurrent(Context);
   init(len, elements, CameraLocation);
@@ -70,6 +71,7 @@ void area::operator() (int len, int elements, std::shared_ptr<glm::vec3> CameraL
   while (render_indices >= 0) {
     if(!recalc_borders()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
+
 }
 
 
@@ -190,19 +192,18 @@ void area::load(int x, int z)
     offset += 1;
 
     uchar* data = VoxData.data()+ offset;
-    const i3d& P = {x, y, z};
 
     GLsizeiptr vbo_addr = 0;
     uchar n = m.count();
     while (n > 0)
     {                  //TODO: настроить передачу информации в VBO за одно обращение
       n--;
-      vbo_addr = VBO->append(data, bytes_per_side); // добавить данные стороны в VBO
-      GpuMap[vbo_addr/bytes_per_side] = P;          // запомнить положение блока данных
-      render_indices.fetch_add(indices_per_side);   // увеличить число точек рендера
-      data += bytes_per_side;                       // переключить на следующую сторону
+      vbo_addr = VBOctrl->append(data, bytes_per_side); // добавить данные стороны в VBO
+      VboMap[vbo_addr/bytes_per_side] = {x, y, z, n};   // запомнить положение блока данных
+      render_indices.fetch_add(indices_per_side);       // увеличить число точек рендера
+      data += bytes_per_side;                           // переключить на следующую сторону
     }
-    offset += m.count() * bytes_per_side;           // Перейти к следующему блоку
+    offset += m.count() * bytes_per_side;               // Перейти к следующему блоку
   }
 }
 
@@ -217,20 +218,18 @@ void area::truncate(int x, int z)
 {
   if (render_indices < indices_per_side) return;
   GLsizeiptr dest, moved_from;
-  i3d Pt {0,0,0};
 
   size_t id = render_indices/indices_per_side;
   while(id > 0)
   {
     id -= 1;
-    Pt = GpuMap[id];
-    if((Pt.x == x) and (Pt.z == z)) // Данные вокса есть в GPU
+    if((VboMap[id].x == x) and (VboMap[id].z == z)) // Данные вокса есть в GPU
     {
       dest = id * bytes_per_side;                     // адрес удаляемого блока данных
-      moved_from = VBO->remove(dest, bytes_per_side); // адрес хвоста VBO (данными отсюда
+      moved_from = VBOctrl->remove(dest, bytes_per_side); // адрес хвоста VBO (данными отсюда
                                                       // перезаписываются данные по адресу "dest")
       // Если c адреса "free" на "dest" данные были перенесены, то обновить координты Origin
-      if (moved_from != dest) GpuMap[dest/bytes_per_side] = GpuMap[moved_from/bytes_per_side];
+      if (moved_from != dest) VboMap[id] = VboMap[moved_from/bytes_per_side];
       // Если free == dest, то удаляемый блок данных был в конце VBO и просто "отбрасывается"
       render_indices.fetch_sub(indices_per_side); // уменьшаем число точек рендера
     }
