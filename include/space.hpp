@@ -123,7 +123,7 @@ namespace tr
       void calc_render_time(void);
       void load_textures(void);
       void calc_position();
-      bool check_keys();
+      bool calc_hlight_quad();
 
       void hud_load(void);
       void hud_draw(void);
