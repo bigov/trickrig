@@ -142,29 +142,33 @@ const int KEY_MOVE_DOWN  = GLFW_KEY_SPACE;
 const int KEY_MOVE_RIGHT = GLFW_KEY_D;
 const int KEY_MOVE_LEFT  = GLFW_KEY_A;
 
-// число вершин в прямоугольнике
-static const int vertices_per_side = 4;
 
-  // число индексов в одном снипе
-  static const int indices_per_side = 6;
+// LOD control
+const int size_v4 = 32;         // размер стороны вокселя
+const int border_dist_b4 = 24;  // число элементов от камеры до отображаемой границы
 
-  // количество чисел (GLfloat) в блоке данных одной вершины
-  static const size_t digits_per_vertex = 12;
+static const int vertices_per_side = 4; // число вершин в прямоугольнике
 
-  // количество чисел (GLfloat) в блоке данных прямоугольника
-  static const size_t digits_per_side = digits_per_vertex * vertices_per_side;
+// число индексов в одном снипе
+static const int indices_per_side = 6;
 
-  // количество чисел (GLfloat) в блоке данных вокселя
-  static const size_t digits_per_voxel = digits_per_side * 6;
+// количество чисел (GLfloat) в блоке данных одной вершины
+static const size_t digits_per_vertex = 12;
 
-  // размер (число байт) блока данных одной стороны вокселя
-  static const GLsizeiptr bytes_per_side = digits_per_side * sizeof(GLfloat);
+// количество чисел (GLfloat) в блоке данных прямоугольника
+static const size_t digits_per_side = digits_per_vertex * vertices_per_side;
 
-  // число байт для записи данных одной вершины
-  static const GLsizeiptr bytes_per_vertex = digits_per_vertex * sizeof(GLfloat);
+// количество чисел (GLfloat) в блоке данных вокселя
+static const size_t digits_per_voxel = digits_per_side * 6;
 
-  static const char fname_cfg[] = "config.db";
-  static const char fname_map[] = "map.db";
+// размер (число байт) блока данных одной стороны вокселя
+static const GLsizeiptr bytes_per_side = digits_per_side * sizeof(GLfloat);
+
+// число байт для записи данных одной вершины
+static const GLsizeiptr bytes_per_vertex = digits_per_vertex * sizeof(GLfloat);
+
+static const char fname_cfg[] = "config.db";
+static const char fname_map[] = "map.db";
 
   struct texture {
       GLfloat u = 0.0f;

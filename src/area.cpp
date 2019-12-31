@@ -11,18 +11,41 @@
 namespace tr
 {
 
+//
+/// \param length         // размер стороны вокселя текущего LOD
+/// \param count          // количество вокселей до границы LOD
+/// \param CameraLocation // Положение камеры в пространстве
+/// \param Context        // OpenGL контекст назначенный текущему потоку
+///
+/// \details Создание отдельного потока обмена данными с базой
+///
+void db_control(GLFWwindow* Context, std::shared_ptr<glm::vec3> CameraLocation, GLuint id, GLsizeiptr size)
+{
+  glfwMakeContextCurrent(Context);
+  area Area {CameraLocation, id, size};
+
+  while (render_indices >= 0) {
+    if(!Area.recalc_borders()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+
+}
+
 ///
 /// \brief area::area
 /// \param length - длина стороны вокселя
 /// \param count - число вокселей от камеры (или внутренней границы)
 /// до внешней границы области
 ///
-void area::init (int len, int elements, std::shared_ptr<glm::vec3> CameraLocation)
+area::area (std::shared_ptr<glm::vec3> CameraLocation, GLuint VBO_id, GLsizeiptr VBO_size)
 {
-  side_len = len;
-  f_side_len = len * 1.f;
-  lod_dist = elements * len;
+  side_len = size_v4;
+  f_side_len = size_v4 * 1.f;
+  lod_dist = border_dist_b4 * size_v4;
   ViewFrom = CameraLocation;
+
+  VBOctrl = std::make_unique<vbo_ctrl> (GL_ARRAY_BUFFER, VBO_id, VBO_size);
+  // Зарезервировать место в соответствии с размером буфера VBO
+  VboMap = std::unique_ptr<vbo_map[]> {new vbo_map[VBO_size/bytes_per_side]};
 
   // Origin вокселя, в котором расположена камера
   Location = { static_cast<int>(floorf(ViewFrom->x / side_len)) * side_len,
@@ -41,34 +64,6 @@ void area::init (int len, int elements, std::shared_ptr<glm::vec3> CameraLocatio
   for(int x = P0.x; x<= P1.x; x += side_len) for(int z = P0.z; z<= P1.z; z += side_len)
     load(x, z);
   glFinish(); // синхронизация изменений между потоками
-}
-
-
-///
-/// \brief area::operator()
-/// \param V          // адрес базы данных контроля вокселей
-/// \param len        // размер стороны вокселя текущего LOD
-/// \param elements   // количество вокселей до границы LOD
-/// \param Pt         // Положение камеры в пространстве
-/// \param Context    // OpenGL контекст назначенный текущему потоку
-///
-/// \details Данный метод класса вызывается при создании потока
-///
-void area::operator() (int len, int elements, std::shared_ptr<glm::vec3> CameraLocation,
-                       GLFWwindow* Context, GLenum buf_type, GLuint buf_id, GLsizeiptr buf_size)
-{
-  VBOctrl = std::make_unique<vbo_ctrl> (buf_type, buf_id, buf_size);
-
-  // Зарезервировать место в соответствии с размером буфера VBO
-  VboMap = std::unique_ptr<vbo_map[]> {new vbo_map[buf_size/bytes_per_side]};
-
-
-  glfwMakeContextCurrent(Context);
-  init(len, elements, CameraLocation);
-
-  while (render_indices >= 0) {
-    if(!recalc_borders()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
-  }
 }
 
 
@@ -181,19 +176,20 @@ void area::load(int x, int z)
   auto VoxData = cfg::DataBase.load_vox_data(x, z);
   if(VoxData.empty()) return;
 
+  GLsizeiptr vbo_addr = 0;
+  uchar n = 0;
   int y = 0;
   size_t offset = 0;
   size_t offset_max = VoxData.size() - sizeof_y - 1;
-  while (offset < offset_max)                       // Если в блоке несколько воксов, то
-  {                                                 // последовательно передать в VBO все.
-    memcpy(&y, VoxData.data() + offset, sizeof_y);  // Координата "y" вокса, записанная в блоке данных
+  while (offset < offset_max)                           // Если в блоке несколько воксов, то
+  {                                                     // последовательно передать в VBO все.
+    memcpy(&y, VoxData.data() + offset, sizeof_y);      // Координата "y" вокса, записанная в блоке данных
     offset += sizeof_y;
-    std::bitset<6> m (VoxData[offset]);             // Маcка видимых сторон
+    std::bitset<6> m (VoxData[offset]);                 // Маcка видимых сторон
     offset += 1;
     uchar* data = VoxData.data()+ offset;
-    GLsizeiptr vbo_addr = 0;
-    uchar n = m.count();                            // Число видимых сторон текущего вокса
-    while (n > 0)                                   // Все передать стороны передать в VBO.
+    n = m.count();                                      // Число видимых сторон текущего вокса
+    while (n > 0)                                       // Все стороны передать в VBO.
     {
       n--;
       vbo_addr = VBOctrl->append(data, bytes_per_side); // Добавить данные стороны в VBO

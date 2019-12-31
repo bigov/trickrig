@@ -19,13 +19,20 @@
 namespace tr
 {
 
+extern void db_control(GLFWwindow* Context, std::shared_ptr<glm::vec3> CameraLocation, GLuint id, GLsizeiptr size);
+struct vbo_map
+{
+  int x, y, z;
+  uchar side;
+};
+
 ///
 /// \brief class area
 /// \details Управление картой воксов
 class area
 {
   public:
-    area(void) {}
+    area(std::shared_ptr<glm::vec3> CameraLocation, GLuint vbo_id, GLsizeiptr vbo_size);
     ~area(void) {}
 
     // Запретить копирование и перенос экземпляров класса
@@ -34,12 +41,10 @@ class area
     area(area&&) = delete;
     area& operator=(area&&) = delete;
 
-    void operator() (int length, int count, std::shared_ptr<glm::vec3> CameraLocation,
-                     GLFWwindow* Context, GLenum buf_type, GLuint buf_id, GLsizeiptr buf_size);
-    void init(int len, int elements, std::shared_ptr<glm::vec3> CameraLocation);
     bool recalc_borders(void);
 
   private:
+    std::unique_ptr<vbo_map[]> VboMap = nullptr; // Контрольный массив
     std::unique_ptr<vbo_ctrl> VBOctrl = nullptr;
     std::shared_ptr<glm::vec3> ViewFrom = nullptr;
 
@@ -50,12 +55,6 @@ class area
     // Так как все видимые стороны вокса одновременно размещается GPU и одновременно
     // удаляются из нее, то нет необходимости различать каждую из сторон вокса - для каждой
     // в массив заносится одино и то-же значение координта Origin.
-    struct vbo_map
-    {
-      int x, y, z;
-      uchar side;
-    };
-    std::unique_ptr<vbo_map[]> VboMap = nullptr; // Контрольный массив
 
     float last[3]      = {0.f, 0.f, 0.f};  // последнее считанное положение камеры
     float curr[3]      = {0.f, 0.f, 0.f};  // текущее положение камеры
@@ -66,9 +65,9 @@ class area
     int lod_dist = 0;         // Расстояние от камеры до границы LOD, кратное vox_side_len
     i3d Location {0, 0, 0};   // Origin вокса, над которым камера
 
+    void load(int x, int z);
     void redraw_borders_x(int, int);
     void redraw_borders_z(int, int);
-    void load(int x, int z);
     void truncate(int x, int z);
 };
 

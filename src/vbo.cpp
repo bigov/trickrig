@@ -20,17 +20,27 @@ GLsizeiptr vbo::max_size (void)
 }
 
 
+vbo::vbo(GLenum type)
+{
+  gl_buffer_type = type;
+  glGenBuffers(1, &id);
+}
+
+vbo::vbo(GLenum type, GLuint _id)
+{
+  gl_buffer_type = type;
+  id = _id;
+}
+
 ///
 /// \brief vbo::allocate
 /// \param al
 ///
-/// \details Cоздание нового буфера указанного в параметре размера
+/// \details Настройка размера буфера
 ///
-void vbo::allocate (GLsizeiptr need_size)
+void vbo::allocate (GLsizeiptr new_size)
 {
-  if(0 != id) ERR("VBO::Allocate trying to re-init exist object.");
-  allocated = need_size;
-  glGenBuffers(1, &id);
+  allocated = new_size;
   glBindBuffer(gl_buffer_type, id);
   glBufferData(gl_buffer_type, allocated, nullptr, GL_STATIC_DRAW); // GL_STREAM_DRAW
 
@@ -49,12 +59,11 @@ void vbo::allocate (GLsizeiptr need_size)
 /// \param al
 /// \param data
 ///
-/// \details Cоздание графического буфера и заполнение его данными
+/// \details Настройка размера буфера и заполнение его данными
 ///
-void vbo::allocate(GLsizeiptr al, const GLvoid* data)
+void vbo::allocate(GLsizeiptr new_size, const GLvoid* data)
 {
-  if(0 != id) ERR("VBO::Allocate trying to re-init exist object.");
-  allocated = al;
+  allocated = new_size;
   glGenBuffers(1, &id);
   glBindBuffer(gl_buffer_type, id);
   glBufferData(gl_buffer_type, allocated, data, GL_STATIC_DRAW);
@@ -66,7 +75,7 @@ void vbo::allocate(GLsizeiptr al, const GLvoid* data)
   #endif //------------------------------------------------------------------
 
   if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
-  hem = al;
+  hem = new_size;
 }
 
 

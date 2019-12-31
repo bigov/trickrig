@@ -41,11 +41,8 @@ namespace tr
       space(const space &);
       space operator=(const space &);
 
-      area Area4 {};
-
       wglfw* OglContext = nullptr;
       std::unique_ptr<glsl> Program3d = nullptr;
-      std::unique_ptr<vbo> pVBO = nullptr; // VBO GPU
 
       img ImHUD { 0, 0 };      // Текстура HUD окна приложения
       GLuint texture_hud = 0;  // ID HUD текстуры в GPU
@@ -96,11 +93,6 @@ namespace tr
       // GPU control
       GLuint texture_id = 0;
 
-      // LOD control
-      //std::unique_ptr<area> Area4 = nullptr; // Управление пространством вокселей
-      const int size_v4 = 32;                // размер стороны вокселя
-      const int border_dist_b4 = 24;         // число элементов от камеры до отображаемой границы
-
       // Camera control
       float rl=0.f, ud=0.f, fb=0.f; // скорость движения по направлениям
 
@@ -119,11 +111,11 @@ namespace tr
         UpWard {0.0, -1.0, 0.0},  // направление наверх
         ViewTo {};                // направление взгляда
 
-      void init_vbo(void);
       void calc_render_time(void);
       void load_textures(void);
       void calc_position();
-      bool check_keys();
+      bool check_keys(void);
+      void init_buffers(void);
 
       void hud_load(void);
       void hud_draw(void);

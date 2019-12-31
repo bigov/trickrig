@@ -11,6 +11,7 @@
 
 #include "io.hpp"
 
+
 namespace tr
 {
 ///
@@ -19,13 +20,15 @@ namespace tr
 class vbo
 {
   protected:
-    GLenum gl_buffer_type;
+    GLenum gl_buffer_type = 0;
     GLuint id = 0;            // индекс VBO
     GLsizeiptr allocated = 0; // (максимальный) выделяемый размер буфера
     GLsizeiptr hem = 0;       // граница размещения данных в VBO
 
   public:
-    vbo(GLenum type): gl_buffer_type(type) {}
+    vbo(void) = delete;
+    vbo(GLenum type);
+    vbo(GLenum type, GLuint _id);
     ~vbo(void) {}
 
     GLuint get_id(void)       { return id; }
@@ -33,8 +36,8 @@ class vbo
     GLsizeiptr get_hem(void)  { return hem; }
     GLenum get_type(void)     { return gl_buffer_type; }
 
-    void allocate (GLsizeiptr allocated);
-    void allocate (GLsizeiptr allocated, const GLvoid* data);
+    void allocate (GLsizeiptr new_size);
+    void allocate (GLsizeiptr new_size, const GLvoid* data);
 
     GLsizeiptr max_size(void);
     void set_attributes (const std::list<glsl_attributes>&);

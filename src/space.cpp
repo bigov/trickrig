@@ -22,6 +22,8 @@ namespace tr
 space::space(wglfw* OpenGLContext)
 {
   assert(nullptr != OpenGLContext);
+
+  render_indices.store(-1);
   ViewFrom = std::make_shared<glm::vec3> ();
 
   OglContext = OpenGLContext;
@@ -103,17 +105,7 @@ void space::enable(void)
   OglContext->cursor_hide();  // выключить отображение курсора мыши в окне
   OglContext->set_cursor_pos(xpos, ypos);
 
-  if(nullptr == pVBO)
-  {
-    init_vbo();
-    std::thread A(std::ref(Area4), size_v4, border_dist_b4, ViewFrom, OglContext->win_shared,
-                  pVBO->get_type(), pVBO->get_id(), pVBO->get_size());
-    A.detach();
-
-    // Подождать завершения загрузки сцены из БД в GPU
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    std::lock_guard<std::mutex> Hasp{mutex_loading};
-  }
+  if(render_indices == -1) init_buffers();   // Создать VAO, VBO и поток обмена данными
 
   OglContext->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
   OglContext->set_button_observer(*this);    //  -- кнопки мыши
@@ -133,6 +125,44 @@ void space::enable(void)
 
   hud_load();
   ready = true;
+}
+
+
+///
+/// \brief space::init_buffers
+///
+void space::init_buffers(void)
+{
+  glGenVertexArrays(1, &vao_id);
+  glBindVertexArray(vao_id);
+
+  vbo VBOdata  (GL_ARRAY_BUFFER);          // Буфер данных
+  vbo VBOindex (GL_ELEMENT_ARRAY_BUFFER);  // Индексный буфер
+
+  // Число сторон куба в объеме с длиной стороны LOD (2*dist_xx) элементов:
+  uint n = static_cast<uint>(pow((border_dist_b4 + border_dist_b4 + 1), 3));
+  VBOdata.allocate(n * bytes_per_side);          // Размер данных VBO для размещения сторон вокселей:
+  VBOdata.set_attributes(Program3d->AtribsList); // настройка положения атрибутов GLSL программы
+
+  // Так как все четырехугольники сторон индексируются одинаково, то индексный массив
+  // заполняем один раз "под завязку" и забываем про него. Число используемых индексов
+  // будет всегда соответствовать числу элементов, передаваемых в процедру "glDraw..."
+  size_t idx_size = static_cast<size_t>(6 * n * sizeof(GLuint)); // Размер индексного массива
+  auto idx_data = std::unique_ptr<GLuint[]> {new GLuint[idx_size]};
+
+  GLuint idx[6] = {0, 1, 2, 2, 3, 0};                            // шаблон четырехугольника
+  GLuint stride = 0;                                             // число описаных вершин
+  for(size_t i = 0; i < idx_size; i += 6) {                      // заполнить массив для VBO
+    for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
+    stride += 4;                                                 // по 4 вершины на сторону
+  }
+  VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get());   // и заполнить данными.
+  glBindVertexArray(0);
+
+  std::thread A(db_control, OglContext->win_shared, std::ref(ViewFrom), VBOdata.get_id(), VBOdata.get_size());
+  A.detach();
+  std::this_thread::sleep_for(std::chrono::seconds(1)); // Подождать завершения загрузки сцены из БД в GPU
+  std::lock_guard<std::mutex> Hasp{mutex_voxes_db};
 }
 
 
@@ -219,45 +249,6 @@ void space::calc_position(void)
 
   // Матрица преобразования
   MatMVP =  MatProjection * MatView;
-}
-
-
-///
-/// \brief vox_buffer::init_vao
-/// \param border_dist - число элементов от камеры до отображаемой границы
-///
-void space::init_vbo(void)
-{
-  glGenVertexArrays(1, &vao_id);                  // create VAO
-  glBindVertexArray(vao_id);
-
-  pVBO = std::make_unique<vbo> (GL_ARRAY_BUFFER); // create VBO
-
-  // Число сторон куба в объеме с длиной стороны LOD (2*dist_xx) элементов:
-  uint n = static_cast<uint>(pow((border_dist_b4 + border_dist_b4 + 1), 3));
-
-  // Размер данных VBO для размещения сторон вокселей:
-  pVBO->allocate(n * bytes_per_side);
-
-  // настройка положения атрибутов GLSL программы
-  pVBO->set_attributes(Program3d->AtribsList);
-
-  // Так как все четырехугольники сторон индексируются одинаково, то индексный массив
-  // заполняем один раз "под завязку" и забываем про него. Число используемых индексов
-  // будет всегда соответствовать числу элементов, передаваемых в процедру "glDraw..."
-  //
-  size_t idx_size = static_cast<size_t>(6 * n * sizeof(GLuint)); // Размер индексного массива
-  GLuint *idx_data = new GLuint[idx_size];                       // данные для заполнения
-  GLuint idx[6] = {0, 1, 2, 2, 3, 0};                            // шаблон четырехугольника
-  GLuint stride = 0;                                             // число описаных вершин
-  for(size_t i = 0; i < idx_size; i += 6) {                      // заполнить массив для VBO
-    for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
-    stride += 4;                                                 // по 4 вершины на сторону
-  }
-  vbo VBOindex = { GL_ELEMENT_ARRAY_BUFFER };               // индексный буфер
-  VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data);   // и заполнить данными.
-  delete[] idx_data;                                             // Удалить исходный массив.
-  glBindVertexArray(0);
 }
 
 
