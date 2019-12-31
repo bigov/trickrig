@@ -157,7 +157,7 @@ void space::init_buffers(void)
     stride += 4;                                                 // по 4 вершины на сторону
   }
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get());   // и заполнить данными.
-  glBindVertexArray(0);
+  //glBindVertexArray(0);
 
   std::thread A(db_control, OglContext->win_shared, std::ref(ViewFrom), VBOdata.get_id(), VBOdata.get_size());
   A.detach();
@@ -286,10 +286,9 @@ bool space::render(void)
   calc_render_time();
   calc_position();
 
-  //mutex_vbo.lock();
   mutex_voxes_db.lock();
 
-  glBindVertexArray(vao_id);
+  //glBindVertexArray(vao_id);
   RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
@@ -309,9 +308,8 @@ bool space::render(void)
 
   Program3d->unuse(); // отключить шейдерную программу
   RenderBuffer->unbind();
-  glBindVertexArray(0);
+  //glBindVertexArray(0);
 
-  //mutex_vbo.unlock();
   mutex_voxes_db.unlock();
 
   hud_draw();
@@ -386,7 +384,7 @@ void space::mouse_event(int _button, int _action, int _mods)
       В этом месте расположить код, который удалит вокс и запишет
       информацию в базу данных с текущей временной меткой.
     */
-    std::cout << "mouse roght" << std::endl;
+    std::cout << "mouse right" << std::endl;
 
   }
 }

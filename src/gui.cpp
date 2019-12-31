@@ -714,11 +714,7 @@ void gui::show(void)
       if(Space->is_ready()) Space->render(); // генерация фоновой картинки для меню
       menu_draw();
     }
-
-    mutex_voxes_db.lock();
     render_screen();
-    mutex_voxes_db.unlock();
-
   }
 }
 
@@ -734,12 +730,17 @@ void gui::show(void)
 ///
 void gui::render_screen(void)
 {
+  mutex_voxes_db.lock();
   glBindVertexArray(vao_quad_id);
   glDisable(GL_DEPTH_TEST);
   Program2d->use();
   Program2d->set_uniform("Cursor", Cursor3D);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   Program2d->unuse();
+  //glBindVertexArray(0);
+  glBindVertexArray(Space->vao());
+  mutex_voxes_db.unlock();
+
 
   // переключить буфер рендера
   GlContext->swap_buffers();

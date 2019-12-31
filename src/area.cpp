@@ -44,7 +44,8 @@ area::area (std::shared_ptr<glm::vec3> CameraLocation, GLuint VBO_id, GLsizeiptr
   ViewFrom = CameraLocation;
 
   VBOctrl = std::make_unique<vbo_ctrl> (GL_ARRAY_BUFFER, VBO_id, VBO_size);
-  // Зарезервировать место в соответствии с размером буфера VBO
+
+  // Зарезервировать место для размещения числа сторон в соответствии с размером буфера VBO
   VboMap = std::unique_ptr<vbo_map[]> {new vbo_map[VBO_size/bytes_per_side]};
 
   // Origin вокселя, в котором расположена камера
@@ -178,6 +179,7 @@ void area::load(int x, int z)
 
   GLsizeiptr vbo_addr;
   uchar n;
+  uchar* data = nullptr;
   int y = 0;
   size_t offset = 0;
   size_t offset_max = VoxData.size() - sizeof_y - 1;
@@ -187,15 +189,15 @@ void area::load(int x, int z)
     offset += sizeof_y;
     std::bitset<6> m (VoxData[offset]);             // Маcка видимых сторон
     offset += 1;
-    uchar* data = VoxData.data()+ offset;
+    data = VoxData.data()+ offset;
     n = m.count();                                      // Число видимых сторон текущего вокса
     while (n > 0)                                       // Все стороны передать в VBO.
     {
       n--;
       vbo_addr = VBOctrl->append(data, bytes_per_side); // Добавить данные стороны в VBO
-      VboMap[vbo_addr/bytes_per_side] = {x, y, z, n};   // Запомнить положение блока данных
+      VboMap[vbo_addr/bytes_per_side] = {x, y, z, n};   // Запомнить положение блока данных стороны
       render_indices.fetch_add(indices_per_side);       // Увеличить число точек рендера
-      data += bytes_per_side;                           // Переключить на следующую сторону
+      data += bytes_per_side;                           // Переключить указатель на начало следующей стороны
     }
     offset += m.count() * bytes_per_side;               // Перейти к началу блока данных следующего вокса
   }

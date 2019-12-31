@@ -34,8 +34,9 @@ namespace tr
 
       std::shared_ptr<glm::vec3> ViewFrom = nullptr;             // 3D координаты точки положения
       float look_dir[2] = {0.0f, 0.0f};  // Направление: азимут (0 - X) и тангаж (0 - горизОнталь, пи/2 - вертикаль)
-
       int FPS = 500;     // частота кадров (для коррекции скорости движения)
+
+      GLuint vao(void) { return vao_id; }
 
     private:
       space(const space &);

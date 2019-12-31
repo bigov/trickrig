@@ -56,10 +56,9 @@ namespace fs = std::filesystem;
 namespace tr {
 
 extern std::atomic<GLsizei> render_indices;
-extern std::mutex mutex_viewfrom; // Доступ к значению положения камеры
+
+extern std::mutex mutex_viewfrom; // Доступ к положению камеры
 extern std::mutex mutex_voxes_db; // Доступ к буферу вершин
-extern std::mutex mutex_vbo;      // Доступ к VBO
-extern std::mutex mutex_loading;  // ожидание загрузки сцены из базы данных в GPU
 
 using uchar = unsigned char;
 using uint  = unsigned int;

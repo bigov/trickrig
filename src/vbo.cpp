@@ -240,8 +240,6 @@ vbo_ext::vbo_ext(GLenum type): vbo(type)
 ///
 void vbo_ext::data_get(GLintptr offset, GLsizeiptr sz, GLvoid* dst)
 {
-  //std::lock_guard<std::mutex> Hasp{mutex_vbo};
-
 #ifndef NDEBUG
   if(sz > bytes_per_side) ERR("vbo_ext::data_get > bytes_per_snip");
 #endif
