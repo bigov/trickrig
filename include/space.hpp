@@ -114,8 +114,12 @@ namespace tr
       void calc_render_time(void);
       void load_textures(void);
       void calc_position();
+<<<<<<< HEAD
       bool check_keys(void);
       void init_buffers(void);
+=======
+      bool calc_hlight_quad();
+>>>>>>> 6da2b36c07245a617b56aa775bc1977d204ae981
 
       void hud_load(void);
       void hud_draw(void);

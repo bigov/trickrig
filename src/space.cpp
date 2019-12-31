@@ -316,8 +316,7 @@ bool space::render(void)
 
   hud_draw();
 
-
-  return check_keys();
+  return calc_hlight_quad();
 }
 
 
@@ -367,6 +366,29 @@ void space::mouse_event(int _button, int _action, int _mods)
   mods   = _mods;
   mouse  = _button;
   action = _action;
+
+  if((hl_vertex_id_end/vertices_per_side)>(render_indices/indices_per_side)) return;
+
+  if((mouse == MOUSE_BUTTON_LEFT) && (action == PRESS))
+  {
+    action = -1;
+    /*
+      В этом месте расположить код, который сгенерирует вокс и добавит
+      информацию и нем в базу данных с текущей временной меткой.
+    */
+    std::cout << "mouse left" << std::endl;
+  }
+
+  if((mouse == MOUSE_BUTTON_RIGHT) && (action == PRESS))
+  {
+    action = -1;
+    /*
+      В этом месте расположить код, который удалит вокс и запишет
+      информацию в базу данных с текущей временной меткой.
+    */
+    std::cout << "mouse roght" << std::endl;
+
+  }
 }
 
 
@@ -453,7 +475,7 @@ void space::focus_lost_event()
 ///
 /// Скан-коды клавиш:
 /// [S] == 31; [C] == 46
-bool space::check_keys()
+bool space::calc_hlight_quad()
 {
   if(!focus_is_on) return false; // если окно не в фокусе
 
@@ -484,27 +506,6 @@ bool space::check_keys()
   // для подсветки текущего прямоугольника (расположенного под прицелом в центре экрана)
   hl_vertex_id_from = vertex_id - (vertex_id % vertices_per_side);
   hl_vertex_id_end = hl_vertex_id_from + vertices_per_side - 1;
-
-  if((hl_vertex_id_end/vertices_per_side)>(render_indices/indices_per_side)) return true;
-
-  if((mouse == MOUSE_BUTTON_LEFT) && (action == PRESS))
-  {
-    action = -1;
-    /*
-      В этом месте расположить код, который сгенерирует вокс и добавит
-      информацию и нем в базу данных с текущей временной меткой.
-    */
-  }
-
-  if((mouse == MOUSE_BUTTON_RIGHT) && (action == PRESS))
-  {
-    action = -1;
-    /*
-      В этом месте расположить код, который удалит вокс и запишет
-      информацию в базу данных с текущей временной меткой.
-    */
-
-  }
   return true;
 }
 
