@@ -475,7 +475,7 @@ void space::focus_lost_event()
 ///
 /// Скан-коды клавиш:
 /// [S] == 31; [C] == 46
-bool space::calc_hlight_quad()
+bool space::calc_hlight_quad(void)
 {
   if(!focus_is_on) return false; // если окно не в фокусе
 

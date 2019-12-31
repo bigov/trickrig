@@ -142,12 +142,12 @@ const int KEY_MOVE_DOWN  = GLFW_KEY_SPACE;
 const int KEY_MOVE_RIGHT = GLFW_KEY_D;
 const int KEY_MOVE_LEFT  = GLFW_KEY_A;
 
-
 // LOD control
 const int size_v4 = 32;         // размер стороны вокселя
 const int border_dist_b4 = 24;  // число элементов от камеры до отображаемой границы
 
-static const int vertices_per_side = 4; // число вершин в прямоугольнике
+// число вершин в прямоугольнике
+static const int vertices_per_side = 4;
 
 // число индексов в одном снипе
 static const int indices_per_side = 6;

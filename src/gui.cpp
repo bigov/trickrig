@@ -540,7 +540,7 @@ void gui::menu_start(void)
   button(BTN_CONFIG, x, y, "Настроить");
 
   y -= 1.5 * BUTTTON_HEIGHT;
-  button(BTN_LOCATION, x, y, "Играть");
+  button(BTN_LOCATION, x, y, "Старт");
 
   y += 3 * BUTTTON_HEIGHT;
   button(BTN_CANCEL, x, y, "Закрыть");
@@ -571,7 +571,7 @@ void gui::menu_map_select(void)
 
   button(BTN_CANCEL, x, y, "Отмена");
   button(BTN_MAP_DELETE, x + BUTTTON_WIDTH + 16, y, "Удалить", row_selected > 0);
-  button(BTN_OPEN, x - (BUTTTON_WIDTH + 16), y, "Старт", row_selected > 0);
+  button(BTN_OPEN, x - (BUTTTON_WIDTH + 16), y, "Открыть", row_selected > 0);
   button(BTN_CREATE, x - (BUTTTON_WIDTH + 16)*2, y, "Создать");
 
 }

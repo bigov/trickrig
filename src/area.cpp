@@ -19,10 +19,10 @@ namespace tr
 ///
 /// \details Создание отдельного потока обмена данными с базой
 ///
-void db_control(GLFWwindow* Context, std::shared_ptr<glm::vec3> CameraLocation, GLuint id, GLsizeiptr size)
+void db_control(GLFWwindow* Context, std::shared_ptr<glm::vec3> CameraLocation, GLuint vbo_id, GLsizeiptr vbo_size)
 {
   glfwMakeContextCurrent(Context);
-  area Area {CameraLocation, id, size};
+  area Area {CameraLocation, vbo_id, vbo_size};
 
   while (render_indices >= 0) {
     if(!Area.recalc_borders()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
@@ -176,16 +176,16 @@ void area::load(int x, int z)
   auto VoxData = cfg::DataBase.load_vox_data(x, z);
   if(VoxData.empty()) return;
 
-  GLsizeiptr vbo_addr = 0;
-  uchar n = 0;
+  GLsizeiptr vbo_addr;
+  uchar n;
   int y = 0;
   size_t offset = 0;
   size_t offset_max = VoxData.size() - sizeof_y - 1;
-  while (offset < offset_max)                           // Если в блоке несколько воксов, то
-  {                                                     // последовательно передать в VBO все.
-    memcpy(&y, VoxData.data() + offset, sizeof_y);      // Координата "y" вокса, записанная в блоке данных
+  while (offset < offset_max)                       // Если в блоке несколько воксов, то
+  {                                                 // последовательно передать в VBO все.
+    memcpy(&y, VoxData.data() + offset, sizeof_y);  // Координата "y" вокса, записанная в блоке данных
     offset += sizeof_y;
-    std::bitset<6> m (VoxData[offset]);                 // Маcка видимых сторон
+    std::bitset<6> m (VoxData[offset]);             // Маcка видимых сторон
     offset += 1;
     uchar* data = VoxData.data()+ offset;
     n = m.count();                                      // Число видимых сторон текущего вокса

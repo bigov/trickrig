@@ -24,11 +24,7 @@ cmake_minimum_required( VERSION "3.15" )
 #        [LANGUAGES <language-name>...])
 
 project(
-<<<<<<< HEAD
-  TrickRig VERSION "0.0.1.10"
-=======
-  TrickRig VERSION "0.0.1.9"
->>>>>>> 6da2b36c07245a617b56aa775bc1977d204ae981
+  TrickRig VERSION "0.0.1.11"
   DESCRIPTION "Graphical engine project"
   HOMEPAGE_URL "https://www.trickrig.net"
   LANGUAGES "CXX"
