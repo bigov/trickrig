@@ -36,7 +36,7 @@ namespace tr
       float look_dir[2] = {0.0f, 0.0f};  // Направление: азимут (0 - X) и тангаж (0 - горизОнталь, пи/2 - вертикаль)
       int FPS = 500;     // частота кадров (для коррекции скорости движения)
 
-      GLuint vao(void) { return vao_id; }
+      void bind_main_vao(void);
 
     private:
       space(const space &);

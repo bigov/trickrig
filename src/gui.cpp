@@ -737,10 +737,12 @@ void gui::render_screen(void)
   Program2d->set_uniform("Cursor", Cursor3D);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   Program2d->unuse();
-  //glBindVertexArray(0);
-  glBindVertexArray(Space->vao());
+  Space->bind_main_vao();    // Активировать основной VAO
   mutex_voxes_db.unlock();
 
+#ifndef NDEBUG
+  if(glGetError() != GL_NO_ERROR) info("ERROR in the function 'gui::render_screen'.");
+#endif
 
   // переключить буфер рендера
   GlContext->swap_buffers();

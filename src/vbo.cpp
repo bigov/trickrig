@@ -26,6 +26,7 @@ vbo::vbo(GLenum type)
   glGenBuffers(1, &id);
 }
 
+
 vbo::vbo(GLenum type, GLuint _id)
 {
   gl_buffer_type = type;
@@ -158,6 +159,11 @@ GLsizeiptr vbo_ctrl::append(const GLvoid* data, GLsizeiptr data_size)
   glBindBuffer(gl_buffer_type, 0);
   GLsizeiptr res = hem;
   hem += data_size;
+
+#ifndef NDEBUG
+  if(glGetError() != GL_NO_ERROR) info("ERROR in the function 'vbo_ctrl::append'.");
+#endif
+
   return res;
 }
 

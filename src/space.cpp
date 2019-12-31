@@ -279,6 +279,17 @@ void space::calc_render_time(void)
 
 
 ///
+/// \brief space::bind_main_vao
+///
+void space::bind_main_vao(void)
+{
+  glBindVertexArray(vao_id);
+  Program3d->use();   // включить шейдерную программу
+  for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
+}
+
+
+///
 /// Функция, вызываемая из цикла окна для рендера сцены
 ///
 bool space::render(void)
@@ -286,34 +297,27 @@ bool space::render(void)
   calc_render_time();
   calc_position();
 
-  mutex_voxes_db.lock();
-
-  //glBindVertexArray(vao_id);
   RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
 
-  Program3d->use();   // включить шейдерную программу
   Program3d->set_uniform("mvp", MatMVP);
   Program3d->set_uniform("light_direction", light_direction); // направление
   Program3d->set_uniform("light_bright", light_bright);       // цвет/яркость
   Program3d->set_uniform("MinId", hl_vertex_id_from);         // начальная вершина активного вокселя
   Program3d->set_uniform("MaxId", hl_vertex_id_end);          // последняя вершина активного вокселя
 
-  for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
+  //for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
 
   glDrawElements(GL_TRIANGLES, render_indices, GL_UNSIGNED_INT, nullptr);
 
-  for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
+  //for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
 
-  Program3d->unuse(); // отключить шейдерную программу
+  //Program3d->unuse(); // отключить шейдерную программу
   RenderBuffer->unbind();
   //glBindVertexArray(0);
 
-  mutex_voxes_db.unlock();
-
   hud_draw();
-
   return calc_hlight_quad();
 }
 
