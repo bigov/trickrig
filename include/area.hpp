@@ -19,12 +19,15 @@
 namespace tr
 {
 
-extern void db_control(GLFWwindow* Context, std::shared_ptr<glm::vec3> CameraLocation, GLuint id, GLsizeiptr size);
+extern void db_control(std::mutex& m, GLFWwindow* Context, std::shared_ptr<glm::vec3> CameraLocation,
+                       GLuint id, GLsizeiptr size);
 struct vbo_map
 {
   int x, y, z;
   uchar side;
 };
+
+enum COORDXZ { XL, ZL, sizeL};
 
 ///
 /// \brief class area
@@ -32,7 +35,8 @@ struct vbo_map
 class area
 {
   public:
-    area(std::shared_ptr<glm::vec3> CameraLocation, GLuint vbo_id, GLsizeiptr vbo_size);
+    area(void) = delete;
+    area(std::mutex& m, GLuint vbo_id, GLsizeiptr vbo_size);
     ~area(void) {}
 
     // Запретить копирование и перенос экземпляров класса
@@ -42,28 +46,30 @@ class area
     area& operator=(area&&) = delete;
 
     bool recalc_borders(void);
+    void load(std::shared_ptr<glm::vec3> CameraLocation);
 
   private:
-    std::unique_ptr<vbo_map[]> VboMap = nullptr; // Контрольный массив
-    std::unique_ptr<vbo_ctrl> VBOctrl = nullptr;
+    std::mutex& rVboAccess;
     std::shared_ptr<glm::vec3> ViewFrom = nullptr;
+    std::unique_ptr<vbo_ctrl> VboCtrl = nullptr;
 
-    // В контрольный массив (GpuMap) записываются координаты Origin видимых сторон воксов,
+    // В контрольный массив (VboMap) записываются координаты Origin воксов для видимых сторон,
     // переданных в VBO в порядке их размещения. Соответственно, размер массива должен
-    // соотвествовать зарезервированному размеру VBO. Адрес размещения определяется
-    // умножением значения индекса элемента в массиве на размер блока данных стороны.
+    // соотвествовать зарезервированному размеру VBO. Адрес блока в VBO определяется
+    // умножением значения индекса элемента в VboMap на размер блока данных стороны.
     // Так как все видимые стороны вокса одновременно размещается GPU и одновременно
     // удаляются из нее, то нет необходимости различать каждую из сторон вокса - для каждой
-    // в массив заносится одино и то-же значение координта Origin.
+    // в массив заносится одино и то-же значение координт Origin.
+    std::unique_ptr<vbo_map[]> VboMap = nullptr; // Контрольный массив
 
-    float last[3]      = {0.f, 0.f, 0.f};  // последнее считанное положение камеры
-    float curr[3]      = {0.f, 0.f, 0.f};  // текущее положение камеры
-    float move_dist[3] = {0.f, 0.f, 0.f};  // расстояние, пройденное между запросами
+    int side_len     = 0;             // Длина стороны вокса
+    float f_side_len = 0.f;           // Длина стороны вокса
+    int lod_dist = 0;                 // Расстояние от камеры до границы LOD, кратное vox_side_len
 
-    int side_len     = 0;     // Длина стороны вокса
-    float f_side_len = 0.f;   // Длина стороны вокса
-    int lod_dist = 0;         // Расстояние от камеры до границы LOD, кратное vox_side_len
-    i3d Location {0, 0, 0};   // Origin вокса, над которым камера
+    float last[2]      = {0.f, 0.f};  // последнее считанное положение камеры
+    float curr[2]      = {0.f, 0.f};  // текущее положение камеры
+    float move_dist[2] = {0.f, 0.f};  // расстояние, пройденное между запросами
+    int origin[2]      = {0, 0};      // Origin вокса, над которым камера
 
     void load(int x, int z);
     void redraw_borders_x(int, int);

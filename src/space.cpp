@@ -61,6 +61,8 @@ space::space(wglfw* OpenGLContext)
   Program3d->AtribsList.push_back(
     { Program3d->attrib("fragment"), 2, GL_FLOAT, GL_TRUE, bytes_per_vertex, 10 * sizeof(GLfloat)});
 
+  glUniform1i(Program3d->uniform("texture_0"), 0);  // GL_TEXTURE0
+
   Program3d->unuse();
 
   // настройка рендер-буфера
@@ -157,12 +159,14 @@ void space::init_buffers(void)
     stride += 4;                                                 // по 4 вершины на сторону
   }
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get());   // и заполнить данными.
-  //glBindVertexArray(0);
+  glBindVertexArray(0);
 
-  std::thread A(db_control, OglContext->win_shared, std::ref(ViewFrom), VBOdata.get_id(), VBOdata.get_size());
+  std::thread A(db_control, std::ref(VboAccess), OglContext->win_shared, std::ref(ViewFrom),
+                VBOdata.get_id(), VBOdata.get_size());
   A.detach();
-  std::this_thread::sleep_for(std::chrono::seconds(1)); // Подождать завершения загрузки сцены из БД в GPU
-  std::lock_guard<std::mutex> Hasp{mutex_voxes_db};
+
+  while (render_indices < indices_per_side) // Подождать пока хоть одна сторона загрузится
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
 }
 
 
@@ -175,10 +179,10 @@ void space::load_textures(void)
 {
   // Загрузка текстур поверхностей воксов
   glActiveTexture(GL_TEXTURE0);
-  img ImgTex0 { cfg::app_key(PNG_TEXTURE0) };
+  GLuint texture_id = 0;
   glGenTextures(1, &texture_id);
   glBindTexture(GL_TEXTURE_2D, texture_id);
-
+  img ImgTex0 { cfg::app_key(PNG_TEXTURE0) };
   GLint level_of_details = 0;
   GLint frame = 0;
   glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
@@ -279,17 +283,6 @@ void space::calc_render_time(void)
 
 
 ///
-/// \brief space::bind_main_vao
-///
-void space::bind_main_vao(void)
-{
-  glBindVertexArray(vao_id);
-  Program3d->use();   // включить шейдерную программу
-  for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
-}
-
-
-///
 /// Функция, вызываемая из цикла окна для рендера сцены
 ///
 bool space::render(void)
@@ -297,25 +290,27 @@ bool space::render(void)
   calc_render_time();
   calc_position();
 
+  VboAccess.lock();
   RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
+
+  glBindVertexArray(vao_id);
+  Program3d->use();   // включить шейдерную программу
+  for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
 
   Program3d->set_uniform("mvp", MatMVP);
   Program3d->set_uniform("light_direction", light_direction); // направление
   Program3d->set_uniform("light_bright", light_bright);       // цвет/яркость
   Program3d->set_uniform("MinId", hl_vertex_id_from);         // начальная вершина активного вокселя
   Program3d->set_uniform("MaxId", hl_vertex_id_end);          // последняя вершина активного вокселя
-
-  //for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
-
   glDrawElements(GL_TRIANGLES, render_indices, GL_UNSIGNED_INT, nullptr);
 
-  //for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
-
-  //Program3d->unuse(); // отключить шейдерную программу
+  for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
+  Program3d->unuse(); // отключить шейдерную программу
   RenderBuffer->unbind();
-  //glBindVertexArray(0);
+  glBindVertexArray(0);
+  VboAccess.unlock();
 
   hud_draw();
   return calc_hlight_quad();
@@ -495,9 +490,9 @@ bool space::calc_hlight_quad(void)
   // котором расположен данный пиксель.
 
   uint vertex_id = 0;    // переменная для записи ID вершины в VBO
-  mutex_voxes_db.lock();
+  VboAccess.lock();
   RenderBuffer->read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
-  mutex_voxes_db.unlock();
+  VboAccess.unlock();
 
   // Так как вершины располагаются группами по 4 шт. (обход через 6 индексов),
   // то можно, по номеру любой вершины из группы, используя остаток от деления
@@ -543,7 +538,7 @@ void space::hud_load(void)
                 static_cast<GLsizei>(HudPanel.w_summ), // width
                 static_cast<GLsizei>(HudPanel.h_summ), // height
                 GL_RGBA, GL_UNSIGNED_BYTE,             // mode
-                HudPanel.uchar_t());                     // data
+                HudPanel.uchar_t());                   // data
 }
 
 
@@ -562,11 +557,13 @@ void space::hud_draw(void)
   std::sprintf(line, "%.4i", FPS);
   textstring_place(Font15n, line, Fps, 2, 1);
 
+  VboAccess.lock();
   glTexSubImage2D(GL_TEXTURE_2D, 0, 2, static_cast<GLint>(ImHUD.h_summ - Fps.h_summ - 2),
                 static_cast<GLsizei>(Fps.w_summ),  // width
                 static_cast<GLsizei>(Fps.h_summ),  // height
                 GL_RGBA, GL_UNSIGNED_BYTE,         // mode
                 Fps.uchar_t());                      // data
+  VboAccess.unlock();
 
   // Координаты в пространстве
   uint c_length = 60;               // количество символов в надписи
@@ -576,11 +573,13 @@ void space::hud_draw(void)
                   ViewFrom->x, ViewFrom->y, ViewFrom->z, look_dir[0], look_dir[1]);
   textstring_place(Font15n, ln, Coord, 2, 1);
 
+  VboAccess.lock();
   glTexSubImage2D(GL_TEXTURE_2D, 0, 2, 2,            // top, left
                 static_cast<GLsizei>(Coord.w_summ),  // width
                 static_cast<GLsizei>(Coord.h_summ),  // height
                 GL_RGBA, GL_UNSIGNED_BYTE,           // mode
                 Coord.uchar_t());                      // data
+  VboAccess.unlock();
 }
 
 } // namespace tr

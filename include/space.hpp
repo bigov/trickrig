@@ -36,8 +36,6 @@ namespace tr
       float look_dir[2] = {0.0f, 0.0f};  // Направление: азимут (0 - X) и тангаж (0 - горизОнталь, пи/2 - вертикаль)
       int FPS = 500;     // частота кадров (для коррекции скорости движения)
 
-      void bind_main_vao(void);
-
     private:
       space(const space &);
       space operator=(const space &);
@@ -90,9 +88,6 @@ namespace tr
       // Индексы вершин подсвечиваемого вокселя, на который направлен курсор (центр экрана)
       int hl_vertex_id_from = 0;         // индекс начальной вершины
       int hl_vertex_id_end = 0;         // индекс последней вершины
-
-      // GPU control
-      GLuint texture_id = 0;
 
       // Camera control
       float rl=0.f, ud=0.f, fb=0.f; // скорость движения по направлениям

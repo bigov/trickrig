@@ -19,8 +19,9 @@ gui::gui(wglfw* GLObject)
   auto MapsDirs = dirs_list(cfg::user_dir()); // список директорий с картами
   for(auto &P: MapsDirs) { Maps.push_back(map(P, cfg::map_name(P))); }
 
-  // настройка текстуры для HUD
+  // настройка текстуры для GUI
   glActiveTexture(GL_TEXTURE2);
+  //glActiveTexture(GL_TEXTURE3);
 
   glGenTextures(1, &texture_gui);
   glBindTexture(GL_TEXTURE_2D, texture_gui);
@@ -74,10 +75,8 @@ gui::gui(wglfw* GLObject)
   VboTexcoord.attrib( Program2d->attrib("texcoord"),
       2, GL_FLOAT, GL_FALSE, 0, 0);
 
-  // GL_TEXTURE1
-  glUniform1i(Program2d->uniform("texFramebuffer"), 1);
-  // GL_TEXTURE2
-  glUniform1i(Program2d->uniform("texHUD"), 2);
+  glUniform1i(Program2d->uniform("texture_1"), 1);  // GL_TEXTURE1
+  glUniform1i(Program2d->uniform("texture_2"), 2);  // GL_TEXTURE2
 
   Program2d->unuse();
   glBindVertexArray(0);
@@ -651,6 +650,7 @@ void gui::menu_draw(void)
    }
 
   // каждый кадр на текстуре окна обновляем изображение меню
+  //glActiveTexture(GL_TEXTURE3);
   glBindTexture(GL_TEXTURE_2D, texture_gui);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                static_cast<GLint>(Layout.width),
@@ -730,22 +730,24 @@ void gui::show(void)
 ///
 void gui::render_screen(void)
 {
-  mutex_voxes_db.lock();
   glBindVertexArray(vao_quad_id);
   glDisable(GL_DEPTH_TEST);
   Program2d->use();
+  VboAccess.lock();
   Program2d->set_uniform("Cursor", Cursor3D);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  VboAccess.unlock();
   Program2d->unuse();
-  Space->bind_main_vao();    // Активировать основной VAO
-  mutex_voxes_db.unlock();
+
+  // переключить буфер рендера
+  VboAccess.lock();
+  GlContext->swap_buffers();
+  VboAccess.unlock();
 
 #ifndef NDEBUG
   if(glGetError() != GL_NO_ERROR) info("ERROR in the function 'gui::render_screen'.");
 #endif
 
-  // переключить буфер рендера
-  GlContext->swap_buffers();
 }
 
 ///

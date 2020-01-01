@@ -160,10 +160,6 @@ GLsizeiptr vbo_ctrl::append(const GLvoid* data, GLsizeiptr data_size)
   GLsizeiptr res = hem;
   hem += data_size;
 
-#ifndef NDEBUG
-  if(glGetError() != GL_NO_ERROR) info("ERROR in the function 'vbo_ctrl::append'.");
-#endif
-
   return res;
 }
 
@@ -205,7 +201,7 @@ GLsizeiptr vbo_ctrl::remove(GLsizeiptr dest, GLsizeiptr data_size)
     glBindBuffer(gl_buffer_type, 0);
     hem = src;
   }
-  glFinish(); // для синхронизации изменений между потоками
+
   return hem;
 }
 

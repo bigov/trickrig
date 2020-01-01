@@ -19,13 +19,28 @@ namespace tr
 ///
 /// \details Создание отдельного потока обмена данными с базой
 ///
-void db_control(GLFWwindow* Context, std::shared_ptr<glm::vec3> CameraLocation, GLuint vbo_id, GLsizeiptr vbo_size)
+void db_control(std::mutex& m, GLFWwindow* Context, std::shared_ptr<glm::vec3> CameraLocation,
+                GLuint vbo_id, GLsizeiptr vbo_size)
 {
   glfwMakeContextCurrent(Context);
-  area Area {CameraLocation, vbo_id, vbo_size};
+  area Area {m, vbo_id, vbo_size};
+
+  Area.load(CameraLocation);
+  m.lock();   // На время загрузки сцены из БД заблокировать основной поток
+  glFinish(); // синхронизация изменений между потоками
+  m.unlock();
 
   while (render_indices >= 0) {
-    if(!Area.recalc_borders()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    if(!Area.recalc_borders())
+    {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    else
+    {
+      m.lock();
+      glFinish(); // синхронизация изменений между потоками
+      m.unlock();
+    }
   }
 
 }
@@ -36,35 +51,49 @@ void db_control(GLFWwindow* Context, std::shared_ptr<glm::vec3> CameraLocation, 
 /// \param count - число вокселей от камеры (или внутренней границы)
 /// до внешней границы области
 ///
-area::area (std::shared_ptr<glm::vec3> CameraLocation, GLuint VBO_id, GLsizeiptr VBO_size)
+area::area (std::mutex& m, GLuint VBO_id, GLsizeiptr VBO_size): rVboAccess(m)
 {
   side_len = size_v4;
   f_side_len = size_v4 * 1.f;
   lod_dist = border_dist_b4 * size_v4;
-  ViewFrom = CameraLocation;
 
-  VBOctrl = std::make_unique<vbo_ctrl> (GL_ARRAY_BUFFER, VBO_id, VBO_size);
+  VboCtrl = std::make_unique<vbo_ctrl> (GL_ARRAY_BUFFER, VBO_id, VBO_size);
 
   // Зарезервировать место для размещения числа сторон в соответствии с размером буфера VBO
   VboMap = std::unique_ptr<vbo_map[]> {new vbo_map[VBO_size/bytes_per_side]};
 
+}
+
+
+///
+/// \brief area::load
+/// \param CameraLocation
+/// \details Загрузка пространства вокруг точки расположения камеры
+///
+void area::load(std::shared_ptr<glm::vec3> CameraLocation)
+{
+  ViewFrom = CameraLocation;
+
+  mutex_viewfrom.lock();
+  curr[XL] = ViewFrom->x;
+  curr[ZL] = ViewFrom->z;
+  mutex_viewfrom.unlock();
+
+  memcpy(last, curr, sizeof (float) * sizeL);
+
   // Origin вокселя, в котором расположена камера
-  Location = { static_cast<int>(floorf(ViewFrom->x / side_len)) * side_len,
-               static_cast<int>(floorf(ViewFrom->y / side_len)) * side_len,
-               static_cast<int>(floorf(ViewFrom->z / side_len)) * side_len };
+  origin[XL] = static_cast<int>(floorf(curr[XL] / side_len)) * side_len;
+  origin[ZL] = static_cast<int>(floorf(curr[ZL] / side_len)) * side_len;
 
-  i3d P0 { Location.x - lod_dist,
-           Location.y - lod_dist,
-           Location.z - lod_dist };
-  i3d P1 { Location.x + lod_dist,
-           Location.y + lod_dist,
-           Location.z + lod_dist };
+  int min_x = origin[XL] - lod_dist;
+  int min_z = origin[ZL] - lod_dist;
 
-  // Загрузка пространства вокруг точки расположения камеры
-  std::lock_guard<std::mutex> Hasp{mutex_voxes_db};
-  for(int x = P0.x; x<= P1.x; x += side_len) for(int z = P0.z; z<= P1.z; z += side_len)
-    load(x, z);
-  glFinish(); // синхронизация изменений между потоками
+  int max_x = origin[XL] + lod_dist;
+  int max_z = origin[ZL] + lod_dist;
+
+  for(int x = min_x; x<= max_x; x += side_len)
+    for(int z = min_z; z<= max_z; z += side_len)
+      load(x, z);
 }
 
 
@@ -81,43 +110,44 @@ bool area::recalc_borders (void)
     need_redraw_nz = false;
 
   mutex_viewfrom.lock();
-  curr[0] = ViewFrom->x;
-  curr[1] = ViewFrom->y;
-  curr[2] = ViewFrom->z;
+  curr[XL] = ViewFrom->x;
+  curr[ZL] = ViewFrom->z;
   mutex_viewfrom.unlock();
 
   // Расстояние, на которое сместилась камера за время между вызовами
-  for(int i = 0; i < 3; i++) move_dist[i] += curr[i] - last[i];
-  memcpy(last, curr, sizeof (float) * 3);
+  move_dist[XL] += curr[XL] - last[XL];
+  move_dist[ZL] += curr[ZL] - last[ZL];
 
-  if(move_dist[0] > f_side_len)
+  memcpy(last, curr, sizeof (float) * sizeL);
+
+  if(move_dist[XL] > f_side_len)
   {
-      move_dist[0] -= f_side_len;
-      Location.x += side_len;
+      move_dist[XL] -= f_side_len;
+      origin[XL] += side_len;
       need_redraw_px = true;
-  } else if(move_dist[0] < -f_side_len)
+  } else if(move_dist[XL] < -f_side_len)
   {
-      move_dist[0] += f_side_len;
-      Location.x -= side_len;
+      move_dist[XL] += f_side_len;
+      origin[XL] -= side_len;
       need_redraw_nx = true;
   }
 
-  if(move_dist[2] > f_side_len)
+  if(move_dist[ZL] > f_side_len)
   {
-      move_dist[2] -= f_side_len;
-      Location.z += side_len;
+      move_dist[ZL] -= f_side_len;
+      origin[ZL] += side_len;
       need_redraw_pz = true;
-  } else if(move_dist[2] < -f_side_len)
+  } else if(move_dist[ZL] < -f_side_len)
   {
-      move_dist[2] += f_side_len;
-      Location.z -= side_len;
+      move_dist[ZL] += f_side_len;
+      origin[ZL] -= side_len;
       need_redraw_nz = true;
   }
 
-  if(need_redraw_px) redraw_borders_x(Location.x + lod_dist, Location.x - lod_dist - side_len);
-  if(need_redraw_nx) redraw_borders_x(Location.x - lod_dist, Location.x + lod_dist + side_len);
-  if(need_redraw_pz) redraw_borders_z(Location.z + lod_dist, Location.z - lod_dist - side_len);
-  if(need_redraw_nz) redraw_borders_z(Location.z - lod_dist, Location.z + lod_dist + side_len);
+  if(need_redraw_px) redraw_borders_x(origin[XL] + lod_dist, origin[XL] - lod_dist - side_len);
+  if(need_redraw_nx) redraw_borders_x(origin[XL] - lod_dist, origin[XL] + lod_dist + side_len);
+  if(need_redraw_pz) redraw_borders_z(origin[ZL] + lod_dist, origin[ZL] - lod_dist - side_len);
+  if(need_redraw_nz) redraw_borders_z(origin[ZL] - lod_dist, origin[ZL] + lod_dist + side_len);
 
   return (need_redraw_px or need_redraw_pz or need_redraw_nx or need_redraw_nz);
 }
@@ -129,17 +159,10 @@ bool area::recalc_borders (void)
 ///
 void area::redraw_borders_x(int x_add, int x_del)
 {
-  for(int z = Location.z - lod_dist, max = Location.z + lod_dist; z <= max; z += side_len)
+  for(int z = origin[ZL] - lod_dist, max = origin[ZL] + lod_dist; z <= max; z += side_len)
   {
-    mutex_voxes_db.lock();
     truncate(x_del, z);
-    glFinish(); // синхронизация изменений между потоками
-    mutex_voxes_db.unlock();
-    std::this_thread::sleep_for(std::chrono::microseconds(1));
-    mutex_voxes_db.lock();
     load(x_add, z);
-    glFinish(); // синхронизация изменений между потоками
-    mutex_voxes_db.unlock();
   }
 }
 
@@ -150,18 +173,10 @@ void area::redraw_borders_x(int x_add, int x_del)
 ///
 void area::redraw_borders_z(int z_add, int z_del)
 {
-  for(int x = Location.x - lod_dist, max = Location.x + lod_dist; x <= max; x += side_len)
+  for(int x = origin[XL] - lod_dist, max = origin[XL] + lod_dist; x <= max; x += side_len)
   {
-    mutex_voxes_db.lock();
     truncate(x, z_del);
-    glFinish(); // синхронизация изменений между потоками
-    mutex_voxes_db.unlock();
-    // сделать окно для ренедера в основном потоке
-    std::this_thread::sleep_for(std::chrono::microseconds(1));
-    mutex_voxes_db.lock();
     load(x, z_add);
-    glFinish(); // синхронизация изменений между потоками
-    mutex_voxes_db.unlock();
   }
 }
 
@@ -183,18 +198,20 @@ void area::load(int x, int z)
   int y = 0;
   size_t offset = 0;
   size_t offset_max = VoxData.size() - sizeof_y - 1;
-  while (offset < offset_max)                       // Если в блоке несколько воксов, то
-  {                                                 // последовательно передать в VBO все.
-    memcpy(&y, VoxData.data() + offset, sizeof_y);  // Координата "y" вокса, записанная в блоке данных
+  while (offset < offset_max)                           // Если в блоке несколько воксов, то
+  {                                                     // последовательно передать все в VBO.
+    memcpy(&y, VoxData.data() + offset, sizeof_y);      // Координата "y" вокса, записанная в блоке данных
     offset += sizeof_y;
-    std::bitset<6> m (VoxData[offset]);             // Маcка видимых сторон
+    std::bitset<6> m (VoxData[offset]);                 // Маcка видимых сторон
     offset += 1;
     data = VoxData.data()+ offset;
     n = m.count();                                      // Число видимых сторон текущего вокса
     while (n > 0)                                       // Все стороны передать в VBO.
     {
       n--;
-      vbo_addr = VBOctrl->append(data, bytes_per_side); // Добавить данные стороны в VBO
+      rVboAccess.lock();
+      vbo_addr = VboCtrl->append(data, bytes_per_side); // Добавить данные стороны в VBO
+      rVboAccess.unlock();
       VboMap[vbo_addr/bytes_per_side] = {x, y, z, n};   // Запомнить положение блока данных стороны
       render_indices.fetch_add(indices_per_side);       // Увеличить число точек рендера
       data += bytes_per_side;                           // Переключить указатель на начало следующей стороны
@@ -222,8 +239,9 @@ void area::truncate(int x, int z)
     if((VboMap[id].x == x) and (VboMap[id].z == z)) // Данные вокса есть в GPU
     {
       dest = id * bytes_per_side;                     // адрес удаляемого блока данных
-      moved_from = VBOctrl->remove(dest, bytes_per_side); // адрес хвоста VBO (данными отсюда
-                                                      // перезаписываются данные по адресу "dest")
+      rVboAccess.lock();
+      moved_from = VboCtrl->remove(dest, bytes_per_side); // адрес хвоста VBO (данными отсюда
+      rVboAccess.unlock();                                // перезаписываются данные по адресу "dest")
       // Если c адреса "free" на "dest" данные были перенесены, то обновить координты Origin
       if (moved_from != dest) VboMap[id] = VboMap[moved_from/bytes_per_side];
       // Если free == dest, то удаляемый блок данных был в конце VBO и просто "отбрасывается"
