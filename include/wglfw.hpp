@@ -8,10 +8,8 @@ namespace tr
 
 class wglfw
 {
-  static std::string title;
-
   public:
-      wglfw(void);
+      wglfw(GLFWwindow* w = nullptr, const char* title = "\0");
       ~wglfw(void);
 
       // Запретить копирование объекта
@@ -22,9 +20,6 @@ class wglfw
       wglfw(wglfw&&) = delete;
       wglfw& operator=(wglfw&&) = delete;
 
-      static GLFWwindow* win_shared;
-      static GLFWwindow* win_ptr;
-
       void set_window(uint width=10, uint height=10, uint min_w=0,
                       uint min_h=0, uint left=0, uint top=0);
       void swap_buffers(void);
@@ -33,6 +28,7 @@ class wglfw
       void set_cursor_pos(double x, double y);
       void get_frame_buffer_size(int* width, int* height);
       GLFWwindow* get_win_id(void) const;
+      void gl_context_set_current(void) { glfwMakeContextCurrent(win_ptr); }
 
       void set_error_observer(interface_gl_context& ref);    // отслеживание ошибок
       void set_cursor_observer(interface_gl_context& ref);   // курсор мыши в окне
@@ -45,7 +41,9 @@ class wglfw
       void set_focuslost_observer(interface_gl_context& ref);// смена фокуса
 
     private:
-      //static GLFWwindow* win_ptr;
+      GLFWwindow* win_ptr;
+
+      static bool init_completed;
 
       static interface_gl_context* error_observer;
       static interface_gl_context* cursor_observer;

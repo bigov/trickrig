@@ -6,12 +6,14 @@ namespace tr {
 ///
 /// \brief gui::gui
 ///
-gui::gui(wglfw* GLObject)
+gui::gui(wglfw* MWin, wglfw* TWin)
 {
-  GlContext = GLObject;
+  MainWindow = MWin;
+  MainWindow->gl_context_set_current();
+
   layout_set(cfg::WinLayout);
-  GlContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
-  Space = std::make_unique<space>(GlContext);
+  MainWindow->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
+  Space = std::make_unique<space>(MWin, TWin);
   FontMap1_len = static_cast<uint>(FontMap1.length());
   TimeStart = std::chrono::system_clock::now();
 
@@ -237,10 +239,10 @@ void gui::cancel(void)
       cfg::map_view_save(Space->ViewFrom, Space->look_dir);
       GuiMode = GUI_MENU_LSELECT;
       Cursor3D[2] = 0.0f;                      // Спрятать прицел
-      GlContext->cursor_restore();             // Включить указатель мыши
-      GlContext->set_cursor_observer(*this);   // переключить обработчик смещения курсора
-      GlContext->set_button_observer(*this);   // обработчик кнопок мыши
-      GlContext->set_keyboard_observer(*this); // и клавиатуры
+      MainWindow->cursor_restore();             // Включить указатель мыши
+      MainWindow->set_cursor_observer(*this);   // переключить обработчик смещения курсора
+      MainWindow->set_button_observer(*this);   // обработчик кнопок мыши
+      MainWindow->set_keyboard_observer(*this); // и клавиатуры
       break;
     case GUI_MENU_LSELECT:
       GuiMode = GUI_MENU_START;
@@ -694,14 +696,14 @@ void gui::menu_draw(void)
 ///
 void gui::show(void)
 {
-  GlContext->set_char_observer(*this);
-  GlContext->set_error_observer(*this);    // отслеживание ошибок
-  GlContext->set_cursor_observer(*this);   // курсор мыши в окне
-  GlContext->set_button_observer(*this);   // кнопки мыши
-  GlContext->set_keyboard_observer(*this); // клавиши клавиатуры
-  GlContext->set_position_observer(*this); // положение окна
-  GlContext->add_size_observer(*this);     // размер окна
-  GlContext->set_close_observer(*this);    // закрытие окна
+  MainWindow->set_char_observer(*this);
+  MainWindow->set_error_observer(*this);    // отслеживание ошибок
+  MainWindow->set_cursor_observer(*this);   // курсор мыши в окне
+  MainWindow->set_button_observer(*this);   // кнопки мыши
+  MainWindow->set_keyboard_observer(*this); // клавиши клавиатуры
+  MainWindow->set_position_observer(*this); // положение окна
+  MainWindow->add_size_observer(*this);     // размер окна
+  MainWindow->set_close_observer(*this);    // закрытие окна
 
   while(is_open)
   {
@@ -741,7 +743,7 @@ void gui::render_screen(void)
 
   // переключить буфер рендера
   VboAccess.lock();
-  GlContext->swap_buffers();
+  MainWindow->swap_buffers();
   VboAccess.unlock();
 
 #ifndef NDEBUG

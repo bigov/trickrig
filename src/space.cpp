@@ -19,14 +19,11 @@ namespace tr
 /// \brief space::space
 /// \details Формирование 3D пространства
 ///
-space::space(wglfw* OpenGLContext)
+space::space(wglfw* c, wglfw* w): MainWindow(c), ThreadWindow(w)
 {
-  assert(nullptr != OpenGLContext);
-
   render_indices.store(-1);
   ViewFrom = std::make_shared<glm::vec3> ();
 
-  OglContext = OpenGLContext;
   light_direction = glm::normalize(glm::vec3(0.3f, 0.45f, 0.4f)); // направление (x,y,z)
   light_bright = glm::vec3(0.99f, 0.99f, 1.00f);                  // цвет        (r,g,b)
 
@@ -67,7 +64,7 @@ space::space(wglfw* OpenGLContext)
 
   // настройка рендер-буфера
   GLsizei width, height;
-  OglContext->get_frame_buffer_size(&width, &height);
+  MainWindow->get_frame_buffer_size(&width, &height);
 
   ImHUD.resize( static_cast<uint>(width), static_cast<uint>(height));
 
@@ -77,7 +74,7 @@ space::space(wglfw* OpenGLContext)
   // загрузка текстур
   load_textures();
 
-  OglContext->add_size_observer(*this); //пересчет при изменении размера
+  MainWindow->add_size_observer(*this); //пересчет при изменении размера
 }
 
 
@@ -97,22 +94,22 @@ void space::enable(void)
 {
   // Настройка матрицы проекции
   GLsizei width, height;
-  OglContext->get_frame_buffer_size(&width, &height);
+  MainWindow->get_frame_buffer_size(&width, &height);
   auto aspect = static_cast<float>(width) / static_cast<float>(height);
   MatProjection = glm::perspective(fovy, aspect, zNear, zFar);
 
   xpos = width/2;  // координаты центра экрана
   ypos = height/2;
 
-  OglContext->cursor_hide();  // выключить отображение курсора мыши в окне
-  OglContext->set_cursor_pos(xpos, ypos);
+  MainWindow->cursor_hide();  // выключить отображение курсора мыши в окне
+  MainWindow->set_cursor_pos(xpos, ypos);
 
   if(render_indices == -1) init_buffers();   // Создать VAO, VBO и поток обмена данными
 
-  OglContext->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
-  OglContext->set_button_observer(*this);    //  -- кнопки мыши
-  OglContext->set_keyboard_observer(*this);  //  -- клавиатуры
-  OglContext->set_focuslost_observer(*this); // Реакция на потерю окном фокуса ввода
+  MainWindow->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
+  MainWindow->set_button_observer(*this);    //  -- кнопки мыши
+  MainWindow->set_keyboard_observer(*this);  //  -- клавиатуры
+  MainWindow->set_focuslost_observer(*this); // Реакция на потерю окном фокуса ввода
   focus_is_on = true;
 
   on_front = 0; // клавиша вперед
@@ -161,7 +158,7 @@ void space::init_buffers(void)
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get());   // и заполнить данными.
   glBindVertexArray(0);
 
-  std::thread A(db_control, std::ref(VboAccess), OglContext->win_shared, std::ref(ViewFrom),
+  std::thread A(db_control, std::ref(VboAccess), ThreadWindow, std::ref(ViewFrom),
                 VBOdata.get_id(), VBOdata.get_size());
   A.detach();
 
@@ -348,7 +345,7 @@ void space::cursor_event(double x, double y)
   cursor_dy += static_cast<float>(y - ypos);
 
   // После получения значения счетчика восстановить позицию курсора
-  OglContext->set_cursor_pos(xpos, ypos);
+  MainWindow->set_cursor_pos(xpos, ypos);
 }
 
 

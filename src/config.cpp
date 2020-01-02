@@ -118,14 +118,6 @@ void cfg::load(char** argv)
 ///
 void cfg::set_user_dir(void)
 {
-#ifndef NDEBUG
-  info("+------------+\n| Debug mode |\n+------------+\n\n");
-  // На время разработки конфиг пользователя и база данных данных расположена в папке приложения
-  UserDir = AssetsDir + DS + "tmp.database";
-  if(!fs::exists(UserDir)) fs::create_directory(UserDir);
-  return;
-#endif
-
 #ifdef _WIN32_WINNT
   char env_key[] = "USERPROFILE";
   size_t requiredSize;
@@ -142,10 +134,16 @@ void cfg::set_user_dir(void)
   UserDir += DS +".config";
 #endif
 
+#ifndef NDEBUG
+  // На время разработки конфиг пользователя и база данных данных расположена в папке приложения
+  UserDir = AssetsDir + DS + "tmp.database";
+#else
   if(!fs::exists(UserDir)) fs::create_directory(UserDir);
   UserDir += DS + "TrickRig";
+#endif
+
   if(!fs::exists(UserDir)) fs::create_directory(UserDir);
-  if(!fs::exists(UserDir)) ERR("Can't create: " + UserDir);
+  if(!fs::exists(UserDir)) ERR("Fatal error: can't create: " + UserDir);
 }
 
 

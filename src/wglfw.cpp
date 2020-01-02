@@ -12,11 +12,7 @@ namespace tr
 // Инициализация статических членов
 // ---
 
-GLFWwindow* wglfw::win_ptr = nullptr;
-GLFWwindow* wglfw::win_shared = nullptr;
-
-std::string wglfw::title = std::string(APP_NAME);
-
+bool wglfw::init_completed = false;
 interface_gl_context* wglfw::error_observer = nullptr;
 interface_gl_context* wglfw::cursor_observer = nullptr;
 interface_gl_context* wglfw::button_observer = nullptr;
@@ -31,33 +27,31 @@ interface_gl_context* wglfw::focuslost_observer = nullptr;
 ///
 /// \brief wglfw::wglfw
 ///
-wglfw::wglfw(void)
+wglfw::wglfw(GLFWwindow* w, const char* title)
 {
-  if (!glfwInit()) ERR("Error init GLFW lib.");
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  if(!init_completed)
+  {
+    if (!glfwInit()) ERR("Fatal error: can't init GLFW lib.");  // инициализация библиотеки GLFW
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_VISIBLE, 0);
 
-  title += "  v." + std::string(APP_VERSION);
 #ifndef NDEBUG
-  glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
-  title += " (debug)";
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
 #endif
+  }
 
-  glfwWindowHint(GLFW_VISIBLE, 0);
-
-  // Создание окна для потокового контекста
-  win_shared = glfwCreateWindow(1, 1, "", nullptr, nullptr);
-  if (nullptr == win_shared) ERR("Creating Window fail.");
-
-  //  Создание 3D окна приложения
-  win_ptr = glfwCreateWindow(1, 1, title.c_str(), nullptr, win_shared);
+  win_ptr = glfwCreateWindow(1, 1, title, nullptr, w);   // Создание окна
   if (nullptr == win_ptr) ERR("Creating Window fail.");
-  glfwMakeContextCurrent(win_ptr);
 
-  if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
-  if(!gladLoadGL()) { ERR("FAILURE: can't load GLAD."); }
-
+  if(!init_completed)
+  {
+    gl_context_set_current();
+    if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
+      if(!gladLoadGL()) { ERR("Critical error: can't load GLAD."); }
+    init_completed = true;
+  }
 }
 
 
@@ -227,9 +221,8 @@ void wglfw::callback_error(int error, const char* description)
 /// \param xpos  - X координата курсора в окне
 /// \param ypos  - Y координата курсора в окне
 ///
-void wglfw::callback_cursor(GLFWwindow* w, double x, double y)
+void wglfw::callback_cursor(GLFWwindow*, double x, double y)
 {
-  assert(w == win_ptr);
   if(cursor_observer != nullptr) cursor_observer->cursor_event(x, y);
 }
 
@@ -241,9 +234,8 @@ void wglfw::callback_cursor(GLFWwindow* w, double x, double y)
 /// \param action
 /// \param mods
 ///
-void wglfw::callback_button(GLFWwindow* w, int button, int action, int mods)
+void wglfw::callback_button(GLFWwindow*, int button, int action, int mods)
 {
-  assert(w == win_ptr);
   if(button_observer != nullptr) button_observer->mouse_event(button, action, mods);
 }
 
@@ -251,9 +243,8 @@ void wglfw::callback_button(GLFWwindow* w, int button, int action, int mods)
 ///
 /// Keys events callback
 ///
-void wglfw::callback_keyboard(GLFWwindow* w, int key, int scancode, int action, int mods)
+void wglfw::callback_keyboard(GLFWwindow*, int key, int scancode, int action, int mods)
 {
-  assert(w == win_ptr);
   if(keyboard_observer != nullptr) keyboard_observer->keyboard_event(key, scancode, action, mods);
 }
 
@@ -261,9 +252,8 @@ void wglfw::callback_keyboard(GLFWwindow* w, int key, int scancode, int action, 
 ///
 /// GLFW window moving callback
 ///
-void wglfw::callback_position(GLFWwindow* w, int left, int top)
+void wglfw::callback_position(GLFWwindow*, int left, int top)
 {
-  assert(w == win_ptr);
   if(position_observer != nullptr) position_observer->reposition_event(left, top);
 }
 
@@ -275,9 +265,8 @@ void wglfw::callback_position(GLFWwindow* w, int left, int top)
 /// \param height
 /// \details GLFW framebuffer and window-data callback resize
 ///
-void wglfw::callback_size(GLFWwindow* w, int width, int height)
+void wglfw::callback_size(GLFWwindow*, int width, int height)
 {
-  assert(w == win_ptr);
   for(auto& observer: size_observers) observer->resize_event(width, height);
 }
 
@@ -287,9 +276,8 @@ void wglfw::callback_size(GLFWwindow* w, int width, int height)
 /// \param window
 /// \param key
 ///
-void wglfw::callback_char(GLFWwindow* w, uint ch)
+void wglfw::callback_char(GLFWwindow*, uint ch)
 {
-  assert(w == win_ptr);
   if(char_observer != nullptr) char_observer->character_event(ch);
 }
 
@@ -298,9 +286,8 @@ void wglfw::callback_char(GLFWwindow* w, uint ch)
 /// \brief wglfw::window_close_callback
 /// \param w
 ///
-void wglfw::callback_close(GLFWwindow* w)
+void wglfw::callback_close(GLFWwindow*)
 {
-  assert(w == win_ptr);
   if(close_observer != nullptr) close_observer->close_event();
 }
 
@@ -309,9 +296,8 @@ void wglfw::callback_close(GLFWwindow* w)
 /// \brief wglfw::window_focus_callback
 /// \param w
 ///
-void wglfw::callback_focus(GLFWwindow* w,  int focused)
+void wglfw::callback_focus(GLFWwindow*,  int focused)
 {
-  assert(w == win_ptr);
   if(0 == focused)
   {
     if(focuslost_observer != nullptr) focuslost_observer->focus_lost_event();
