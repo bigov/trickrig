@@ -19,7 +19,7 @@ namespace tr
 /// \brief space::space
 /// \details Формирование 3D пространства
 ///
-space::space(wglfw* c, wglfw* w): MainWindow(c), ThreadWindow(w)
+space::space(wglfw* pm, wglfw* pt): MainWindow(pm), ThreadWindow(pt)
 {
   render_indices.store(-1);
   ViewFrom = std::make_shared<glm::vec3> ();
@@ -33,8 +33,8 @@ space::space(wglfw* c, wglfw* w): MainWindow(c), ThreadWindow(w)
   glFrontFace(GL_CCW);
   glCullFace(GL_BACK);
 
-  //glEnable(GL_CULL_FACE);    // отключить отображение обратных поверхностей
-  glDisable(GL_CULL_FACE); // не отключать отображение обратных поверхностей
+  //glEnable(GL_CULL_FACE); // отключить отображение обратных поверхностей
+  glDisable(GL_CULL_FACE);  // обратные поверхности отображать
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_LINE_SMOOTH);
@@ -108,9 +108,6 @@ void space::enable(void)
 
   MainWindow->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
   MainWindow->set_button_observer(*this);    //  -- кнопки мыши
-  MainWindow->set_keyboard_observer(*this);  //  -- клавиатуры
-  MainWindow->set_focuslost_observer(*this); // Реакция на потерю окном фокуса ввода
-  focus_is_on = true;
 
   on_front = 0; // клавиша вперед
   on_back  = 0; // клавиша назад
@@ -149,13 +146,13 @@ void space::init_buffers(void)
   size_t idx_size = static_cast<size_t>(6 * n * sizeof(GLuint)); // Размер индексного массива
   auto idx_data = std::unique_ptr<GLuint[]> {new GLuint[idx_size]};
 
-  GLuint idx[6] = {0, 1, 2, 2, 3, 0};                            // шаблон четырехугольника
-  GLuint stride = 0;                                             // число описаных вершин
-  for(size_t i = 0; i < idx_size; i += 6) {                      // заполнить массив для VBO
+  GLuint idx[6] = {0, 1, 2, 2, 3, 0};                                // шаблон четырехугольника
+  GLuint stride = 0;                                                 // число описаных вершин
+  for(size_t i = 0; i < idx_size; i += 6) {                          // заполнить массив для VBO
     for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
-    stride += 4;                                                 // по 4 вершины на сторону
+    stride += 4;                                                     // по 4 вершины на сторону
   }
-  VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get());   // и заполнить данными.
+  VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get()); // и заполнить данными.
   glBindVertexArray(0);
 
   std::thread A(db_control, std::ref(VboAccess), ThreadWindow, std::ref(ViewFrom),
@@ -282,8 +279,10 @@ void space::calc_render_time(void)
 ///
 /// Функция, вызываемая из цикла окна для рендера сцены
 ///
-bool space::render(void)
+void space::render(void)
 {
+  if(!ready) return;
+
   calc_render_time();
   calc_position();
 
@@ -293,7 +292,7 @@ bool space::render(void)
   glEnable(GL_DEPTH_TEST);
 
   glBindVertexArray(vao_id);
-  Program3d->use();   // включить шейдерную программу
+  Program3d->use();
   for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
 
   Program3d->set_uniform("mvp", MatMVP);
@@ -304,13 +303,13 @@ bool space::render(void)
   glDrawElements(GL_TRIANGLES, render_indices, GL_UNSIGNED_INT, nullptr);
 
   for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
-  Program3d->unuse(); // отключить шейдерную программу
+  Program3d->unuse();
   RenderBuffer->unbind();
   glBindVertexArray(0);
   VboAccess.unlock();
 
   hud_draw();
-  return calc_hlight_quad();
+  calc_hlight_quad();
 }
 
 
@@ -454,32 +453,13 @@ void space::keyboard_event(int _key, int _scancode, int _action, int _mods)
 
 
 ///
-/// \brief space::focus_event
-/// \details Потеря окном фокуса равноценно нажатию [Esc]
-///
-void space::focus_lost_event()
-{
-  focus_is_on = false;
-}
-
-
-///
 /// \brief space::check_keys
 /// \param ev
 ///
 /// Скан-коды клавиш:
 /// [S] == 31; [C] == 46
-bool space::calc_hlight_quad(void)
+void space::calc_hlight_quad(void)
 {
-  if(!focus_is_on) return false; // если окно не в фокусе
-
-  if((key == KEY_ESCAPE) && (action == RELEASE))
-  {
-    key    = -1;
-    action = -1;
-    return false;
-  }
-
   // В "цвете" пикселей буфера рендера хранится информация об индексах
   // первой вершины образующего примитива (каждый прямоугольник формируется
   // из двух треугольников). Зная размер блока данных, по индексу можно получить
@@ -500,7 +480,6 @@ bool space::calc_hlight_quad(void)
   // для подсветки текущего прямоугольника (расположенного под прицелом в центре экрана)
   hl_vertex_id_from = vertex_id - (vertex_id % vertices_per_side);
   hl_vertex_id_end = hl_vertex_id_from + vertices_per_side - 1;
-  return true;
 }
 
 

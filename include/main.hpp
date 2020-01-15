@@ -133,6 +133,7 @@ const int REPEAT             = GLFW_REPEAT;
 const int RELEASE            = GLFW_RELEASE;
 const int KEY_ESCAPE         = GLFW_KEY_ESCAPE;
 const int KEY_BACKSPACE      = GLFW_KEY_BACKSPACE;
+const int EMPTY              = -1;
 
 const int KEY_MOVE_FRONT = GLFW_KEY_W;
 const int KEY_MOVE_BACK  = GLFW_KEY_S;

@@ -3,7 +3,7 @@
 // file: main.cpp
 //
 // GL_TEXTURE0 - текстура поверхности воксов
-// GL_TEXTURE1 - текстура окна - рендер 3D сцены
+// GL_TEXTURE1 - текстура для рендера 3D сцены
 // GL_TEXTURE2 - рендер идентификации примитивов 3D сцены (цвет = id примитива)
 //             - текстура GUI в режиме "меню"
 //             - текстура HUD в 3D режиме
@@ -39,7 +39,6 @@ int main(int, char* argv[])
     wglfw WinThread {};  // OpenGL контекст для фонового потока
     wglfw WinMain {      // OpenGL контекст основного потока
       WinThread.get_win_id(), title.c_str()};
-
     gui AppGUI { &WinMain, &WinThread }; // Создать окно приложения
     AppGUI.show();                       // Главный цикл
   }

@@ -20,7 +20,7 @@ enum BUTTON_STATE {
 class gui: public interface_gl_context
 {
   public:
-    gui(wglfw* MainWindow, wglfw* TreadedWindow);
+    gui(wglfw* pMainWindow, wglfw* pTreadedWindow);
     ~gui(void);
 
     // Запретить копирование и перенос экземпляра класса
@@ -39,6 +39,7 @@ class gui: public interface_gl_context
     virtual void error_event(const char* message);
     virtual void mouse_event(int _button, int _action, int _mods);
     virtual void keyboard_event(int _key, int _scancode, int _action, int _mods);
+    virtual void focus_lost_event();
 
   private:
     enum GUI_MODES {    // режимы окна
@@ -73,7 +74,6 @@ class gui: public interface_gl_context
 
     int scancode = -1;
     int mods = -1;
-    int mouse_button = -1;
     int action = -1;
     int key = -1;
 
@@ -92,7 +92,7 @@ class gui: public interface_gl_context
     px bg      {0xE0, 0xE0, 0xE0, 0xC0};     // фон заполнения неактивного окна
     img ImgGUI { 0, 0 };                     // GUI текстура окна приложения
     px color_title {0xFF, 0xFF, 0xDD, 0xFF}; // фон заголовка
-    bool mouse_press_left = false;           // нажатие на левую кнопку мыши
+    int mouse_left = EMPTY;                 // нажатие на левую кнопку мыши
 
     GLuint texture_gui = 0;                  // id тектуры HUD
 
@@ -112,14 +112,14 @@ class gui: public interface_gl_context
     void input_text_line(const img &_Fn);
     void row_text(size_t id, uint x, uint y, uint w, uint h, const std::string &);
     void select_list(uint x, uint y, uint w, uint h);
-    void menu_draw(void);
+    void menu_build(void);
     void menu_map_create(void);
     void menu_map_select(void);
     void menu_start(void);
     void menu_config(void);
     void button_click(ELEMENT_ID);
     void cancel(void);
-    void render_screen(void);
+    void screen_render(void);
     void create_map(void);
     void remove_map(void);
     void layout_set(const layout &L);

@@ -6,14 +6,14 @@ namespace tr {
 ///
 /// \brief gui::gui
 ///
-gui::gui(wglfw* MWin, wglfw* TWin)
+gui::gui(wglfw* pMW, wglfw* pTW)
 {
-  MainWindow = MWin;
+  MainWindow = pMW;
   MainWindow->gl_context_set_current();
 
   layout_set(cfg::WinLayout);
   MainWindow->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
-  Space = std::make_unique<space>(MWin, TWin);
+  Space = std::make_unique<space>(pMW, pTW);
   FontMap1_len = static_cast<uint>(FontMap1.length());
   TimeStart = std::chrono::system_clock::now();
 
@@ -187,7 +187,7 @@ void gui::row_text(size_t id, uint x, uint y, uint w, uint h, const std::string 
     element_over = ROW_MAP_NAME; // для обработки в "menu_selector"
     bg_color = over;
 
-    if(mouse_press_left)
+    if(mouse_left == PRESS)
     {
       row_selected = id;
       x += 1; y += 1;
@@ -230,8 +230,8 @@ void gui::select_list(uint lx, uint ly, uint lw, uint lh)
 ///
 void gui::cancel(void)
 {
-  key    = -1;
-  action = -1;
+  key    = EMPTY;
+  action = EMPTY;
 
   switch (GuiMode)
   {
@@ -344,7 +344,7 @@ void gui::button_click(ELEMENT_ID id)
                    static_cast<GLint>(Layout.width),
                    static_cast<GLint>(Layout.height),
                    0, GL_RGBA, GL_UNSIGNED_BYTE, ImgGUI.uchar_t());
-      render_screen();     // Вывести на экран сообщение о загрузке
+      screen_render();     // Вывести на экран сообщение о загрузке
       Space->enable();     // Загрузка занимает некоторое время ...
       Cursor3D[2] = 4.0f;  // Активировать прицел
       break;
@@ -492,7 +492,7 @@ void gui::button(ELEMENT_ID btn_id, ulong x, ulong y,
       element_over = btn_id;
 
       // и если кнопку "кликнули" указателем мыши
-      if(mouse_press_left)
+      if(mouse_left == PRESS)
       {
         button_make_body(Btn, ST_PRESSED);
       }
@@ -630,12 +630,12 @@ void gui::menu_config(void)
 ///
 /// \brief gui::draw_gui_menu
 ///
-void gui::menu_draw(void)
+void gui::menu_build(void)
 {
-  mouse_press_left = (mouse_button == MOUSE_BUTTON_LEFT) && (action == PRESS);
-
   switch (GuiMode)
   {
+    case GUI_3D_MODE:
+      return;              // в режиме 3D-сцены меню не отображается
     case GUI_MENU_CONFIG:
       menu_config();
       break;
@@ -659,18 +659,16 @@ void gui::menu_draw(void)
                static_cast<GLint>(Layout.height),
                0, GL_RGBA, GL_UNSIGNED_BYTE, ImgGUI.uchar_t());
 
-  if((mouse_button == MOUSE_BUTTON_LEFT) &&
-     (action == RELEASE) &&
-     (element_over != NONE))
+  if((mouse_left == RELEASE) && (element_over != NONE))
   {
     button_click(element_over);
-    mouse_button = -1;   // сбросить флаг кнопки
-    action = -1;  // сбросить флаг действия
+    mouse_left = EMPTY;
+    action = EMPTY;         // сбросить флаг действия
   }
 
   if(element_over == NONE)
   {
-    mouse_button = -1;   // сбросить флаг кнопки
+    mouse_left = EMPTY;
     //AppWin.action = -1; // флаг действия потребуется при вводе названия карты
   }
 
@@ -697,32 +695,26 @@ void gui::menu_draw(void)
 void gui::show(void)
 {
   MainWindow->set_char_observer(*this);
-  MainWindow->set_error_observer(*this);    // отслеживание ошибок
-  MainWindow->set_cursor_observer(*this);   // курсор мыши в окне
-  MainWindow->set_button_observer(*this);   // кнопки мыши
-  MainWindow->set_keyboard_observer(*this); // клавиши клавиатуры
-  MainWindow->set_position_observer(*this); // положение окна
-  MainWindow->add_size_observer(*this);     // размер окна
-  MainWindow->set_close_observer(*this);    // закрытие окна
+  MainWindow->set_error_observer(*this);     // отслеживание ошибок
+  MainWindow->set_cursor_observer(*this);    // курсор мыши в окне
+  MainWindow->set_button_observer(*this);    // кнопки мыши
+  MainWindow->set_keyboard_observer(*this);  // клавиши клавиатуры
+  MainWindow->set_position_observer(*this);  // положение окна
+  MainWindow->add_size_observer(*this);      // размер окна
+  MainWindow->set_close_observer(*this);     // закрытие окна
+  MainWindow->set_focuslost_observer(*this); // потеря окном фокуса ввода
 
   while(is_open)
   {
-    if((key == KEY_ESCAPE) && (action == RELEASE)) cancel();
-
-    if(GuiMode == GUI_3D_MODE)
-    {
-      if(!Space->render()) cancel();         // генерация сцены в 3D режиме
-    } else {
-      if(Space->is_ready()) Space->render(); // генерация фоновой картинки для меню
-      menu_draw();
-    }
-    render_screen();
+    Space->render(); // рендер 3D сцены
+    menu_build();    // рендер GUI меню
+    screen_render(); // прорисовка окна приложения
   }
 }
 
 
 ///
-/// \brief gui::render_screen
+/// \brief gui::screen_render
 ///
 /// \details Рендер окна с текстурами фреймбуфера и GIU
 /// Кадр сцены рендерится в изображение на (2D) "холсте" фреймбуфера,
@@ -730,7 +722,7 @@ void gui::show(void)
 /// прямоугольник окна. Курсор и дополнительные (HUD) элементы окна
 /// изображаются как наложеные сверху дополнительные текстуры
 ///
-void gui::render_screen(void)
+void gui::screen_render(void)
 {
   glBindVertexArray(vao_quad_id);
   glDisable(GL_DEPTH_TEST);
@@ -830,7 +822,7 @@ void gui::close_event(void)
 
 
 ///
-/// \brief win_data::error_event
+/// \brief gui::error_event
 /// \param message
 ///
 void gui::error_event(const char* message)
@@ -840,7 +832,7 @@ void gui::error_event(const char* message)
 
 
 ///
-/// \brief ev_input::mouse_event
+/// \brief gui::mouse_event
 /// \param _button
 /// \param _action
 /// \param _mods
@@ -848,13 +840,15 @@ void gui::error_event(const char* message)
 void gui::mouse_event(int _button, int _action, int _mods)
 {
   mods   = _mods;
-  mouse_button  = _button;
   action = _action;
+
+  if (_button == MOUSE_BUTTON_LEFT) mouse_left = _action;
+  else mouse_left = EMPTY;
 }
 
 
 ///
-/// \brief ev_input::keyboard_event
+/// \brief gui::keyboard_event
 /// \param key
 /// \param scancode
 /// \param action
@@ -862,11 +856,31 @@ void gui::mouse_event(int _button, int _action, int _mods)
 ///
 void gui::keyboard_event(int _key, int _scancode, int _action, int _mods)
 {
-  mouse_button    = -1;
   key      = _key;
   scancode = _scancode;
   action   = _action;
   mods     = _mods;
+  if((key == KEY_ESCAPE) && (action == RELEASE)) cancel();
+  if (GUI_3D_MODE == GuiMode) Space->keyboard_event(_key, _scancode, _action, _mods);
+}
+
+
+///
+/// \brief gui::focus_event
+/// \details Потеря окном фокуса в режиме рендера 3D сцены
+/// переводит GUI в режим отображения меню
+///
+void gui::focus_lost_event()
+{
+  if (GUI_3D_MODE == GuiMode)
+  {
+     cfg::map_view_save(Space->ViewFrom, Space->look_dir);
+     GuiMode = GUI_MENU_LSELECT;
+     Cursor3D[2] = 0.0f;                      // Спрятать прицел
+     MainWindow->cursor_restore();            // Включить указатель мыши
+     MainWindow->set_cursor_observer(*this);  // переключить обработчик смещения курсора
+     MainWindow->set_button_observer(*this);  // обработчик кнопок мыши
+  }
 }
 
 

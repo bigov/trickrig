@@ -23,14 +23,12 @@ namespace tr
       ~space(void);
 
       void enable(void);
-      bool render(void);
-      bool is_ready(void) const {return ready;}
+      void render(void);
 
       virtual void resize_event(int width, int height);
       virtual void cursor_event(double x, double y);
       virtual void mouse_event(int _button, int _action, int _mods);
       virtual void keyboard_event(int _key, int _scancode, int _action, int _mods);
-      virtual void focus_lost_event();
 
       std::shared_ptr<glm::vec3> ViewFrom = nullptr;             // 3D координаты точки положения
       float look_dir[2] = {0.0f, 0.0f};  // Направление: азимут (0 - X) и тангаж (0 - горизОнталь, пи/2 - вертикаль)
@@ -52,7 +50,6 @@ namespace tr
       GLuint vao_id = 0;                   // VAO ID
 
       bool ready = false;
-      bool focus_is_on = false;
       float cursor_dx = 0.f;    // Cмещение мыши в активном окне между кадрами
       float cursor_dy = 0.f;    // в режиме 3D (режим прицела) при скрытом курсоре.
       double xpos = 0.0;        // позиция указателя относительно левой границы
@@ -111,8 +108,8 @@ namespace tr
 
       void calc_render_time(void);
       void load_textures(void);
-      void calc_position();
-      bool calc_hlight_quad(void);
+      void calc_position(void);
+      void calc_hlight_quad(void);
       void init_buffers(void);
 
       void hud_load(void);
