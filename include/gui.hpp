@@ -20,7 +20,7 @@ enum BUTTON_STATE {
 class gui: public interface_gl_context
 {
   public:
-    gui(wglfw* pMainWindow, wglfw* pTreadedWindow);
+    gui(void);
     ~gui(void);
 
     // Запретить копирование и перенос экземпляра класса
@@ -65,8 +65,9 @@ class gui: public interface_gl_context
         std::string Folder;
         std::string Name;
     };
-    std::unique_ptr<glsl> Program2d = nullptr;            // Шейдерная программа GUI
-    glm::vec3 Cursor3D = { 200.f, 200.f, 0.f };           // положение и размер прицела
+    std::shared_ptr<wglfw> MainWindow = nullptr;
+    std::unique_ptr<glsl> Program2d = nullptr;           // Шейдерная программа GUI
+    glm::vec3 Cursor3D = { 200.f, 200.f, 0.f };          // положение и размер прицела
     const uint BUTTTON_WIDTH = 120;                      // ширина кнопки GUI
     const uint BUTTTON_HEIGHT = 36;                      // высота кнопки GUI
     const uint MIN_GUI_WIDTH = (BUTTTON_WIDTH + 16) * 4; // минимально допустимая ширина окна
@@ -81,8 +82,6 @@ class gui: public interface_gl_context
     layout Layout {400, 400, 0, 0};          // размеры и положение
     float aspect = 1.0f;                     // соотношение размеров окна
     std::unique_ptr<space> Space = nullptr;
-    //std::unique_ptr<wglfw> GlContext = nullptr;
-    wglfw* MainWindow = nullptr;
 
     bool text_mode = false;                  // режим ввода текста
     std::string StringBuffer {};             // строка ввода пользователя

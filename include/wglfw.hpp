@@ -9,7 +9,7 @@ namespace tr
 class wglfw
 {
   public:
-      wglfw(GLFWwindow* w = nullptr, const char* title = "\0");
+      wglfw(const char* title = "\0", GLFWwindow* w = nullptr);
       ~wglfw(void);
 
       // Запретить копирование объекта
@@ -44,6 +44,7 @@ class wglfw
       GLFWwindow* win_ptr;
 
       static bool init_completed;
+      static int cores; // счетчик окон
 
       static interface_gl_context* error_observer;
       static interface_gl_context* cursor_observer;

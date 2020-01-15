@@ -19,7 +19,7 @@
 namespace tr
 {
 
-extern void db_control(std::mutex& m, wglfw* ThreadWindow, std::shared_ptr<glm::vec3> CameraLocation,
+extern void db_control(std::mutex& m, wglfw* GLWindow, std::shared_ptr<glm::vec3> CameraLocation,
                        GLuint id, GLsizeiptr size);
 struct vbo_map
 {

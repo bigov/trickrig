@@ -19,7 +19,7 @@ namespace tr
   class space: public interface_gl_context
   {
     public:
-      space(wglfw* MainOpenGLWindow, wglfw* ThreadOpenGLWindow);
+      space(const std::shared_ptr<wglfw>& MainOpenGLWindow);
       ~space(void);
 
       void enable(void);
@@ -38,8 +38,8 @@ namespace tr
       space(const space &);
       space operator=(const space &);
 
-      wglfw* MainWindow   = nullptr;
-      wglfw* ThreadWindow = nullptr;
+      std::shared_ptr<wglfw> MainWindow  = nullptr;
+      std::unique_ptr<wglfw> ThreadWindow = nullptr;
 
       std::unique_ptr<glsl> Program3d = nullptr;
 

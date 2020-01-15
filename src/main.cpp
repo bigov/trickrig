@@ -28,19 +28,11 @@ namespace tr
 int main(int, char* argv[])
 {
   using namespace tr;
-  std::string title = std::string(APP_NAME) + "  v." + std::string(APP_VERSION);
-#ifndef NDEBUG
-  title += " (debug mode)";
-#endif
-
   try
   {
-    cfg::load(argv);     // загрузка конфигурации
-    wglfw WinThread {};  // OpenGL контекст для фонового потока
-    wglfw WinMain {      // OpenGL контекст основного потока
-      WinThread.get_win_id(), title.c_str()};
-    gui AppGUI { &WinMain, &WinThread }; // Создать окно приложения
-    AppGUI.show();                       // Главный цикл
+    cfg::load(argv); // загрузка конфигурации
+    gui AppGUI {};   // Создать окно приложения
+    AppGUI.show();   // Главный цикл
   }
   catch(std::exception & e)
   {

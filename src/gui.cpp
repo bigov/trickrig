@@ -6,14 +6,19 @@ namespace tr {
 ///
 /// \brief gui::gui
 ///
-gui::gui(wglfw* pMW, wglfw* pTW)
+gui::gui(void)
 {
-  MainWindow = pMW;
+  std::string title = std::string(APP_NAME) + "  v." + std::string(APP_VERSION);
+#ifndef NDEBUG
+  title += " (debug mode)";
+#endif
+
+  MainWindow = std::make_shared<wglfw>(title.c_str());
   MainWindow->gl_context_set_current();
 
   layout_set(cfg::WinLayout);
   MainWindow->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
-  Space = std::make_unique<space>(pMW, pTW);
+  Space = std::make_unique<space>(MainWindow);
   FontMap1_len = static_cast<uint>(FontMap1.length());
   TimeStart = std::chrono::system_clock::now();
 

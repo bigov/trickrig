@@ -13,6 +13,8 @@ namespace tr
 // ---
 
 bool wglfw::init_completed = false;
+int wglfw::cores = 0;
+
 interface_gl_context* wglfw::error_observer = nullptr;
 interface_gl_context* wglfw::cursor_observer = nullptr;
 interface_gl_context* wglfw::button_observer = nullptr;
@@ -27,7 +29,7 @@ interface_gl_context* wglfw::focuslost_observer = nullptr;
 ///
 /// \brief wglfw::wglfw
 ///
-wglfw::wglfw(GLFWwindow* w, const char* title)
+wglfw::wglfw(const char* title, GLFWwindow* w)
 {
   if(!init_completed)
   {
@@ -52,6 +54,7 @@ wglfw::wglfw(GLFWwindow* w, const char* title)
       if(!gladLoadGL()) { ERR("Critical error: can't load GLAD."); }
     init_completed = true;
   }
+  ++cores;
 }
 
 
@@ -87,9 +90,9 @@ void wglfw::set_window(uint width, uint height, uint min_w, uint min_h, uint lef
 ///
 wglfw::~wglfw()
 {
-  if(!glfwWindowShouldClose(win_ptr)) glfwSetWindowShouldClose(win_ptr, true);
   glfwDestroyWindow(win_ptr);
-  glfwTerminate();
+  --cores;
+  if(cores < 1) glfwTerminate();
 }
 
 

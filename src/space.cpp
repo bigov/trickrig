@@ -19,7 +19,7 @@ namespace tr
 /// \brief space::space
 /// \details Формирование 3D пространства
 ///
-space::space(wglfw* pm, wglfw* pt): MainWindow(pm), ThreadWindow(pt)
+space::space(const std::shared_ptr<wglfw>& pm): MainWindow(pm)
 {
   render_indices.store(-1);
   ViewFrom = std::make_shared<glm::vec3> ();
@@ -155,7 +155,8 @@ void space::init_buffers(void)
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get()); // и заполнить данными.
   glBindVertexArray(0);
 
-  std::thread A(db_control, std::ref(VboAccess), ThreadWindow, std::ref(ViewFrom),
+  ThreadWindow = std::make_unique<wglfw> ("", MainWindow->get_win_id()); // Создать OpenGL контекст для потока
+  std::thread A(db_control, std::ref(VboAccess), ThreadWindow.get(), std::ref(ViewFrom),
                 VBOdata.get_id(), VBOdata.get_size());
   A.detach();
 
