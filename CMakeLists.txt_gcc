@@ -9,11 +9,9 @@
 #
 #
 # Под Linux можно собрать так:
-#   cmake --clean . && cmake -DCMAKE_BUILD_TYPE=Debug ../ && cmake --build . && ./app_dbg
-#   cmake --clean . && cmake -DCMAKE_BUILD_TYPE=Release ../ && cmake --build . && ./app_rel
 #
-# Сборка с использование Clang:
-#   CC="clang" CXX="clang++" cmake ../ && cmake --build .
+# cmake --clean . && cmake -DCMAKE_BUILD_TYPE=Debug ../ && cmake --build . && ./app_dbg
+# cmake --clean . && cmake -DCMAKE_BUILD_TYPE=Release ../ && cmake --build . && ./app_rel
 #
 # https://cmake.org/Wiki/CMake_Useful_Variables
 #

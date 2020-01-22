@@ -22,7 +22,6 @@ class gl_texture
     GLint internalformat;
     GLenum format;
     GLenum type;
-    GLsizei width, height;
 
   public:
     gl_texture(GLint internalformat, GLenum format, GLenum type,

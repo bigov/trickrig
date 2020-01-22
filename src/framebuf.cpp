@@ -18,7 +18,7 @@ namespace tr
 ///
 gl_texture::gl_texture( GLint internalformat, GLenum format, GLenum type,
                        GLsizei width, GLsizei height, const GLvoid* data)
-  : internalformat(internalformat), format(format), type(type), width(width), height(height)
+  : internalformat(internalformat), format(format), type(type)
 {
   glGenTextures(1, &texture_id);
   glBindTexture(target, texture_id);
