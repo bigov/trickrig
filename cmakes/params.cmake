@@ -20,6 +20,9 @@ endif()
 SET( CXX_FLAGS "-m64 -std=c++2a -fexceptions -Werror -Wpedantic -Wextra -Woverloaded-virtual \
   -Wctor-dtor-privacy -Wnon-virtual-dtor -Wall -Winit-self" ) ## -O3
 
+SET( CMAKE_TRY_COMPILE_TARGET_TYPE EXECUTABLE )
+SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -no-pie" )
+
 if( "_$ENV{CC}" MATCHES "clang" )
   SET( CLANG TRUE )
   SET( SUFFIX "${SUFFIX}_clang" )
@@ -30,9 +33,6 @@ else( "_$ENV{CC}" MATCHES "clang" )
   SET( CLANG FALSE )
   SET( SUFFIX "${SUFFIX}_gcc" )
   SET( CXX_FLAGS "${CXX_FLAGS} -Wunreachable-code -latomic -lpthread" )
-  if( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
-    SET( CXX_FLAGS "${CXX_FLAGS} -no-pie" )
-  endif( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
 endif( "_$ENV{CC}" MATCHES "clang" )
 
 SET( EXEC_NAME "app${SUFFIX}" )
