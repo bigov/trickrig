@@ -1,6 +1,7 @@
 #ifndef INTERFACE_GL_CONTENT
 #define INTERFACE_GL_CONTENT
 
+#define GLFW_INCLUDE_GLEXT
 #include "GLFW/glfw3.h"
 
 namespace tr {

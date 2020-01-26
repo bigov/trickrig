@@ -84,6 +84,7 @@ space::space(const std::shared_ptr<wglfw>& pm): MainWindow(pm)
 space::~space()
 {
   render_indices.store(-1); // Индикатор для остановки потока загрузки в рендер из БД
+  SubWindow = nullptr;
 }
 
 

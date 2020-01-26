@@ -19,7 +19,8 @@ namespace tr
 ///
 /// \details Создание отдельного потока обмена данными с базой
 ///
-void db_control(std::mutex& m, const std::shared_ptr<wglfw_base>& OpenGLContext, const std::shared_ptr<glm::vec3>& CameraLocation,
+void db_control(std::mutex& m, const std::shared_ptr<wglfw_base>& OpenGLContext,
+                const std::shared_ptr<glm::vec3>& CameraLocation,
                 GLuint vbo_id, GLsizeiptr vbo_size)
 {
   OpenGLContext->make_current();
@@ -41,7 +42,9 @@ void db_control(std::mutex& m, const std::shared_ptr<wglfw_base>& OpenGLContext,
       m.unlock();
     }
   }
-
+  m.lock();
+  glFinish(); // синхронизация изменений между потоками
+  m.unlock();
 }
 
 ///
