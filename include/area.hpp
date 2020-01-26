@@ -19,8 +19,8 @@
 namespace tr
 {
 
-extern void db_control(std::mutex& m, GLFWwindow* shared_win, const std::shared_ptr<glm::vec3>& CameraLocation,
-                       GLuint id, GLsizeiptr size);
+extern void db_control(std::mutex& m, const std::shared_ptr<wglfw_base>& OpenGLContext,
+                       const std::shared_ptr<glm::vec3>& CameraLocation, GLuint id, GLsizeiptr size);
 struct vbo_map
 {
   int x, y, z;

@@ -15,6 +15,7 @@ gui::gui(void)
 
   wglfw_init();
   MainWindow = std::make_shared<wglfw>(title.c_str());
+  MainWindow->make_current();
   wglfw_init_glad();
 
   layout_set(cfg::WinLayout);

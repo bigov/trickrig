@@ -38,7 +38,8 @@ namespace tr
       space(const space &);
       space operator=(const space &);
 
-      std::shared_ptr<wglfw> MainWindow  = nullptr;
+      std::shared_ptr<wglfw> MainWindow  = nullptr;      // основное окно приложения
+      std::shared_ptr<wglfw_base> SubWindow  = nullptr;  // окно для создания Gl-контекста в раздельном потоке
       std::unique_ptr<glsl> Program3d = nullptr;
 
       img ImHUD { 0, 0 };      // Текстура HUD окна приложения

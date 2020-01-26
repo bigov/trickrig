@@ -155,8 +155,11 @@ void space::init_buffers(void)
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get()); // и заполнить данными.
   glBindVertexArray(0);
 
-  std::thread A(db_control, std::ref(VboAccess), MainWindow->get_id(), ViewFrom,
-                VBOdata.get_id(), VBOdata.get_size());
+  // Окно для предачи OpenGL-контекста в отдельный поток должно создаваться в основном потоке,
+  // так как в MS-Windows попытка создании окна в одельном потоке завершается ошибкой.
+  SubWindow = std::make_shared<wglfw_base>("\0", MainWindow->get_id());
+
+  std::thread A(db_control, std::ref(VboAccess), SubWindow, ViewFrom, VBOdata.get_id(), VBOdata.get_size());
   A.detach();
 
   while (render_indices < indices_per_side) // Подождать пока хоть одна сторона загрузится

@@ -59,7 +59,6 @@ wglfw_base::wglfw_base(const char* title, GLFWwindow* w)
 {
   win_ptr = glfwCreateWindow(1, 1, title, nullptr, w);
   if (nullptr == win_ptr) ERR("Creating Window fail.");
-  glfwMakeContextCurrent(win_ptr);
 }
 
 

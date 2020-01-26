@@ -19,10 +19,10 @@ namespace tr
 ///
 /// \details Создание отдельного потока обмена данными с базой
 ///
-void db_control(std::mutex& m, GLFWwindow* shared_win, const std::shared_ptr<glm::vec3>& CameraLocation,
+void db_control(std::mutex& m, const std::shared_ptr<wglfw_base>& OpenGLContext, const std::shared_ptr<glm::vec3>& CameraLocation,
                 GLuint vbo_id, GLsizeiptr vbo_size)
 {
-  wglfw_base GLWindow {"", shared_win};
+  OpenGLContext->make_current();
   area Area {m, vbo_id, vbo_size};
   Area.load(CameraLocation);
   m.lock();   // На время загрузки сцены из БД заблокировать основной поток

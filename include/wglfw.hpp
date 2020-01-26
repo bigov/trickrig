@@ -14,6 +14,7 @@ class wglfw_base
 public:
   wglfw_base(const char* title = "\0", GLFWwindow* w = nullptr);
   ~wglfw_base(void);
+  void make_current(void) { glfwMakeContextCurrent(win_ptr); }
 
 protected:
   GLFWwindow* win_ptr = nullptr;
