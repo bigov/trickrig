@@ -19,10 +19,10 @@ namespace tr
 ///
 /// \details Создание отдельного потока обмена данными с базой
 ///
-void db_control(std::mutex& m, wglfw* GLWindow, std::shared_ptr<glm::vec3> CameraLocation,
+void db_control(std::mutex& m, GLFWwindow* shared_win, const std::shared_ptr<glm::vec3>& CameraLocation,
                 GLuint vbo_id, GLsizeiptr vbo_size)
 {
-  GLWindow->gl_context_set_current();
+  wglfw_base GLWindow {"", shared_win};
   area Area {m, vbo_id, vbo_size};
   Area.load(CameraLocation);
   m.lock();   // На время загрузки сцены из БД заблокировать основной поток
@@ -69,7 +69,7 @@ area::area (std::mutex& m, GLuint VBO_id, GLsizeiptr VBO_size): rVboAccess(m)
 /// \param CameraLocation
 /// \details Загрузка пространства вокруг точки расположения камеры
 ///
-void area::load(std::shared_ptr<glm::vec3> CameraLocation)
+void area::load(const std::shared_ptr<glm::vec3>& CameraLocation)
 {
   ViewFrom = CameraLocation;
 

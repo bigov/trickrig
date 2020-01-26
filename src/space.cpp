@@ -155,8 +155,7 @@ void space::init_buffers(void)
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get()); // и заполнить данными.
   glBindVertexArray(0);
 
-  ThreadWindow = std::make_unique<wglfw> ("", MainWindow->get_win_id()); // Создать OpenGL контекст для потока
-  std::thread A(db_control, std::ref(VboAccess), ThreadWindow.get(), std::ref(ViewFrom),
+  std::thread A(db_control, std::ref(VboAccess), MainWindow->get_id(), ViewFrom,
                 VBOdata.get_id(), VBOdata.get_size());
   A.detach();
 

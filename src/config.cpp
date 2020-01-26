@@ -110,6 +110,7 @@ void cfg::load(char** argv)
   WinLayout.height = static_cast<uint>(std::stoi(AppParams[WINDOW_HEIGHT]));
   WinLayout.left = static_cast<uint>(std::stoi(AppParams[WINDOW_LEFT]));
   WinLayout.top = static_cast<uint>(std::stoi(AppParams[WINDOW_TOP]));
+
 }
 
 

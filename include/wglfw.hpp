@@ -5,11 +5,25 @@
 
 namespace tr
 {
+void wglfw_init(void);      // инициализация библиотеки GLFW
+void wglfw_init_glad(void); // инициализация указателей GL/GLAD
 
-class wglfw
+
+class wglfw_base
+{
+public:
+  wglfw_base(const char* title = "\0", GLFWwindow* w = nullptr);
+  ~wglfw_base(void);
+
+protected:
+  GLFWwindow* win_ptr = nullptr;
+};
+
+
+class wglfw: public wglfw_base
 {
   public:
-      wglfw(const char* title = "\0", GLFWwindow* w = nullptr);
+    wglfw(const char* title = "\0", GLFWwindow* w = nullptr): wglfw_base(title, w) {};
       ~wglfw(void);
 
       // Запретить копирование объекта
@@ -27,8 +41,7 @@ class wglfw
       void cursor_restore(void);
       void set_cursor_pos(double x, double y);
       void get_frame_buffer_size(int* width, int* height);
-      GLFWwindow* get_win_id(void) const;
-      void gl_context_set_current(void) { glfwMakeContextCurrent(win_ptr); }
+      GLFWwindow* get_id(void) const;
 
       void set_error_observer(interface_gl_context& ref);    // отслеживание ошибок
       void set_cursor_observer(interface_gl_context& ref);   // курсор мыши в окне
@@ -41,11 +54,6 @@ class wglfw
       void set_focuslost_observer(interface_gl_context& ref);// смена фокуса
 
     private:
-      GLFWwindow* win_ptr;
-
-      static bool init_completed;
-      static int cores; // счетчик окон
-
       static interface_gl_context* error_observer;
       static interface_gl_context* cursor_observer;
       static interface_gl_context* button_observer;

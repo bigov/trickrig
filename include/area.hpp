@@ -19,7 +19,7 @@
 namespace tr
 {
 
-extern void db_control(std::mutex& m, wglfw* GLWindow, std::shared_ptr<glm::vec3> CameraLocation,
+extern void db_control(std::mutex& m, GLFWwindow* shared_win, const std::shared_ptr<glm::vec3>& CameraLocation,
                        GLuint id, GLsizeiptr size);
 struct vbo_map
 {
@@ -46,7 +46,7 @@ class area
     area& operator=(area&&) = delete;
 
     bool recalc_borders(void);
-    void load(std::shared_ptr<glm::vec3> CameraLocation);
+    void load(const std::shared_ptr<glm::vec3>& CameraLocation);
 
   private:
     std::mutex& rVboAccess;

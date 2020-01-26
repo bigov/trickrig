@@ -10,11 +10,7 @@
 namespace tr
 {
 // Инициализация статических членов
-// ---
-
-bool wglfw::init_completed = false;
-int wglfw::cores = 0;
-
+// --- --- ---
 interface_gl_context* wglfw::error_observer = nullptr;
 interface_gl_context* wglfw::cursor_observer = nullptr;
 interface_gl_context* wglfw::button_observer = nullptr;
@@ -27,34 +23,52 @@ interface_gl_context* wglfw::focuslost_observer = nullptr;
 
 
 ///
-/// \brief wglfw::wglfw
+/// \brief wglfw_init
 ///
-wglfw::wglfw(const char* title, GLFWwindow* w)
+void wglfw_init(void)
 {
-  if(!init_completed)
-  {
-    if (!glfwInit()) ERR("Fatal error: can't init GLFW lib.");  // инициализация библиотеки GLFW
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_VISIBLE, 0);
+  if (!glfwInit()) ERR("Fatal error: can't init GLFW lib.");
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  glfwWindowHint(GLFW_VISIBLE, 0);
 
 #ifndef NDEBUG
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
+  glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
 #endif
-  }
+}
 
-  win_ptr = glfwCreateWindow(1, 1, title, nullptr, w);   // Создание окна
-  if (nullptr == win_ptr) ERR("Creating Window fail.");
 
-  if(!init_completed)
+///
+/// \brief wglfw_init_glad
+/// \details инициализация указателей GL/GLAD
+///
+void wglfw_init_glad(void)
+{
+  if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
   {
-    gl_context_set_current();
-    if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
-      if(!gladLoadGL()) { ERR("Critical error: can't load GLAD."); }
-    init_completed = true;
+    if(!gladLoadGL()) ERR("Critical error: can't load GLAD.");
   }
-  ++cores;
+}
+
+
+///
+/// \brief wglfw::wglfw
+///
+wglfw_base::wglfw_base(const char* title, GLFWwindow* w)
+{
+  win_ptr = glfwCreateWindow(1, 1, title, nullptr, w);
+  if (nullptr == win_ptr) ERR("Creating Window fail.");
+  glfwMakeContextCurrent(win_ptr);
+}
+
+
+///
+/// \brief wglfw_base::~wglfw_base
+///
+wglfw_base::~wglfw_base(void)
+{
+  if(nullptr != win_ptr) glfwDestroyWindow(win_ptr);
 }
 
 
@@ -78,9 +92,7 @@ void wglfw::set_window(uint width, uint height, uint min_w, uint min_h, uint lef
   glfwSetWindowSize(win_ptr, static_cast<int>(width), static_cast<int>(height));
   glfwSetWindowPos(win_ptr, static_cast<int>(left), static_cast<int>(top));
   glfwShowWindow(win_ptr);
-  glfwMakeContextCurrent(win_ptr);
   glfwSwapInterval(0);  // Vertical sync is "OFF". When param is 1 - will be ON
-
   glfwSetInputMode(win_ptr, GLFW_STICKY_KEYS, 0);
 }
 
@@ -88,11 +100,11 @@ void wglfw::set_window(uint width, uint height, uint min_w, uint min_h, uint lef
 ///
 ///  Destructor
 ///
-wglfw::~wglfw()
+wglfw::~wglfw(void)
 {
-  glfwDestroyWindow(win_ptr);
-  --cores;
-  if(cores < 1) glfwTerminate();
+  if(nullptr != win_ptr) glfwDestroyWindow(win_ptr);
+  win_ptr = nullptr;
+  //glfwTerminate();
 }
 
 
@@ -194,7 +206,7 @@ void wglfw::get_frame_buffer_size(int* width, int* height)
 /// \brief wglfw::get_win_id
 /// \return
 ///
-GLFWwindow* wglfw::get_win_id(void) const
+GLFWwindow* wglfw::get_id(void) const
 {
   return win_ptr;
 }

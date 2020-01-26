@@ -13,8 +13,9 @@ gui::gui(void)
   title += " (debug mode)";
 #endif
 
+  wglfw_init();
   MainWindow = std::make_shared<wglfw>(title.c_str());
-  MainWindow->gl_context_set_current();
+  wglfw_init_glad();
 
   layout_set(cfg::WinLayout);
   MainWindow->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
