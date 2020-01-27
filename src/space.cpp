@@ -19,7 +19,7 @@ namespace tr
 /// \brief space::space
 /// \details Формирование 3D пространства
 ///
-space::space(const std::shared_ptr<wglfw>& pm): MainWindow(pm)
+space::space(std::shared_ptr<wglfw>& pm): MainWindow(pm)
 {
   render_indices.store(-1);
   ViewFrom = std::make_shared<glm::vec3> ();
@@ -84,7 +84,6 @@ space::space(const std::shared_ptr<wglfw>& pm): MainWindow(pm)
 space::~space()
 {
   render_indices.store(-1); // Индикатор для остановки потока загрузки в рендер из БД
-  SubWindow = nullptr;
 }
 
 
@@ -156,11 +155,7 @@ void space::init_buffers(void)
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get()); // и заполнить данными.
   glBindVertexArray(0);
 
-  // Окно для предачи OpenGL-контекста в отдельный поток должно создаваться в основном потоке,
-  // так как в MS-Windows попытка создании окна в одельном потоке завершается ошибкой.
-  SubWindow = std::make_shared<wglfw_base>("\0", MainWindow->get_id());
-
-  std::thread A(db_control, std::ref(VboAccess), SubWindow, ViewFrom, VBOdata.get_id(), VBOdata.get_size());
+  std::thread A(db_control, std::ref(VboAccess), MainWindow, ViewFrom, VBOdata.get_id(), VBOdata.get_size());
   A.detach();
 
   while (render_indices < indices_per_side) // Подождать пока хоть одна сторона загрузится

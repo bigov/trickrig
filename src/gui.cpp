@@ -13,14 +13,10 @@ gui::gui(void)
   title += " (debug mode)";
 #endif
 
-  wglfw_init();
-  MainWindow = std::make_shared<wglfw>(title.c_str());
-  MainWindow->make_current();
-  wglfw_init_glad();
-
+  GLContext = std::make_shared<wglfw>(title.c_str());
   layout_set(cfg::WinLayout);
-  MainWindow->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
-  Space = std::make_unique<space>(MainWindow);
+  GLContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
+  Space = std::make_unique<space>(GLContext);
   FontMap1_len = static_cast<uint>(FontMap1.length());
   TimeStart = std::chrono::system_clock::now();
 
@@ -246,10 +242,10 @@ void gui::cancel(void)
       cfg::map_view_save(Space->ViewFrom, Space->look_dir);
       GuiMode = GUI_MENU_LSELECT;
       Cursor3D[2] = 0.0f;                      // Спрятать прицел
-      MainWindow->cursor_restore();             // Включить указатель мыши
-      MainWindow->set_cursor_observer(*this);   // переключить обработчик смещения курсора
-      MainWindow->set_button_observer(*this);   // обработчик кнопок мыши
-      MainWindow->set_keyboard_observer(*this); // и клавиатуры
+      GLContext->cursor_restore();             // Включить указатель мыши
+      GLContext->set_cursor_observer(*this);   // переключить обработчик смещения курсора
+      GLContext->set_button_observer(*this);   // обработчик кнопок мыши
+      GLContext->set_keyboard_observer(*this); // и клавиатуры
       break;
     case GUI_MENU_LSELECT:
       GuiMode = GUI_MENU_START;
@@ -701,15 +697,15 @@ void gui::menu_build(void)
 ///
 void gui::show(void)
 {
-  MainWindow->set_char_observer(*this);
-  MainWindow->set_error_observer(*this);     // отслеживание ошибок
-  MainWindow->set_cursor_observer(*this);    // курсор мыши в окне
-  MainWindow->set_button_observer(*this);    // кнопки мыши
-  MainWindow->set_keyboard_observer(*this);  // клавиши клавиатуры
-  MainWindow->set_position_observer(*this);  // положение окна
-  MainWindow->add_size_observer(*this);      // размер окна
-  MainWindow->set_close_observer(*this);     // закрытие окна
-  MainWindow->set_focuslost_observer(*this); // потеря окном фокуса ввода
+  GLContext->set_char_observer(*this);
+  GLContext->set_error_observer(*this);     // отслеживание ошибок
+  GLContext->set_cursor_observer(*this);    // курсор мыши в окне
+  GLContext->set_button_observer(*this);    // кнопки мыши
+  GLContext->set_keyboard_observer(*this);  // клавиши клавиатуры
+  GLContext->set_position_observer(*this);  // положение окна
+  GLContext->add_size_observer(*this);      // размер окна
+  GLContext->set_close_observer(*this);     // закрытие окна
+  GLContext->set_focuslost_observer(*this); // потеря окном фокуса ввода
 
   while(is_open)
   {
@@ -742,7 +738,7 @@ void gui::screen_render(void)
 
   // переключить буфер рендера
   VboAccess.lock();
-  MainWindow->swap_buffers();
+  GLContext->swap_buffers();
   VboAccess.unlock();
 
 #ifndef NDEBUG
@@ -884,9 +880,9 @@ void gui::focus_lost_event()
      cfg::map_view_save(Space->ViewFrom, Space->look_dir);
      GuiMode = GUI_MENU_LSELECT;
      Cursor3D[2] = 0.0f;                      // Спрятать прицел
-     MainWindow->cursor_restore();            // Включить указатель мыши
-     MainWindow->set_cursor_observer(*this);  // переключить обработчик смещения курсора
-     MainWindow->set_button_observer(*this);  // обработчик кнопок мыши
+     GLContext->cursor_restore();            // Включить указатель мыши
+     GLContext->set_cursor_observer(*this);  // переключить обработчик смещения курсора
+     GLContext->set_button_observer(*this);  // обработчик кнопок мыши
   }
 }
 

@@ -23,9 +23,9 @@ interface_gl_context* wglfw::focuslost_observer = nullptr;
 
 
 ///
-/// \brief wglfw_init
+/// \brief wglfw::wglfw
 ///
-void wglfw_init(void)
+wglfw::wglfw(const char* title)
 {
   if (!glfwInit()) ERR("Fatal error: can't init GLFW lib.");
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -36,38 +36,17 @@ void wglfw_init(void)
 #ifndef NDEBUG
   glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, 1);
 #endif
-}
 
+  win_main = glfwCreateWindow(1, 1, title, nullptr, nullptr);
+  if (nullptr == win_main) ERR("Creating Window fail.");
+  glfwMakeContextCurrent(win_main);
 
-///
-/// \brief wglfw_init_glad
-/// \details инициализация указателей GL/GLAD
-///
-void wglfw_init_glad(void)
-{
   if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
   {
     if(!gladLoadGL()) ERR("Critical error: can't load GLAD.");
   }
-}
 
-
-///
-/// \brief wglfw::wglfw
-///
-wglfw_base::wglfw_base(const char* title, GLFWwindow* w)
-{
-  win_ptr = glfwCreateWindow(1, 1, title, nullptr, w);
-  if (nullptr == win_ptr) ERR("Creating Window fail.");
-}
-
-
-///
-/// \brief wglfw_base::~wglfw_base
-///
-wglfw_base::~wglfw_base(void)
-{
-  if(nullptr != win_ptr) glfwDestroyWindow(win_ptr);
+  win_subt = glfwCreateWindow(1, 1, "", nullptr, win_main);
 }
 
 
@@ -77,22 +56,22 @@ wglfw_base::~wglfw_base(void)
 void wglfw::set_window(uint width, uint height, uint min_w, uint min_h, uint left, uint top)
 {
   glfwSetErrorCallback(callback_error);
-  glfwSetKeyCallback(win_ptr, callback_keyboard);
-  glfwSetCharCallback(win_ptr, callback_char);
-  glfwSetMouseButtonCallback(win_ptr, callback_button);
-  glfwSetCursorPosCallback(win_ptr, callback_cursor);
-  glfwSetFramebufferSizeCallback(win_ptr, callback_size);
-  glfwSetWindowPosCallback(win_ptr, callback_position);
-  glfwSetWindowCloseCallback(win_ptr, callback_close);
-  glfwSetWindowFocusCallback(win_ptr, callback_focus);
+  glfwSetKeyCallback(win_main, callback_keyboard);
+  glfwSetCharCallback(win_main, callback_char);
+  glfwSetMouseButtonCallback(win_main, callback_button);
+  glfwSetCursorPosCallback(win_main, callback_cursor);
+  glfwSetFramebufferSizeCallback(win_main, callback_size);
+  glfwSetWindowPosCallback(win_main, callback_position);
+  glfwSetWindowCloseCallback(win_main, callback_close);
+  glfwSetWindowFocusCallback(win_main, callback_focus);
 
-  glfwSetWindowSizeLimits(win_ptr, static_cast<int>(min_w), static_cast<int>(min_h),
+  glfwSetWindowSizeLimits(win_main, static_cast<int>(min_w), static_cast<int>(min_h),
                           GLFW_DONT_CARE, GLFW_DONT_CARE);
-  glfwSetWindowSize(win_ptr, static_cast<int>(width), static_cast<int>(height));
-  glfwSetWindowPos(win_ptr, static_cast<int>(left), static_cast<int>(top));
-  glfwShowWindow(win_ptr);
+  glfwSetWindowSize(win_main, static_cast<int>(width), static_cast<int>(height));
+  glfwSetWindowPos(win_main, static_cast<int>(left), static_cast<int>(top));
+  glfwShowWindow(win_main);
   glfwSwapInterval(0);  // Vertical sync is "OFF". When param is 1 - will be ON
-  glfwSetInputMode(win_ptr, GLFW_STICKY_KEYS, 0);
+  glfwSetInputMode(win_main, GLFW_STICKY_KEYS, 0);
 }
 
 
@@ -101,9 +80,11 @@ void wglfw::set_window(uint width, uint height, uint min_w, uint min_h, uint lef
 ///
 wglfw::~wglfw(void)
 {
-  if(nullptr != win_ptr) glfwDestroyWindow(win_ptr);
-  win_ptr = nullptr;
-  //glfwTerminate();
+  if(nullptr != win_subt) glfwDestroyWindow(win_subt);
+  win_subt = nullptr;
+  if(nullptr != win_main) glfwDestroyWindow(win_main);
+  win_main = nullptr;
+  glfwTerminate();
 }
 
 
@@ -150,7 +131,7 @@ void wglfw::set_focuslost_observer(interface_gl_context& ref)
 ///
 void wglfw::swap_buffers(void)
 {
-  glfwSwapBuffers(win_ptr);
+  glfwSwapBuffers(win_main);
   glfwPollEvents();
 }
 
@@ -160,10 +141,10 @@ void wglfw::swap_buffers(void)
 ///
 void wglfw::cursor_hide(void)
 {
-  glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+  glfwSetInputMode(win_main, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
   // отключить ввод символов
-  glfwSetCharCallback(win_ptr, nullptr);
+  glfwSetCharCallback(win_main, nullptr);
 }
 
 
@@ -172,10 +153,10 @@ void wglfw::cursor_hide(void)
 ///
 void wglfw::cursor_restore(void)
 {
-  glfwSetInputMode(win_ptr, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+  glfwSetInputMode(win_main, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
   // разрешить ввод символов
-  glfwSetCharCallback(win_ptr, callback_char);
+  glfwSetCharCallback(win_main, callback_char);
 }
 
 
@@ -186,7 +167,7 @@ void wglfw::cursor_restore(void)
 ///
 void wglfw::set_cursor_pos(double x, double y)
 {
-  glfwSetCursorPos(win_ptr, x, y);
+  glfwSetCursorPos(win_main, x, y);
 }
 
 
@@ -197,7 +178,7 @@ void wglfw::set_cursor_pos(double x, double y)
 ///
 void wglfw::get_frame_buffer_size(int* width, int* height)
 {
-  glfwGetFramebufferSize(win_ptr, width, height);
+  glfwGetFramebufferSize(win_main, width, height);
 }
 
 
@@ -207,7 +188,7 @@ void wglfw::get_frame_buffer_size(int* width, int* height)
 ///
 GLFWwindow* wglfw::get_id(void) const
 {
-  return win_ptr;
+  return win_main;
 }
 
 
