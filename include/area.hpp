@@ -19,8 +19,8 @@
 namespace tr
 {
 
-extern void db_control(std::mutex& m, trgl *OpenGLContext,
-                       const std::shared_ptr<glm::vec3>& CameraLocation, GLuint id, GLsizeiptr size);
+extern void db_control(std::mutex& m, std::shared_ptr<trgl> OpenGLContext,
+                       std::shared_ptr<glm::vec3> CameraLocation, GLuint id, GLsizeiptr size);
 struct vbo_map
 {
   int x, y, z;
@@ -46,7 +46,7 @@ class area
     area& operator=(area&&) = delete;
 
     bool recalc_borders(void);
-    void load(const std::shared_ptr<glm::vec3>& CameraLocation);
+    void load(std::shared_ptr<glm::vec3> CameraLocation);
 
   private:
     std::mutex& rVboAccess;

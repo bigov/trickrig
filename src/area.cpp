@@ -19,13 +19,13 @@ namespace tr
 ///
 /// \details Создание отдельного потока обмена данными с базой
 ///
-void db_control(std::mutex& m, trgl* OpenGLContext,
-                const std::shared_ptr<glm::vec3>& CameraLocation,
+void db_control(std::mutex& m, std::shared_ptr<trgl> OpenGLContext,
+                std::shared_ptr<glm::vec3> CameraLocation,
                 GLuint vbo_id, GLsizeiptr vbo_size)
 {
   OpenGLContext->thread_enable();
   area Area {m, vbo_id, vbo_size};
-  Area.load(CameraLocation);
+  Area.load(std::move(CameraLocation));
   m.lock();   // На время загрузки сцены из БД заблокировать основной поток
   glFinish(); // синхронизация изменений между потоками
   m.unlock();
@@ -69,7 +69,7 @@ area::area (std::mutex& m, GLuint VBO_id, GLsizeiptr VBO_size): rVboAccess(m)
 /// \param CameraLocation
 /// \details Загрузка пространства вокруг точки расположения камеры
 ///
-void area::load(const std::shared_ptr<glm::vec3>& CameraLocation)
+void area::load(std::shared_ptr<glm::vec3> CameraLocation)
 {
   ViewFrom = CameraLocation;
 
