@@ -12,7 +12,7 @@
 #include "vox.hpp"
 #include "framebuf.hpp"
 #include "glsl.hpp"
-#include "wglfw.hpp"
+#include "trgl.hpp"
 
 namespace tr {
 

@@ -13,7 +13,7 @@ gui::gui(void)
   title += " (debug mode)";
 #endif
 
-  GLContext = std::make_shared<wglfw>(title.c_str());
+  GLContext = std::make_shared<trgl>(title.c_str());
   layout_set(cfg::WinLayout);
   GLContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
   Space = std::make_unique<space>(GLContext);

@@ -2,7 +2,7 @@
 #define GUI_HPP
 
 #include "main.hpp"
-#include "wglfw.hpp"
+#include "trgl.hpp"
 #include "config.hpp"
 #include "space.hpp"
 
@@ -65,7 +65,7 @@ class gui: public interface_gl_context
         std::string Folder;
         std::string Name;
     };
-    std::shared_ptr<wglfw> GLContext = nullptr;
+    std::shared_ptr<trgl> GLContext = nullptr;
     std::unique_ptr<glsl> Program2d = nullptr;           // Шейдерная программа GUI
     glm::vec3 Cursor3D = { 200.f, 200.f, 0.f };          // положение и размер прицела
     const uint BUTTTON_WIDTH = 120;                      // ширина кнопки GUI

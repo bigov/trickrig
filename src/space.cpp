@@ -19,7 +19,7 @@ namespace tr
 /// \brief space::space
 /// \details Формирование 3D пространства
 ///
-space::space(std::shared_ptr<wglfw>& pm): MainWindow(pm)
+space::space(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
 {
   render_indices.store(-1);
   ViewFrom = std::make_shared<glm::vec3> ();
@@ -64,7 +64,7 @@ space::space(std::shared_ptr<wglfw>& pm): MainWindow(pm)
 
   // настройка рендер-буфера
   GLsizei width, height;
-  MainWindow->get_frame_buffer_size(&width, &height);
+  OGLContext->get_frame_buffer_size(&width, &height);
 
   ImHUD.resize( static_cast<uint>(width), static_cast<uint>(height));
 
@@ -74,7 +74,7 @@ space::space(std::shared_ptr<wglfw>& pm): MainWindow(pm)
   // загрузка текстур
   load_textures();
 
-  MainWindow->add_size_observer(*this); //пересчет при изменении размера
+  OGLContext->add_size_observer(*this); //пересчет при изменении размера
 }
 
 
@@ -94,20 +94,20 @@ void space::enable(void)
 {
   // Настройка матрицы проекции
   GLsizei width, height;
-  MainWindow->get_frame_buffer_size(&width, &height);
+  OGLContext->get_frame_buffer_size(&width, &height);
   auto aspect = static_cast<float>(width) / static_cast<float>(height);
   MatProjection = glm::perspective(fovy, aspect, zNear, zFar);
 
   xpos = width/2;  // координаты центра экрана
   ypos = height/2;
 
-  MainWindow->cursor_hide();  // выключить отображение курсора мыши в окне
-  MainWindow->set_cursor_pos(xpos, ypos);
+  OGLContext->cursor_hide();  // выключить отображение курсора мыши в окне
+  OGLContext->set_cursor_pos(xpos, ypos);
 
   if(render_indices == -1) init_buffers();   // Создать VAO, VBO и поток обмена данными
 
-  MainWindow->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
-  MainWindow->set_button_observer(*this);    //  -- кнопки мыши
+  OGLContext->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
+  OGLContext->set_button_observer(*this);    //  -- кнопки мыши
 
   on_front = 0; // клавиша вперед
   on_back  = 0; // клавиша назад
@@ -155,7 +155,7 @@ void space::init_buffers(void)
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get()); // и заполнить данными.
   glBindVertexArray(0);
 
-  std::thread A(db_control, std::ref(VboAccess), MainWindow, ViewFrom, VBOdata.get_id(), VBOdata.get_size());
+  std::thread A(db_control, std::ref(VboAccess), OGLContext.get(), ViewFrom, VBOdata.get_id(), VBOdata.get_size());
   A.detach();
 
   while (render_indices < indices_per_side) // Подождать пока хоть одна сторона загрузится
@@ -343,7 +343,7 @@ void space::cursor_event(double x, double y)
   cursor_dy += static_cast<float>(y - ypos);
 
   // После получения значения счетчика восстановить позицию курсора
-  MainWindow->set_cursor_pos(xpos, ypos);
+  OGLContext->set_cursor_pos(xpos, ypos);
 }
 
 

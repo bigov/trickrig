@@ -19,7 +19,7 @@ namespace tr
   class space: public interface_gl_context
   {
     public:
-      space(std::shared_ptr<wglfw>& OpenGLContext);
+      space(std::shared_ptr<trgl>& OpenGLContext);
       ~space(void);
 
       void enable(void);
@@ -38,7 +38,7 @@ namespace tr
       space(const space &);
       space operator=(const space &);
 
-      std::shared_ptr<wglfw>& MainWindow;      // основное окно приложения
+      std::shared_ptr<trgl>& OGLContext;      // основное окно приложения
       std::unique_ptr<glsl> Program3d = nullptr;
 
       img ImHUD { 0, 0 };      // Текстура HUD окна приложения
