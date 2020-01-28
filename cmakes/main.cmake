@@ -7,8 +7,13 @@ include( "${trCMAKES}/params.cmake" )
 #include( "${trCMAKES}/server.cmake" )
 
 # подключение исходных файлов библиотек
+include_directories( "${trEXT_LIBS_DIR}" )
+
+# glad             [где CMakefile для glad] [ где бинарник ]
+add_subdirectory( "${trEXT_LIBS_DIR}/glad" "${SUFFIX}/glad" EXCLUDE_FROM_ALL )
+
 #include( "${trCMAKES}/extlibs/glcore33.cmake" )
-include( "${trCMAKES}/extlibs/glad.cmake" )
+#include( "${trCMAKES}/extlibs/glad.cmake" )
 
 # где искать заголовки
 include_directories( ${trINCLUDE_DIRS} )

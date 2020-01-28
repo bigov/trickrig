@@ -39,14 +39,14 @@ wglfw::wglfw(const char* title)
 
   win_main = glfwCreateWindow(1, 1, title, nullptr, nullptr);
   if (nullptr == win_main) ERR("Creating Window fail.");
+  win_subt = glfwCreateWindow(1, 1, "", nullptr, win_main);
+  if (nullptr == win_subt) ERR("Creating subt-window fail.");
   glfwMakeContextCurrent(win_main);
 
   if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
   {
     if(!gladLoadGL()) ERR("Critical error: can't load GLAD.");
   }
-
-  win_subt = glfwCreateWindow(1, 1, "", nullptr, win_main);
 }
 
 
