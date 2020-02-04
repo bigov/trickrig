@@ -187,8 +187,7 @@ void area::redraw_borders_z(int z_add, int z_del)
 ///
 void area::load(int x, int z)
 {
-  // Загрузка из БД
-  auto VoxData = cfg::DataBase.load_vox_data(x, z);
+  auto VoxData = cfg::DataBase.load_vox_data(x, z);    // данные в формате vector<uchar>
   if(VoxData.empty()) return;
 
   GLsizeiptr vbo_addr;

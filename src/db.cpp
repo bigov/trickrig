@@ -263,7 +263,8 @@ void out_char_as_hex (const std::vector<u_int8_t>& Vui, int n = 8)
 /// \brief db::vox_data_delete
 /// \param rm_y
 /// \param VoxData
-/// \details Удаляет блок данных вокса, расположнного на координате rm_y
+/// \details Удаляет из массива часть данных - блок вокса,
+///   расположенного на координате rm_y
 ///
 void db::_data_erase(int rm_y, std::vector<uchar>& VoxData)
 {
@@ -271,16 +272,13 @@ void db::_data_erase(int rm_y, std::vector<uchar>& VoxData)
   size_t offset = 0;        // Смещение блока данных вокса в наборе из группы воксов
   size_t vox_data_size = 0; // Размер блока данных текущего вокса
 
-  bool check = (offset + sizeof_y + 1) < VoxData.size();
-  while (check)
+  while( (offset + sizeof_y + 1) < VoxData.size() )
   {
     memcpy(&y, VoxData.data() + offset, sizeof_y);            // Координата Y
     std::bitset<6> m(VoxData[sizeof_y + offset]);             // Маcка видимых сторон
     vox_data_size = m.count()*bytes_per_side + sizeof_y + 1;  // Размер блока
     if(y == rm_y) VoxData.erase(VoxData.begin()+offset, VoxData.begin()+offset+vox_data_size);
-    else offset += vox_data_size;                               // Проверить следующий блок
-    // Так как массив может изменяться, то проверяем его размер каждый цикл
-    check = (offset + sizeof_y + 1) < VoxData.size();
+    else offset += vox_data_size;                             // Проверить следующий блок
   }
   return;
 }
