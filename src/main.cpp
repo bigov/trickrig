@@ -16,8 +16,8 @@ namespace tr
 {
   // Инициализация глобальных объектов
   std::atomic<int> render_indices = 0;
-  std::mutex mutex_viewfrom {}; // Доступ к положению камеры
-  std::mutex VboAccess {};      // Доступ к буферу вершин
+  std::mutex view_mtx {}; // Доступ к положению камеры
+  std::mutex vbo_mtx {};      // Доступ к буферу вершин
 }
 
 

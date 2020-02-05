@@ -236,9 +236,9 @@ void space::calc_position(void)
   // Вектор смещения камеры за время прошедшее между кадрами
   auto StepFrame = glm::vec3(fb *_ca + rl*sinf(look_dir[0] - Pi), ud,  fb*_sa + rl*_ca);
 
-  mutex_viewfrom.lock();
+  view_mtx.lock();
   *ViewFrom.get() += StepFrame;
-  mutex_viewfrom.unlock();
+  view_mtx.unlock();
 
   ViewTo = *ViewFrom.get() + glm::vec3(_ca*_ct, sinf(look_dir[1]), _sa*_ct); //Направление взгляда
 
@@ -286,7 +286,7 @@ void space::render(void)
   calc_render_time();
   calc_position();
 
-  VboAccess.lock();
+  vbo_mtx.lock();
   RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
@@ -306,7 +306,7 @@ void space::render(void)
   Program3d->unuse();
   RenderBuffer->unbind();
   glBindVertexArray(0);
-  VboAccess.unlock();
+  vbo_mtx.unlock();
 
   hud_draw();
   calc_hlight_quad();
@@ -467,9 +467,9 @@ void space::calc_hlight_quad(void)
   // котором расположен данный пиксель.
 
   uint vertex_id = 0;    // переменная для записи ID вершины в VBO
-  VboAccess.lock();
+  vbo_mtx.lock();
   RenderBuffer->read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
-  VboAccess.unlock();
+  vbo_mtx.unlock();
 
   // Так как вершины располагаются группами по 4 шт. (обход через 6 индексов),
   // то можно, по номеру любой вершины из группы, используя остаток от деления
@@ -533,13 +533,13 @@ void space::hud_draw(void)
   std::sprintf(line, "%.4i", FPS);
   textstring_place(Font15n, line, Fps, 2, 1);
 
-  VboAccess.lock();
+  vbo_mtx.lock();
   glTexSubImage2D(GL_TEXTURE_2D, 0, 2, static_cast<GLint>(ImHUD.h_summ - Fps.h_summ - 2),
                 static_cast<GLsizei>(Fps.w_summ),  // width
                 static_cast<GLsizei>(Fps.h_summ),  // height
                 GL_RGBA, GL_UNSIGNED_BYTE,         // mode
                 Fps.uchar_t());                      // data
-  VboAccess.unlock();
+  vbo_mtx.unlock();
 
   // Координаты в пространстве
   uint c_length = 60;               // количество символов в надписи
@@ -549,13 +549,13 @@ void space::hud_draw(void)
                   ViewFrom->x, ViewFrom->y, ViewFrom->z, look_dir[0], look_dir[1]);
   textstring_place(Font15n, ln, Coord, 2, 1);
 
-  VboAccess.lock();
+  vbo_mtx.lock();
   glTexSubImage2D(GL_TEXTURE_2D, 0, 2, 2,            // top, left
                 static_cast<GLsizei>(Coord.w_summ),  // width
                 static_cast<GLsizei>(Coord.h_summ),  // height
                 GL_RGBA, GL_UNSIGNED_BYTE,           // mode
                 Coord.uchar_t());                      // data
-  VboAccess.unlock();
+  vbo_mtx.unlock();
 }
 
 } // namespace tr

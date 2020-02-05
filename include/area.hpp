@@ -46,8 +46,8 @@ class area
     area(area&&) = delete;
     area& operator=(area&&) = delete;
 
+    void init(std::shared_ptr<glm::vec3> CameraLocation);
     bool recalc_borders(void);
-    void load(std::shared_ptr<glm::vec3> CameraLocation);
 
   private:
     std::shared_ptr<glm::vec3> ViewFrom = nullptr;

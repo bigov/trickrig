@@ -730,16 +730,16 @@ void gui::screen_render(void)
   glBindVertexArray(vao_quad_id);
   glDisable(GL_DEPTH_TEST);
   Program2d->use();
-  VboAccess.lock();
+  vbo_mtx.lock();
   Program2d->set_uniform("Cursor", Cursor3D);
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-  VboAccess.unlock();
+  vbo_mtx.unlock();
   Program2d->unuse();
 
   // переключить буфер рендера
-  VboAccess.lock();
+  vbo_mtx.lock();
   GLContext->swap_buffers();
-  VboAccess.unlock();
+  vbo_mtx.unlock();
 
 #ifndef NDEBUG
   if(glGetError() != GL_NO_ERROR) info("ERROR in the function 'gui::render_screen'.");

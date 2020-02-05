@@ -57,8 +57,8 @@ namespace tr {
 
 extern std::atomic<GLsizei> render_indices;
 
-extern std::mutex mutex_viewfrom; // Доступ к положению камеры
-extern std::mutex VboAccess;      // Доступ к буферу вершин
+extern std::mutex view_mtx; // Доступ к положению камеры
+extern std::mutex vbo_mtx;  // Доступ к буферу вершин
 
 using uchar = unsigned char;
 using uint  = unsigned int;
