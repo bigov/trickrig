@@ -19,16 +19,16 @@ namespace tr
 ///
 /// \details Создание отдельного потока обмена данными с базой
 ///
-void db_control(std::mutex& m, std::shared_ptr<trgl> OpenGLContext,
+void db_control(std::shared_ptr<trgl> OpenGLContext,
                 std::shared_ptr<glm::vec3> CameraLocation,
                 GLuint vbo_id, GLsizeiptr vbo_size)
 {
   OpenGLContext->thread_enable();
-  area Area {m, vbo_id, vbo_size};
+  area Area {vbo_id, vbo_size};
   Area.load(std::move(CameraLocation));
-  m.lock();   // На время загрузки сцены из БД заблокировать основной поток
+  VboAccess.lock();   // На время загрузки сцены из БД заблокировать основной поток
   glFinish(); // синхронизация изменений между потоками
-  m.unlock();
+  VboAccess.unlock();
 
   while (render_indices >= 0) {
     if(!Area.recalc_borders())
@@ -37,9 +37,9 @@ void db_control(std::mutex& m, std::shared_ptr<trgl> OpenGLContext,
     }
     else
     {
-      m.lock();
+      VboAccess.lock();
       glFinish(); // синхронизация изменений между потоками
-      m.unlock();
+      VboAccess.unlock();
     }
   }
 }
@@ -50,7 +50,7 @@ void db_control(std::mutex& m, std::shared_ptr<trgl> OpenGLContext,
 /// \param count - число вокселей от камеры (или внутренней границы)
 /// до внешней границы области
 ///
-area::area (std::mutex& m, GLuint VBO_id, GLsizeiptr VBO_size): rVboAccess(m)
+area::area (GLuint VBO_id, GLsizeiptr VBO_size)
 {
   side_len = size_v4;
   f_side_len = size_v4 * 1.f;
@@ -207,9 +207,9 @@ void area::load(int x, int z)
     while (n > 0)                                       // Все стороны передать в VBO.
     {
       n--;
-      rVboAccess.lock();
+      VboAccess.lock();
       vbo_addr = VboCtrl->append(data, bytes_per_side); // Добавить данные стороны в VBO
-      rVboAccess.unlock();
+      VboAccess.unlock();
       VboMap[vbo_addr/bytes_per_side] = {x, y, z, n};   // Запомнить положение блока данных стороны
       render_indices.fetch_add(indices_per_side);       // Увеличить число точек рендера
       data += bytes_per_side;                           // Переключить указатель на начало следующей стороны
@@ -237,9 +237,9 @@ void area::truncate(int x, int z)
     if((VboMap[id].x == x) and (VboMap[id].z == z)) // Данные вокса есть в GPU
     {
       dest = id * bytes_per_side;                     // адрес удаляемого блока данных
-      rVboAccess.lock();
+      VboAccess.lock();
       moved_from = VboCtrl->remove(dest, bytes_per_side); // адрес хвоста VBO (данными отсюда
-      rVboAccess.unlock();                                // перезаписываются данные по адресу "dest")
+      VboAccess.unlock();                                // перезаписываются данные по адресу "dest")
       // Если c адреса "free" на "dest" данные были перенесены, то обновить координты Origin
       if (moved_from != dest) VboMap[id] = VboMap[moved_from/bytes_per_side];
       // Если free == dest, то удаляемый блок данных был в конце VBO и просто "отбрасывается"

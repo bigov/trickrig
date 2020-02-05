@@ -155,8 +155,8 @@ void space::init_buffers(void)
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get()); // и заполнить данными.
   glBindVertexArray(0);
 
-  //std::thread A(db_control, std::ref(VboAccess), OGLContext.get(), ViewFrom, VBOdata.get_id(), VBOdata.get_size());
-  std::thread A(db_control, std::ref(VboAccess), OGLContext, ViewFrom, VBOdata.get_id(), VBOdata.get_size());
+  //std::thread A(db_control, OGLContext.get(), ViewFrom, VBOdata.get_id(), VBOdata.get_size());
+  std::thread A(db_control, OGLContext, ViewFrom, VBOdata.get_id(), VBOdata.get_size());
   A.detach();
 
   while (render_indices < indices_per_side) // Подождать пока хоть одна сторона загрузится

@@ -19,8 +19,9 @@
 namespace tr
 {
 
-extern void db_control(std::mutex& m, std::shared_ptr<trgl> OpenGLContext,
-                       std::shared_ptr<glm::vec3> CameraLocation, GLuint id, GLsizeiptr size);
+extern void db_control( std::shared_ptr<trgl> OpenGLContext,
+                        std::shared_ptr<glm::vec3> CameraLocation,
+                        GLuint id, GLsizeiptr size );
 struct vbo_map
 {
   int x, y, z;
@@ -36,7 +37,7 @@ class area
 {
   public:
     area(void) = delete;
-    area(std::mutex& m, GLuint vbo_id, GLsizeiptr vbo_size);
+    area(GLuint vbo_id, GLsizeiptr vbo_size);
     ~area(void) {}
 
     // Запретить копирование и перенос экземпляров класса
@@ -49,9 +50,8 @@ class area
     void load(std::shared_ptr<glm::vec3> CameraLocation);
 
   private:
-    std::mutex& rVboAccess;
     std::shared_ptr<glm::vec3> ViewFrom = nullptr;
-    std::unique_ptr<vbo_ctrl> VboCtrl = nullptr;
+    std::unique_ptr<vbo_ctrl> VboCtrl = nullptr;   // Управление содержимым VBO
 
     // В контрольный массив (VboMap) записываются координаты Origin воксов для видимых сторон,
     // переданных в VBO в порядке их размещения. Соответственно, размер массива должен
