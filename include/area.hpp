@@ -9,8 +9,7 @@
 #ifndef AREA_HPP
 #define AREA_HPP
 
-#include <queue>
-//#include "voxesdb.hpp"
+//#include <queue>
 #include "vox.hpp"
 #include "glsl.hpp"
 #include "vbo.hpp"

@@ -203,7 +203,7 @@ std::string cfg::map_key(MAP_INIT D)
   if(MapParams[D].empty())
   {
     MapParams[D] = std::string("0");
-    info("empty call with DB key=" + std::to_string(D) + "\n");
+    std::cerr << "empty call with DB key=" << std::to_string(D) << "\n";
   }
 #endif
   return MapParams[D];
@@ -219,7 +219,7 @@ std::string cfg::app_key(APP_INIT D)
   if(AppParams[D].empty())
   {
     AppParams[D] = std::string("0");
-    info("empty call with DB key=" + std::to_string(D) + "\n");
+    std::cerr << "empty call with DB key=" << std::to_string(D) << "\n";
   }
 #endif
 

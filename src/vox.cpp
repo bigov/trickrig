@@ -246,7 +246,7 @@ void vox::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
     if(vbo_addr[side_id] == old_n)
     {
       #ifndef NDEBUG
-        if(!visibility.test(side_id)) info("voxel::offset_replace for unvisible side.");
+        if(!visibility.test(side_id)) std::cerr << "vox::offset_replace for unvisible side.";
       #endif
       vbo_addr[side_id] = new_n;
       return;
@@ -254,7 +254,7 @@ void vox::offset_replace(GLsizeiptr old_n, GLsizeiptr new_n)
   }
 
 #ifndef NDEBUG
-  info("voxel::offset_replace ERR - not found offset " + std::to_string(new_n) + "\n");
+  std::cerr << "vox::offset_replace ERR - not found offset " << std::to_string(new_n) << "\n";
 #endif
 }
 

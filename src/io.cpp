@@ -414,10 +414,4 @@ bool operator== (const px &A, const px &B)
     return data;
   }
 
-  //## Вывод текстовой информации
-  void info(const std::string & info)
-  {
-    std::cout << info << std::endl;
-  }
-
 } //namespace tr

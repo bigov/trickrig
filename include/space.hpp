@@ -48,21 +48,21 @@ namespace tr
       GLuint vao_id = 0;                   // VAO ID
 
       bool ready = false;
-      float cursor_dx = 0.f;    // Cмещение мыши в активном окне между кадрами
-      float cursor_dy = 0.f;    // в режиме 3D (режим прицела) при скрытом курсоре.
-      double xpos = 0.0;        // позиция указателя относительно левой границы
-      double ypos = 0.0;        // позиция указателя относительно верхней границы
+      float cursor_dx = 0.f; // Cмещение мыши в активном окне между кадрами
+      float cursor_dy = 0.f; // в режиме 3D (режим прицела) при скрытом курсоре.
+      double xpos = 0.0;     // позиция указателя относительно левой границы
+      double ypos = 0.0;     // позиция указателя относительно верхней границы
 
-      int fb_way = 0;    // 3D движение front/back
-      int rl_way = 0;    // -- right/left
-      int ud_way = 0;    // -- up/down
+      int fb_way = 0;        // 3D движение front/back
+      int rl_way = 0;        // -- right/left
+      int ud_way = 0;        // -- up/down
 
-      int on_front = 0;  // нажата клавиша вперед
-      int on_back  = 0;  // нажата клавиша назад
-      int on_right = 0;  // нажата клавиша вправо
-      int on_left  = 0;  // нажата клавиша влево
-      int on_up    = 0;  // нажата клавиша вверх
-      int on_down  = 0;  // нажата клавиша вниз
+      int on_front = 0;      // нажата клавиша вперед
+      int on_back  = 0;      // нажата клавиша назад
+      int on_right = 0;      // нажата клавиша вправо
+      int on_left  = 0;      // нажата клавиша влево
+      int on_up    = 0;      // нажата клавиша вверх
+      int on_down  = 0;      // нажата клавиша вниз
 
       int mouse = -1;
       int key = -1;

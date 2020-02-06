@@ -84,7 +84,6 @@ namespace tr
   };
 
   extern std::unique_ptr<char[]> read_chars_file(const std::string &FileName);
-  extern void info(const std::string &);
   extern int get_msec(void);   // число миллисекунд от начала суток.
   extern int random_int(void);
   extern std::list<std::string> dirs_list(const std::string &path);

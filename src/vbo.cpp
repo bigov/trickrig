@@ -259,7 +259,7 @@ void vbo_ext::data_get(GLintptr offset, GLsizeiptr sz, GLvoid* dst)
   glUnmapBuffer(GL_COPY_READ_BUFFER);
   glBindBuffer(GL_COPY_READ_BUFFER, 0);
 
-  if(glGetError() != GL_NO_ERROR) info("err in vbo_ext::data_get");
+  if(glGetError() != GL_NO_ERROR) std::cerr << "Error in vbo_ext::data_get";
 }
 
 

@@ -10,7 +10,28 @@
 //
 //===========================================================================
 
+#include <iostream>
+#include <fstream>
+#include <string>
 #include "gui.hpp"
+
+std::ofstream tr_err("tr_errs.txt");             // errors log-file
+std::ofstream tr_log("tr_logs.txt");             // inform log-file
+std::streambuf* sys_cerrbuf = std::cerr.rdbuf(); // save System std::cerr
+std::streambuf* sys_clogbuf = std::clog.rdbuf(); // save System std::clog
+
+void redirect_streambuf(void)
+{
+  std::cerr.rdbuf(tr_err.rdbuf()); // redirect std::cerr to err.txt
+  std::clog.rdbuf(tr_log.rdbuf()); // redirect std::clog to log.txt
+}
+
+void restore_streambuf(void)
+{
+  std::cerr.rdbuf(sys_cerrbuf);    // restore System std::cerr
+  std::clog.rdbuf(sys_clogbuf);    // restore System std::clog
+}
+
 
 namespace tr
 {
@@ -27,6 +48,8 @@ namespace tr
 ///
 int main(int, char* argv[])
 {
+  redirect_streambuf();
+  std::clog << "Start TrickRig" << std::endl;
   using namespace tr;
   try
   {
@@ -36,14 +59,16 @@ int main(int, char* argv[])
   }
   catch(std::exception & e)
   {
-    info(e.what());
+    std::cerr << e.what();
     return EXIT_FAILURE;
   }
   catch(...)
   {
-    info("FAILURE: undefined exception.");
+    std::cerr << "FAILURE: undefined exception.";
     return EXIT_FAILURE;
   }
 
+  std::clog << "TrickRig normal completed." << std::endl;
+  restore_streambuf();
   return EXIT_SUCCESS;
 }

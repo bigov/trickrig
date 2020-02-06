@@ -7,13 +7,11 @@ if( "_${CMAKE_BUILD_TYPE}" MATCHES "^_Rel" )
   OPTION( WITH_DEBUG_MODE "Build with debug mode" OFF )
   SET( CMAKE_BUILD_TYPE "Release")
   SET( SUFFIX "rel")
-  SET( WIN_GUI "-mwindows -Wl,-subsystem,windows" )
   MESSAGE( WARNING "\n--- CMAKE_BUILD_TYPE: Release ---")
 else() # Иначе собирается "Debug"
   OPTION( WITH_DEBUG_MODE "Build with debug mode" ON )
   SET( CMAKE_BUILD_TYPE "Debug")
   SET( SUFFIX "dbg")
-  SET( WIN_GUI "" )
   MESSAGE( WARNING "\n--- CMAKE_BUILD_TYPE: Debug ---\n")
 endif()
 
@@ -42,7 +40,7 @@ if( ${MINGW} )
 endif()
 
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
-  SET( CXX_FLAGS "${CXX_FLAGS} ${WIN_GUI}" )
+  SET( CXX_FLAGS "${CXX_FLAGS} -mwindows -Wl,-subsystem,windows" )
 endif()
 
 SET( CMAKE_CXX_FLAGS "${CXX_FLAGS}" )

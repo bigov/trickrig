@@ -13,6 +13,8 @@ gui::gui(void)
   title += " (debug mode)";
 #endif
 
+  std::clog << "Current version: " << title << std::endl;
+
   GLContext = std::make_shared<trgl>(title.c_str());
   layout_set(cfg::WinLayout);
   GLContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
@@ -293,7 +295,7 @@ void gui::remove_map(void)
     catch(...)
     {
 #ifndef NDEBUG
-      info("Can't remove the map: " + map_dir + "\n" );
+      std::cerr << "Can't remove the map: " + map_dir + "\n";
 #endif
     }
   }
@@ -742,7 +744,7 @@ void gui::screen_render(void)
   vbo_mtx.unlock();
 
 #ifndef NDEBUG
-  if(glGetError() != GL_NO_ERROR) info("ERROR in the function 'gui::render_screen'.");
+  if(glGetError() != GL_NO_ERROR) std::cerr << "ERROR in the function 'gui::render_screen'.";
 #endif
 
 }
@@ -830,7 +832,7 @@ void gui::close_event(void)
 ///
 void gui::error_event(const char* message)
 {
-  info(std::string(message));
+  std::cerr << message;
 }
 
 

@@ -22,9 +22,7 @@ public:
     virtual void cursor_event(double, double) {}
     virtual void close_event(void) {}
     virtual void focus_lost_event(void) {}
-
 };
 
 }
-
 #endif

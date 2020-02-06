@@ -259,7 +259,7 @@ namespace tr {
     while ((pStmt = sqlite3_next_stmt(db, nullptr)) != nullptr) { sqlite3_finalize(pStmt); }
 
     #ifndef NDEBUG
-    for(auto &msg: ErrorsList) tr::info(msg);
+    for(auto &msg: ErrorsList) std::cerr << msg << std::endl;
     #endif
 
     return Rows;
@@ -314,7 +314,7 @@ namespace tr {
     while ((pStmt = sqlite3_next_stmt(db, nullptr)) != nullptr) { sqlite3_finalize(pStmt); }
 
     #ifndef NDEBUG
-    for(auto &msg: ErrorsList) info(msg);
+    for(auto &msg: ErrorsList) std::cerr << msg << std::endl;
     #endif
   }
 
@@ -363,7 +363,7 @@ namespace tr {
     sqlite3_finalize(pStmt);
 
     #ifndef NDEBUG
-    for(auto &msg: ErrorsList) tr::info(msg);
+    for(auto &msg: ErrorsList) std::cerr << msg << std::endl;
     #endif
   }
 
@@ -482,7 +482,7 @@ namespace tr {
     }
 
 #ifndef NDEBUG
-  for(auto& msg: ErrorsList) info(msg);
+  for(auto& msg: ErrorsList) std::cerr << msg << std::endl;
 #endif
   }
 
@@ -496,7 +496,7 @@ namespace tr {
     assert(is_open);
 
     #ifndef NDEBUG
-    if (sqlite3_close(db) == SQLITE_BUSY) info("SQLite.close: fail");
+    if (sqlite3_close(db) == SQLITE_BUSY) std::cerr << "SQLite.close: fail" << std::endl;
     #else
     sqlite3_close(db);
     #endif

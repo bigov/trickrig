@@ -428,7 +428,7 @@ void db::save_window_layout(const layout& L)
 void db::init_map_config(const std::string &FilePName)
 {
 #ifndef NDEBUG
-  info("Init new database file.\n");
+  std::clog << "Init new database file.\n";
 #endif
 
   std::string Q = "CREATE TABLE IF NOT EXISTS init ( "
@@ -445,7 +445,7 @@ void db::init_map_config(const std::string &FilePName)
   if(!SqlDb.open(FilePName)) ERR("Can't create dbfile: " + FilePName);
   SqlDb.exec(Q.c_str());
 #ifndef NDEBUG
-  for(auto &msg: SqlDb.ErrorsList) info(msg);
+  for(auto &msg: SqlDb.ErrorsList) std::clog << msg;
 #endif
   SqlDb.close();
 }
@@ -459,7 +459,7 @@ void db::init_map_config(const std::string &FilePName)
 void db::init_app_config(const std::string &FilePName)
 {
 #ifndef NDEBUG
-  info("Init new database file.\n");
+  std::clog << "Init new database file.\n";
 #endif
 
   std::string Q = "CREATE TABLE IF NOT EXISTS init ( "
@@ -492,7 +492,7 @@ void db::init_app_config(const std::string &FilePName)
   if(!SqlDb.open(FilePName)) ERR("Can't create dbfile: " + FilePName);
   SqlDb.exec(Q.c_str());
 #ifndef NDEBUG
-  for(auto &msg: SqlDb.ErrorsList) info(msg);
+  for(auto &msg: SqlDb.ErrorsList) std::clog << msg;
 #endif
   SqlDb.close();
 }
