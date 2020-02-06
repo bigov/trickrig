@@ -84,6 +84,7 @@ space::space(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
 space::~space()
 {
   render_indices.store(-1); // Индикатор для остановки потока загрузки в рендер из БД
+  data_loader->join();      // Ожидание завершения потока
 }
 
 
@@ -155,9 +156,8 @@ void space::init_buffers(void)
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get()); // и заполнить данными.
   glBindVertexArray(0);
 
-  //std::thread A(db_control, OGLContext.get(), ViewFrom, VBOdata.get_id(), VBOdata.get_size());
-  std::thread A(db_control, OGLContext, ViewFrom, VBOdata.get_id(), VBOdata.get_size());
-  A.detach();
+  // Поток обмена данными с базой
+  data_loader = std::make_unique<std::thread>(db_control, OGLContext, ViewFrom, VBOdata.get_id(), VBOdata.get_size());
 
   while (render_indices < indices_per_side) // Подождать пока хоть одна сторона загрузится
     std::this_thread::sleep_for(std::chrono::milliseconds(1));

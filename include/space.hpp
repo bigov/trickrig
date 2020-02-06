@@ -35,6 +35,7 @@ namespace tr
       int FPS = 500;     // частота кадров (для коррекции скорости движения)
 
     private:
+      std::unique_ptr<std::thread> data_loader = nullptr;
       space(const space &);
       space operator=(const space &);
 

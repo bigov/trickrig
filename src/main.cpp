@@ -15,30 +15,13 @@
 #include <string>
 #include "gui.hpp"
 
-std::ofstream tr_err("tr_errs.txt");             // errors log-file
-std::ofstream tr_log("tr_logs.txt");             // inform log-file
-std::streambuf* sys_cerrbuf = std::cerr.rdbuf(); // save System std::cerr
-std::streambuf* sys_clogbuf = std::clog.rdbuf(); // save System std::clog
-
-void redirect_streambuf(void)
-{
-  std::cerr.rdbuf(tr_err.rdbuf()); // redirect std::cerr to err.txt
-  std::clog.rdbuf(tr_log.rdbuf()); // redirect std::clog to log.txt
-}
-
-void restore_streambuf(void)
-{
-  std::cerr.rdbuf(sys_cerrbuf);    // restore System std::cerr
-  std::clog.rdbuf(sys_clogbuf);    // restore System std::clog
-}
-
-
 namespace tr
 {
   // Инициализация глобальных объектов
   std::atomic<int> render_indices = 0;
-  std::mutex view_mtx {}; // Доступ к положению камеры
-  std::mutex vbo_mtx {};      // Доступ к буферу вершин
+  std::mutex view_mtx {};  // Доступ к положению камеры
+  std::mutex vbo_mtx {};   // Доступ к буферу вершин
+  std::mutex log_mtx {};   // Журналирование
 }
 
 
@@ -48,8 +31,16 @@ namespace tr
 ///
 int main(int, char* argv[])
 {
-  redirect_streambuf();
+  std::streambuf* _cerr = std::cerr.rdbuf(); // Save System std::cerr
+  std::streambuf* _clog = std::clog.rdbuf(); // Save System std::clog
+
+  std::ofstream tr_err_file("tr_errs.txt");  // Errors log-file
+  std::cerr.rdbuf(tr_err_file.rdbuf());      // Redirect std::cerr in file
+  std::ofstream tr_log_file("tr_logs.txt");  // Inform log-file
+  std::clog.rdbuf(tr_log_file.rdbuf());      // Redirect std::clog in file
+
   std::clog << "Start TrickRig" << std::endl;
+
   using namespace tr;
   try
   {
@@ -64,11 +55,18 @@ int main(int, char* argv[])
   }
   catch(...)
   {
-    std::cerr << "FAILURE: undefined exception.";
+    std::cerr << "FAILURE: undefined exception";
     return EXIT_FAILURE;
   }
 
-  std::clog << "TrickRig normal completed." << std::endl;
-  restore_streambuf();
+  log_mtx.lock();
+  std::clog << "TrickRig exit success" << std::endl;
+  log_mtx.unlock();
+
+  //std::this_thread::sleep_for(std::chrono::seconds(2));
+
+  std::cerr.rdbuf(_cerr);  // restore System std::cerr
+  std::clog.rdbuf(_clog);  // restore System std::clog
+
   return EXIT_SUCCESS;
 }

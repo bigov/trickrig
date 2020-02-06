@@ -23,6 +23,10 @@ void db_control(std::shared_ptr<trgl> OpenGLContext,
                 std::shared_ptr<glm::vec3> CameraLocation,
                 GLuint vbo_id, GLsizeiptr vbo_size)
 {
+  log_mtx.lock();
+  std::clog << "The db-thread is started" << std::endl;
+  log_mtx.unlock();
+
   OpenGLContext->thread_enable();
   area Area {vbo_id, vbo_size};
   Area.init(std::move(CameraLocation));
@@ -30,9 +34,19 @@ void db_control(std::shared_ptr<trgl> OpenGLContext,
   glFinish();       // синхронизация изменений между потоками после загрузки данных
   vbo_mtx.unlock();
 
+  log_mtx.lock();
+  std::clog << "VBO filling is completed" << std::endl;
+  log_mtx.unlock();
+
+
   while (render_indices >= 0)
     if(!Area.recalc_borders())
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
+
+  log_mtx.lock();
+  std::clog << "The db-thread is finished" << std::endl;
+  log_mtx.unlock();
+
 }
 
 ///
