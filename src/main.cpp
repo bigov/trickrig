@@ -14,11 +14,13 @@
 #include <fstream>
 #include <string>
 #include "gui.hpp"
+#include <time.h>
 
 namespace tr
 {
   // Инициализация глобальных объектов
   std::atomic<int> render_indices = 0;
+  std::atomic<int> click_side_vertex_id = 0;
   std::mutex view_mtx {};  // Доступ к положению камеры
   std::mutex vbo_mtx {};   // Доступ к буферу вершин
   std::mutex log_mtx {};   // Журналирование
@@ -39,7 +41,8 @@ int main(int, char* argv[])
   std::ofstream tr_log_file("tr_logs.txt");  // Inform log-file
   std::clog.rdbuf(tr_log_file.rdbuf());      // Redirect std::clog in file
 
-  std::clog << "Start TrickRig" << std::endl;
+  time_t rawtime {}; time(&rawtime);
+  std::clog << ctime(&rawtime);              // Current time
 
   using namespace tr;
   try

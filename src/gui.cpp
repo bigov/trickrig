@@ -8,12 +8,12 @@ namespace tr {
 ///
 gui::gui(void)
 {
-  std::string title = std::string(APP_NAME) + "  v." + std::string(APP_VERSION);
+  std::string title = std::string(APP_NAME) + " v." + std::string(APP_VERSION);
 #ifndef NDEBUG
   title += " (debug mode)";
 #endif
 
-  std::clog << "Current version: " << title << std::endl;
+  std::clog << "Start: " << title << std::endl;
 
   GLContext = std::make_shared<trgl>(title.c_str());
   layout_set(cfg::WinLayout);

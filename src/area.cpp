@@ -7,6 +7,7 @@
  */
 
 #include "area.hpp"
+#include <cfenv>
 
 namespace tr
 {
@@ -86,8 +87,9 @@ void area::init(std::shared_ptr<glm::vec3> CameraLocation)
   memcpy(last, curr, sizeof (float) * sizeL);
 
   // Origin вокселя, в котором расположена камера
-  origin[XL] = static_cast<int>(floorf(curr[XL] / side_len)) * side_len;
-  origin[ZL] = static_cast<int>(floorf(curr[ZL] / side_len)) * side_len;
+  fesetround(FE_DOWNWARD);
+  origin[XL] = rint(curr[XL] / side_len) * side_len; //static_cast<int>(floorf(curr[XL] / side_len)) * side_len;
+  origin[ZL] = rint(curr[ZL] / side_len) * side_len; //static_cast<int>(floorf(curr[ZL] / side_len)) * side_len;
 
   int min_x = origin[XL] - lod_dist;
   int min_z = origin[ZL] - lod_dist;
@@ -107,7 +109,7 @@ void area::init(std::shared_ptr<glm::vec3> CameraLocation)
 ///
 bool area::recalc_borders (void)
 {
-  bool redrawed = false;
+  bool redrawed = change_control();
 
   view_mtx.lock();
   curr[XL] = ViewFrom->x;
@@ -187,40 +189,85 @@ void area::redraw_borders_z(int z_add, int z_del)
 
 
 ///
+/// \brief area::change_control
+/// \return
+/// \details анализ значения глобальной переменной click_side_vertex_id, в которой
+/// находится старший из индексов вершин, образующих сторону, по которой был
+/// выполнен клик мышкой;
+/// - так как это число не может быть меньше количества вершин на одну сторону,
+///   то нулевое значение означает, что клика не было;
+/// - так как значение индекса в VBO всегда положительное, то отрицательое значение
+///   вызывает функцию удаления вокса, а положительное - добавление.
+///
+bool area::change_control(void)
+{
+  if(click_side_vertex_id == 0) return false;
+
+  int sign = 1;
+  if(click_side_vertex_id < 0) sign = -1;
+
+  int vertex_id = click_side_vertex_id * sign;
+  click_side_vertex_id.store(0);
+
+  if(sign > 0) vox_append( VboMap[vertex_id / vertices_per_side] );
+  else vox_remove( VboMap[vertex_id / vertices_per_side] );
+
+  return true;
+}
+
+
+///
+/// \brief area::vox_append
+/// \param side
+/// \param data
+///
+void area::vox_append(const vbo_map& S)
+{
+#ifndef NDEBUG
+  int i = S.side;
+  std::clog << "Append Vox in " << S.x << "," << S.y << "," << S.z
+            << ", side " << i << std::endl;
+#endif
+
+}
+
+
+///
+/// \brief area::vox_remove
+/// \param side
+/// \param data
+///
+void area::vox_remove(const vbo_map& S)
+{
+#ifndef NDEBUG
+  std::clog << "Remove Vox from " << S.x << "," << S.y << "," << S.z << "\n";
+#endif
+
+  truncate(S.x, S.z);
+  cfg::DataBase.vox_data_delete(S.x, S.y, S.z);
+  load(S.x, S.z);
+}
+
+
+///
 /// \brief area::load
 /// \param P0
-/// \details Загрузить вокс из базы данных в рендер
+/// \details Загрузить из базы данных в рендер колонку воксов
 ///
 void area::load(int x, int z)
 {
-  auto VoxData = cfg::DataBase.load_vox_data(x, z);    // данные в формате vector<uchar>
-  if(VoxData.empty()) return;
-
-  GLsizeiptr vbo_addr;
-  uchar n;
-  uchar* data = nullptr;
-  int y = 0;
-  size_t offset = 0;
-  size_t offset_max = VoxData.size() - sizeof_y - 1;
-  while (offset < offset_max)                           // Если в блоке несколько воксов, то
-  {                                                     // последовательно передать все в VBO.
-    memcpy(&y, VoxData.data() + offset, sizeof_y);      // Координата "y" вокса, записанная в блоке данных
-    offset += sizeof_y;
-    std::bitset<6> m (VoxData[offset]);                 // Маcка видимых сторон
-    offset += 1;
-    data = VoxData.data()+ offset;
-    n = m.count();                                      // Число видимых сторон текущего вокса
-    while (n > 0)                                       // Все стороны передать в VBO.
+  auto DataPack = cfg::DataBase.load_data_pack(x, z);
+  for( auto& V: DataPack.Voxes )
+  {
+    for( auto& S: V.Sides )
     {
-      n--;
       vbo_mtx.lock();
-      vbo_addr = VboCtrl->append(data, bytes_per_side); // Добавить данные стороны в VBO
+      auto vbo_addr = VboCtrl->append(S.vbo_data, bytes_per_side);
       vbo_mtx.unlock();
-      VboMap[vbo_addr/bytes_per_side] = {x, y, z, n};   // Запомнить положение блока данных стороны
-      render_indices.fetch_add(indices_per_side);       // Увеличить число точек рендера
-      data += bytes_per_side;                           // Переключить указатель на начало следующей стороны
+      // Запомнить положение блока данных в VBO, координаты вокса и индекс стороны
+      VboMap[vbo_addr/bytes_per_side] = { x, V.y, z, S.id };
+      render_indices.fetch_add(indices_per_side);
     }
-    offset += m.count() * bytes_per_side;               // Перейти к началу блока данных следующего вокса
   }
 }
 

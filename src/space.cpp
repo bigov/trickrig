@@ -84,7 +84,8 @@ space::space(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
 space::~space()
 {
   render_indices.store(-1); // Индикатор для остановки потока загрузки в рендер из БД
-  data_loader->join();      // Ожидание завершения потока
+  if(nullptr != data_loader) if(data_loader->joinable())
+    data_loader->join();      // Ожидание завершения потока
 }
 
 
@@ -233,11 +234,8 @@ void space::calc_position(void)
     _sa = static_cast<float>(sinf(look_dir[0])),
     _ct = static_cast<float>(cosf(look_dir[1]));
 
-  // Вектор смещения камеры за время прошедшее между кадрами
-  auto StepFrame = glm::vec3(fb *_ca + rl*sinf(look_dir[0] - Pi), ud,  fb*_sa + rl*_ca);
-
-  view_mtx.lock();
-  *ViewFrom.get() += StepFrame;
+  view_mtx.lock();    // смещение камеры за время прошедшее между кадрами
+  *ViewFrom.get() += glm::vec3(fb *_ca + rl*sinf(look_dir[0] - Pi), ud,  fb*_sa + rl*_ca);
   view_mtx.unlock();
 
   ViewTo = *ViewFrom.get() + glm::vec3(_ca*_ct, sinf(look_dir[1]), _sa*_ct); //Направление взгляда
@@ -365,22 +363,13 @@ void space::mouse_event(int _button, int _action, int _mods)
   if((mouse == MOUSE_BUTTON_LEFT) && (action == PRESS))
   {
     action = -1;
-    /*
-      В этом месте расположить код, который сгенерирует вокс и добавит
-      информацию и нем в базу данных с текущей временной меткой.
-    */
-    std::cout << "mouse left" << std::endl;
+    click_side_vertex_id.store(hl_vertex_id_end); // добавление вокса
   }
 
   if((mouse == MOUSE_BUTTON_RIGHT) && (action == PRESS))
   {
     action = -1;
-    /*
-      В этом месте расположить код, который удалит вокс и запишет
-      информацию в базу данных с текущей временной меткой.
-    */
-    std::cout << "mouse right" << std::endl;
-
+    click_side_vertex_id.store(-hl_vertex_id_end); // удаление вокса
   }
 }
 

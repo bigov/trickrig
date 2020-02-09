@@ -70,6 +70,9 @@ class area
     int origin[2]      = {0, 0};      // Origin вокса, над которым камера
 
     void load(int x, int z);
+    void vox_append(const vbo_map& side);
+    void vox_remove(const vbo_map& side);
+    bool change_control(void);
     void redraw_borders_x(int, int);
     void redraw_borders_z(int, int);
     void truncate(int x, int z);

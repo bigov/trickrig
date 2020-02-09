@@ -188,9 +188,9 @@ void cfg::save(const layout& WindowLayout)
 ///
 /// Сохранить настройки положения камеры и закрыть карту
 ///
-void cfg::map_view_save(std::shared_ptr<glm::vec3> View, float* look)
+void cfg::map_view_save(std::shared_ptr<glm::vec3> View, float* look_dir)
 {
-  DataBase.map_close(View, look);
+  DataBase.map_close(View, look_dir);
 }
 
 

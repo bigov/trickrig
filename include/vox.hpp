@@ -55,7 +55,7 @@ private:
   GLsizeiptr vbo_addr[SIDES_COUNT] {}; // Адреса смещения в буфере GPU массивов данных по каждой из сторон
   GLfloat data[digits_per_voxel] {};   // Данные вершин (координаты, цвет, нормали, текстуры)
 
-  std::bitset<6> visibility {0x00};    // Видимость сторон
+  std::bitset<6> visibility { 0x00 };  // Видимость сторон
 
   void init_data(void);
   void side_color_set(uchar side, color C);

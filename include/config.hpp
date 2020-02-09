@@ -37,7 +37,7 @@ namespace tr
       static layout WinLayout;     // размер и положение главного окна
 
       static void map_view_load(const std::string& DirName, std::shared_ptr<glm::vec3> ViewFrom, float* look);
-      static void map_view_save(std::shared_ptr<glm::vec3> View, float* look);
+      static void map_view_save(std::shared_ptr<glm::vec3> View, float* look_dir);
       static void load(char** argv);
       static void save(const layout& WindowLayout);
       static std::string create_map(const std::string &MapName);

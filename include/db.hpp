@@ -16,6 +16,22 @@
 
 namespace tr {
 
+struct side_data {
+    uchar id;                       // Наименование стороны
+    uchar vbo_data[bytes_per_side]; // Данные вершин, записываемые в VBO
+};
+
+// Структура для работы с форматом данных воксов
+struct vox_data {
+    int y;                        // Y-координата вокса
+    std::vector<side_data> Sides; // Массив сторон
+};
+
+struct data_pack {
+    int x, z;                     // координаты ячейки
+    std::vector<vox_data> Voxes;  // Массив воксов, хранящихся в БД
+};
+
 class db
 {
   public:
@@ -23,17 +39,16 @@ class db
    ~db(void) {}
     v_str open_app(const std::string &); // загрузка данных приложения
     v_str map_open(const std::string &); // загрузка данных карты
-    void map_close(std::shared_ptr<glm::vec3> ViewFrom, float* look);
+    void map_close(std::shared_ptr<glm::vec3> ViewFrom, float* look_dir);
     void map_name_save(const std::string &Dir, const std::string &MapName);
     v_ch map_name_read(const std::string & dbFile);
     void save_window_layout(const layout&);
-    //void save_vox(vox*);
-    void vox_data_save(vox*);
+    void vox_data_append(vox*);
     void vox_data_delete(int x, int y, int z);
-    std::vector<uchar> load_vox_data(int x, int z);
-    void erase_vox(vox*);
     void init_map_config(const std::string &);
-    //std::unique_ptr<vox> get_vox(const i3d&);
+    data_pack load_data_pack(int x, int z);
+    data_pack blob_data_unpack(const std::vector<uchar>& VoxData);
+    void blob_data_repack(std::vector<uchar>& VoxData, data_pack& DataPack);
 
   private:
     std::string MapDir       {}; // директория текущей карты (со слэшем в конце)
@@ -44,6 +59,7 @@ class db
 
     void init_app_config(const std::string &);
     v_str load_config(size_t params_count, const std::string &file_name);
+    std::vector<uchar> load_blob_data(int x, int z);
     void _data_erase(int y, std::vector<uchar>& VoxData);
 };
 

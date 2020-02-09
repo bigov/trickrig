@@ -55,8 +55,9 @@ namespace fs = std::filesystem;
 
 namespace tr {
 
+// Взаимодействие потоков
 extern std::atomic<GLsizei> render_indices;
-
+extern std::atomic<int> click_side_vertex_id; // верхний индекс вершины выделенной стороны
 extern std::mutex view_mtx;  // Доступ к положению камеры
 extern std::mutex vbo_mtx;   // Доступ к буферу вершин
 extern std::mutex log_mtx;   // Доступ к записи в журнал
