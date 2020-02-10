@@ -48,7 +48,7 @@ class db
     void init_map_config(const std::string &);
     data_pack load_data_pack(int x, int z);
     data_pack blob_data_unpack(const std::vector<uchar>& VoxData);
-    void blob_data_repack(std::vector<uchar>& VoxData, data_pack& DataPack);
+    std::vector<uchar> blob_data_repack(const data_pack& DataPack);
 
   private:
     std::string MapDir       {}; // директория текущей карты (со слэшем в конце)

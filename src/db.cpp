@@ -221,12 +221,12 @@ void db::map_close(std::shared_ptr<glm::vec3> ViewFrom, float* look_dir)
 /// \brief db::blob_data_repack
 /// \param VoxData
 /// \param DataPack
-/// \details Преобразование данных из рабочей структуры в бинарный массив
+/// \details Преобразование данных из структуры "data_pack" в бинарный массив
 ///
-void db::blob_data_repack(std::vector<uchar>& VoxData, data_pack& DataPack)
+std::vector<uchar> db::blob_data_repack(const data_pack& DataPack)
 {
-  if(DataPack.Voxes.empty()) return;
-  if(!VoxData.empty()) VoxData.clear();
+  std::vector<uchar> VoxData {};
+  if(DataPack.Voxes.empty()) return VoxData;
 
   size_t offset = 0;
   for(auto& V: DataPack.Voxes)
@@ -250,6 +250,8 @@ void db::blob_data_repack(std::vector<uchar>& VoxData, data_pack& DataPack)
       offset += bytes_per_side;
     }
   }
+
+  return VoxData;
 }
 
 
@@ -257,7 +259,7 @@ void db::blob_data_repack(std::vector<uchar>& VoxData, data_pack& DataPack)
 /// \brief db::parsing_blob_data
 /// \param VoxData
 /// \param DataPack
-/// \details Преобразование данных из бинарного массива в рабочую структуру
+/// \details Преобразование данных из бинарного массива в структуру "data_pack"
 ///
 data_pack db::blob_data_unpack(const std::vector<uchar>& VoxData)
 {
@@ -333,11 +335,17 @@ void db::_data_erase(int y, std::vector<uchar>& VoxData)
 ///
 void db::vox_data_delete(int x, int y, int z)
 {
+  auto BData = load_data_pack(x, z);
+  auto it = std::find_if(BData.Voxes.begin(), BData.Voxes.end(),        // Найти блок данных вокса,
+                         [&y](const auto& Vox){ return Vox.y == y;});   // размещенный на координате y.
+
+  if(it != BData.Voxes.end())                                           // Если итератор найден, то
+    BData.Voxes.erase(it);                                              // удалить этот блок даных.
+  else                                                                  // Если нет, то это ошибка
+    std::cerr << "ERROR: Try to delete empty space in the db::vox_data_delete(x,y,z)";
+
   char query[127] = {'\0'};
-
-  std::vector<uchar> VoxData = load_blob_data(x, z);    // Загрузить "колонку" воксов из БД
-  if(VoxData.size() > 0) _data_erase(y, VoxData);      // Удалить блок с координатой у
-
+  auto VoxData = blob_data_repack(BData);
   if(!VoxData.empty())                                 // Если в блоке остались еще воксы, то
   {                                                    // сохранить измененный блок данных
     std::sprintf(query, "INSERT OR REPLACE INTO area (x, z, b) VALUES (%d, %d, ?);", x, z);
@@ -425,7 +433,10 @@ std::vector<uchar> db::load_blob_data(int x, int z)
 ///
 data_pack db::load_data_pack(int x, int z)
 {
-  return blob_data_unpack(load_blob_data(x, z));
+  data_pack result = blob_data_unpack(load_blob_data(x, z));
+  result.x = x;
+  result.z = z;
+  return result;
 }
 
 
