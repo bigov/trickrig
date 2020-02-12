@@ -243,9 +243,9 @@ void area::vox_remove(const vbo_map& S)
   std::clog << "Remove Vox from " << S.x << "," << S.y << "," << S.z << "\n";
 #endif
 
-  truncate(S.x, S.z);
-  cfg::DataBase.vox_data_delete(S.x, S.y, S.z);
-  load(S.x, S.z);
+  truncate(S.x, S.z);                       // Убрать колонку из рендера
+  cfg::DataBase.vox_delete(S.x, S.y, S.z);  // Внести изменения в БД
+  load(S.x, S.z);                           // Загрузить данные колонки в рендер
 }
 
 

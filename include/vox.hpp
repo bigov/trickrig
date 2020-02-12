@@ -52,7 +52,6 @@ private:
   GLfloat u_sz = 0.125f;               // размер ячейки текстуры по U
   GLfloat v_sz = 0.125f;               // размер ячейки текстуры по V
   uch2 tex_id[SIDES_COUNT];            // Индексы текстур сторон
-  GLsizeiptr vbo_addr[SIDES_COUNT] {}; // Адреса смещения в буфере GPU массивов данных по каждой из сторон
   GLfloat data[digits_per_voxel] {};   // Данные вершин (координаты, цвет, нормали, текстуры)
 
   std::bitset<6> visibility { 0x00 };  // Видимость сторон
@@ -80,14 +79,8 @@ public:
   void visible_off(uchar side_id);
   bool is_visible(uchar side_id);
   uchar get_visibility(void) { return static_cast<uchar>(visibility.to_ulong()); }
-
-  bool in_vbo = false;              // данные помещены в VBO
-
-  uchar side_id_by_offset(GLsizeiptr dst);
+  int get_visible_sides_count(void) { return visibility.count(); }
   bool side_fill_data(uchar side_id, GLfloat* data);
-  void offset_write(uchar side_id, GLsizeiptr n);
-  GLsizeiptr offset_read(uchar side_id);
-  void offset_replace(GLsizeiptr old_n, GLsizeiptr new_n);
 };
 
 }

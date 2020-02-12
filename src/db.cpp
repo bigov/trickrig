@@ -42,11 +42,11 @@ namespace tr {
 ///
 /// \details Общий загрузчик данных из файлов конфигурации приложения и карты
 ///
-v_str db::load_config(size_t n, const std::string &Pname)
+v_str db::load_config(size_t params_count, const std::string &FilePath)
 {
   v_str ConfigParams {};
-  ConfigParams.resize(n);
-  if(!SqlDb.open(Pname)) ERR("Can't open DB file: " + Pname);
+  ConfigParams.resize(params_count);
+  if(!SqlDb.open(FilePath)) ERR("Can't open DB file: " + FilePath);
   SqlDb.exec("SELECT * FROM init;");
 
   if(SqlDb.num_rows < 1)
@@ -221,39 +221,59 @@ void db::map_close(std::shared_ptr<glm::vec3> ViewFrom, float* look_dir)
 /// \brief db::blob_data_repack
 /// \param VoxData
 /// \param DataPack
-/// \details Преобразование данных из структуры "data_pack" в бинарный массив
+/// \details Преобразование данных из структуры "data_pack" в бинарный (uchar) массив
 ///
-std::vector<uchar> db::blob_data_repack(const data_pack& DataPack)
+/// Данные вершин видимых сторон воксов, передаваемые для рендера в VBO, хранятся в базе
+/// данных блоками в том-же виде, как записываются в VBO. Для ускорения операций загрузки
+/// данных для идентификации записей в БД используется две из трех координат вокса
+/// "Origin.x" и "Origin.z". Поэтому данные всех воксов, расположенных вертикально на одной
+/// линии Y, записываются в одну "blob" ячейку данных в виде последовательного uchar массива.
+///
+/// Если с ячейке несколько воксов, то их данные записываются подряд один за другим.
+///
+std::vector<uchar> db::blob_make(const data_pack& DataPack)
 {
-  std::vector<uchar> VoxData {};
-  if(DataPack.Voxes.empty()) return VoxData;
-
-  size_t offset = 0;
-  for(auto& V: DataPack.Voxes)
-  {
-    VoxData.resize(VoxData.size() + sizeof_y);
-    memcpy(VoxData.data() + offset, &(V.y), sizeof_y);  // Записать координату Y
-    offset += sizeof_y;
-
-    std::bitset<SIDES_COUNT> m {0};
-    for(auto& S: V.Sides)
-    {
-      m.set(S.id);                                      // Получить битовую маску сторон
-    }
-    VoxData.push_back(static_cast<uchar>(m.to_ulong()));
-    offset++;
-
-    for(auto& S: V.Sides)
-    {
-      VoxData.resize(VoxData.size() + bytes_per_side);
-      memcpy(VoxData.data() + offset, S.vbo_data, bytes_per_side);
-      offset += bytes_per_side;
-    }
-  }
-
-  return VoxData;
+  std::vector<uchar> BlobData {};
+  if(DataPack.Voxes.empty()) return BlobData;
+  for(auto& VoxData: DataPack.Voxes) blob_add_vox_data(BlobData, VoxData);
+  return BlobData;
 }
 
+
+///
+/// \brief db::blob_add_vox_data
+/// \param BlobData
+/// \param VoxData
+/// \details
+/// В начале каждого блока записывается значение координаты Y. Длину блока и
+/// видимые стороны определяет битовая маска сторон, которая записывается
+/// после значения координаты Y.
+///
+/// Таким образом структура вокса в базе данных:
+///
+///  1. координата Y вокса,               : sizeof_y = size_of(int)
+///  2. битовая маска видимых сторон      : size_of(uchar)
+///  3. данные вершин всех видимых сторон : bytes_per_side * число_видимых_сторон
+///
+void db::blob_add_vox_data(std::vector<uchar>& BlobData, const vox_data& VoxData)
+{
+  size_t offset = BlobData.size();                          // Указатель смещения для записи в блоб
+  BlobData.resize(offset + sizeof_y);
+  memcpy(BlobData.data() + offset, &(VoxData.y), sizeof_y); // Записать координату Y текущего вокса
+  offset += sizeof_y;
+
+  std::bitset<SIDES_COUNT> m {0};
+  for(auto& S: VoxData.Sides) m.set(S.id);                  // Настроить битовую маску видимых
+  BlobData.push_back(static_cast<uchar>(m.to_ulong()));     // сторон и записать ее в блоб
+  offset += 1;
+
+  for(auto& SideData: VoxData.Sides)                        // Скопировать данные вершин всех видимых сторон
+  {
+    BlobData.resize(BlobData.size() + bytes_per_side);
+    memcpy(BlobData.data() + offset, SideData.vbo_data, bytes_per_side);
+    offset += bytes_per_side;
+  }
+}
 
 ///
 /// \brief db::parsing_blob_data
@@ -261,71 +281,76 @@ std::vector<uchar> db::blob_data_repack(const data_pack& DataPack)
 /// \param DataPack
 /// \details Преобразование данных из бинарного массива в структуру "data_pack"
 ///
-data_pack db::blob_data_unpack(const std::vector<uchar>& VoxData)
+data_pack db::blob_unpack(const std::vector<uchar>& BlobData)
 {
   data_pack DataPack {};
-  if(VoxData.empty()) return DataPack;
+  if(BlobData.empty()) return DataPack;
 
   size_t offset = 0;
-  size_t offset_max = VoxData.size() - sizeof_y - 1;
+  size_t offset_max = BlobData.size() - sizeof_y - 1;
 
   while (offset < offset_max)                          // Если в блоке несколько воксов, то
   {                                                    // последовательно разбираем каждый из них
     vox_data myVox {};                                 // Структура для работы с данными вокса
-    memcpy( &(myVox.y), VoxData.data() + offset, sizeof_y );
+    memcpy( &(myVox.y), BlobData.data() + offset, sizeof_y ); // Y-координата вокса
     offset += sizeof_y;
-    std::bitset<SIDES_COUNT> m( VoxData[offset] );     // Маcка видимых сторон вокса
+    std::bitset<SIDES_COUNT> m( BlobData[offset] );           // Маcка видимых сторон вокса
     offset += 1;
 
-    myVox.Sides.resize(m.count());                     // По битовой маске определим число сторон
-    size_t n = 0;
-    for(size_t i = 0; i < SIDES_COUNT; ++i)            // Проходим по перечню наименований сторон.
-    {                                                  // Если такая сторона есть в битовой маске, то
-      if(m.test(i)) myVox.Sides[n++].id = i;           // заносим ее id в список
+    myVox.Sides.resize(m.count());           // По битовой маске установить число сторон
+    char n = 0;                              // Общий индекс вектора сторон для доступа к данным
+    for(char i = 0; i < SIDES_COUNT; ++i)    // Проход по битовой маске сторон:
+    {                                        //
+      if(m.test(i)) myVox.Sides[n].id = i;   // если сторона присутствует (видимая) - записать ее id
+      memcpy(myVox.Sides[n].vbo_data,        // и скопировать данные вершин, образующих сторону
+             BlobData.data() + offset + n * bytes_per_side, bytes_per_side);
+      n += 1;
     }
-
-    size_t s = 0;                                     // Адрес начала размещения данных вершин
-    for(auto& Side: myVox.Sides)                      // Для каждой стороны копируем данные вершин
-    {
-      memcpy(Side.vbo_data, VoxData.data() + offset + s, bytes_per_side);
-      s += bytes_per_side;
-    }
-
-    DataPack.Voxes.push_back(myVox);                   // Добавить данные текущего вокса
-    offset += m.count() * bytes_per_side;              // Настроить указатель на начало данных следующего вокса
+    DataPack.Voxes.push_back(myVox);         // Добавить полученные данные в пакет
+    offset += m.count() * bytes_per_side;    // Переключить указатель на начало следующего вокса
   }
-
   return DataPack;
 }
 
 
 ///
-/// \brief db::vox_data_erase
+/// \brief db::data_pack_vox_remove
+/// \param DataPack
 /// \param y
-/// \param VoxData
-/// \details Удаляет из массива блок данных вокса с координатой y
+/// \return bool
+/// \details Удаляет, если есть, данные вокса с координатой 'y'
 ///
-void db::_data_erase(int y, std::vector<uchar>& VoxData)
+bool db::data_pack_vox_remove( data_pack& DataPack, int y )
 {
-  int current_y = 0;   // Переменная для приема значения координаты Y
-  size_t offset = 0;   // Смещение блока данных вокса в наборе из группы воксов
-
-  while( (offset + sizeof_y + 1) < VoxData.size() )
-  {
-    memcpy(&current_y, VoxData.data() + offset, sizeof_y);            // Координата Y
-    std::bitset<6> m(VoxData[sizeof_y + offset]);                     // Маcка видимых сторон
-    size_t vox_data_size = m.count() * bytes_per_side + sizeof_y + 1; // Размер блока
-
-    if(current_y == y)
-    {
-      VoxData.erase( VoxData.begin() + offset, VoxData.begin() + offset + vox_data_size );
-      return;
-    }
-    else { offset += vox_data_size; } // Проверить следующий блок
-  }
-  return;
+  if(DataPack.Voxes.empty()) return false;
+  auto it = std::find_if(DataPack.Voxes.begin(), DataPack.Voxes.end(),
+                         [&y](const auto& Vox){ return Vox.y == y;});
+  if(it == DataPack.Voxes.end()) return false;
+  DataPack.Voxes.erase(it);
+  return true;
 }
 
+
+///
+/// \brief db::update_row
+/// \param BlobData
+/// \param x
+/// \param z
+///
+void db::update_row(const std::vector<uchar>& BlobData, int x, int z)
+{
+  char query[127] = {'\0'};
+  if(!BlobData.empty())                                // Если в блоке есть воксы, то
+  {                                                    // обновить запись блока данных
+    std::sprintf(query, "INSERT OR REPLACE INTO area (x, z, b) VALUES (%d, %d, ?);", x, z);
+    SqlDb.request_put(query, BlobData.data(), BlobData.size());
+  }
+  else                                                 // Если данных воксов нет,
+  {                                                    // то удалить запись из БД
+    std::sprintf(query, "DELETE FROM area WHERE( x=%d AND z=%d );", x, z);
+    SqlDb.exec(query);
+  }
+}
 
 ///
 /// \brief db::vox_data_delete
@@ -333,73 +358,52 @@ void db::_data_erase(int y, std::vector<uchar>& VoxData)
 /// \param y
 /// \param z
 ///
-void db::vox_data_delete(int x, int y, int z)
+void db::vox_delete(int x, int y, int z)
 {
-  auto BData = load_data_pack(x, z);
-  auto it = std::find_if(BData.Voxes.begin(), BData.Voxes.end(),        // Найти блок данных вокса,
-                         [&y](const auto& Vox){ return Vox.y == y;});   // размещенный на координате y.
-
-  if(it != BData.Voxes.end())                                           // Если итератор найден, то
-    BData.Voxes.erase(it);                                              // удалить этот блок даных.
-  else                                                                  // Если нет, то это ошибка
+  auto DataPack = load_data_pack(x, z);
+  if(!data_pack_vox_remove(DataPack, y))
     std::cerr << "ERROR: Try to delete empty space in the db::vox_data_delete(x,y,z)";
-
-  char query[127] = {'\0'};
-  auto VoxData = blob_data_repack(BData);
-  if(!VoxData.empty())                                 // Если в блоке остались еще воксы, то
-  {                                                    // сохранить измененный блок данных
-    std::sprintf(query, "INSERT OR REPLACE INTO area (x, z, b) VALUES (%d, %d, ?);", x, z);
-    SqlDb.request_put(query, VoxData.data(), VoxData.size());
-  } else                                               // Если на этой линии воксов больше
-  {                                                    //  нет, то удалить запись из БД.
-    std::sprintf(query, "DELETE FROM area WHERE( x=%d AND z=%d );", x, z);
-    SqlDb.exec(query);
-  }
+  update_row(blob_make(DataPack), x, z);
 }
 
 
 ///
-/// \brief db::vox_data_save
-/// \param V
+/// \brief db::vox_data_make
+/// \param pVox
+/// \return
+/// \details Создать структуру для манипуляций с данными вокса
 ///
-///  \details Данные вершин видимых сторон воксов, передаваемые для рендера в VBO, хранятся в базе
-/// данных "RAW"-блоками, т.е. в том-же виде, как и записываются в VBO. Для ускорения операций
-/// загрузки данных из БД для идентификации записей используется две из трех координат вокса
-/// "Origin.x" и "Origin.z", поэтому данные всех воксов, расположенных вертикально на одной линии Y,
-/// записываются в одну "blob" ячейку базы данных последовательно блоками в один общий массив.
-///
-/// Значение третьей координаты (Y) записывается в начале каждого блока. Длину блока и видимые
-/// стороны определяет маска сторон (функция "vox::get_visibility"), которая записывается в начале
-/// каждого блока сразу после значения его координаты Y.
-///
-void db::vox_data_append (vox* pV)
+vox_data db::vox_data_make(vox* pVox)
 {
-  int y = pV->Origin.y;
+  if(pVox == nullptr) ERR("null ptr on db::vox_data_make(vox* pVox)");
+  vox_data VoxData {};
+  VoxData.y = pVox->Origin.y;
 
-  // Загрузить "колонку" воксов из БД
-  std::vector<uchar> VoxData = load_blob_data(pV->Origin.x, pV->Origin.z);
-
-  // Удалить из набора, если есть, данные вокса с координатой 'y',
-  // так как они будут перезаписаны данными полученного вокса
-  if(VoxData.size() > 0) _data_erase(y, VoxData);
-
-  size_t offset = VoxData.size();
-  VoxData.resize(VoxData.size() + sizeof_y);
-  memcpy(VoxData.data() + offset, &y, sizeof_y);     // Записать координату Y
-  VoxData.push_back(pV->get_visibility());           // Записать маску видимости сторон
-  offset = VoxData.size();
   GLfloat buffer[digits_per_side];
   for(uchar side_id = 0; side_id < SIDES_COUNT; ++side_id)
   {
-    if(!pV->side_fill_data(side_id, buffer)) continue;
-    VoxData.resize(VoxData.size() + bytes_per_side);
-    memcpy(VoxData.data() + offset, buffer, bytes_per_side); // Данные вершин видмой стороны
-    offset += bytes_per_side;
+    if(pVox->side_fill_data(side_id, buffer))
+    {
+      side_data Side {};
+      Side.id = side_id;
+      memcpy(Side.vbo_data, buffer, bytes_per_side);
+      VoxData.Sides.push_back(Side);
+    }
   }
+  return VoxData;
+}
 
-  char query[127] = {'\0'};
-  std::sprintf(query, "INSERT OR REPLACE INTO area (x, z, b) VALUES (%d, %d, ?);", pV->Origin.x, pV->Origin.z);
-  SqlDb.request_put(query, VoxData.data(), VoxData.size());   // Записать в БД
+
+///
+/// \brief db::vox_data_append
+/// \param pVox
+///
+void db::vox_insert(vox* pVox)
+{
+  auto DataPack = load_data_pack(pVox->Origin.x, pVox->Origin.z);
+  data_pack_vox_remove(DataPack, pVox->Origin.y);
+  DataPack.Voxes.push_back(vox_data_make(pVox));
+  update_row(blob_make(DataPack), pVox->Origin.x, pVox->Origin.z);
 }
 
 
@@ -433,7 +437,7 @@ std::vector<uchar> db::load_blob_data(int x, int z)
 ///
 data_pack db::load_data_pack(int x, int z)
 {
-  data_pack result = blob_data_unpack(load_blob_data(x, z));
+  data_pack result = blob_unpack(load_blob_data(x, z));
   result.x = x;
   result.z = z;
   return result;

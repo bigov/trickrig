@@ -17,7 +17,7 @@
 namespace tr {
 
 struct side_data {
-    uchar id;                       // Наименование стороны
+    uchar id;                       // Определение стороны (Xp|Xn|Yp|Yn|Zp|Zn)
     uchar vbo_data[bytes_per_side]; // Данные вершин, записываемые в VBO
 };
 
@@ -43,12 +43,13 @@ class db
     void map_name_save(const std::string &Dir, const std::string &MapName);
     v_ch map_name_read(const std::string & dbFile);
     void save_window_layout(const layout&);
-    void vox_data_append(vox*);
-    void vox_data_delete(int x, int y, int z);
+    void vox_insert(vox*);
+    void vox_delete(int x, int y, int z);
     void init_map_config(const std::string &);
     data_pack load_data_pack(int x, int z);
-    data_pack blob_data_unpack(const std::vector<uchar>& VoxData);
-    std::vector<uchar> blob_data_repack(const data_pack& DataPack);
+    data_pack blob_unpack(const std::vector<uchar>& BlobData);
+    std::vector<uchar> blob_make(const data_pack& DataPack);
+    vox_data vox_data_make(vox* pVox);
 
   private:
     std::string MapDir       {}; // директория текущей карты (со слэшем в конце)
@@ -58,9 +59,11 @@ class db
     wsql SqlDb {};
 
     void init_app_config(const std::string &);
-    v_str load_config(size_t params_count, const std::string &file_name);
+    v_str load_config(size_t params_count, const std::string &FilePath);
     std::vector<uchar> load_blob_data(int x, int z);
-    void _data_erase(int y, std::vector<uchar>& VoxData);
+    bool data_pack_vox_remove(data_pack& DataPack, int y);
+    void blob_add_vox_data(std::vector<uchar>& BlobData, const vox_data& VoxData);
+    void update_row(const std::vector<uchar>& BlobData, int x, int z);
 };
 
 } //tr
