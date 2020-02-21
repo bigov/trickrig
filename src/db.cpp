@@ -283,33 +283,40 @@ void db::blob_add_vox_data(std::vector<uchar>& BlobData, const vox_data& VoxData
 ///
 data_pack db::blob_unpack(const std::vector<uchar>& BlobData)
 {
-  data_pack DataPack {};
-  if(BlobData.empty()) return DataPack;
+  data_pack ResultPack { 0, 0, {} };
+  if(BlobData.empty()) return ResultPack;
 
   size_t offset = 0;
+
+#ifndef NDEBUG
+  if(sizeof_y >= BlobData.size()) ERR("Failure: incorrect blob data");
+#endif
+
   size_t offset_max = BlobData.size() - sizeof_y - 1;
 
   while (offset < offset_max)                          // Если в блоке несколько воксов, то
   {                                                    // последовательно разбираем каждый из них
-    vox_data myVox {};                                 // Структура для работы с данными вокса
-    memcpy( &(myVox.y), BlobData.data() + offset, sizeof_y ); // Y-координата вокса
+    vox_data TheVox { 0, {} };                         // Структура для работы с данными вокса
+    memcpy( &(TheVox.y), BlobData.data() + offset, sizeof_y ); // Y-координата вокса
     offset += sizeof_y;
-    std::bitset<SIDES_COUNT> m( BlobData[offset] );           // Маcка видимых сторон вокса
+    std::bitset<SIDES_COUNT> m( BlobData[offset] );    // Маcка видимых сторон вокса
     offset += 1;
 
-    myVox.Sides.resize(m.count());           // По битовой маске установить число сторон
-    char n = 0;                              // Общий индекс вектора сторон для доступа к данным
+    int sides_count = m.count();            // число видимых сторон
+    if(sides_count == 0) std::cerr << "Err: empty vox data!" << std::endl;
+    TheVox.Sides.resize(sides_count);
+    char n = 0;                            // индекс данных вектора сторон
     for(char i = 0; i < SIDES_COUNT; ++i)    // Проход по битовой маске сторон:
-    {                                        //
-      if(m.test(i)) myVox.Sides[n].id = i;   // если сторона присутствует (видимая) - записать ее id
-      memcpy(myVox.Sides[n].vbo_data,        // и скопировать данные вершин, образующих сторону
+    {
+      if(m.test(i)) TheVox.Sides[n].id = i;  // если сторона присутствует (видимая) - записать ее id
+      memcpy(TheVox.Sides[n].vbo_data,       // и скопировать данные вершин, образующих сторону
              BlobData.data() + offset + n * bytes_per_side, bytes_per_side);
       n += 1;
     }
-    DataPack.Voxes.push_back(myVox);         // Добавить полученные данные в пакет
+    ResultPack.Voxes.push_back(TheVox);      // Добавить полученные данные в пакет
     offset += m.count() * bytes_per_side;    // Переключить указатель на начало следующего вокса
   }
-  return DataPack;
+  return ResultPack;
 }
 
 
@@ -376,7 +383,7 @@ void db::vox_delete(int x, int y, int z)
 vox_data db::vox_data_make(vox* pVox)
 {
   if(pVox == nullptr) ERR("null ptr on db::vox_data_make(vox* pVox)");
-  vox_data VoxData {};
+  vox_data VoxData {0, {}};
   VoxData.y = pVox->Origin.y;
 
   GLfloat buffer[digits_per_side];
