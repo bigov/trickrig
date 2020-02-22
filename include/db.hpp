@@ -16,38 +16,24 @@
 
 namespace tr {
 
-struct side_data
-{
-    uchar id;                       // Определение стороны (Xp|Xn|Yp|Yn|Zp|Zn)
-    uchar vbo_data[bytes_per_side]; // Данные вершин, записываемые в VBO (uchar d[])
-};
-
-// Структура для работы с форматом данных воксов
+// Структура для работы с воксом
 struct vox_data
 {
-    int y;                        // Y-координата вокса
-    std::vector<side_data> Sides; // Массив сторон
+    int y = 0;                       // Y-координата вокса
 
-    vox_data(int p_y, std::vector<side_data> && p_Sides)
-      : y(p_y), Sides(std::move(p_Sides)) {}
-
-    vox_data(vox_data&& other): y(other.y), Sides(std::move(other.Sides)) {}
-
-    vox_data& operator= (const vox_data& other) = default;
+    // Данные каждой стороны записываются в отдельный массив
+    //   std::array<unsigned char, bytes_per_side + 1>
+    // В котором в нулевой позиции записывается id стороны (Xp|Xn|Yp|Yn|Zp|Zn),
+    // а далее (в бинарном виде) информация для построения вершин в OpenGL.
+    std::vector<side_t> Sides {};
 };
 
+// Структура для передачи данных группы воксов (столбец Y)
 struct data_pack
 {
-    int x, z;                     // координаты ячейки
-    std::vector<vox_data> Voxes;  // Массив воксов, хранящихся в БД
-
-    data_pack(int p_x, int p_z, std::vector<vox_data> && p_voxes)
-      : x(p_x), z(p_z), Voxes(std::move(p_voxes)) {}
-
-    data_pack(data_pack&& other)
-      : x(other.x), z(other.z), Voxes(std::move(other.Voxes)) {}
-
-    data_pack& operator= (const data_pack& other) = default;
+    int x = 0;
+    int z = 0;                      // координаты ячейки
+    std::vector<vox_data> Voxes {}; // Массив воксов, хранящихся в БД
 };
 
 class db

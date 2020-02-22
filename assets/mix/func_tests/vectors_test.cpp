@@ -30,20 +30,25 @@ struct data_pack
 int main(int, char**)
 {
   std::cout << "---\n" << std::endl;
-
   side_data Side {};
+
   vox_data Vox {};
-  Side.id = 1;
-  Vox.Sides.emplace_back(Side);
-  Side.id = 3;
-  Vox.Sides.emplace_back(Side);
+  for(int i = 1; i < 4; ++i)
+  {
+    Side.id = i;
+    Vox.Sides.push_back(Side);
+  }
 
   for(auto& S: Vox.Sides)
   {
-    int id = Side.id;
+    int id = S.id;
     std::cout << "Side.id = "<< id << std::endl;
   }
+  data_pack DataPack {};
+  DataPack.Voxes.push_back(Vox);
 
-  std::cout << "\nCompleted" << std::endl;
+  std::cout << DataPack.Voxes.size();
+
+  std::cout << "\nГотово!" << std::endl;
   return EXIT_SUCCESS;
 }

@@ -245,34 +245,38 @@ std::vector<uchar> db::blob_make(const data_pack& DataPack)
 /// \param BlobData
 /// \param VoxData
 /// \details
-/// В начале каждого блока записывается значение координаты Y. Длину блока и
-/// видимые стороны определяет битовая маска сторон, которая записывается
-/// после значения координаты Y.
+///
+/// Добавление данных вокса в бинарный (blob) блок для записи в базу данных.
+///
+/// В начале блока данных каждого вокса записывается значение координаты Y,
+/// после координаты Y записывается битовая маска сторон, по которой можно
+/// определить длину блока и видимые стороны вокса, чьи данные находятся в блоке.
 ///
 /// Таким образом структура вокса в базе данных:
 ///
-///  1. координата Y вокса,               : sizeof_y = size_of(int)
-///  2. битовая маска видимых сторон      : size_of(uchar)
+///  1. координата Y вокса,               : sizeof_y = sizeof(int)
+///  2. битовая маска видимых сторон      : sizeof(uchar)
 ///  3. данные вершин всех видимых сторон : bytes_per_side * число_видимых_сторон
 ///
 void db::blob_add_vox_data(std::vector<uchar>& BlobData, const vox_data& VoxData)
 {
-  size_t offset = BlobData.size();                          // Указатель смещения для записи в блоб
-  BlobData.resize(offset + sizeof_y);
+  size_t offset = BlobData.size();                     // Указатель смещения для записи в блоб
+  BlobData.resize(offset + sizeof_y + sizeof(uchar) + bytes_per_side * VoxData.Sides.size());
+
   memcpy(BlobData.data() + offset, &(VoxData.y), sizeof_y); // Записать координату Y текущего вокса
   offset += sizeof_y;
 
-  std::bitset<SIDES_COUNT> m {0};
-  for(auto& S: VoxData.Sides) m.set(S.id);                  // Настроить битовую маску видимых
-  BlobData.push_back(static_cast<uchar>(m.to_ulong()));     // сторон и записать ее в блоб
-  offset += 1;
+  std::bitset<SIDES_COUNT> m { 0 };    // Битовая маска видимых сторон
+  auto bitset_offset = offset;         // Позиция хранения данных битовой маски вокса
 
-  for(auto& SideData: VoxData.Sides)                        // Скопировать данные вершин всех видимых сторон
+  offset += 1;
+  for(auto& SideArray: VoxData.Sides)  // Скопировать данные вершин сторон вокса
   {
-    BlobData.resize(BlobData.size() + bytes_per_side);
-    memcpy(BlobData.data() + offset, SideData.vbo_data, bytes_per_side);
+    m.set(SideArray[0]);               // Настроить битовую маску
+    memcpy(BlobData.data() + offset, SideArray.data() + 1, bytes_per_side);
     offset += bytes_per_side;
-  }
+  }                                    // записать битовую маску
+  BlobData[bitset_offset] = static_cast<uchar>(m.to_ulong());
 }
 
 ///
@@ -283,7 +287,7 @@ void db::blob_add_vox_data(std::vector<uchar>& BlobData, const vox_data& VoxData
 ///
 data_pack db::blob_unpack(const std::vector<uchar>& BlobData)
 {
-  data_pack ResultPack { 0, 0, {} };
+  data_pack ResultPack {};
   if(BlobData.empty()) return ResultPack;
 
   size_t offset = 0;
@@ -296,25 +300,28 @@ data_pack db::blob_unpack(const std::vector<uchar>& BlobData)
 
   while (offset < offset_max)                          // Если в блоке несколько воксов, то
   {                                                    // последовательно разбираем каждый из них
-    vox_data TheVox { 0, {} };                         // Структура для работы с данными вокса
+    vox_data TheVox {};                                // Структура для работы с данными вокса
     memcpy( &(TheVox.y), BlobData.data() + offset, sizeof_y ); // Y-координата вокса
     offset += sizeof_y;
-    std::bitset<SIDES_COUNT> m( BlobData[offset] );    // Маcка видимых сторон вокса
+    std::bitset<SIDES_COUNT> bits( BlobData[offset] );    // Маcка видимых сторон вокса
     offset += 1;
 
-    int sides_count = m.count();            // число видимых сторон
-    if(sides_count == 0) std::cerr << "Err: empty vox data!" << std::endl;
-    TheVox.Sides.resize(sides_count);
-    char n = 0;                            // индекс данных вектора сторон
-    for(char i = 0; i < SIDES_COUNT; ++i)    // Проход по битовой маске сторон:
+#ifndef NDEBUG
+    if(bits.count() == 0) std::cerr << "Err: empty vox data!" << std::endl;
+#endif
+
+    for(int i = 0; i < SIDES_COUNT; ++i) // Парсинг по битовой маске
     {
-      if(m.test(i)) TheVox.Sides[n].id = i;  // если сторона присутствует (видимая) - записать ее id
-      memcpy(TheVox.Sides[n].vbo_data,       // и скопировать данные вершин, образующих сторону
-             BlobData.data() + offset + n * bytes_per_side, bytes_per_side);
-      n += 1;
+      if(bits.test(i)) // если сторона "i" видимая
+      {
+        side_t Side {'\0'};
+        Side[0] = i;
+        memcpy(Side.data() + 1, BlobData.data() + offset, bytes_per_side);
+        offset += bytes_per_side;
+        TheVox.Sides.push_back(Side);
+      }
     }
-    ResultPack.Voxes.push_back(TheVox);      // Добавить полученные данные в пакет
-    offset += m.count() * bytes_per_side;    // Переключить указатель на начало следующего вокса
+    ResultPack.Voxes.push_back(TheVox);   // Добавить полученные данные в пакет
   }
   return ResultPack;
 }
@@ -383,7 +390,8 @@ void db::vox_delete(int x, int y, int z)
 vox_data db::vox_data_make(vox* pVox)
 {
   if(pVox == nullptr) ERR("null ptr on db::vox_data_make(vox* pVox)");
-  vox_data VoxData {0, {}};
+
+  vox_data VoxData {};
   VoxData.y = pVox->Origin.y;
 
   GLfloat buffer[digits_per_side];
@@ -391,9 +399,8 @@ vox_data db::vox_data_make(vox* pVox)
   {
     if(pVox->side_fill_data(side_id, buffer))
     {
-      side_data Side {};
-      Side.id = side_id;
-      memcpy(Side.vbo_data, buffer, bytes_per_side);
+      side_t Side {side_id}; // Side[0] = side_id - останется
+      memcpy(Side.data() + 1, buffer, bytes_per_side);
       VoxData.Sides.push_back(Side);
     }
   }

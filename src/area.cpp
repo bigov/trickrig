@@ -262,10 +262,10 @@ void area::load(int x, int z)
     for( auto& S: V.Sides )
     {
       vbo_mtx.lock();
-      auto vbo_addr = VboCtrl->append(S.vbo_data, bytes_per_side);
+      auto vbo_addr = VboCtrl->append(S.data() + 1, bytes_per_side);
       vbo_mtx.unlock();
       // Запомнить положение блока данных в VBO, координаты вокса и индекс стороны
-      VboMap[vbo_addr/bytes_per_side] = { x, V.y, z, S.id };
+      VboMap[vbo_addr/bytes_per_side] = { x, V.y, z, S[0] }; // По адресу S[0] находится id стороны
       render_indices.fetch_add(indices_per_side);
     }
   }

@@ -68,7 +68,6 @@ using ulong = unsigned long;
 using v_str = std::vector<std::string>;
 using v_ch  = std::vector<char>;
 
-
 enum APP_INIT {
   PNG_TEXTURE0,   // вначале списка идут названия файлов
   DB_TPL_FNAME,
@@ -168,6 +167,11 @@ static const GLsizeiptr bytes_per_side = digits_per_side * sizeof(GLfloat);
 
 // число байт для записи данных одной вершины
 static const GLsizeiptr bytes_per_vertex = digits_per_vertex * sizeof(GLfloat);
+
+// Массив для работы с данными стороны в бинарном виде.
+// В нулевой позиции записывается индекс стороны.
+using side_t = std::array<unsigned char, bytes_per_side + 1>;
+
 
 static const char fname_cfg[] = "config.db";
 static const char fname_map[] = "map.db";
