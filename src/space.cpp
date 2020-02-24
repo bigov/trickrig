@@ -139,7 +139,7 @@ void space::init_buffers(void)
 
   // Число сторон куба в объеме с длиной стороны LOD (2*dist_xx) элементов:
   uint n = static_cast<uint>(pow((border_dist_b4 + border_dist_b4 + 1), 3));
-  VBOdata.allocate(n * bytes_per_side);          // Размер данных VBO для размещения сторон вокселей:
+  VBOdata.allocate(n * bytes_per_face);          // Размер данных VBO для размещения сторон вокселей:
   VBOdata.set_attributes(Program3d->AtribsList); // настройка положения атрибутов GLSL программы
 
   // Так как все четырехугольники сторон индексируются одинаково, то индексный массив
@@ -160,7 +160,7 @@ void space::init_buffers(void)
   // Поток обмена данными с базой
   data_loader = std::make_unique<std::thread>(db_control, OGLContext, ViewFrom, VBOdata.get_id(), VBOdata.get_size());
 
-  while (render_indices < indices_per_side) // Подождать пока хоть одна сторона загрузится
+  while (render_indices < indices_per_face) // Подождать пока хоть одна сторона загрузится
     std::this_thread::sleep_for(std::chrono::milliseconds(1));
 }
 
@@ -358,7 +358,7 @@ void space::mouse_event(int _button, int _action, int _mods)
   mouse  = _button;
   action = _action;
 
-  if((hl_vertex_id_end/vertices_per_side)>(render_indices/indices_per_side)) return;
+  if((hl_vertex_id_end/vertices_per_face)>(render_indices/indices_per_face)) return;
 
   if((mouse == MOUSE_BUTTON_LEFT) && (action == PRESS))
   {
@@ -467,8 +467,8 @@ void space::calc_hlight_quad(void)
   //
   // Значения переменных hl_point_id_end и hl_point_id_from используются в шейдере
   // для подсветки текущего прямоугольника (расположенного под прицелом в центре экрана)
-  hl_vertex_id_from = vertex_id - (vertex_id % vertices_per_side);
-  hl_vertex_id_end = hl_vertex_id_from + vertices_per_side - 1;
+  hl_vertex_id_from = vertex_id - (vertex_id % vertices_per_face);
+  hl_vertex_id_end = hl_vertex_id_from + vertices_per_face - 1;
 }
 
 

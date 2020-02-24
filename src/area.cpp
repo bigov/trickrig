@@ -65,7 +65,7 @@ area::area (GLuint VBO_id, GLsizeiptr VBO_size)
   VboCtrl = std::make_unique<vbo_ctrl> (GL_ARRAY_BUFFER, VBO_id, VBO_size);
 
   // Зарезервировать место для размещения числа сторон в соответствии с размером буфера VBO
-  VboMap = std::unique_ptr<vbo_map[]> {new vbo_map[VBO_size/bytes_per_side]};
+  VboMap = std::unique_ptr<vbo_map[]> {new vbo_map[VBO_size/bytes_per_face]};
 
 }
 
@@ -109,8 +109,14 @@ void area::init(std::shared_ptr<glm::vec3> CameraLocation)
 ///
 bool area::recalc_borders (void)
 {
-  bool redrawed = change_control();
+  if(change_control())
+  {
+    vbo_mtx.lock();
+    glFinish();
+    vbo_mtx.unlock();
+  }
 
+  bool redrawed = false;
   view_mtx.lock();
   curr[XL] = ViewFrom->x;
   curr[ZL] = ViewFrom->z;
@@ -209,8 +215,9 @@ bool area::change_control(void)
   int vertex_id = click_side_vertex_id * sign;
   click_side_vertex_id.store(0);
 
-  if(sign > 0) vox_append( VboMap[vertex_id / vertices_per_side] );
-  else vox_remove( VboMap[vertex_id / vertices_per_side] );
+  auto S = VboMap[vertex_id / vertices_per_face];
+  if(sign > 0) vox_append( S.x, S.y, S.z, S.side );
+  else vox_remove( S.x, S.y, S.z );
 
   return true;
 }
@@ -221,14 +228,13 @@ bool area::change_control(void)
 /// \param side
 /// \param data
 ///
-void area::vox_append(const vbo_map& S)
+void area::vox_append(const int x, const int y, const int z, const uchar f)
 {
 #ifndef NDEBUG
-  int i = S.side;
-  std::clog << "Append Vox in " << S.x << "," << S.y << "," << S.z
+  int i = f;
+  std::clog << "Append Vox in " << x << "," << y << "," << z
             << ", side " << i << std::endl;
 #endif
-
 }
 
 
@@ -237,15 +243,26 @@ void area::vox_append(const vbo_map& S)
 /// \param side
 /// \param data
 ///
-void area::vox_remove(const vbo_map& S)
+void area::vox_remove(const int x, const int y, const int z)
 {
 #ifndef NDEBUG
-  std::clog << "Remove Vox from " << S.x << "," << S.y << "," << S.z << "\n";
+  std::clog << __PRETTY_FUNCTION__
+            << " DEBUG: removing vox from " << x << ", " << y << ", " << z << "\n";
 #endif
 
-  truncate(S.x, S.z);                       // Убрать колонку из рендера
-  cfg::DataBase.vox_delete(S.x, S.y, S.z);  // Внести изменения в БД
-  load(S.x, S.z);                           // Загрузить данные колонки в рендер
+  truncate(x, z);          // Убрать колонку из рендера
+  truncate(x + side_len, z);
+  truncate(x - side_len, z);
+  truncate(x, z + side_len);
+  truncate(x, z - side_len);
+
+  cfg::DataBase.vox_delete(x, y, z, side_len); // Внести изменения в БД
+
+  load(x, z);           // Загрузить данные в рендер
+  load(x + side_len, z);
+  load(x - side_len, z);
+  load(x, z + side_len);
+  load(x, z - side_len);
 }
 
 
@@ -256,17 +273,17 @@ void area::vox_remove(const vbo_map& S)
 ///
 void area::load(int x, int z)
 {
-  auto DataPack = cfg::DataBase.load_data_pack(x, z);
+  auto DataPack = cfg::DataBase.load_data_pack(x, z, side_len);
   for( auto& V: DataPack.Voxes )
   {
-    for( auto& S: V.Sides )
+    for( auto& S: V.Faces )
     {
       vbo_mtx.lock();
-      auto vbo_addr = VboCtrl->append(S.data() + 1, bytes_per_side);
+      auto vbo_addr = VboCtrl->append(S.data() + 1, bytes_per_face);
       vbo_mtx.unlock();
       // Запомнить положение блока данных в VBO, координаты вокса и индекс стороны
-      VboMap[vbo_addr/bytes_per_side] = { x, V.y, z, S[0] }; // По адресу S[0] находится id стороны
-      render_indices.fetch_add(indices_per_side);
+      VboMap[vbo_addr/bytes_per_face] = { x, V.y, z, S[0] }; // По адресу S[0] находится id стороны
+      render_indices.fetch_add(indices_per_face);
     }
   }
 }
@@ -280,23 +297,23 @@ void area::load(int x, int z)
 ///
 void area::truncate(int x, int z)
 {
-  if (render_indices < indices_per_side) return;
+  if (render_indices < indices_per_face) return;
   GLsizeiptr dest, moved_from;
 
-  size_t id = render_indices/indices_per_side;
+  size_t id = render_indices/indices_per_face;
   while(id > 0)
   {
     id -= 1;
     if((VboMap[id].x == x) and (VboMap[id].z == z)) // Данные вокса есть в GPU
     {
-      dest = id * bytes_per_side;                     // адрес удаляемого блока данных
+      dest = id * bytes_per_face;                     // адрес удаляемого блока данных
       vbo_mtx.lock();
-      moved_from = VboCtrl->remove(dest, bytes_per_side); // адрес хвоста VBO (данными отсюда
+      moved_from = VboCtrl->remove(dest, bytes_per_face); // адрес хвоста VBO (данными отсюда
       vbo_mtx.unlock();                                // перезаписываются данные по адресу "dest")
       // Если c адреса "free" на "dest" данные были перенесены, то обновить координты Origin
-      if (moved_from != dest) VboMap[id] = VboMap[moved_from/bytes_per_side];
+      if (moved_from != dest) VboMap[id] = VboMap[moved_from/bytes_per_face];
       // Если free == dest, то удаляемый блок данных был в конце VBO и просто "отбрасывается"
-      render_indices.fetch_sub(indices_per_side); // уменьшаем число точек рендера
+      render_indices.fetch_sub(indices_per_face); // уменьшаем число точек рендера
     }
   }
 }

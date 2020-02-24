@@ -224,7 +224,7 @@ vbo_ext::vbo_ext(GLenum type): vbo(type)
   // производится обмен данными между GPU и CPU.
   glGenBuffers(1, &id_subbuf);
   glBindBuffer(GL_COPY_WRITE_BUFFER, id_subbuf);
-  glBufferData(GL_COPY_WRITE_BUFFER, bytes_per_side, nullptr, GL_STATIC_DRAW);
+  glBufferData(GL_COPY_WRITE_BUFFER, bytes_per_face, nullptr, GL_STATIC_DRAW);
   glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
@@ -243,7 +243,7 @@ vbo_ext::vbo_ext(GLenum type): vbo(type)
 void vbo_ext::data_get(GLintptr offset, GLsizeiptr sz, GLvoid* dst)
 {
 #ifndef NDEBUG
-  if(sz > bytes_per_side) ERR("vbo_ext::data_get > bytes_per_snip");
+  if(sz > bytes_per_face) ERR("vbo_ext::data_get > bytes_per_snip");
 #endif
 
   glBindBuffer(GL_COPY_WRITE_BUFFER, id_subbuf);

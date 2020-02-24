@@ -22,8 +22,8 @@
 
  */
 
-#ifndef VOXEL_HPP
-#define VOXEL_HPP
+#ifndef VOX_HPP
+#define VOX_HPP
 
 #include "io.hpp"
 
@@ -52,35 +52,35 @@ private:
   GLfloat u_sz = 0.125f;               // размер ячейки текстуры по U
   GLfloat v_sz = 0.125f;               // размер ячейки текстуры по V
   uch2 tex_id[SIDES_COUNT];            // Индексы текстур сторон
-  GLfloat data[digits_per_voxel] {};   // Данные вершин (координаты, цвет, нормали, текстуры)
+  GLfloat data[digits_per_vox] {};   // Данные вершин (координаты, цвет, нормали, текстуры)
 
   std::bitset<6> visibility { 0x00 };  // Видимость сторон
 
   void init_data(void);
-  void side_color_set(uchar side, color C);
-  void side_normals_set(uchar side);
-  void side_texture_set(uchar side);
-  void side_position_set(uchar side);
+  void face_color_set(uchar side, color C);
+  void face_normals_set(uchar side);
+  void face_texture_set(uchar side);
+  void face_position_set(uchar side);
 
   vox(void)                   = delete; // конструктор без параметров
   vox(const vox&)             = delete; // дублирующий конструктор
   vox& operator= (const vox&) = delete; // копирующее присваивание
 
 public:
-  vox(const i3d&, int);
+  vox(const i3d& Point, int side_len);
   vox(std::pair<const i3d&, int> p): vox(p.first, p.second) {}
   ~vox(void) {}
 
-  i3d Origin;       // координаты опорной точки
-  int side_len;     // размер стороны
-  int born;         // метка времени создания
+  i3d Origin;     // координаты опорной точки
+  int side_len;   // размер стороны
+  int born;       // метка времени создания
 
   void visible_on(uchar side_id);
   void visible_off(uchar side_id);
   bool is_visible(uchar side_id);
   uchar get_visibility(void) { return static_cast<uchar>(visibility.to_ulong()); }
   int get_visible_sides_count(void) { return visibility.count(); }
-  bool side_fill_data(uchar side_id, GLfloat* data);
+  bool face_fill_data(uchar side_id, GLfloat* data);
 };
 
 }

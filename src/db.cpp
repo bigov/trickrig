@@ -261,7 +261,7 @@ std::vector<uchar> db::blob_make(const data_pack& DataPack)
 void db::blob_add_vox_data(std::vector<uchar>& BlobData, const vox_data& VoxData)
 {
   size_t offset = BlobData.size();                     // Указатель смещения для записи в блоб
-  BlobData.resize(offset + sizeof_y + sizeof(uchar) + bytes_per_side * VoxData.Sides.size());
+  BlobData.resize(offset + sizeof_y + sizeof(uchar) + bytes_per_face * VoxData.Faces.size());
 
   memcpy(BlobData.data() + offset, &(VoxData.y), sizeof_y); // Записать координату Y текущего вокса
   offset += sizeof_y;
@@ -270,11 +270,11 @@ void db::blob_add_vox_data(std::vector<uchar>& BlobData, const vox_data& VoxData
   auto bitset_offset = offset;         // Позиция хранения данных битовой маски вокса
 
   offset += 1;
-  for(auto& SideArray: VoxData.Sides)  // Скопировать данные вершин сторон вокса
+  for(auto& Face: VoxData.Faces)  // Скопировать данные вершин сторон вокса
   {
-    m.set(SideArray[0]);               // Настроить битовую маску
-    memcpy(BlobData.data() + offset, SideArray.data() + 1, bytes_per_side);
-    offset += bytes_per_side;
+    m.set(Face[0]);               // Настроить битовую маску
+    memcpy(BlobData.data() + offset, Face.data() + 1, bytes_per_face);
+    offset += bytes_per_face;
   }                                    // записать битовую маску
   BlobData[bitset_offset] = static_cast<uchar>(m.to_ulong());
 }
@@ -283,7 +283,8 @@ void db::blob_add_vox_data(std::vector<uchar>& BlobData, const vox_data& VoxData
 /// \brief db::parsing_blob_data
 /// \param VoxData
 /// \param DataPack
-/// \details Преобразование данных из бинарного массива в структуру "data_pack"
+/// \details Преобразование данных из бинарного массива, полученного
+/// из базы данных, в структуру "data_pack"
 ///
 data_pack db::blob_unpack(const std::vector<uchar>& BlobData)
 {
@@ -307,18 +308,22 @@ data_pack db::blob_unpack(const std::vector<uchar>& BlobData)
     offset += 1;
 
 #ifndef NDEBUG
-    if(bits.count() == 0) std::cerr << "Err: empty vox data!" << std::endl;
+    if(bits.count() == 0)
+    {
+      std::cerr << __PRETTY_FUNCTION__
+                << " ERROR: empty vox data on Y=" << TheVox.y << std::endl;
+    }
 #endif
 
     for(int i = 0; i < SIDES_COUNT; ++i) // Парсинг по битовой маске
     {
       if(bits.test(i)) // если сторона "i" видимая
       {
-        side_t Side {'\0'};
+        face_t Side {'\0'};
         Side[0] = i;
-        memcpy(Side.data() + 1, BlobData.data() + offset, bytes_per_side);
-        offset += bytes_per_side;
-        TheVox.Sides.push_back(Side);
+        memcpy(Side.data() + 1, BlobData.data() + offset, bytes_per_face);
+        offset += bytes_per_face;
+        TheVox.Faces.push_back(Side);
       }
     }
     ResultPack.Voxes.push_back(TheVox);   // Добавить полученные данные в пакет
@@ -328,20 +333,213 @@ data_pack db::blob_unpack(const std::vector<uchar>& BlobData)
 
 
 ///
-/// \brief db::data_pack_vox_remove
-/// \param DataPack
-/// \param y
-/// \return bool
-/// \details Удаляет, если есть, данные вокса с координатой 'y'
+/// \brief cross
+/// \param s
+/// \return номер стороны, противоположной указанной в параметре
 ///
-bool db::data_pack_vox_remove( data_pack& DataPack, int y )
+unsigned char side_opposite(unsigned char s)
 {
-  if(DataPack.Voxes.empty()) return false;
+  switch (s)
+  {
+    case SIDE_XP: return SIDE_XN;
+    case SIDE_XN: return SIDE_XP;
+    case SIDE_YP: return SIDE_YN;
+    case SIDE_YN: return SIDE_YP;
+    case SIDE_ZP: return SIDE_ZN;
+    case SIDE_ZN: return SIDE_ZP;
+    default: return UCHAR_MAX;
+  }
+}
+
+
+///
+/// \brief vox_buffer::i3d_near
+/// \param P
+/// \param s
+/// \param l
+/// \return
+///
+///  Координаты опорной точки соседнего вокселя относительно указанной стороны
+///
+i3d i3d_near(const i3d& P, uchar side, int side_len)
+{
+  switch (side) {
+    case SIDE_XP: return i3d{ P.x + side_len, P.y, P.z };
+    case SIDE_XN: return i3d{ P.x - side_len, P.y, P.z };
+    case SIDE_YP: return i3d{ P.x, P.y + side_len, P.z };
+    case SIDE_YN: return i3d{ P.x, P.y - side_len, P.z };
+    case SIDE_ZP: return i3d{ P.x, P.y, P.z + side_len };
+    case SIDE_ZN: return i3d{ P.x, P.y, P.z - side_len };
+    default:      return P;
+  }
+}
+
+
+///
+/// \brief db::vox_data_face_on
+/// \param VoxData
+/// \param face_id
+/// \details Заполнение массива данных для указанной грани вокса
+///
+void db::vox_data_face_on(vox_data& VoxData, unsigned char face_id, i3d& P, int len)
+{
+  // TODO: упрощенная реализация - ДОРАБОТАТЬ
+  vox V {P, len};
+  V.visible_on(face_id);
+  GLfloat buff[digits_per_face] = {0.f};
+  V.face_fill_data(face_id, buff);
+
+#ifndef NDEBUG
+  auto it = std::find_if(VoxData.Faces.begin(), VoxData.Faces.end(),
+                         [&face_id](const auto& Face){ return Face[0] == face_id; });
+  if(it != VoxData.Faces.end())  // Проверить, нет ли в блоке данных такой стороны
+  {                              // Если есть, то удалить,
+    VoxData.Faces.erase(it);     // и занести событие в журнал ошибок
+
+    std::cerr << __PRETTY_FUNCTION__
+              << " ERROR: add face that exist" << std::endl;
+  }
+#endif
+
+  face_t Face {};
+  Face[0] = face_id;
+  memcpy(Face.data()+1, buff, bytes_per_face);
+
+  VoxData.Faces.push_back(Face);
+}
+
+
+///
+/// \brief db::osculant_faces_show
+/// \param x
+/// \param y
+/// \param z
+/// \param FacesId
+/// \details Делает видимыми грани воксов, примыкающих к FacesId граням вокса,
+/// удаляемого из точки с коодинатами (x, y, z)
+///
+///
+void db::osculant_faces_show(const int x_base, const int y_base, const int z_base,
+                             const std::vector<unsigned char>& FacesId, const int side_len)
+{
+  for(auto face_id: FacesId)
+  {
+    i3d P = i3d_near({x_base, y_base, z_base}, face_id, side_len); // Координаты прилегающего вокса, сторону которого надо отобразить
+    auto DataPack = load_data_pack(P.x, P.z, side_len); // Загрузить из БД блок c искомым воксом
+
+#ifndef NDEBUG
+    if(DataPack.Voxes.empty()) std::clog
+        << __PRETTY_FUNCTION__ << "DEBUG: empty data_pack on " << P.x << ", " << P.z << std::endl;
+#endif
+
+    vox_data VoxData {P.y, {}};
+
+    // Найти в загруженном блоке нужный вокс
+    auto it = std::find_if(DataPack.Voxes.begin(), DataPack.Voxes.end(),
+                           [&P](const auto& Vox){ return Vox.y == P.y;});
+    if(it != DataPack.Voxes.end())
+    {
+      VoxData = *it;            // Если в БД тут есть вокс, то копируем его,
+      DataPack.Voxes.erase(it); // а исходный удаляем чтобы перезаписать
+    }
+#ifndef NDEBUG
+    else {
+      std::clog << __PRETTY_FUNCTION__ << "DEBUG: created vox on Y=" << P.y << std::endl;
+    }
+#endif
+
+    vox_data_face_on(VoxData, side_opposite(face_id), P, side_len); // Включить сторону, прилегающую к face_id
+    DataPack.Voxes.push_back(VoxData);                              // Подготовить бинарный пакет
+    update_row(blob_make(DataPack), P.x, P.z);                      // Обновить запись в БД
+  }
+}
+
+
+///
+/// \brief db::vox_data_delete
+/// \param x
+/// \param y
+/// \param z
+/// \details Удаляет из базы данных вокс по указанным координатам
+///
+void db::vox_delete(const int x, const int y, const int z, const int len)
+{
+  auto DataPack = load_data_pack(x, z, len);
+
+  if(DataPack.Voxes.empty())
+  {
+#ifndef NDEBUG
+    std::cerr << __PRETTY_FUNCTION__
+              << " ERROR: remove vox that not exist ("
+              << x << ", " << y << ", " << z << ")" << std::endl;
+#endif
+    return;
+  }
+
   auto it = std::find_if(DataPack.Voxes.begin(), DataPack.Voxes.end(),
                          [&y](const auto& Vox){ return Vox.y == y;});
-  if(it == DataPack.Voxes.end()) return false;
-  DataPack.Voxes.erase(it);
-  return true;
+
+  if(it == DataPack.Voxes.end())
+  {
+#ifndef NDEBUG
+    std::cerr << __PRETTY_FUNCTION__
+              << " ERROR: can't find vox for remove ("
+              << x << ", " << y << ", " << z << ")" << std::endl;
+#endif
+    return;
+  }
+
+  auto Vox = *it;                        // Скопировать данные вокса, который будет удален
+  DataPack.Voxes.erase(it);              // Удалить вокс
+  update_row(blob_make(DataPack), x, z); // Обновить запись в БД
+
+  // Грань вокса невидима, если к ней примыкает грань соседнего вокса.
+  // Поэтому после удаления вокса надо найти соседний и сделать у него
+  // видимой примыкающую грань.
+
+  // Полный список граней стандартного вокса
+  std::vector<unsigned char> FacesAll { SIDE_XP, SIDE_XN, SIDE_YP, SIDE_YN, SIDE_ZP, SIDE_ZN };
+
+  // Список видимых граней удаленного вокса
+  std::vector<unsigned char> FacesVisible {};
+  for(auto& Face: Vox.Faces) FacesVisible.push_back(Face[0]);
+
+  // Создать и заполнить список невидимых граней удаляемого вокса
+  std::vector<unsigned char> FacesUnvisible {};
+  std::set_difference(FacesAll.begin(), FacesAll.end(),
+                      FacesVisible.begin(), FacesVisible.end(),
+                      std::inserter(FacesUnvisible, FacesUnvisible.begin()));
+
+  // Сделать видимыми грани примыкающих воксов
+  if(!FacesUnvisible.empty()) osculant_faces_show(DataPack.x, y, DataPack.z,
+                                                  FacesUnvisible, DataPack.len);
+}
+
+
+///
+/// \brief db::vox_data_make
+/// \param pVox
+/// \return
+/// \details Создать структуру для манипуляций с данными вокса
+///
+vox_data db::vox_append(vox* pVox)
+{
+  if(pVox == nullptr) ERR("null ptr on db::vox_data_make(vox* pVox)");
+
+  vox_data VoxData {};
+  VoxData.y = pVox->Origin.y;
+
+  GLfloat buffer[digits_per_face];
+  for(uchar side_id = 0; side_id < SIDES_COUNT; ++side_id)
+  {
+    if(pVox->face_fill_data(side_id, buffer))
+    {
+      face_t Side {side_id}; // Side[0] = side_id - останется
+      memcpy(Side.data() + 1, buffer, bytes_per_face);
+      VoxData.Faces.push_back(Side);
+    }
+  }
+  return VoxData;
 }
 
 
@@ -356,7 +554,12 @@ void db::update_row(const std::vector<uchar>& BlobData, int x, int z)
   char query[127] = {'\0'};
   if(!BlobData.empty())                                // Если в блоке есть воксы, то
   {                                                    // обновить запись блока данных
-    std::sprintf(query, "INSERT OR REPLACE INTO area (x, z, b) VALUES (%d, %d, ?);", x, z);
+    auto sec = std::chrono::duration_cast< std::chrono::seconds >
+      (std::chrono::system_clock::now().time_since_epoch());
+    auto time_point = static_cast<int>(sec.count());
+
+    std::sprintf(query, "INSERT OR REPLACE INTO area (x, z, dt, b) VALUES (%d, %d, %d, ?);",
+                 x, z, time_point);
     SqlDb.request_put(query, BlobData.data(), BlobData.size());
   }
   else                                                 // Если данных воксов нет,
@@ -364,60 +567,6 @@ void db::update_row(const std::vector<uchar>& BlobData, int x, int z)
     std::sprintf(query, "DELETE FROM area WHERE( x=%d AND z=%d );", x, z);
     SqlDb.exec(query);
   }
-}
-
-///
-/// \brief db::vox_data_delete
-/// \param x
-/// \param y
-/// \param z
-///
-void db::vox_delete(int x, int y, int z)
-{
-  auto DataPack = load_data_pack(x, z);
-  if(!data_pack_vox_remove(DataPack, y))
-    std::cerr << "ERROR: Try to delete empty space in the db::vox_data_delete(x,y,z)";
-  update_row(blob_make(DataPack), x, z);
-}
-
-
-///
-/// \brief db::vox_data_make
-/// \param pVox
-/// \return
-/// \details Создать структуру для манипуляций с данными вокса
-///
-vox_data db::vox_data_make(vox* pVox)
-{
-  if(pVox == nullptr) ERR("null ptr on db::vox_data_make(vox* pVox)");
-
-  vox_data VoxData {};
-  VoxData.y = pVox->Origin.y;
-
-  GLfloat buffer[digits_per_side];
-  for(uchar side_id = 0; side_id < SIDES_COUNT; ++side_id)
-  {
-    if(pVox->side_fill_data(side_id, buffer))
-    {
-      side_t Side {side_id}; // Side[0] = side_id - останется
-      memcpy(Side.data() + 1, buffer, bytes_per_side);
-      VoxData.Sides.push_back(Side);
-    }
-  }
-  return VoxData;
-}
-
-
-///
-/// \brief db::vox_data_append
-/// \param pVox
-///
-void db::vox_insert(vox* pVox)
-{
-  auto DataPack = load_data_pack(pVox->Origin.x, pVox->Origin.z);
-  data_pack_vox_remove(DataPack, pVox->Origin.y);
-  DataPack.Voxes.push_back(vox_data_make(pVox));
-  update_row(blob_make(DataPack), pVox->Origin.x, pVox->Origin.z);
 }
 
 
@@ -449,11 +598,12 @@ std::vector<uchar> db::load_blob_data(int x, int z)
 /// \param z
 /// \return
 ///
-data_pack db::load_data_pack(int x, int z)
+data_pack db::load_data_pack(int x, int z, int len)
 {
   data_pack result = blob_unpack(load_blob_data(x, z));
   result.x = x;
   result.z = z;
+  result.len = len;
   return result;
 }
 

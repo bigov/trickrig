@@ -25,10 +25,10 @@ vox::vox(const i3d& Or, int sz)
 /// \param side
 /// \param C
 ///
-void vox::side_color_set(uchar side, color C)
+void vox::face_color_set(uchar side, color C)
 {
-  size_t i = side * digits_per_side;
-  for(uint v = 0; v < vertices_per_side; ++v)
+  size_t i = side * digits_per_face;
+  for(uint v = 0; v < vertices_per_face; ++v)
   {
     data[i + R] = C.r;
     data[i + G] = C.g;
@@ -44,11 +44,11 @@ void vox::side_color_set(uchar side, color C)
 /// \param side
 /// \param texture
 ///
-void vox::side_texture_set(uchar side)
+void vox::face_texture_set(uchar side)
 {
   uch2 texture = tex_id[side];
 
-  size_t i =  side * digits_per_side;
+  size_t i =  side * digits_per_face;
   data[i + U] = u_sz * texture.u;
   data[i + V] = v_sz * texture.v;
 
@@ -70,7 +70,7 @@ void vox::side_texture_set(uchar side)
 /// \brief voxel::side_normals_set
 /// \param side
 ///
-void vox::side_normals_set(uchar side)
+void vox::face_normals_set(uchar side)
 {
   GLfloat nx = 0.f, ny = 0.f, nz = 0.f;
 
@@ -94,8 +94,8 @@ void vox::side_normals_set(uchar side)
       nz =-1.f;
   }
 
-  size_t i =  side * digits_per_side;
-  for(uint v = 0; v < vertices_per_side; ++v)
+  size_t i =  side * digits_per_face;
+  for(uint v = 0; v < vertices_per_face; ++v)
   {
     data[i + NX] = nx;
     data[i + NY] = ny;
@@ -109,7 +109,7 @@ void vox::side_normals_set(uchar side)
 /// \brief voxel::side_position_set
 /// \param side
 ///
-void vox::side_position_set(uchar side)
+void vox::face_position_set(uchar side)
 {
   // относительные координаты всех вершин вокселя
   //int l = side_len/2;
@@ -140,8 +140,8 @@ void vox::side_position_set(uchar side)
       sh[0] = P[5]; sh[1] = P[0]; sh[2] = P[3]; sh[3] = P[6];
   }
 
-  size_t i = side * digits_per_side;
-  for(uint v = 0; v < vertices_per_side; ++v)
+  size_t i = side * digits_per_face;
+  for(uint v = 0; v < vertices_per_face; ++v)
   {
     data[i + X] = sh[v].x + Origin.x;
     data[i + Y] = sh[v].y + Origin.y;
@@ -149,6 +149,7 @@ void vox::side_position_set(uchar side)
     i += digits_per_vertex;
   }
 }
+
 
 ///
 /// \brief voxel::init_arrays
@@ -162,10 +163,10 @@ void vox::init_data(void)
     visibility.set(side);
     tex_id[side]  = {7, 5};
 
-    side_position_set(side);
-    side_color_set(side, IniColor);
-    side_normals_set(side);
-    side_texture_set(side);
+    face_position_set(side);
+    face_color_set(side, IniColor);
+    face_normals_set(side);
+    face_texture_set(side);
   }
 }
 
@@ -176,11 +177,11 @@ void vox::init_data(void)
 /// \details Заполнение массива стороны данными. Если сторона
 /// скрытая, то данные не записываются и возвращается false
 ///
-bool vox::side_fill_data(uchar side, GLfloat* buff)
+bool vox::face_fill_data(uchar side, GLfloat* buff)
 {
   if(!is_visible(side)) return false;
-  GLfloat* src = &data[side * digits_per_side];
-  memcpy(buff, src, bytes_per_side);
+  GLfloat* src = &data[side * digits_per_face];
+  memcpy(buff, src, bytes_per_face);
   return true;
 }
 

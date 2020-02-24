@@ -148,59 +148,61 @@ const int size_v4 = 32;         // размер стороны вокселя
 const int border_dist_b4 = 24;  // число элементов от камеры до отображаемой границы
 
 // число вершин в прямоугольнике
-static const int vertices_per_side = 4;
+static const int vertices_per_face = 4;
 
 // число индексов в одном снипе
-static const int indices_per_side = 6;
+static const int indices_per_face = 6;
 
 // количество чисел (GLfloat) в блоке данных одной вершины
 static const size_t digits_per_vertex = 12;
 
 // количество чисел (GLfloat) в блоке данных прямоугольника
-static const size_t digits_per_side = digits_per_vertex * vertices_per_side;
+static const size_t digits_per_face = digits_per_vertex * vertices_per_face;
 
 // количество чисел (GLfloat) в блоке данных вокселя
-static const size_t digits_per_voxel = digits_per_side * 6;
+static const size_t digits_per_vox = digits_per_face * 6;
 
 // размер (число байт) блока данных одной стороны вокселя
-static const GLsizeiptr bytes_per_side = digits_per_side * sizeof(GLfloat);
+static const GLsizeiptr bytes_per_face = digits_per_face * sizeof(GLfloat);
 
 // число байт для записи данных одной вершины
 static const GLsizeiptr bytes_per_vertex = digits_per_vertex * sizeof(GLfloat);
 
 // Массив для работы с данными стороны в бинарном виде.
 // В нулевой позиции записывается индекс стороны.
-using side_t = std::array<unsigned char, bytes_per_side + 1>;
-
+using face_t = std::array<unsigned char, bytes_per_face + 1>;
 
 static const char fname_cfg[] = "config.db";
 static const char fname_map[] = "map.db";
 
-  struct texture {
-      GLfloat u = 0.0f;
-      GLfloat v = 0.0f;
+  struct texture
+  {
+    GLfloat u = 0.0f;
+    GLfloat v = 0.0f;
   };
 
-  struct normal {
-      float nx = 0.0f;
-      float ny = 0.0f;
-      float nz = 0.0f;
+  struct normal
+  {
+    float nx = 0.0f;
+    float ny = 0.0f;
+    float nz = 0.0f;
   };
 
-  struct color {
-      float r = 1.0f;
-      float g = 1.0f;
-      float b = 1.0f;
-      float a = 1.0f;
+  struct color
+  {
+    float r = 1.0f;
+    float g = 1.0f;
+    float b = 1.0f;
+    float a = 1.0f;
   };
 
 
   // структуры для оперирования опорными точками в пространстве трехмерных координат
   struct i3d
   {
-    int x, y, z;
-    i3d(void): x(0), y(0), z(0) {}
-    i3d(int X, int Y, int Z): x(X), y(Y), z(Z) {}
+    int x = 0;
+    int y = 0;
+    int z = 0;
   };
   extern bool operator== (const i3d&, const i3d&);
 

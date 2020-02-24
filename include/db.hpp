@@ -25,16 +25,19 @@ struct vox_data
     //   std::array<unsigned char, bytes_per_side + 1>
     // В котором в нулевой позиции записывается id стороны (Xp|Xn|Yp|Yn|Zp|Zn),
     // а далее (в бинарном виде) информация для построения вершин в OpenGL.
-    std::vector<side_t> Sides {};
+    std::vector<face_t> Faces {};
 };
+
 
 // Структура для передачи данных группы воксов (столбец Y)
 struct data_pack
 {
     int x = 0;
     int z = 0;                      // координаты ячейки
+    int len = 0;                    // длина стороны воксов в данном пакете
     std::vector<vox_data> Voxes {}; // Массив воксов, хранящихся в БД
 };
+
 
 class db
 {
@@ -47,13 +50,12 @@ class db
     void map_name_save(const std::string &Dir, const std::string &MapName);
     v_ch map_name_read(const std::string & dbFile);
     void save_window_layout(const layout&);
-    void vox_insert(vox*);
-    void vox_delete(int x, int y, int z);
+    void vox_delete(const int x, const int y, const int z, const int len);
     void init_map_config(const std::string &);
-    data_pack load_data_pack(int x, int z);
+    data_pack load_data_pack(int x, int z, int len);
     data_pack blob_unpack(const std::vector<uchar>& BlobData);
     std::vector<uchar> blob_make(const data_pack& DataPack);
-    vox_data vox_data_make(vox* pVox);
+    vox_data vox_append(vox* pVox);
 
   private:
     std::string MapDir       {}; // директория текущей карты (со слэшем в конце)
@@ -65,9 +67,11 @@ class db
     void init_app_config(const std::string &);
     v_str load_config(size_t params_count, const std::string &FilePath);
     std::vector<uchar> load_blob_data(int x, int z);
-    bool data_pack_vox_remove(data_pack& DataPack, int y);
     void blob_add_vox_data(std::vector<uchar>& BlobData, const vox_data& VoxData);
     void update_row(const std::vector<uchar>& BlobData, int x, int z);
+    void vox_data_face_on(vox_data& VoxData, unsigned char face_id, i3d& P, int len);
+    void osculant_faces_show(const int x, const int y, const int z,
+         const std::vector<unsigned char>& FacesId, const int side_len);
 };
 
 } //tr
