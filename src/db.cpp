@@ -424,7 +424,11 @@ void db::osculant_faces_show(const int x_base, const int y_base, const int z_bas
   for(auto face_id: FacesId)
   {
     i3d P = i3d_near({x_base, y_base, z_base}, face_id, side_len); // Координаты прилегающего вокса, сторону которого надо отобразить
-    auto DataPack = load_data_pack(P.x, P.z, side_len); // Загрузить из БД блок c искомым воксом
+
+    auto DataPack = blob_unpack(load_blob_data(P.x, P.z)); // Загрузить из БД блок c искомым воксом
+    DataPack.x = P.x;
+    DataPack.z = P.z;
+    DataPack.len = side_len;
 
 #ifndef NDEBUG
     if(DataPack.Voxes.empty()) std::clog
@@ -465,7 +469,10 @@ void db::osculant_faces_show(const int x_base, const int y_base, const int z_bas
 ///
 void db::vox_delete(const int x, const int y, const int z, const int len)
 {
-  auto DataPack = load_data_pack(x, z, len);
+  auto DataPack = blob_unpack(load_blob_data(x, z));
+  DataPack.x = x;
+  DataPack.z = z;
+  DataPack.len = len;
 
   if(DataPack.Voxes.empty())
   {
