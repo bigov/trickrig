@@ -35,6 +35,49 @@ CREATE UNIQUE INDEX `c3d` ON `rigs` ( `x`, `y`, `z` );
 namespace tr {
 
 ///
+/// \brief cross
+/// \param s
+/// \return номер стороны, противоположной указанной в параметре
+///
+unsigned char side_opposite(unsigned char s)
+{
+  switch (s)
+  {
+    case SIDE_XP: return SIDE_XN;
+    case SIDE_XN: return SIDE_XP;
+    case SIDE_YP: return SIDE_YN;
+    case SIDE_YN: return SIDE_YP;
+    case SIDE_ZP: return SIDE_ZN;
+    case SIDE_ZN: return SIDE_ZP;
+    default: return UCHAR_MAX;
+  }
+}
+
+
+///
+/// \brief vox_buffer::i3d_near
+/// \param P
+/// \param s
+/// \param l
+/// \return
+///
+///  Координаты опорной точки соседнего вокселя относительно указанной стороны
+///
+i3d i3d_near(const i3d& P, uchar side, int side_len)
+{
+  switch (side) {
+    case SIDE_XP: return i3d{ P.x + side_len, P.y, P.z };
+    case SIDE_XN: return i3d{ P.x - side_len, P.y, P.z };
+    case SIDE_YP: return i3d{ P.x, P.y + side_len, P.z };
+    case SIDE_YN: return i3d{ P.x, P.y - side_len, P.z };
+    case SIDE_ZP: return i3d{ P.x, P.y, P.z + side_len };
+    case SIDE_ZN: return i3d{ P.x, P.y, P.z - side_len };
+    default:      return P;
+  }
+}
+
+
+///
 /// \brief db::load_config
 /// \param n
 /// \param Pname
@@ -244,9 +287,8 @@ std::vector<uchar> db::blob_make(const data_pack& DataPack)
 /// \brief db::blob_add_vox_data
 /// \param BlobData
 /// \param VoxData
-/// \details
 ///
-/// Добавление данных вокса в бинарный (blob) блок для записи в базу данных.
+/// \details Добавление данных вокса в бинарный (blob) блок для записи в базу данных.
 ///
 /// В начале блока данных каждого вокса записывается значение координаты Y,
 /// после координаты Y записывается битовая маска сторон, по которой можно
@@ -333,55 +375,12 @@ data_pack db::blob_unpack(const std::vector<uchar>& BlobData)
 
 
 ///
-/// \brief cross
-/// \param s
-/// \return номер стороны, противоположной указанной в параметре
-///
-unsigned char side_opposite(unsigned char s)
-{
-  switch (s)
-  {
-    case SIDE_XP: return SIDE_XN;
-    case SIDE_XN: return SIDE_XP;
-    case SIDE_YP: return SIDE_YN;
-    case SIDE_YN: return SIDE_YP;
-    case SIDE_ZP: return SIDE_ZN;
-    case SIDE_ZN: return SIDE_ZP;
-    default: return UCHAR_MAX;
-  }
-}
-
-
-///
-/// \brief vox_buffer::i3d_near
-/// \param P
-/// \param s
-/// \param l
-/// \return
-///
-///  Координаты опорной точки соседнего вокселя относительно указанной стороны
-///
-i3d i3d_near(const i3d& P, uchar side, int side_len)
-{
-  switch (side) {
-    case SIDE_XP: return i3d{ P.x + side_len, P.y, P.z };
-    case SIDE_XN: return i3d{ P.x - side_len, P.y, P.z };
-    case SIDE_YP: return i3d{ P.x, P.y + side_len, P.z };
-    case SIDE_YN: return i3d{ P.x, P.y - side_len, P.z };
-    case SIDE_ZP: return i3d{ P.x, P.y, P.z + side_len };
-    case SIDE_ZN: return i3d{ P.x, P.y, P.z - side_len };
-    default:      return P;
-  }
-}
-
-
-///
 /// \brief db::vox_data_face_on
 /// \param VoxData
 /// \param face_id
 /// \details Заполнение массива данных для указанной грани вокса
 ///
-void db::vox_data_face_on(vox_data& VoxData, unsigned char face_id, i3d& P, int len)
+void db::vox_data_face_on(vox_data& VoxData, unsigned char face_id, const i3d& P, int len)
 {
   // TODO: упрощенная реализация - ДОРАБОТАТЬ
   vox V {P, len};
@@ -429,7 +428,8 @@ void db::osculant_faces_show(const int x_base, const int y_base, const int z_bas
 
 #ifndef NDEBUG
     if(DataPack.Voxes.empty()) std::clog
-        << __PRETTY_FUNCTION__ << "DEBUG: empty data_pack on " << P.x << ", " << P.z << std::endl;
+        << __PRETTY_FUNCTION__
+        << " DEBUG: empty data_pack on " << P.x << ", " << P.z << std::endl;
 #endif
 
     vox_data VoxData {P.y, {}};
@@ -444,7 +444,8 @@ void db::osculant_faces_show(const int x_base, const int y_base, const int z_bas
     }
 #ifndef NDEBUG
     else {
-      std::clog << __PRETTY_FUNCTION__ << "DEBUG: created vox on Y=" << P.y << std::endl;
+      std::clog << __PRETTY_FUNCTION__
+                << " DEBUG: created vox on Y=" << P.y << std::endl;
     }
 #endif
 
@@ -582,13 +583,16 @@ std::vector<uchar> db::load_blob_data(int x, int z)
   std::sprintf(query, "SELECT * FROM area WHERE (x=%d AND z=%d);", x, z);
   auto Rows = SqlDb.request_get(&query[0]);
 
+  // Если в базе есть занные для этой области
   if(!Rows.empty())
   {
     auto result_row = Rows.front();
     result_row.reverse();
     return result_row.front();
   }
-  return std::vector<uchar> {}; // если данных нет, то возвращается пустой вектор
+
+  // Если данных нет, то возвращается пустой вектор
+  return std::vector<uchar> {};
 }
 
 
@@ -596,7 +600,9 @@ std::vector<uchar> db::load_blob_data(int x, int z)
 /// \brief db::load_data_pack
 /// \param x
 /// \param z
-/// \return
+/// \return data_pack
+/// \details
+///
 ///
 data_pack db::load_data_pack(int x, int z, int len)
 {
@@ -604,6 +610,17 @@ data_pack db::load_data_pack(int x, int z, int len)
   result.x = x;
   result.z = z;
   result.len = len;
+
+  // Если в базе данных для этой точки пространства нет записи,
+  // то ее необходимо создать, сгенерировав поверхность
+  if(result.Voxes.empty())
+  {
+    vox_data Vox {}; // TODO: Доработать генератор случайными элементами
+    vox_data_face_on(Vox, SIDE_YP, i3d{x, 0, z}, len);
+    result.Voxes.push_back(Vox);
+    update_row(blob_make(result), x, z);  // Записать в БД
+  }
+
   return result;
 }
 

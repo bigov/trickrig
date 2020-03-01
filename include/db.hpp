@@ -69,7 +69,7 @@ class db
     std::vector<uchar> load_blob_data(int x, int z);
     void blob_add_vox_data(std::vector<uchar>& BlobData, const vox_data& VoxData);
     void update_row(const std::vector<uchar>& BlobData, int x, int z);
-    void vox_data_face_on(vox_data& VoxData, unsigned char face_id, i3d& P, int len);
+    void vox_data_face_on(vox_data& VoxData, unsigned char face_id, const i3d& P, int len);
     void osculant_faces_show(const int x, const int y, const int z,
          const std::vector<unsigned char>& FacesId, const int side_len);
 };
