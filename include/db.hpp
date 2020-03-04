@@ -50,12 +50,12 @@ class db
     void map_name_save(const std::string &Dir, const std::string &MapName);
     v_ch map_name_read(const std::string & dbFile);
     void save_window_layout(const layout&);
-    void vox_delete(const int x, const int y, const int z, const int len);
     void init_map_config(const std::string &);
     data_pack load_data_pack(int x, int z, int len);
     data_pack blob_unpack(const std::vector<uchar>& BlobData);
     std::vector<uchar> blob_make(const data_pack& DataPack);
-    vox_data vox_append(vox* pVox);
+    void vox_delete(const int x, const int y, const int z, const int len);
+    void vox_append(const int x, const int y, const int z, const int len);
 
   private:
     std::string MapDir       {}; // директория текущей карты (со слэшем в конце)

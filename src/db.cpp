@@ -530,24 +530,9 @@ void db::vox_delete(const int x, const int y, const int z, const int len)
 /// \return
 /// \details Создать структуру для манипуляций с данными вокса
 ///
-vox_data db::vox_append(vox* pVox)
+void db::vox_append(const int x, const int y, const int z, const int len)
 {
-  if(pVox == nullptr) ERR("null ptr on db::vox_data_make(vox* pVox)");
 
-  vox_data VoxData {};
-  VoxData.y = pVox->Origin.y;
-
-  GLfloat buffer[digits_per_face];
-  for(uchar side_id = 0; side_id < SIDES_COUNT; ++side_id)
-  {
-    if(pVox->face_fill_data(side_id, buffer))
-    {
-      face_t Side {side_id}; // Side[0] = side_id - останется
-      memcpy(Side.data() + 1, buffer, bytes_per_face);
-      VoxData.Faces.push_back(Side);
-    }
-  }
-  return VoxData;
 }
 
 
