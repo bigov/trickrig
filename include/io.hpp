@@ -90,6 +90,9 @@ namespace tr
   extern void textstring_place(const img& FontImg, const std::string& TextString,
                      img& Dst, ulong x, ulong y);
 
+  extern unsigned char side_opposite(unsigned char s);
+  extern i3d i3d_near(const i3d& P, uchar side, int side_len);
+
   // Настройка пиксельных шрифтов
   // ----------------------------
   // "FontMap1" - однобайтовые символы

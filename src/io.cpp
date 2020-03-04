@@ -383,6 +383,49 @@ bool operator== (const px &A, const px &B)
   }
 
 
+///
+/// \brief cross
+/// \param s
+/// \return номер стороны, противоположной указанной в параметре
+///
+unsigned char side_opposite(unsigned char s)
+{
+  switch (s)
+  {
+    case SIDE_XP: return SIDE_XN;
+    case SIDE_XN: return SIDE_XP;
+    case SIDE_YP: return SIDE_YN;
+    case SIDE_YN: return SIDE_YP;
+    case SIDE_ZP: return SIDE_ZN;
+    case SIDE_ZN: return SIDE_ZP;
+    default: return UCHAR_MAX;
+  }
+}
+
+
+///
+/// \brief vox_buffer::i3d_near
+/// \param P
+/// \param s
+/// \param l
+/// \return
+///
+///  Координаты опорной точки соседнего вокса относительно указанной стороны
+///
+i3d i3d_near(const i3d& P, uchar side, int side_len)
+{
+  switch (side) {
+    case SIDE_XP: return i3d{ P.x + side_len, P.y, P.z };
+    case SIDE_XN: return i3d{ P.x - side_len, P.y, P.z };
+    case SIDE_YP: return i3d{ P.x, P.y + side_len, P.z };
+    case SIDE_YN: return i3d{ P.x, P.y - side_len, P.z };
+    case SIDE_ZP: return i3d{ P.x, P.y, P.z + side_len };
+    case SIDE_ZN: return i3d{ P.x, P.y, P.z - side_len };
+    default:      return P;
+  }
+}
+
+
   ///
   /// \brief read_chars_file
   /// \param FNname

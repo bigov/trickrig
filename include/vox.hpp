@@ -29,14 +29,6 @@
 
 namespace tr {
 
-#define SIDE_XP       0
-#define SIDE_XN       1
-#define SIDE_YP       2
-#define SIDE_YN       3
-#define SIDE_ZP       4
-#define SIDE_ZN       5
-#define SIDES_COUNT   6
-
 struct uch2
 {
   uchar u = 0, v = 0;

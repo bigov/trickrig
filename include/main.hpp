@@ -55,6 +55,14 @@ namespace fs = std::filesystem;
 
 namespace tr {
 
+#define SIDE_XP       0
+#define SIDE_XN       1
+#define SIDE_YP       2
+#define SIDE_YN       3
+#define SIDE_ZP       4
+#define SIDE_ZN       5
+#define SIDES_COUNT   6
+
 // Взаимодействие потоков
 extern std::atomic<GLsizei> render_indices;
 extern std::atomic<int> click_side_vertex_id; // верхний индекс вершины выделенной стороны

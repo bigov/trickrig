@@ -215,9 +215,9 @@ bool area::change_control(void)
   int vertex_id = click_side_vertex_id * sign;
   click_side_vertex_id.store(0);
 
-  auto S = VboMap[vertex_id / vertices_per_face];
-  if(sign > 0) vox_append( S.x, S.y, S.z, S.side );
-  else vox_remove( S.x, S.y, S.z );
+  auto V = VboMap[vertex_id / vertices_per_face];
+  if(sign > 0) vox_append( V.x, V.y, V.z, V.face_id );
+  else vox_remove( V.x, V.y, V.z );
 
   return true;
 }
@@ -228,13 +228,28 @@ bool area::change_control(void)
 /// \param side
 /// \param data
 ///
-void area::vox_append(const int x, const int y, const int z, const uchar f)
+void area::vox_append(const int x, const int y, const int z, const uchar face_id)
 {
+  auto P = i3d_near( {x, y, z}, face_id, side_len );
+
 #ifndef NDEBUG
-  int i = f;
-  std::clog << "Append Vox in " << x << "," << y << "," << z
-            << ", side " << i << std::endl;
+  std::clog << __PRETTY_FUNCTION__
+            << " DEBUG: append vox at " << P.x << ", " << P.y << ", " << P.z << "\n";
 #endif
+
+  truncate(P.x, P.z);       // Убрать колонки из рендера
+  truncate(P.x + side_len, P.z);
+  truncate(P.x - side_len, P.z);  //    #
+  truncate(P.x, P.z + side_len);  //   ###
+  truncate(P.x, P.z - side_len);  //    #
+
+  cfg::DataBase.vox_append(P.x, P.y, P.z, side_len); // Внести изменения в БД
+
+  load(P.x, P.z);           // Загрузить данные в рендер
+  load(P.x + side_len, P.z);
+  load(P.x - side_len, P.z);
+  load(P.x, P.z + side_len);
+  load(P.x, P.z - side_len);
 }
 
 
@@ -250,7 +265,7 @@ void area::vox_remove(const int x, const int y, const int z)
             << " DEBUG: removing vox from " << x << ", " << y << ", " << z << "\n";
 #endif
 
-  truncate(x, z);          // Убрать колонку из рендера
+  truncate(x, z);          // Убрать колонки из рендера
   truncate(x + side_len, z);
   truncate(x - side_len, z);
   truncate(x, z + side_len);
@@ -276,13 +291,13 @@ void area::load(int x, int z)
   auto DataPack = cfg::DataBase.load_data_pack(x, z, side_len);
   for( auto& V: DataPack.Voxes )
   {
-    for( auto& S: V.Faces )
+    for( auto& Face: V.Faces )
     {
       vbo_mtx.lock();
-      auto vbo_addr = VboCtrl->append(S.data() + 1, bytes_per_face);
+      auto vbo_addr = VboCtrl->append(Face.data() + 1, bytes_per_face);
       vbo_mtx.unlock();
       // Запомнить положение блока данных в VBO, координаты вокса и индекс стороны
-      VboMap[vbo_addr/bytes_per_face] = { x, V.y, z, S[0] }; // По адресу S[0] находится id стороны
+      VboMap[vbo_addr/bytes_per_face] = { x, V.y, z, Face[0] }; // По адресу [0] находится id поверхности
       render_indices.fetch_add(indices_per_face);
     }
   }

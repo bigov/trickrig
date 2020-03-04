@@ -23,7 +23,7 @@ extern void db_control( std::shared_ptr<trgl> OpenGLContext,
 struct vbo_map
 {
   int x, y, z;
-  uchar side;
+  uchar face_id;
 };
 
 enum COORDXZ { XL, ZL, sizeL};
@@ -53,11 +53,8 @@ class area
 
     // В контрольный массив (VboMap) записываются координаты Origin воксов для видимых сторон,
     // переданных в VBO в порядке их размещения. Соответственно, размер массива должен
-    // соотвествовать зарезервированному размеру VBO. Адрес блока в VBO определяется
-    // умножением значения индекса элемента в VboMap на размер блока данных стороны.
-    // Так как все видимые стороны вокса одновременно размещается GPU и одновременно
-    // удаляются из нее, то нет необходимости различать каждую из сторон вокса - для каждой
-    // в массив заносится одино и то-же значение координт Origin.
+    // соотвествовать зарезервированному размеру VBO. Адрес блока данных стороны в VBO
+    // определяется умножением значения индекса элемента в VboMap на размер блока.
     std::unique_ptr<vbo_map[]> VboMap = nullptr; // Контрольный массив
 
     int side_len     = 0;             // Длина стороны вокса
@@ -70,7 +67,7 @@ class area
     int origin[2]      = {0, 0};      // Origin вокса, над которым камера
 
     void load(int x, int z);
-    void vox_append(const int x, const int y, const int z, const uchar f);
+    void vox_append(const int x, const int y, const int z, const uchar face_id);
     void vox_remove(const int x, const int y, const int z);
     bool change_control(void);
     void redraw_borders_x(int, int);

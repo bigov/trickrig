@@ -35,49 +35,6 @@ CREATE UNIQUE INDEX `c3d` ON `rigs` ( `x`, `y`, `z` );
 namespace tr {
 
 ///
-/// \brief cross
-/// \param s
-/// \return номер стороны, противоположной указанной в параметре
-///
-unsigned char side_opposite(unsigned char s)
-{
-  switch (s)
-  {
-    case SIDE_XP: return SIDE_XN;
-    case SIDE_XN: return SIDE_XP;
-    case SIDE_YP: return SIDE_YN;
-    case SIDE_YN: return SIDE_YP;
-    case SIDE_ZP: return SIDE_ZN;
-    case SIDE_ZN: return SIDE_ZP;
-    default: return UCHAR_MAX;
-  }
-}
-
-
-///
-/// \brief vox_buffer::i3d_near
-/// \param P
-/// \param s
-/// \param l
-/// \return
-///
-///  Координаты опорной точки соседнего вокселя относительно указанной стороны
-///
-i3d i3d_near(const i3d& P, uchar side, int side_len)
-{
-  switch (side) {
-    case SIDE_XP: return i3d{ P.x + side_len, P.y, P.z };
-    case SIDE_XN: return i3d{ P.x - side_len, P.y, P.z };
-    case SIDE_YP: return i3d{ P.x, P.y + side_len, P.z };
-    case SIDE_YN: return i3d{ P.x, P.y - side_len, P.z };
-    case SIDE_ZP: return i3d{ P.x, P.y, P.z + side_len };
-    case SIDE_ZN: return i3d{ P.x, P.y, P.z - side_len };
-    default:      return P;
-  }
-}
-
-
-///
 /// \brief db::load_config
 /// \param n
 /// \param Pname
@@ -524,15 +481,50 @@ void db::vox_delete(const int x, const int y, const int z, const int len)
 }
 
 
+face_t vox_face_make(int, int, int, uchar, int)
+{
+  return face_t {SIDES_COUNT};
+}
+
 ///
 /// \brief db::vox_data_make
 /// \param pVox
 /// \return
-/// \details Создать структуру для манипуляций с данными вокса
+/// \details Создать грани вокса в указанной точке пространства
 ///
 void db::vox_append(const int x, const int y, const int z, const int len)
 {
+  auto DataPack = blob_unpack(load_blob_data(x, z));
+  DataPack.x = x;
+  DataPack.z = z;
+  DataPack.len = len;
 
+  auto it = std::find_if(DataPack.Voxes.begin(), DataPack.Voxes.end(),
+                         [&y](const auto& Vox){ return Vox.y == y;});
+
+  if(it != DataPack.Voxes.end())
+  {
+#ifndef NDEBUG
+    std::cerr << __PRETTY_FUNCTION__
+              << " ERROR: not empty space at the point ("
+              << x << ", " << y << ", " << z << ")" << std::endl;
+#endif
+    DataPack.Voxes.erase(it);              // Удалить вокс
+    update_row(blob_make(DataPack), x, z); // Обновить запись в БД
+  }
+
+  // Полный список граней стандартного вокса
+  unsigned char FacesAll[6] = { SIDE_XP, SIDE_XN, SIDE_YP, SIDE_YN, SIDE_ZP, SIDE_ZN };
+
+  vox_data VoxData {y, {}};
+  for(auto face_id: FacesAll)                         // Надо найти соседние воксы и
+  {                                                   // скрыть у них примыкающие грани,
+    auto Face = vox_face_make(x, y, z, face_id, len); // или сделать грань видимой
+    if(Face[0] < SIDES_COUNT) VoxData.Faces.push_back(Face);
+  }
+
+  DataPack.Voxes.push_back(VoxData);
+  update_row(blob_make(DataPack), x, z); // Обновить запись в БД
 }
 
 
