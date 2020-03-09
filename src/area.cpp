@@ -45,7 +45,7 @@ void db_control(std::shared_ptr<trgl> OpenGLContext,
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
 
   log_mtx.lock();
-  std::clog << "The db-thread is finished" << std::endl;
+  std::clog << std::endl << "The db-thread is finished" << std::endl;
   log_mtx.unlock();
 
 }
@@ -233,8 +233,10 @@ void area::vox_append(const int x, const int y, const int z, const uchar face_id
   auto P = i3d_near( {x, y, z}, face_id, side_len );
 
 #ifndef NDEBUG
-  std::clog << __PRETTY_FUNCTION__
-            << " DEBUG: append vox at " << P.x << ", " << P.y << ", " << P.z << "\n";
+  int id = face_id;
+  std::clog << std::endl << __PRETTY_FUNCTION__ << std::endl
+            << "append Vox on " << x << "," << y << "," << z << ",f" << id
+            << " -> " << P.x << "," << P.y << "," << P.z << std::endl;
 #endif
 
   truncate(P.x, P.z);       // Убрать колонки из рендера
@@ -261,8 +263,8 @@ void area::vox_append(const int x, const int y, const int z, const uchar face_id
 void area::vox_remove(const int x, const int y, const int z)
 {
 #ifndef NDEBUG
-  std::clog << __PRETTY_FUNCTION__
-            << " DEBUG: removing vox from " << x << ", " << y << ", " << z << "\n";
+  std::clog << std::endl << __PRETTY_FUNCTION__ << std::endl
+            << "remove Vox from " << x << "," << y << "," << z << std::endl;
 #endif
 
   truncate(x, z);          // Убрать колонки из рендера
@@ -288,7 +290,7 @@ void area::vox_remove(const int x, const int y, const int z)
 ///
 void area::load(int x, int z)
 {
-  auto DataPack = cfg::DataBase.load_data_pack(x, z, side_len);
+  auto DataPack = cfg::DataBase.area_load(x, z, side_len);
   for( auto& V: DataPack.Voxes )
   {
     for( auto& Face: V.Faces )
