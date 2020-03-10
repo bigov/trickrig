@@ -69,7 +69,7 @@ class area
     void load(int x, int z);
     void vox_append(const vbo_map& V);
     void vox_remove(const vbo_map& V);
-    bool change_control(void);
+    void change_control(void);
     void redraw_borders_x(int, int);
     void redraw_borders_z(int, int);
     void truncate(int x, int z);

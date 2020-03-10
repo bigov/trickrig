@@ -109,12 +109,7 @@ void area::init(std::shared_ptr<glm::vec3> CameraLocation)
 ///
 bool area::recalc_borders (void)
 {
-  if(change_control())
-  {
-    vbo_mtx.lock();
-    glFinish();
-    vbo_mtx.unlock();
-  }
+  change_control();
 
   bool redrawed = false;
   view_mtx.lock();
@@ -205,9 +200,9 @@ void area::redraw_borders_z(int z_add, int z_del)
 /// - так как значение индекса в VBO всегда положительное, то отрицательое значение
 ///   вызывает функцию удаления вокса, а положительное - добавление.
 ///
-bool area::change_control(void)
+void area::change_control(void)
 {
-  if(click_side_vertex_id == 0) return false;
+  if(click_side_vertex_id == 0) return;
 
   int sign = 1;
   if(click_side_vertex_id < 0) sign = -1;
@@ -219,7 +214,10 @@ bool area::change_control(void)
   if(sign > 0) vox_append(V);
   else vox_remove(V);
 
-  return true;
+  vbo_mtx.lock();
+  glFinish();
+  glFlush();
+  vbo_mtx.unlock();
 }
 
 
@@ -275,11 +273,11 @@ void area::vox_remove(const vbo_map& V)
 
   cfg::DataBase.vox_delete(V.x, V.y, V.z, side_len); // Внести изменения в БД
 
-  load(V.x, V.z);              // Загрузить данные в рендер
   load(V.x + side_len, V.z);
   load(V.x - side_len, V.z);
   load(V.x, V.z + side_len);
   load(V.x, V.z - side_len);
+  load(V.x, V.z);              // Загрузить данные в рендер
 }
 
 
@@ -297,10 +295,10 @@ void area::load(int x, int z)
     {
       vbo_mtx.lock();
       auto vbo_addr = VboCtrl->append(Face.data() + 1, bytes_per_face);
+      render_indices.fetch_add(indices_per_face);
       vbo_mtx.unlock();
       // Запомнить положение блока данных в VBO, координаты вокса и индекс поверхности
       VboMap[vbo_addr/bytes_per_face] = { x, V.y, z, Face[0] }; // По адресу [0] находится id поверхности
-      render_indices.fetch_add(indices_per_face);
     }
   }
 }

@@ -285,6 +285,10 @@ void space::render(void)
   calc_position();
 
   vbo_mtx.lock();
+
+  //glFinish();
+  //glFlush();
+
   RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
@@ -298,7 +302,7 @@ void space::render(void)
   Program3d->set_uniform("light_bright", light_bright);       // цвет/яркость
   Program3d->set_uniform("MinId", hl_vertex_id_from);         // начальная вершина активного вокселя
   Program3d->set_uniform("MaxId", hl_vertex_id_end);          // последняя вершина активного вокселя
-  glDrawElements(GL_TRIANGLES, render_indices, GL_UNSIGNED_INT, nullptr);
+  glDrawElements(GL_TRIANGLES, render_indices.load(), GL_UNSIGNED_INT, nullptr);
 
   for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
   Program3d->unuse();
