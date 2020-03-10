@@ -13,7 +13,7 @@
 
 namespace tr{
 
-using GetResult = std::forward_list<std::list<std::vector<uchar>>>;
+using res_list = std::forward_list<std::list<std::vector<unsigned char>>>;
 
 struct query_data {
   int type;
@@ -46,14 +46,14 @@ class wsql
     void write(const char *);
     void request_put(const char *, const void *, int);
     void request_put_float(const char *, const float *, size_t);
-    GetResult request_get(const char *);
+    std::vector<unsigned char> request_get(const char *);
 
   private:
     wsql(const wsql &) = delete;
     wsql& operator=(const wsql &) = delete;
 
     // Результат выполнения запроса "request_get"
-    GetResult Rows;
+    res_list Rows;
 
     static char empty;
     sqlite3 *db = nullptr;

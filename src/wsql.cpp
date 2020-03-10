@@ -211,59 +211,60 @@ namespace tr {
   }
 
 
-  ///
-  /// \brief sqlw::request_get
-  /// \param request
-  /// \details Обработчик запросов на получение данных
-  ///
-  GetResult wsql::request_get(const char *request)
-  {
+///
+/// \brief sqlw::request_get
+/// \param request
+/// \details Обработчик запросов на получение данных
+///
+std::vector<unsigned char> wsql::request_get(const char *request)
+{
 #ifndef NDEBUG
-    assert(is_open);
+  assert(is_open);
 #endif
 
-    bool complete = false;
+  bool complete = false;
 
-    Rows.clear();
-    ErrorsList.clear();
-    if(!request) ErrorsList.emplace_front("query can't be empty.");
+  Rows.clear();
+  ErrorsList.clear();
+  if(!request) ErrorsList.emplace_front("query can't be empty.");
 
-    if(SQLITE_OK != sqlite3_prepare_v2(db, request, -1, &pStmt, nullptr))
-    {
-      ErrorsList.emplace_front("Prepare failed: " + std::string(sqlite3_errmsg(db)));
-      complete = true;
-    }
-    num_rows = 0;
-    while (!complete)
-    {
-      switch (sqlite3_step(pStmt))
-      {
-        case SQLITE_ROW:
-          num_rows++;
-          save_row_data();
-          break;
-        case SQLITE_DONE:
-          //get_row_data();
-          complete = true;
-          break;
-        case SQLITE_ERROR:
-          ErrorsList.emplace_front("Request failed: " + std::string(sqlite3_errmsg(db)));
-          complete = true;
-          break;
-        default:
-          ErrorsList.emplace_front("Error: can't exec sqlite3_step(stmt).");
-          complete = true;
-          break;
-      }
-    }
-    while ((pStmt = sqlite3_next_stmt(db, nullptr)) != nullptr) { sqlite3_finalize(pStmt); }
-
-    #ifndef NDEBUG
-    for(auto &msg: ErrorsList) std::cerr << msg << std::endl;
-    #endif
-
-    return Rows;
+  if(SQLITE_OK != sqlite3_prepare_v2(db, request, -1, &pStmt, nullptr))
+  {
+    ErrorsList.emplace_front("Prepare failed: " + std::string(sqlite3_errmsg(db)));
+    complete = true;
   }
+  num_rows = 0;
+  while (!complete)
+  {
+    switch (sqlite3_step(pStmt))
+    {
+      case SQLITE_ROW:
+        num_rows++;
+        save_row_data();
+        break;
+      case SQLITE_DONE:
+        //get_row_data();
+        complete = true;
+        break;
+     case SQLITE_ERROR:
+        ErrorsList.emplace_front("Request failed: " + std::string(sqlite3_errmsg(db)));
+        complete = true;
+        break;
+      default:
+        ErrorsList.emplace_front("Error: can't exec sqlite3_step(stmt).");
+        complete = true;
+        break;
+    }
+  }
+  while ((pStmt = sqlite3_next_stmt(db, nullptr)) != nullptr) { sqlite3_finalize(pStmt); }
+
+  #ifndef NDEBUG
+  for(auto &msg: ErrorsList) std::cerr << msg << std::endl;
+  #endif
+
+  if(Rows.empty()) return std::vector<unsigned char> {};
+  return Rows.front().back();
+}
 
 
   ///

@@ -216,8 +216,8 @@ bool area::change_control(void)
   click_side_vertex_id.store(0);
 
   auto V = VboMap[vertex_id / vertices_per_face];
-  if(sign > 0) vox_append( V.x, V.y, V.z, V.face_id );
-  else vox_remove( V.x, V.y, V.z );
+  if(sign > 0) vox_append(V);
+  else vox_remove(V);
 
   return true;
 }
@@ -228,14 +228,14 @@ bool area::change_control(void)
 /// \param side
 /// \param data
 ///
-void area::vox_append(const int x, const int y, const int z, const uchar face_id)
+void area::vox_append(const vbo_map& V)
 {
-  auto P = i3d_near( {x, y, z}, face_id, side_len );
+  auto P = i3d_near( {V.x, V.y, V.z}, V.face_id, side_len );
 
 #ifndef NDEBUG
-  int id = face_id;
+  int id = V.face_id;
   std::clog << std::endl << __PRETTY_FUNCTION__ << std::endl
-            << "append Vox on " << x << "," << y << "," << z << ",f" << id
+            << "append Vox on " << V.x << "," << V.y << "," << V.z << ",f" << id
             << " -> " << P.x << "," << P.y << "," << P.z << std::endl;
 #endif
 
@@ -260,33 +260,33 @@ void area::vox_append(const int x, const int y, const int z, const uchar face_id
 /// \param side
 /// \param data
 ///
-void area::vox_remove(const int x, const int y, const int z)
+void area::vox_remove(const vbo_map& V)
 {
 #ifndef NDEBUG
   std::clog << std::endl << __PRETTY_FUNCTION__ << std::endl
-            << "remove Vox from " << x << "," << y << "," << z << std::endl;
+            << "remove Vox from " << V.x << "," << V.y << "," << V.z << std::endl;
 #endif
 
-  truncate(x, z);          // Убрать колонки из рендера
-  truncate(x + side_len, z);
-  truncate(x - side_len, z);
-  truncate(x, z + side_len);
-  truncate(x, z - side_len);
+  truncate(V.x, V.z);          // Убрать колонки из рендера
+  truncate(V.x + side_len, V.z);
+  truncate(V.x - side_len, V.z);
+  truncate(V.x, V.z + side_len);
+  truncate(V.x, V.z - side_len);
 
-  cfg::DataBase.vox_delete(x, y, z, side_len); // Внести изменения в БД
+  cfg::DataBase.vox_delete(V.x, V.y, V.z, side_len); // Внести изменения в БД
 
-  load(x, z);           // Загрузить данные в рендер
-  load(x + side_len, z);
-  load(x - side_len, z);
-  load(x, z + side_len);
-  load(x, z - side_len);
+  load(V.x, V.z);              // Загрузить данные в рендер
+  load(V.x + side_len, V.z);
+  load(V.x - side_len, V.z);
+  load(V.x, V.z + side_len);
+  load(V.x, V.z - side_len);
 }
 
 
 ///
 /// \brief area::load
 /// \param P0
-/// \details Загрузить из базы данных в рендер колонку воксов
+/// \details Загрузить из базы данных в рендер пакет воксов
 ///
 void area::load(int x, int z)
 {
@@ -298,7 +298,7 @@ void area::load(int x, int z)
       vbo_mtx.lock();
       auto vbo_addr = VboCtrl->append(Face.data() + 1, bytes_per_face);
       vbo_mtx.unlock();
-      // Запомнить положение блока данных в VBO, координаты вокса и индекс стороны
+      // Запомнить положение блока данных в VBO, координаты вокса и индекс поверхности
       VboMap[vbo_addr/bytes_per_face] = { x, V.y, z, Face[0] }; // По адресу [0] находится id поверхности
       render_indices.fetch_add(indices_per_face);
     }

@@ -241,9 +241,15 @@ void db::map_close(std::shared_ptr<glm::vec3> ViewFrom, float* look_dir)
 ///  2. битовая маска видимых сторон      : sizeof(uchar)
 ///  3. данные вершин всех видимых сторон : bytes_per_side * число_видимых_сторон
 ///
-std::vector<uchar> db::blob_make(const data_pack& DataPack)
+std::vector<uchar> db::blob_make(data_pack& DataPack)
 {
   if(DataPack.Voxes.empty()) return std::vector<uchar> {};
+
+  for(auto& Vox: DataPack.Voxes) // Перед упаковкой воксов в пакет, следует в каждом из
+  {                              // них упорядочить очередность следования видимых сторон
+    std::sort(Vox.Faces.begin(), Vox.Faces.end(),
+              [](const face_t& f1, const face_t& f2 ){ return f1[0] < f2[0]; });
+  }
 
   std::vector<uchar> BlobData {};
   for(auto& VoxData: DataPack.Voxes)
@@ -258,9 +264,9 @@ std::vector<uchar> db::blob_make(const data_pack& DataPack)
     auto bitset_offset = offset;         // Позиция хранения данных битовой маски вокса
 
     offset += 1;
-    for(auto& Face: VoxData.Faces)  // Скопировать данные вершин сторон вокса
+    for(auto& Face: VoxData.Faces)       // Скопировать данные вершин сторон вокса
     {
-      m.set(Face[0]);               // Настроить битовую маску
+      m.set(Face[0]);                    // Настроить битовую маску
       memcpy(BlobData.data() + offset, Face.data() + 1, bytes_per_face);
       offset += bytes_per_face;
     }                                    // записать битовую маску
@@ -270,14 +276,15 @@ std::vector<uchar> db::blob_make(const data_pack& DataPack)
   return BlobData;
 }
 
+
 ///
-/// \brief db::parsing_blob_data
-/// \param VoxData
-/// \param DataPack
-/// \details Преобразование данных из бинарного массива, полученного
-/// из базы данных, в структуру "data_pack"
+/// \brief db::load_data
+/// \param x
+/// \param z
+/// \return data_pack
+/// \details Загрузка из базы данных пакета в формате "data_pack"
 ///
-data_pack db::blob_load(const int x, const int z)
+data_pack db::load_data(const int x, const int z)
 {
   data_pack ResultPack {};
   ResultPack.x = x;
@@ -285,14 +292,10 @@ data_pack db::blob_load(const int x, const int z)
 
   char query[127] = {0};
   std::sprintf(query, "SELECT * FROM area WHERE (x=%d AND z=%d);", x, z);
-  auto Rows = SqlDb.request_get(&query[0]);
+  auto BlobData = SqlDb.request_get(&query[0]);
 
   // Если в базе нет данных, то возвращаем пустой результат
-  if(Rows.empty()) return ResultPack;
-
-  auto result_row = Rows.front();
-  result_row.reverse();
-  auto BlobData = result_row.front();
+  if(BlobData.empty()) return ResultPack;
 
   size_t offset = 0;
 
@@ -302,12 +305,12 @@ data_pack db::blob_load(const int x, const int z)
 
   size_t offset_max = BlobData.size() - sizeof_y - 1;
 
-  while (offset < offset_max)                          // Если в блоке несколько воксов, то
-  {                                                    // последовательно разбираем каждый из них
-    vox_data TheVox {};                                // Структура для работы с данными вокса
+  while (offset < offset_max)                           // Если в блоке несколько воксов, то
+  {                                                     // последовательно разбираем каждый из них
+    vox_data TheVox {};                                 // Структура для работы с данными вокса
     memcpy( &(TheVox.y), BlobData.data() + offset, sizeof_y ); // Y-координата вокса
     offset += sizeof_y;
-    std::bitset<SIDES_COUNT> bits( BlobData[offset] );    // Маcка видимых сторон вокса
+    std::bitset<SIDES_COUNT> bits( BlobData[offset] );  // Маcка видимых сторон вокса
     offset += 1;
 
 #ifndef NDEBUG
@@ -348,7 +351,6 @@ void db::vox_data_face_off(vox_data& VoxData, unsigned char face_id)
   // Если есть, то удалить
   if(it != VoxData.Faces.end()) VoxData.Faces.erase(it);
 }
-
 
 
 ///
@@ -397,7 +399,7 @@ void db::vox_data_face_on(vox_data& VoxData, const unsigned char face_id, const 
 ///
 bool db::face_removed(const i3d& P, const unsigned char face_id)
 {
-  auto DataPack = blob_load(P.x, P.z); // Загрузить из БД блок c искомым воксом
+  auto DataPack = load_data(P.x, P.z); // Загрузить из БД блок c искомым воксом
 
   // Найти в загруженном блоке нужный вокс
   auto vIt = std::find_if(DataPack.Voxes.begin(), DataPack.Voxes.end(),
@@ -430,7 +432,7 @@ void db::osculant_faces_show(const int x_base, const int y_base, const int z_bas
   for(auto face_id: FacesId)
   {
     i3d P = i3d_near({x_base, y_base, z_base}, face_id, side_len); // Координаты прилегающего вокса, сторону которого надо отобразить
-    auto DataPack = blob_load(P.x, P.z);                           // Загрузить из БД блок c искомым воксом
+    auto DataPack = load_data(P.x, P.z);                           // Загрузить из БД блок c искомым воксом
 
 #ifndef NDEBUG
     int fid = side_opposite(face_id);
@@ -479,7 +481,7 @@ void db::osculant_faces_show(const int x_base, const int y_base, const int z_bas
 ///
 void db::vox_delete(const int x, const int y, const int z, const int len)
 {
-  auto DataPack = blob_load(x, z);
+  auto DataPack = load_data(x, z);
   if(DataPack.Voxes.empty())
   {
 #ifndef NDEBUG
@@ -570,7 +572,7 @@ void db::vox_delete(const int x, const int y, const int z, const int len)
 ///
 void db::vox_append(const int x, const int y, const int z, const int len)
 {
-  auto DataPack = blob_load(x, z); // Загрузить из БД вертикальный пакет,
+  auto DataPack = load_data(x, z); // Загрузить из БД вертикальный пакет,
   const i3d P = {x, y, z};
 
   // Проверить в указанной точке наличие вокса
@@ -646,12 +648,15 @@ void db::update_row(const std::vector<uchar>& BlobData, int x, int z)
 /// \param x
 /// \param z
 /// \return data_pack
-/// \details
-///
+/// \details Загрузка данных в модуль отображения пространства. Особенностью
+/// функции является правило - "не должно быть пустых пакетов". Поэтому,
+/// если в базе данных для указанной точки пространства поверхность еще не
+/// сгенерирована, то функция автоматически генерирует поверхность по-умолчанию,
+/// создает запись в базе данных и передает пакет в модуль отображения.
 ///
 data_pack db::area_load(int x, int z, int len)
 {
-  data_pack result = blob_load(x, z);
+  data_pack result = load_data(x, z);
 
   // Если в базе данных для этой точки пространства нет записи,
   // то ее необходимо создать, сгенерировав поверхность

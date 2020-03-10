@@ -51,8 +51,8 @@ class db
     void save_window_layout(const layout&);
     void init_map_config(const std::string &);
     data_pack area_load(int x, int z, int len);
-    data_pack blob_load(const int x, const int z);
-    std::vector<uchar> blob_make(const data_pack& DataPack);
+    data_pack load_data(const int x, const int z);
+    std::vector<uchar> blob_make(data_pack& DataPack);
     void vox_delete(const int x, const int y, const int z, const int len);
     void vox_append(const int x, const int y, const int z, const int len);
 
