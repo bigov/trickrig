@@ -26,7 +26,7 @@ struct vbo_map
   uchar face_id;
 };
 
-enum COORDXZ { XL, ZL, sizeL};
+enum COORDXZ { XL, ZL, sizeL };
 
 ///
 /// \brief class area

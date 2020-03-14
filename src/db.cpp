@@ -575,7 +575,7 @@ void db::vox_append(const int x, const int y, const int z, const int len)
   auto DataPack = load_data(x, z); // Загрузить из БД вертикальный пакет,
   const i3d P = {x, y, z};
 
-  // Проверить в указанной точке наличие вокса
+  // Проверить в загруженном пакете по координате Y наличие вокса
   auto it = std::find_if(DataPack.Voxes.begin(), DataPack.Voxes.end(),
                          [&y](const auto& Vox){ return Vox.y == y;});
 
@@ -592,22 +592,26 @@ void db::vox_append(const int x, const int y, const int z, const int len)
 
   vox_data VoxData {y, {}}; // Создать новый вокс для добавления в пакет
 
-  it = std::find_if(DataPack.Voxes.begin(), DataPack.Voxes.end(),  // Проверить в пакете наличие вокса в точке сверху
+  // Проверить в пакете наличие вокса сверху. Если есть, то скрыть у него
+  // нижнюю грань, или в новом воксе построить верхнюю
+  it = std::find_if(DataPack.Voxes.begin(), DataPack.Voxes.end(),
                          [y, len](const auto& Vox){ return Vox.y == y + len;});
-  if(it != DataPack.Voxes.end()) vox_data_face_off(*it, SIDE_YN); // Если сверху найден вокс, то надо у него скрыть нижнюю грань.
-  else vox_data_face_on(VoxData, SIDE_YP, P, len);          // Если нет, то в новом воксе построить грань сверху
+  if(it != DataPack.Voxes.end()) vox_data_face_off(*it, SIDE_YN);
+  else vox_data_face_on(VoxData, SIDE_YP, P, len);
 
-  it = std::find_if(DataPack.Voxes.begin(), DataPack.Voxes.end(), // Проверить в пакете наличие вокса в точке снизу
+  // Проверить в пакете наличие вокса снизу. Если есть, то скрыть у него
+  // верхнюю грань, или в новом воксе построить нижнюю
+  it = std::find_if(DataPack.Voxes.begin(), DataPack.Voxes.end(),
                          [y, len](const auto& Vox){ return Vox.y == y - len;});
-  if(it != DataPack.Voxes.end()) vox_data_face_off(*it, SIDE_YP); // Если снизу найден вокс, то надо скрыть его верхнюю грань
-  else vox_data_face_on(VoxData, SIDE_YN, P, len);          // Или в новом воксе построить грань снизу
+  if(it != DataPack.Voxes.end()) vox_data_face_off(*it, SIDE_YP);
+  else vox_data_face_on(VoxData, SIDE_YN, P, len);
 
-  // Переходим к боковым сторонам вокса - составим список
-  unsigned char Faces[] = { SIDE_XP, SIDE_XN, SIDE_ZP, SIDE_ZN };
+  // Список боковых граней вокса
+  unsigned char SideFaces[] = { SIDE_XP, SIDE_XN, SIDE_ZP, SIDE_ZN };
 
-  for(auto face_id: Faces)
+  for(auto face_id: SideFaces)
   {                                                         // Проверить наличие соседнего вокса и
-    if(!face_removed(i3d_near(P, face_id, len), face_id))   // скрыть у него примыкающую грань,
+    if(!face_removed(i3d_near(P, face_id, len), side_opposite(face_id)))   // скрыть у него примыкающую грань,
       vox_data_face_on(VoxData, face_id, P, len);           // или построить с этой стороны новую
   }
 
