@@ -16,6 +16,7 @@
 #include "gui.hpp"
 #include <time.h>
 
+
 namespace tr
 {
   // Инициализация глобальных объектов
@@ -33,16 +34,19 @@ namespace tr
 ///
 int main(int, char* argv[])
 {
-  std::streambuf* _cerr = std::cerr.rdbuf(); // Save System std::cerr
-  std::streambuf* _clog = std::clog.rdbuf(); // Save System std::clog
+  std::streambuf* _cerr = std::cerr.rdbuf();
+  std::streambuf* _clog = std::clog.rdbuf();
 
-  std::ofstream tr_err_file("tr_errs.txt");  // Errors log-file
-  std::cerr.rdbuf(tr_err_file.rdbuf());      // Redirect std::cerr in file
-  std::ofstream tr_log_file("tr_logs.txt");  // Inform log-file
-  std::clog.rdbuf(tr_log_file.rdbuf());      // Redirect std::clog in file
+  char const err_fname[] = "tr_errs.txt"; // Errors log-file
+  char const log_fname[] = "tr_logs.txt"; // Inform log-file
+
+  std::ofstream tr_err_file(err_fname);
+  std::cerr.rdbuf(tr_err_file.rdbuf()); // Redirect std::cerr in file
+  std::ofstream tr_log_file(log_fname);
+  std::clog.rdbuf(tr_log_file.rdbuf()); // Redirect std::clog in file
 
   time_t rawtime {}; time(&rawtime);
-  std::clog << ctime(&rawtime);              // Current time
+  std::clog << ctime(&rawtime);         // Current time
 
   using namespace tr;
   try
@@ -54,11 +58,15 @@ int main(int, char* argv[])
   catch(std::exception & e)
   {
     std::cerr << e.what();
+    std::cerr.rdbuf(_cerr);  // restore System std::cerr
+    std::clog.rdbuf(_clog);  // restore System std::clog
     return EXIT_FAILURE;
   }
   catch(...)
   {
     std::cerr << "FAILURE: undefined exception";
+    std::cerr.rdbuf(_cerr);  // restore System std::cerr
+    std::clog.rdbuf(_clog);  // restore System std::clog
     return EXIT_FAILURE;
   }
 
@@ -66,10 +74,7 @@ int main(int, char* argv[])
   std::clog << "TrickRig exit success" << std::endl;
   log_mtx.unlock();
 
-  //std::this_thread::sleep_for(std::chrono::seconds(2));
-
   std::cerr.rdbuf(_cerr);  // restore System std::cerr
   std::clog.rdbuf(_clog);  // restore System std::clog
-
   return EXIT_SUCCESS;
 }
