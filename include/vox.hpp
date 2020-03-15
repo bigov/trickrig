@@ -41,10 +41,11 @@ struct uch2
 class vox
 {
 private:
-  GLfloat u_sz = 0.125f;               // размер ячейки текстуры по U
-  GLfloat v_sz = 0.125f;               // размер ячейки текстуры по V
-  uch2 tex_id[SIDES_COUNT];            // Индексы текстур сторон
-  GLfloat data[digits_per_vox] {};   // Данные вершин (координаты, цвет, нормали, текстуры)
+  GLfloat data[digits_per_vox] {}; // Данные вершин (координаты, цвет, нормали, текстуры)
+
+  GLfloat u_sz = 0.125f;           // размер ячейки текстуры по U
+  GLfloat v_sz = 0.125f;           // размер ячейки текстуры по V
+  uch2 tex_id[SIDES_COUNT];        // Индексы текстур сторон
 
   std::bitset<6> visibility { 0x00 };  // Видимость сторон
 

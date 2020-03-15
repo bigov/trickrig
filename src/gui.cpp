@@ -9,7 +9,10 @@ namespace tr {
 gui::gui(void)
 {
   std::string title = std::string(APP_NAME) + " v." + std::string(APP_VERSION);
+
 #ifndef NDEBUG
+  if(strcmp(USE_CLANG, "FALSE") == 0) title += " [GCC]";
+  else title += " [Clang]";
   title += " (debug mode)";
 #endif
 

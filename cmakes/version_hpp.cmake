@@ -9,4 +9,6 @@
 #define VER_PATCH @PROJECT_VERSION_PATCH@
 #define VER_TWEAK @PROJECT_VERSION_TWEAK@
 
+#define USE_CLANG "@CLANG@"
+
 #endif
