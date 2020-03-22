@@ -23,7 +23,7 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
 endif()
 
 project(
-  TrickRig VERSION "0.0.1.20"
+  TrickRig VERSION "0.0.1.21"
   DESCRIPTION "Graphical engine project"
   HOMEPAGE_URL "https://www.trickrig.net"
   LANGUAGES "CXX"
@@ -44,10 +44,9 @@ SET( CMAKE_VERBOSE_MAKEFILE OFF )
 
 configure_file( "${CMAKE_SOURCE_DIR}/cmakes/version_hpp.cmake" "${CMAKE_CURRENT_BINARY_DIR}/version.hpp" )
 
-#target_include_directories(${EXEC_NAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 include_directories( "${CMAKE_CURRENT_BINARY_DIR}" )
-include_directories( "${CMAKE_SOURCE_DIR}/include" )
-include_directories( "${CMAKE_HOME_DIRECTORY}" )
+include_directories( "${CMAKE_SOURCE_DIR}/libs" )
+#include_directories( "${CMAKE_HOME_DIRECTORY}" )
 
 # Для сборки релиза следует указать: "-D CMAKE_BUILD_TYPE=Release"
 if( "_${CMAKE_BUILD_TYPE}" MATCHES "^_Rel" )
@@ -70,8 +69,11 @@ endif()
 
 SET( CMAKE_CXX_FLAGS "${CXX_FLAGS}" )
 
-# glad             [CMakefile для glad   ]  [бинарник библиотеки]
-add_subdirectory( "${CMAKE_SOURCE_DIR}/glad" "glad" EXCLUDE_FROM_ALL )
+find_package( PkgConfig REQUIRED )
+
+if( ${MINGW} )
+  SET( TR_LIBS mingw32 gdi32 )
+endif()
 
 # server
 #include( "${CMAKE_SOURCE_DIR}/cmakes/server.cmake" )
