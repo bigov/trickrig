@@ -176,10 +176,6 @@ static const GLsizeiptr bytes_per_face = digits_per_face * sizeof(GLfloat);
 // число байт для записи данных одной вершины
 static const GLsizeiptr bytes_per_vertex = digits_per_vertex * sizeof(GLfloat);
 
-// Массив для работы с данными стороны в бинарном виде.
-// В нулевой позиции записывается индекс стороны.
-using face_t = std::array<unsigned char, bytes_per_face + 1>;
-
 static const char fname_cfg[] = "config.db";
 static const char fname_map[] = "map.db";
 
