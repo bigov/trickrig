@@ -357,8 +357,9 @@ vox_t::iterator db::vox_find(vox_t& Voxes, const int y)
 /// \param z
 /// \details Удаляет из базы данных вокс по указанным координатам
 ///
-/// Грань вокса невидима, если к ней примыкает грань соседнего вокса.
-/// Поэтому после удаления вокса надо найти соседние и сделать для них видимыми примыкающие грани.
+/// У вокса любая грань невидима в том случае, если к ней вплотную примыкает соседний вокс.
+/// Поэтому, при удалении вокса, грани примыкающих воксов надо сделать видимыми. Если
+/// со стороны невидимой грани в БД вокса не найден, то он должен быть создан.
 ///
 void db::vox_delete(const int x, const int y, const int z, const int len)
 {
@@ -368,20 +369,19 @@ void db::vox_delete(const int x, const int y, const int z, const int len)
   if(it == DataPack.Voxes.end()) return;
 
   std::vector<unsigned char> VisibleFacesList {};                 // Создать список видимых
-  for(auto& Face: it->Faces) VisibleFacesList.push_back(Face[0]); // граней удаляемого вокса
-  DataPack.Voxes.erase(it);  // Удалить вокс
+  for(auto& Face: it->Faces) VisibleFacesList.push_back(Face[0]); // граней удаляемого вокса.
+  DataPack.Voxes.erase(it);                                       // Удалить вокс.
 
   // Список боковых граней стандарного вокса
   std::vector<unsigned char> FacesAll { SIDE_XP, SIDE_XN, SIDE_YP, SIDE_YN, SIDE_ZP, SIDE_ZN };
-  // Построить список невидимых граней, используя список видимых граней удаляемого вокса
+
+  // По списку видимых граней удаляемого вокса построить список невидимых граней
   std::vector<unsigned char> FacesUnvisible {};
   std::set_difference(FacesAll.begin(), FacesAll.end(),
                       VisibleFacesList.begin(), VisibleFacesList.end(),
                       std::inserter(FacesUnvisible, FacesUnvisible.begin()));
 
-  // Сделать видимыми грани воксов примыкающих к невидимым граням удаляемого вокса.
-  // Если со стороны невидимой грани вокса нет, то он создается.
-
+  // Построить грани воксов, расположенных вплотную к воксу, который был удален.
   for(auto face_id: FacesUnvisible)
   {
     auto _P = i3d_near({x, y, z}, face_id, len);      // Координаты прилегающего вокса

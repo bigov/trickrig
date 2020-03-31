@@ -21,7 +21,7 @@ namespace tr
 ///
 space::space(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
 {
-  render_indices.store(-1);
+  render_indices.store(0);
   ViewFrom = std::make_shared<glm::vec3> ();
 
   light_direction = glm::normalize(glm::vec3(0.3f, 0.45f, 0.4f)); // направление (x,y,z)
@@ -83,7 +83,7 @@ space::space(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
 ///
 space::~space()
 {
-  render_indices.store(-1); // Индикатор для остановки потока загрузки в рендер из БД
+  render_indices.store(0); // Индикатор для остановки потока загрузки в рендер из БД
   if(nullptr != data_loader) if(data_loader->joinable())
     data_loader->join();      // Ожидание завершения потока
 }
@@ -106,7 +106,7 @@ void space::enable(void)
   OGLContext->cursor_hide();  // выключить отображение курсора мыши в окне
   OGLContext->set_cursor_pos(xpos, ypos);
 
-  if(render_indices == -1) init_buffers();   // Создать VAO, VBO и поток обмена данными
+  if(render_indices == 0) init_buffers();   // Создать VAO, VBO и поток обмена данными
 
   OGLContext->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
   OGLContext->set_button_observer(*this);    //  -- кнопки мыши

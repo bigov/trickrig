@@ -40,15 +40,16 @@ void db_control(std::shared_ptr<trgl> OpenGLContext,
   log_mtx.unlock();
 
 
-  while (render_indices >= 0)
-    if(!Area.recalc_borders())
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  while (render_indices > 0)
+  {
+     if(!Area.recalc_borders()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
 
   log_mtx.lock();
   std::clog << std::endl << "The db-thread is finished" << std::endl;
   log_mtx.unlock();
-
 }
+
 
 ///
 /// \brief area::area
@@ -87,7 +88,7 @@ void area::init(std::shared_ptr<glm::vec3> CameraLocation)
   memcpy(last, curr, sizeof (float) * sizeL);
 
   // Origin вокселя, в котором расположена камера
-  fesetround(FE_DOWNWARD);
+  fesetround(FE_DOWNWARD); // округлять вниз
   origin[XL] = rint(curr[XL] / side_len) * side_len; //static_cast<int>(floorf(curr[XL] / side_len)) * side_len;
   origin[ZL] = rint(curr[ZL] / side_len) * side_len; //static_cast<int>(floorf(curr[ZL] / side_len)) * side_len;
 
