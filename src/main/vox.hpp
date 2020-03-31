@@ -14,10 +14,12 @@ struct uch2
   unsigned char u = 0, v = 0;
 };
 
+extern face_t face_gen(const i3d& Point, int side_len, uchar face);
+
 ///
 /// \brief class vox
 /// \details Элементы из которых строится пространство
-class face_gen
+class vox
 {
 private:
   float u_sz = 0.125f;            // размер ячейки текстуры по U
@@ -33,13 +35,13 @@ private:
   void normals_set(uchar face);
   void texture_set(uchar face);
 
-  face_gen(void)                        = delete; // конструктор без параметров
-  face_gen(const face_gen&)             = delete; // дублирующий конструктор
-  face_gen& operator= (const face_gen&) = delete; // копирующее присваивание
+  vox(void)                        = delete; // конструктор без параметров
+  vox(const vox&)             = delete; // дублирующий конструктор
+  vox& operator= (const vox&) = delete; // копирующее присваивание
 
 public:
-  face_gen(const i3d& Point, int side_len, uchar face);
-  ~face_gen(void) {}
+  vox(const i3d& Point, int side_len, uchar face);
+  ~vox(void) {}
 
   face_t Face {};
 };

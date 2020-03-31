@@ -9,7 +9,7 @@
 #define DB_HPP
 
 #include "wsql.hpp"
-#include "facegen.hpp"
+#include "vox.hpp"
 #include "framebuf.hpp"
 #include "glsl.hpp"
 #include "trgl.hpp"
@@ -65,10 +65,7 @@ class db
     void init_app_config(const std::string &);
     v_str load_config(size_t params_count, const std::string &FilePath);
     void update_row(const std::vector<uchar>& BlobData, int x, int z);
-    void vox_face_append(vox_data& VoxData, const unsigned char face_id, const i3d& P, int len);
     void vox_face_erase(vox_data& VoxData, unsigned char face_id);
-    void osculant_faces_show(const int x, const int y, const int z,
-         const std::vector<unsigned char>& FacesId, const int side_len);
     vox_t::iterator vox_find(vox_t& DataPack, const int y);
 };
 

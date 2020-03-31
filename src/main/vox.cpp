@@ -1,7 +1,15 @@
-#include "facegen.hpp"
+#include "vox.hpp"
 
 namespace tr
 {
+
+
+face_t face_gen(const i3d& Point, int side_len, uchar face)
+{
+  vox V {Point, side_len, face};
+  return V.Face;
+}
+
 
 ///
 /// \brief vox::vox
@@ -9,7 +17,7 @@ namespace tr
 /// \param side_len
 /// \param face
 ///
-face_gen::face_gen(const i3d& Point, int side_len, uchar face): Origin(Point), side_len(side_len)
+vox::vox(const i3d& Point, int side_len, uchar face): Origin(Point), side_len(side_len)
 {
   /*
   switch (face) {
@@ -47,7 +55,7 @@ face_gen::face_gen(const i3d& Point, int side_len, uchar face): Origin(Point), s
 /// \brief voxel::side_position_set
 /// \param side
 ///
-void face_gen::position_set(uchar face)
+void vox::position_set(uchar face)
 {
   int l = - side_len;
   int O = 0;
@@ -115,7 +123,7 @@ void face_gen::position_set(uchar face)
 /// \param side
 /// \param C
 ///
-void face_gen::color_set(color C)
+void vox::color_set(color C)
 {
   size_t i = 0;
   for(uint v = 0; v < vertices_per_face; ++v)
@@ -134,7 +142,7 @@ void face_gen::color_set(color C)
 /// \param side
 /// \param texture
 ///
-void face_gen::texture_set(uchar face)
+void vox::texture_set(uchar face)
 {
   uch2 texture = tex_id[face];
   size_t i =  0;
@@ -191,7 +199,7 @@ void face_gen::texture_set(uchar face)
 /// \brief voxel::side_normals_set
 /// \param side
 ///
-void face_gen::normals_set(uchar face)
+void vox::normals_set(uchar face)
 {
   GLfloat nx = 0.f, ny = 0.f, nz = 0.f;
 
