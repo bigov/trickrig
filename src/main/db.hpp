@@ -21,10 +21,9 @@ struct vox_data
 {
     int y = 0;                       // Y-координата вокса
 
-    // Данные каждой стороны записываются в отдельный массив
-    //   std::array<unsigned char, bytes_per_side + 1>
+    // Данные каждой стороны записываются в массив std::array<unsigned char, bytes_per_side + 1>
     // В котором в нулевой позиции записывается id стороны (Xp|Xn|Yp|Yn|Zp|Zn),
-    // и за ней (в бинарном виде) данные для построения вершин в OpenGL.
+    // а за ней (в бинарном виде) данные для построения вершин в OpenGL.
     std::vector<face_t> Faces {};
 };
 
@@ -35,6 +34,8 @@ struct data_pack
     int z = 0;                      // координаты ячейки
     std::vector<vox_data> Voxes {}; // Массив воксов, хранящихся в БД
 };
+using vox_t = std::vector<vox_data>;
+
 
 class db
 {
@@ -64,11 +65,11 @@ class db
     void init_app_config(const std::string &);
     v_str load_config(size_t params_count, const std::string &FilePath);
     void update_row(const std::vector<uchar>& BlobData, int x, int z);
-    void vox_data_face_on(vox_data& VoxData, const unsigned char face_id, const i3d& P, int len);
-    bool vox_data_face_off(vox_data& VoxData, unsigned char face_id);
-    bool face_erase(const i3d& P, const unsigned char face_id);
+    void vox_face_append(vox_data& VoxData, const unsigned char face_id, const i3d& P, int len);
+    void vox_face_erase(vox_data& VoxData, unsigned char face_id);
     void osculant_faces_show(const int x, const int y, const int z,
          const std::vector<unsigned char>& FacesId, const int side_len);
+    vox_t::iterator vox_find(vox_t& DataPack, const int y);
 };
 
 } //tr
