@@ -2,20 +2,16 @@
 #include "nuklear/nuklear_glfw_gl3.h"
 
 namespace tr {
+
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
-
-
-void wnk_init(void) {
-}
-
 
 void wnk_show(GLFWwindow* win)
 {
   static bool init_call = true;
   static struct nk_context* ctx = nullptr;
   static struct nk_colorf bg;
-  static struct nk_font_atlas* atlas;
+  static struct nk_font_atlas* atlas = nullptr;
 
   if(init_call)
   {
@@ -789,10 +785,12 @@ void gui::show(void)
   while(is_open)
   {
     Space->render(); // рендер 3D сцены
+
     menu_build();    // рендер GUI меню
     screen_render(); // прорисовка окна приложения
 
-    //if(GuiMode != GUI_3D_MODE) wnk_show(GLContext->get_id());
+    //if(GuiMode != GUI_3D_MODE)
+    //  wnk_show(GLContext->get_id());
 
     // переключить буфер рендера
     vbo_mtx.lock();

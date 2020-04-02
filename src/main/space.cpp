@@ -286,12 +286,10 @@ void space::render(void)
 
   vbo_mtx.lock();
 
-  //glFinish();
-  //glFlush();
-
   RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
+  glEnable(GL_BLEND);
 
   glBindVertexArray(vao_id);
   Program3d->use();
