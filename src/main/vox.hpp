@@ -26,7 +26,7 @@ private:
   float v_sz = 0.125f;            // размер ячейки текстуры по V
   uch2 tex_id[SIDES_COUNT];       // Индексы текстур сторон
   i3d Origin;                     // координаты опорной точки
-  color DefaultColor {1.f, 1.f, 1.f, 1.f};
+  color DefaultColor {.4f, 1.f, .4f, 1.f};
   int side_len;                   // размер стороны
   float data[digits_per_face] {}; // координаты, цвет, нормали, текстуры одной стороны
 
@@ -35,7 +35,7 @@ private:
   void normals_set(uchar face);
   void texture_set(uchar face);
 
-  vox(void)                        = delete; // конструктор без параметров
+  vox(void)                   = delete; // конструктор без параметров
   vox(const vox&)             = delete; // дублирующий конструктор
   vox& operator= (const vox&) = delete; // копирующее присваивание
 

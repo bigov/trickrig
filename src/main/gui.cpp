@@ -1,7 +1,76 @@
 #include "gui.hpp"
-#include <thread>
+#include "nuklear/nuklear_glfw_gl3.h"
 
 namespace tr {
+#define MAX_VERTEX_BUFFER 512 * 1024
+#define MAX_ELEMENT_BUFFER 128 * 1024
+
+
+void wnk_init(void) {
+}
+
+
+void wnk_show(GLFWwindow* win)
+{
+  static bool init_call = true;
+  static struct nk_context* ctx = nullptr;
+  static struct nk_colorf bg;
+  static struct nk_font_atlas* atlas;
+
+  if(init_call)
+  {
+    ctx = nk_glfw3_init(win, NK_GLFW3_DEFAULT);
+    nk_glfw3_font_stash_begin(&atlas);
+    nk_glfw3_font_stash_end();
+    bg.r = .710f, bg.g = 0.78f, bg.b = 0.74f, bg.a = 1.0f;
+    init_call = false;
+  }
+
+  nk_glfw3_new_frame();
+
+  /* GUI */
+  if (nk_begin(ctx, "Control", nk_rect(50, 50, 230, 250),
+      NK_WINDOW_BORDER|NK_WINDOW_MOVABLE|NK_WINDOW_SCALABLE|
+      NK_WINDOW_MINIMIZABLE|NK_WINDOW_TITLE))
+  {
+      enum {EASY, HARD};
+      static int op = EASY;
+      static int property = 20;
+      nk_layout_row_static(ctx, 30, 80, 1);
+      if (nk_button_label(ctx, "button"))
+          fprintf(stdout, "button pressed\n");
+
+      nk_layout_row_dynamic(ctx, 30, 2);
+      if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
+      if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
+
+      nk_layout_row_dynamic(ctx, 25, 1);
+      nk_property_int(ctx, "Compression:", 0, &property, 100, 10, 1);
+
+      nk_layout_row_dynamic(ctx, 20, 1);
+      nk_label(ctx, "background:", NK_TEXT_LEFT);
+      nk_layout_row_dynamic(ctx, 25, 1);
+      if (nk_combo_begin_color(ctx, nk_rgb_cf(bg), nk_vec2(nk_widget_width(ctx),400))) {
+          nk_layout_row_dynamic(ctx, 120, 1);
+          bg = nk_color_picker(ctx, bg, NK_RGBA);
+          nk_layout_row_dynamic(ctx, 25, 1);
+          bg.r = nk_propertyf(ctx, "#R:", 0, bg.r, 1.0f, 0.01f,0.005f);
+          bg.g = nk_propertyf(ctx, "#G:", 0, bg.g, 1.0f, 0.01f,0.005f);
+          bg.b = nk_propertyf(ctx, "#B:", 0, bg.b, 1.0f, 0.01f,0.005f);
+          bg.a = nk_propertyf(ctx, "#A:", 0, bg.a, 1.0f, 0.01f,0.005f);
+          nk_combo_end(ctx);
+      }
+  }
+  nk_end(ctx);
+
+  /* IMPORTANT: `nk_glfw_render` modifies some global OpenGL state
+   * with blending, scissor, face culling, depth test and viewport and
+   * defaults everything back into a default state.
+   * Make sure to either a.) save and restore or b.) reset your own state after
+   * rendering the UI. */
+  nk_glfw3_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
+}
+
 
 ///
 /// \brief gui::gui
@@ -340,6 +409,9 @@ void gui::button_click(ELEMENT_ID id)
     case BTN_OPEN:
       cfg::map_view_load(Maps[row_selected - 1].Folder, Space->ViewFrom, Space->look_dir);
       GuiMode = GUI_3D_MODE;
+
+      /*
+      // Плашка с текстом о агрузке данных при инициализации сцены
       ImgGUI.fill({0xD0, 0xDD, 0xEE, 0xFF});      // заливка окна фоном
       {
         auto& Font = Font18s;
@@ -353,6 +425,8 @@ void gui::button_click(ELEMENT_ID id)
                    static_cast<GLint>(Layout.height),
                    0, GL_RGBA, GL_UNSIGNED_BYTE, ImgGUI.uchar_t());
       screen_render();     // Вывести на экран сообщение о загрузке
+      */
+
       Space->enable();     // Загрузка занимает некоторое время ...
       Cursor3D[2] = 4.0f;  // Активировать прицел
       break;
@@ -717,6 +791,18 @@ void gui::show(void)
     Space->render(); // рендер 3D сцены
     menu_build();    // рендер GUI меню
     screen_render(); // прорисовка окна приложения
+
+    //if(GuiMode != GUI_3D_MODE) wnk_show(GLContext->get_id());
+
+    // переключить буфер рендера
+    vbo_mtx.lock();
+    GLContext->swap_buffers();
+    vbo_mtx.unlock();
+
+  #ifndef NDEBUG
+    if(glGetError() != GL_NO_ERROR) std::cerr << "ERROR in the function 'gui::render_screen'.";
+  #endif
+
   }
 }
 
@@ -740,17 +826,8 @@ void gui::screen_render(void)
   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   vbo_mtx.unlock();
   Program2d->unuse();
-
-  // переключить буфер рендера
-  vbo_mtx.lock();
-  GLContext->swap_buffers();
-  vbo_mtx.unlock();
-
-#ifndef NDEBUG
-  if(glGetError() != GL_NO_ERROR) std::cerr << "ERROR in the function 'gui::render_screen'.";
-#endif
-
 }
+
 
 ///
 /// \brief gui::window_pos_event
