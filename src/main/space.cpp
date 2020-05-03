@@ -275,7 +275,13 @@ void space::calc_render_time(void)
 
 
 ///
-/// Функция, вызываемая из цикла окна для рендера сцены
+/// Рендер 3D пространства сцены в буфер "RenderBuffer"
+///
+/// \details
+/// Так как вершины располагаются группами по 4 шт. (обход: 6 индексов / 2 треугольника ),
+/// то можно, по номеру (&vertex_id) любой вершины из группы, используя остаток от деления
+/// на число вершин в группе, определить какая по номеру из вершин начинает
+/// эту группу и какая заканчивает.( hl_point_id_from, hl_point_id_end )
 ///
 void space::render(void)
 {
@@ -284,22 +290,27 @@ void space::render(void)
   calc_render_time();
   calc_position();
 
-  vbo_mtx.lock();
+  uint vertex_id = 0;    // переменная для записи ID вершины в VBO
+  RenderBuffer->read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
+  hl_vertex_id_from = vertex_id - (vertex_id % vertices_per_face);
+  hl_vertex_id_end = hl_vertex_id_from + vertices_per_face - 1;
 
   RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
 
+  vbo_mtx.lock();
+
   glBindVertexArray(vao_id);
   Program3d->use();
   for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
 
-  Program3d->set_uniform("mvp", MatMVP);
+  Program3d->set_uniform("mvp", MatMVP);                      // матрица пространства
   Program3d->set_uniform("light_direction", light_direction); // направление
   Program3d->set_uniform("light_bright", light_bright);       // цвет/яркость
-  Program3d->set_uniform("MinId", hl_vertex_id_from);         // начальная вершина активного вокселя
-  Program3d->set_uniform("MaxId", hl_vertex_id_end);          // последняя вершина активного вокселя
+  Program3d->set_uniform("MinId", hl_vertex_id_from);         // начальная вершина подсветки поверхности
+  Program3d->set_uniform("MaxId", hl_vertex_id_end);          // последняя вершина подсветки
   glDrawElements(GL_TRIANGLES, render_indices.load(), GL_UNSIGNED_INT, nullptr);
 
   for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
@@ -309,7 +320,6 @@ void space::render(void)
   vbo_mtx.unlock();
 
   hud_draw();
-  calc_hlight_quad();
 }
 
 
@@ -440,37 +450,6 @@ void space::keyboard_event(int _key, int _scancode, int _action, int _mods)
   fb_way = on_front - on_back;
   ud_way = on_down  - on_up;
   rl_way = on_left  - on_right;
-}
-
-
-///
-/// \brief space::check_keys
-/// \param ev
-///
-/// Скан-коды клавиш:
-/// [S] == 31; [C] == 46
-void space::calc_hlight_quad(void)
-{
-  // В "цвете" пикселей буфера рендера хранится информация об индексах
-  // первой вершины образующего примитива (каждый прямоугольник формируется
-  // из двух треугольников). Зная размер блока данных, по индексу можно получить
-  // адрес размещения в буфере VBO данных того геометрического примитива, в
-  // котором расположен данный пиксель.
-
-  uint vertex_id = 0;    // переменная для записи ID вершины в VBO
-  vbo_mtx.lock();
-  RenderBuffer->read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
-  vbo_mtx.unlock();
-
-  // Так как вершины располагаются группами по 4 шт. (обход через 6 индексов),
-  // то можно, по номеру любой вершины из группы, используя остаток от деления
-  // на число вершин в группе, определить какая по номеру из вершин начинает
-  // эту группу и какая заканчивает.
-  //
-  // Значения переменных hl_point_id_end и hl_point_id_from используются в шейдере
-  // для подсветки текущего прямоугольника (расположенного под прицелом в центре экрана)
-  hl_vertex_id_from = vertex_id - (vertex_id % vertices_per_face);
-  hl_vertex_id_end = hl_vertex_id_from + vertices_per_face - 1;
 }
 
 

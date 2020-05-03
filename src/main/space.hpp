@@ -83,9 +83,10 @@ namespace tr
 
       glm::vec3 light_direction {}; // направление освещения
       glm::vec3 light_bright {};    // яркость света
+
       // Индексы вершин подсвечиваемого вокселя, на который направлен курсор (центр экрана)
-      int hl_vertex_id_from = 0;         // индекс начальной вершины
-      int hl_vertex_id_end = 0;         // индекс последней вершины
+      int hl_vertex_id_from = 0;    // индекс начальной вершины
+      int hl_vertex_id_end = 0;     // индекс последней вершины
 
       // Camera control
       float rl=0.f, ud=0.f, fb=0.f; // скорость движения по направлениям
@@ -108,7 +109,6 @@ namespace tr
       void calc_render_time(void);
       void load_textures(void);
       void calc_position(void);
-      void calc_hlight_quad(void);
       void init_buffers(void);
 
       void hud_load(void);

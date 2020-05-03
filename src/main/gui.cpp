@@ -32,11 +32,14 @@ void wnk_show(GLFWwindow* win)
       enum {EASY, HARD};
       static int op = EASY;
       static int property = 20;
+
       nk_layout_row_static(ctx, 30, 80, 1);
+
       if (nk_button_label(ctx, "button"))
           fprintf(stdout, "button pressed\n");
 
       nk_layout_row_dynamic(ctx, 30, 2);
+
       if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
       if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
 
@@ -45,8 +48,10 @@ void wnk_show(GLFWwindow* win)
 
       nk_layout_row_dynamic(ctx, 20, 1);
       nk_label(ctx, "background:", NK_TEXT_LEFT);
+
       nk_layout_row_dynamic(ctx, 25, 1);
-      if (nk_combo_begin_color(ctx, nk_rgb_cf(bg), nk_vec2(nk_widget_width(ctx),400))) {
+      if (nk_combo_begin_color(ctx, nk_rgb_cf(bg), nk_vec2(nk_widget_width(ctx),400)))
+      {
           nk_layout_row_dynamic(ctx, 120, 1);
           bg = nk_color_picker(ctx, bg, NK_RGBA);
           nk_layout_row_dynamic(ctx, 25, 1);
