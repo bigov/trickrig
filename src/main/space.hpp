@@ -33,6 +33,7 @@ namespace tr
       std::shared_ptr<glm::vec3> ViewFrom = nullptr;             // 3D координаты точки положения
       float look_dir[2] = {0.0f, 0.0f};  // Направление: азимут (0 - X) и тангаж (0 - горизОнталь, пи/2 - вертикаль)
       int FPS = 500;     // частота кадров (для коррекции скорости движения)
+      GLuint texture_hud = 0;  // ID HUD текстуры в GPU
 
     private:
       std::unique_ptr<std::thread> data_loader = nullptr;
@@ -43,7 +44,6 @@ namespace tr
       std::unique_ptr<glsl> Program3d = nullptr;
 
       img ImHUD { 0, 0 };      // Текстура HUD окна приложения
-      GLuint texture_hud = 0;  // ID HUD текстуры в GPU
 
       px bg_hud  {0x00, 0x88, 0x00, 0x40}; // Фон панели HUD
       GLuint vao_id = 0;                   // VAO ID

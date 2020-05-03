@@ -58,7 +58,7 @@ space::space(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
   Program3d->AtribsList.push_back(
     { Program3d->attrib("fragment"), 2, GL_FLOAT, GL_TRUE, bytes_per_vertex, 10 * sizeof(GLfloat)});
 
-  glUniform1i(Program3d->uniform("texture_0"), 0);  // GL_TEXTURE0
+  glUniform1i(Program3d->uniform("texture_0"), 0);  // glActiveTexture(GL_TEXTURE0)
 
   Program3d->unuse();
 
@@ -290,7 +290,7 @@ void space::render(void)
   calc_render_time();
   calc_position();
 
-  uint vertex_id = 0;    // переменная для записи ID вершины в VBO
+  uint vertex_id = 0;    // переменная для приема ID вершины из VBO
   RenderBuffer->read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
   hl_vertex_id_from = vertex_id - (vertex_id % vertices_per_face);
   hl_vertex_id_end = hl_vertex_id_from + vertices_per_face - 1;

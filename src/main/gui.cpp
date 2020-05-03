@@ -101,7 +101,6 @@ gui::gui(void)
 
   // настройка текстуры для GUI
   glActiveTexture(GL_TEXTURE2);
-  //glActiveTexture(GL_TEXTURE3);
 
   glGenTextures(1, &texture_gui);
   glBindTexture(GL_TEXTURE_2D, texture_gui);
@@ -155,8 +154,8 @@ gui::gui(void)
   VboTexcoord.attrib( Program2d->attrib("texcoord"),
       2, GL_FLOAT, GL_FALSE, 0, 0);
 
-  glUniform1i(Program2d->uniform("texture_1"), 1);  // GL_TEXTURE1
-  glUniform1i(Program2d->uniform("texture_2"), 2);  // GL_TEXTURE2
+  glUniform1i(Program2d->uniform("texture_1"), 1); // Текстурный блок фрейм-буфера - glActiveTecsture(GL_TEXTURE1)
+  glUniform1i(Program2d->uniform("texture_2"), 2); // В зависимости от режима HUD или GUI - glActiveTecsture(GL_TEXTURE2)
 
   Program2d->unuse();
   glBindVertexArray(0);
@@ -410,24 +409,6 @@ void gui::button_click(ELEMENT_ID id)
     case BTN_OPEN:
       cfg::map_view_load(Maps[row_selected - 1].Folder, Space->ViewFrom, Space->look_dir);
       GuiMode = GUI_3D_MODE;
-
-      /*
-      // Плашка с текстом о агрузке данных при инициализации сцены
-      ImgGUI.fill({0xD0, 0xDD, 0xEE, 0xFF});      // заливка окна фоном
-      {
-        auto& Font = Font18s;
-        char message[] = "ЗАГРУЗКА ДАННЫХ ...";     // В сообщении 19 символов
-        textstring_place( Font, message, ImgGUI,
-                        ( Layout.width - 19 * Font.w_cell)/2,
-                        ( Layout.height - Font.h_cell)    /2 );
-      }
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,       // скопировать в графический буфер
-                   static_cast<GLint>(Layout.width),
-                   static_cast<GLint>(Layout.height),
-                   0, GL_RGBA, GL_UNSIGNED_BYTE, ImgGUI.uchar_t());
-      screen_render();     // Вывести на экран сообщение о загрузке
-      */
-
       Space->enable();     // Загрузка занимает некоторое время ...
       Cursor3D[2] = 4.0f;  // Активировать прицел
       break;
@@ -711,7 +692,7 @@ void gui::menu_config(void)
 
 
 ///
-/// \brief gui::draw_gui_menu
+/// \brief gui::menu_build
 ///
 void gui::menu_build(void)
 {
@@ -735,13 +716,14 @@ void gui::menu_build(void)
    }
 
   // каждый кадр на текстуре окна обновляем изображение меню
-  //glActiveTexture(GL_TEXTURE3);
   glBindTexture(GL_TEXTURE_2D, texture_gui);
+
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                static_cast<GLint>(Layout.width),
                static_cast<GLint>(Layout.height),
                0, GL_RGBA, GL_UNSIGNED_BYTE, ImgGUI.uchar_t());
 
+  // Обработка состояния мыши: клавиша отпущена над элементом меню
   if((mouse_left == RELEASE) && (element_over != NONE))
   {
     button_click(element_over);
@@ -749,11 +731,7 @@ void gui::menu_build(void)
     action = EMPTY;         // сбросить флаг действия
   }
 
-  if(element_over == NONE)
-  {
-    mouse_left = EMPTY;
-    //AppWin.action = -1; // флаг действия потребуется при вводе названия карты
-  }
+  if(element_over == NONE) { mouse_left = EMPTY; }
 
   // При рисовании кнопки проверяются координаты указателя мыши. Если указатель
   // находится над кнопкой, то кнопка изображается другим цветом и ее ID
@@ -821,6 +799,9 @@ void gui::show(void)
 ///
 void gui::screen_render(void)
 {
+  if(GuiMode == GUI_3D_MODE) glBindTexture(GL_TEXTURE_2D, Space->texture_hud);
+  else glBindTexture(GL_TEXTURE_2D, texture_gui);
+
   glBindVertexArray(vao_quad_id);
   glDisable(GL_DEPTH_TEST);
   Program2d->use();
@@ -889,9 +870,10 @@ void gui::character_event(uint ch)
 
 
 ///
-/// \brief gui::cursor_position_event
+/// \brief gui::cursor_event
 /// \param x
 /// \param y
+/// \details Изменение координат положения курсора мыши в окне
 ///
 void gui::cursor_event(double x, double y)
 {
