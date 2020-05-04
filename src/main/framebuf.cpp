@@ -80,7 +80,7 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, TexColor->id(), 0);
 
   // настройка текстуры для идентификации примитивов
-  glActiveTexture(GL_TEXTURE2);
+  glActiveTexture(GL_TEXTURE3); // Этот блок в glsl-программе использоваться не будет
 
   ident_format = GL_RED_INTEGER;   // параметры format и type используются
   ident_type = GL_INT;             // еще и в frame_buffer::read_pixel

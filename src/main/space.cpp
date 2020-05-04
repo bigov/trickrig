@@ -291,16 +291,12 @@ void space::render(void)
   calc_position();
 
   uint vertex_id = 0;    // переменная для приема ID вершины из VBO
-  RenderBuffer->read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
-  hl_vertex_id_from = vertex_id - (vertex_id % vertices_per_face);
-  hl_vertex_id_end = hl_vertex_id_from + vertices_per_face - 1;
+  vbo_mtx.lock();
 
   RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
-
-  vbo_mtx.lock();
 
   glBindVertexArray(vao_id);
   Program3d->use();
@@ -317,7 +313,12 @@ void space::render(void)
   Program3d->unuse();
   RenderBuffer->unbind();
   glBindVertexArray(0);
+
+  RenderBuffer->read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
   vbo_mtx.unlock();
+
+  hl_vertex_id_from = vertex_id - (vertex_id % vertices_per_face);
+  hl_vertex_id_end = hl_vertex_id_from + vertices_per_face - 1;
 
   hud_draw();
 }
