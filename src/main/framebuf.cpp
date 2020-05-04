@@ -79,8 +79,10 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
   TexColor = std::make_unique<gl_texture>(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, TexColor->id(), 0);
 
-  // настройка текстуры для идентификации примитивов
-  glActiveTexture(GL_TEXTURE3); // Этот блок в glsl-программе использоваться не будет
+  // Настройка текстуры для идентификации примитивов. Блок GL_TEXTURE3 нужен для
+  // выделения памяти под хранение текстуры идентификации пикселей. В шейдерной
+  // программе он не используется.
+  glActiveTexture(GL_TEXTURE3);
 
   ident_format = GL_RED_INTEGER;   // параметры format и type используются
   ident_type = GL_INT;             // еще и в frame_buffer::read_pixel
