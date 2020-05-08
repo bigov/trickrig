@@ -23,7 +23,7 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
 endif()
 
 project(
-  TrickRig VERSION "0.0.1.23"
+  TrickRig VERSION "0.0.1.24"
   DESCRIPTION "Graphical engine project"
   HOMEPAGE_URL "https://www.trickrig.net"
   LANGUAGES "CXX"
@@ -44,8 +44,8 @@ SET( CMAKE_VERBOSE_MAKEFILE OFF )
 
 configure_file( "${CMAKE_SOURCE_DIR}/cmakes/version_hpp.cmake" "${CMAKE_CURRENT_BINARY_DIR}/version.hpp" )
 
+include_directories( SYSTEM "${CMAKE_SOURCE_DIR}/libs" )
 include_directories( "${CMAKE_CURRENT_BINARY_DIR}" )
-include_directories( "${CMAKE_SOURCE_DIR}/libs" )
 #include_directories( "${CMAKE_HOME_DIRECTORY}" )
 
 # Для сборки релиза следует указать: "-D CMAKE_BUILD_TYPE=Release"
