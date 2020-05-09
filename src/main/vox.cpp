@@ -41,7 +41,7 @@ vox::vox(const i3d& Point, int side_len, uchar face): Origin(Point), side_len(si
       break;
   }
   */
-  tex_id[face]  = {2, 1};
+  tex_id[face]  = {0, 0};  // Назначение (u,v) координат текстуры из текстурной карты
   position_set(face);
   color_set(DefaultColor);
   normals_set(face);

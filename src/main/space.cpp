@@ -177,12 +177,12 @@ void space::load_textures(void)
   GLuint texture_id = 0;
   glGenTextures(1, &texture_id);
   glBindTexture(GL_TEXTURE_2D, texture_id);
-  img ImgTex0 { cfg::app_key(PNG_TEXTURE0) };
+  image ImgTex0 { cfg::app_key(PNG_TEXTURE0) };
   GLint level_of_details = 0;
   GLint frame = 0;
   glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-               static_cast<GLsizei>(ImgTex0.w_summ),
-               static_cast<GLsizei>(ImgTex0.h_summ),
+               static_cast<GLsizei>(ImgTex0._width),
+               static_cast<GLsizei>(ImgTex0._height),
                frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgTex0.uchar_t());
 
   // Установка опций отрисовки
@@ -469,21 +469,21 @@ void space::hud_load(void)
 {
   glBindTexture(GL_TEXTURE_2D, texture_hud);
 
-  auto width = static_cast<GLint>(ImHUD.w_summ);
-  auto height = static_cast<GLint>(ImHUD.h_summ);
+  auto width = static_cast<GLint>(ImHUD._width);
+  auto height = static_cast<GLint>(ImHUD._height);
 
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
            0, GL_RGBA, GL_UNSIGNED_BYTE, ImHUD.uchar_t());
 
   // Панель инструментов для HUD в нижней части окна
   uint h = 48;                           // высота панели инструментов HUD
-  if(h > ImHUD.h_summ) h = ImHUD.h_summ;   // не может быть выше GuiImg
-  img HudPanel {ImHUD.w_summ, h, bg_hud};
+  if(h > ImHUD._height) h = ImHUD._height;   // не может быть выше GuiImg
+  image HudPanel {ImHUD._width, h, bg_hud};
 
-  auto y = static_cast<GLint>(ImHUD.h_summ - HudPanel.h_summ); // верхняя граница панели
+  auto y = static_cast<GLint>(ImHUD._height - HudPanel._height); // верхняя граница панели
   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, y,
-                static_cast<GLsizei>(HudPanel.w_summ), // width
-                static_cast<GLsizei>(HudPanel.h_summ), // height
+                static_cast<GLsizei>(HudPanel._width), // width
+                static_cast<GLsizei>(HudPanel._height), // height
                 GL_RGBA, GL_UNSIGNED_BYTE,             // mode
                 HudPanel.uchar_t());                   // data
 }
@@ -499,22 +499,22 @@ void space::hud_draw(void)
   // счетчик FPS
   px bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения
   uint fps_length = 4;               // количество символов в надписи
-  img Fps {fps_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
+  image Fps {fps_length * Font15n._cell_width + 4, Font15n._cell_height + 2, bg};
   char line[5];                       // длина строки с '\0'
   std::sprintf(line, "%.4i", FPS);
   textstring_place(Font15n, line, Fps, 2, 1);
 
   vbo_mtx.lock();
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 2, static_cast<GLint>(ImHUD.h_summ - Fps.h_summ - 2),
-                static_cast<GLsizei>(Fps.w_summ),  // width
-                static_cast<GLsizei>(Fps.h_summ),  // height
+  glTexSubImage2D(GL_TEXTURE_2D, 0, 2, static_cast<GLint>(ImHUD._height - Fps._height - 2),
+                static_cast<GLsizei>(Fps._width),  // width
+                static_cast<GLsizei>(Fps._height),  // height
                 GL_RGBA, GL_UNSIGNED_BYTE,         // mode
                 Fps.uchar_t());                      // data
   vbo_mtx.unlock();
 
   // Координаты в пространстве
   uint c_length = 60;               // количество символов в надписи
-  img Coord {c_length * Font15n.w_cell + 4, Font15n.h_cell + 2, bg};
+  image Coord {c_length * Font15n._cell_width + 4, Font15n._cell_height + 2, bg};
   char ln[60];                       // длина строки с '\0'
   std::sprintf(ln, "X:%+06.1f, Y:%+06.1f, Z:%+06.1f, a:%+04.3f, t:%+04.3f",
                   ViewFrom->x, ViewFrom->y, ViewFrom->z, look_dir[0], look_dir[1]);
@@ -522,8 +522,8 @@ void space::hud_draw(void)
 
   vbo_mtx.lock();
   glTexSubImage2D(GL_TEXTURE_2D, 0, 2, 2,            // top, left
-                static_cast<GLsizei>(Coord.w_summ),  // width
-                static_cast<GLsizei>(Coord.h_summ),  // height
+                static_cast<GLsizei>(Coord._width),  // width
+                static_cast<GLsizei>(Coord._height),  // height
                 GL_RGBA, GL_UNSIGNED_BYTE,           // mode
                 Coord.uchar_t());                      // data
   vbo_mtx.unlock();

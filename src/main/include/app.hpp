@@ -1,33 +1,25 @@
-#ifndef GUI_HPP
-#define GUI_HPP
+#ifndef APP_HPP
+#define APP_HPP
 
 #include "main.hpp"
 #include "trgl.hpp"
 #include "config.hpp"
+#include "gui.hpp"
 #include "space.hpp"
 
 namespace tr {
 
-// состояние кнопки
-enum BUTTON_STATE {
-  ST_NORMAL,
-  ST_OVER,
-  ST_PRESSED,
-  ST_OFF
-};
-
-
-class gui: public interface_gl_context
+class app: public interface_gl_context
 {
   public:
-    gui(void);
-    ~gui(void);
+    app(void);
+    ~app(void);
 
     // Запретить копирование и перенос экземпляра класса
-    gui(const gui&) = delete;
-    gui& operator=(const gui&) = delete;
-    gui(gui&&) = delete;
-    gui& operator=(gui&&) = delete;
+    app(const app&) = delete;
+    app& operator=(const app&) = delete;
+    app(app&&) = delete;
+    app& operator=(app&&) = delete;
 
     void show(void);
 
@@ -89,7 +81,7 @@ class gui: public interface_gl_context
     double mouse_y = 0.0;                    // позиция указателя относительно верхней границы
 
     px bg      {0xE0, 0xE0, 0xE0, 0xC0};     // фон заполнения неактивного окна
-    img ImgGUI { 0, 0 };                     // GUI текстура окна приложения
+    image ImgGUI { 0, 0 };                     // GUI текстура окна приложения
     px color_title {0xFF, 0xFF, 0xDD, 0xFF}; // фон заголовка
     int mouse_left = EMPTY;                 // нажатие на левую кнопку мыши
 
@@ -105,10 +97,10 @@ class gui: public interface_gl_context
 
     void button(ELEMENT_ID id, ulong x, ulong y, const std::string& Name,
                 bool button_is_active = true );
-    void button_make_body(img &Data, BUTTON_STATE);
-    void cursor_text_row(const img &_Fn, img &_Dst, size_t position);
+    void button_make_body(image &Data, STATE);
+    void cursor_text_row(const image &_Fn, image &_Dst, size_t position);
     void title(const std::string& title);
-    void input_text_line(const img &_Fn);
+    void input_text_line(const image &_Fn);
     void row_text(size_t id, uint x, uint y, uint w, uint h, const std::string &);
     void select_list(uint x, uint y, uint w, uint h);
     void menu_build(void);

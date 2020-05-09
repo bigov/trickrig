@@ -1,7 +1,7 @@
-#ifndef WGLFW_HPP
-#define WGLFW_HPP
+#ifndef TRGL_HPP
+#define TRGL_HPP
 
-#include "io.hpp"
+#include "tools.hpp"
 
 namespace tr
 {

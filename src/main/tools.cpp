@@ -6,7 +6,7 @@
 //
 //============================================================================
 #include <sys/stat.h>
-#include "io.hpp"
+#include "tools.hpp"
 
 namespace tr
 {
@@ -23,11 +23,11 @@ const std::string FontMap2 { "абвгдеёжзийклмнопрстуфхцч
 uint FontMap1_len = 0; // значение будет присвоено в конструкторе класса
 
 uint f_len = 160; // количество символов в текстуре шрифта
-img Font12n { "../assets/font_07x12_nr.png", f_len }; //шрифт 07х12 (норм)
-img Font15n { "../assets/font_08x15_nr.png", f_len }; //шрифт 08х15 (норм)
-img Font18n { "../assets/font_10x18_nr.png", f_len }; //шрифт 10x18 (норм)
-img Font18s { "../assets/font_10x18_sh.png", f_len }; //шрифт 10x18 (тень)
-img Font18l { "../assets/font_10x18_lt.png", f_len }; //шрифт 10x18 (светл)
+texture Font12n { "../assets/font_07x12_nr.png", f_len }; //шрифт 07х12 (норм)
+texture Font15n { "../assets/font_08x15_nr.png", f_len }; //шрифт 08х15 (норм)
+texture Font18n { "../assets/font_10x18_nr.png", f_len }; //шрифт 10x18 (норм)
+texture Font18s { "../assets/font_10x18_sh.png", f_len }; //шрифт 10x18 (тень)
+texture Font18l { "../assets/font_10x18_lt.png", f_len }; //шрифт 10x18 (светл)
 
 ///
 /// \brief dir_list
@@ -146,7 +146,7 @@ bool operator== (const px &A, const px &B)
   ///
   /// \brief Вспомогательная функция для структуры "px"
   ///
-  uchar int_to_uchar(int v)
+  uchar int2uchar(int v)
   {
     if(v < 0)         return 0x00;
     else if (v > 255) return 0xFF;
@@ -158,16 +158,14 @@ bool operator== (const px &A, const px &B)
   /// \param width
   /// \param height
   ///
-  img::img(ulong width, ulong height)
-    : Data(width * height), n_cols(_c), n_rows(_r),
-    w_cell(_wc), h_cell(_hc), w_summ(_w), h_summ(_h)
+  image::image(ulong new_width, ulong new_height)
   {
-    _w = static_cast<uint>(width);  // ширина изображения в пикселях
-    _h = static_cast<uint>(height); // высота изображения в пикселях
-    _c = 1;      // число ячеек в строке
-    _r = 1;      // число строк
-    _wc = _w/_c; // ширина ячейки в пикселях
-    _hc = _h/_r; // высота ячейки в пикселях
+     Data.resize(new_width * new_height);
+
+    _width = static_cast<uint>(new_width);  // ширина изображения в пикселях
+    _height = static_cast<uint>(new_height); // высота изображения в пикселях
+    _cell_width = _width/columns; // ширина ячейки в пикселях
+    _cell_height = _height/rows; // высота ячейки в пикселях
   }
 
   ///
@@ -176,17 +174,27 @@ bool operator== (const px &A, const px &B)
   /// \param height
   /// \param pixel
   ///
-  img::img(ulong width, ulong height, const px &pixel)
-    : Data(width * height, pixel), n_cols(_c), n_rows(_r),
-    w_cell(_wc), h_cell(_hc), w_summ(_w), h_summ(_h)
+  image::image(ulong new_width, ulong new_height, const px &pixel)
   {
-    _c = 1;      // число ячеек в строке (по-умолчанию)
-    _r = 1;      // число строк (по-умолчанию)
-    _w = static_cast<uint>(width);  // ширина изображения в пикселях
-    _h = static_cast<uint>(height); // высота изображения в пикселях
-    _wc = _w/_c; // ширина ячейки в пикселях
-    _hc = _h/_r; // высота ячейки в пикселях
+    Data.resize(new_width * new_height, pixel);
+    columns = 1;      // число ячеек в строке (по-умолчанию)
+    rows = 1;      // число строк (по-умолчанию)
+    _width = static_cast<uint>(new_width);  // ширина изображения в пикселях
+    _height = static_cast<uint>(new_height); // высота изображения в пикселях
+    _cell_width = new_width/columns; // ширина ячейки в пикселях
+    _cell_height = new_height/rows; // высота ячейки в пикселях
   }
+
+
+  ///
+  /// \brief image::image
+  /// \param filename
+  ///
+  image::image(const std::string &filename)
+  {
+    load(filename);
+  }
+
 
   ///
   /// \brief Конструктор c загрузкой данных из файла
@@ -194,12 +202,10 @@ bool operator== (const px &A, const px &B)
   /// \param cols
   /// \param rows
   ///
-  img::img(const std::string &filename, uint cols, uint rows)
-    : Data(0),  n_cols(_c), n_rows(_r),
-      w_cell(_wc), h_cell(_hc), w_summ(_w), h_summ(_h)
+  texture::texture(const std::string& filename, uint new_cols, uint new_rows)
   {
-    _c = cols;
-    _r = rows;
+    columns = new_cols;
+    rows = new_rows;
     load(filename);
   }
 
@@ -209,28 +215,27 @@ bool operator== (const px &A, const px &B)
   /// \param W
   /// \param H
   ///
-  void img::resize(uint width, uint height)
+  void image::resize(uint new_width, uint new_height)
   {
-    _w = width;  // ширина изображения в пикселях
-    _h = height; // высота изображения в пикселях
+    _width = new_width;    // ширина изображения в пикселях
+    _height = new_height;  // высота изображения в пикселях
 
-    _wc = _w/_c; // ширина ячейки в пикселях
-    _hc = _h/_r; // высота ячейки в пикселях
-    //Data.clear();
-    //Data.resize(_w * _h, {0x00, 0x00, 0x00, 0x00});
-    clear();
+    _cell_width = _width/columns; // ширина ячейки в пикселях
+    _cell_height = _height/rows; // высота ячейки в пикселях
+
+    Data.resize(_width * _height, {0x00, 0x00, 0x00, 0x00});
   }
 
 
   ///
   /// \brief img::clear
   ///
-  void img::clear(void)
+  void image::clear(void)
   {
     std::vector<px> empty {};
     Data.clear();
     Data.swap(empty);
-    Data.resize(_w * _h, {0x00, 0x00, 0x00, 0x00});
+    Data.resize(_width * _height, {0x00, 0x00, 0x00, 0x00});
   }
 
 
@@ -238,12 +243,12 @@ bool operator== (const px &A, const px &B)
   /// \brief img::fill
   /// \param color
   ///
-  void img::fill(const px& color)
+  void image::fill(const px& color)
   {
     std::vector<px> empty {};
     Data.clear();
     Data.swap(empty);
-    Data.resize(_w * _h, color);
+    Data.resize(_width * _height, color);
   }
 
 
@@ -251,7 +256,7 @@ bool operator== (const px &A, const px &B)
   /// \brief img::uchar_data
   /// \return
   ///
-  uchar* img::uchar_t(void) const
+  uchar* image::uchar_t(void) const
   {
     return reinterpret_cast<uchar*>(px_data());
   }
@@ -261,7 +266,7 @@ bool operator== (const px &A, const px &B)
   /// \brief img::px_data
   /// \return
   ///
-  px* img::px_data(void) const
+  px* image::px_data(void) const
   {
     return const_cast<px*>(Data.data());
   }
@@ -270,22 +275,17 @@ bool operator== (const px &A, const px &B)
   ///
   /// \brief Загрузки избражения из .PNG файла
   ///
-  /// В случае загрузки текстуры можно указать количество элементов в строке
-  /// и число строк. По-умолчанию оба параметра устанавливаются равными 1.
-  ///
   /// \param filename
   ///
-  void img::load(const std::string &fname)
+  void image::load(const std::string &fname)
   {
     png_image info;
     memset(&info, 0, sizeof info);
+
     info.version = PNG_IMAGE_VERSION;
 
-    if (!png_image_begin_read_from_file(&info, fname.c_str()))
-      ERR("Can't read PNG image file");
-
+    if (!png_image_begin_read_from_file(&info, fname.c_str())) ERR("Can't read PNG image file");
     info.format = PNG_FORMAT_RGBA;
-
     resize(info.width, info.height);
 
     if (!png_image_finish_read(&info, nullptr, uchar_t(), 0, nullptr ))
@@ -296,7 +296,7 @@ bool operator== (const px &A, const px &B)
   }
 
   ///
-  /// \brief     Копирование изображения
+  /// \brief     Копирование указанного фрагмента текстуры в изображение
   ///
   /// \param C   номер ячейки в строке таблицы текстур
   /// \param R   номер строки таблицы текстур
@@ -304,18 +304,18 @@ bool operator== (const px &A, const px &B)
   /// \param X   координата пикселя приемника
   /// \param Y   координата пикселя приемника
   ///
-  void img::copy(uint C, uint R, img& dst, ulong X, ulong Y) const
+  void image::copy(uint C, uint R, image& dst, ulong X, ulong Y) const
   {
-    if(C >= n_cols) C = 0;
-    if(R >= n_rows) R = 0;
+    if(C >= columns) C = 0;
+    if(R >= rows) R = 0;
 
-    uint frag_w = w_summ / n_cols;             // ширина фрагмента в пикселях
-    uint frag_h = h_summ / n_rows;             // высота фрагмента в пикселях
+    uint frag_w = _width / columns;   // ширина фрагмента в пикселях
+    uint frag_h = _height / rows;   // высота фрагмента в пикселях
     uint frag_sz = frag_h * frag_w;  // число копируемых пикселей
 
-    uint frag_i = C * frag_w + R * frag_h * w_summ; // индекс начала фрагмента
+    uint frag_i = C * frag_w + R * frag_h * _width; // индекс начала фрагмента
 
-    auto dst_i = X + Y * dst.w_summ;       // индекс начала в приемнике
+    auto dst_i = X + Y * dst._width;       // индекс начала в приемнике
     //UINT dst_max = dst.w * dst.h;     // число пикселей в приемнике
 
     uint i = 0;              // сумма скопированных пикселей
@@ -334,8 +334,8 @@ bool operator== (const px &A, const px &B)
         ++i;
       }
 
-      dst_i += dst.w_summ; // переход на следующую строку приемника
-      frag_i += w_summ;    // переход на следующую строку источника
+      dst_i += dst._width; // переход на следующую строку приемника
+      frag_i += _width;    // переход на следующую строку источника
     }
   }
 
@@ -349,13 +349,13 @@ bool operator== (const px &A, const px &B)
   /// \param х - координата
   /// \param y - координата
   ///
-  void textstring_place(const img &FontImg, const std::string &TextString,
-                     img& Dst, ulong x, ulong y)
+  void textstring_place(const image &FontImg, const std::string &TextString,
+                     image& Dst, ulong x, ulong y)
   {
     #ifndef NDEBUG
-    if(x > Dst.w_summ - utf8_size(TextString) * FontImg.w_cell)
+    if(x > Dst._width - utf8_size(TextString) * FontImg._cell_width)
       ERR ("gui::add_text - X overflow");
-    if(y > Dst.h_summ - FontImg.h_cell)
+    if(y > Dst._height - FontImg._cell_height)
       ERR ("gui::add_text - Y overflow");
     #endif
 
@@ -370,14 +370,14 @@ bool operator== (const px &A, const px &B)
       {
         size_t col = FontMap1.find(TextString[i]);
         if(col == std::string::npos) col = 0;
-        FontImg.copy(col, row, Dst, x + (n++) * FontImg.w_cell, y);
+        FontImg.copy(col, row, Dst, x + (n++) * FontImg._cell_width, y);
       }
       else if(t == UTF8_FIRST)
       {
         size_t col = FontMap2.find(TextString.substr(i,2));
         if(col == std::string::npos) col = 0;
         else col = FontMap1_len + col/2;
-        FontImg.copy(col, row, Dst, x + (n++) * FontImg.w_cell, y);
+        FontImg.copy(col, row, Dst, x + (n++) * FontImg._cell_width, y);
       }
     }
   }

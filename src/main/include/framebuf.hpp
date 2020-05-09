@@ -7,7 +7,7 @@
 #ifndef FRBUF_HPP
 #define FRBUF_HPP
 
-#include "io.hpp"
+#include "tools.hpp"
 
 namespace tr
 {

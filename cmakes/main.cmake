@@ -19,6 +19,8 @@ SET( TR_LIBS ${TR_LIBS} ${GLFW_LIBRARIES} ${PNG_LIBRARIES} ${SQLITE_LIBRARIES}
 
 # список исходников
 file( GLOB MAIN_SRC "${CMAKE_SOURCE_DIR}/src/main/*.cpp" )
+# расположение заголовков
+include_directories( "${CMAKE_SOURCE_DIR}/src/main/include" )
 
 add_executable( main ${MAIN_SRC} )
 target_link_libraries( main ${TR_LIBS} )

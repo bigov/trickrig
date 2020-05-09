@@ -43,7 +43,7 @@ namespace tr
       std::shared_ptr<trgl>& OGLContext;      // основное окно приложения
       std::unique_ptr<glsl> Program3d = nullptr;
 
-      img ImHUD { 0, 0 };      // Текстура HUD окна приложения
+      image ImHUD { 0, 0 };      // Текстура HUD окна приложения
 
       px bg_hud  {0x00, 0x88, 0x00, 0x40}; // Фон панели HUD
       GLuint vao_id = 0;                   // VAO ID

@@ -9,7 +9,7 @@
 #ifndef VBO_HPP
 #define VBO_HPP
 
-#include "io.hpp"
+#include "tools.hpp"
 
 
 namespace tr

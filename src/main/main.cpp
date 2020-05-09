@@ -13,7 +13,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include "gui.hpp"
+#include "app.hpp"
 #include <time.h>
 
 
@@ -52,7 +52,7 @@ int main(int, char* argv[])
   try
   {
     cfg::load(argv); // загрузка конфигурации
-    gui AppGUI {};   // Создать окно приложения
+    app AppGUI {};   // Создать окно приложения
     AppGUI.show();   // Главный цикл
   }
   catch(std::exception & e)
