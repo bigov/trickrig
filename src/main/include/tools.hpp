@@ -46,52 +46,65 @@ namespace tr
   // Служебный класс для хранения в памяти избражений
   class image
   {
+    private:
+
     protected:
       image(const image&)            = delete;
       image& operator=(const image&) = delete;
 
-      uint columns = 1;  // число ячеек в строке
-      uint rows =    1;  // число строк
-      void clear(void);
+      uint width = 0;    // ширина изображения в пикселях
+      uint height = 0;   // высота изображения в пикселях
+
       void load(const std::string &filename);
 
     public:
-      image(void)                    = default;
+      image(void)           = default;
+      virtual ~image(void)  = default;
       std::vector<px> Data {};
-      uint _width = 0;    // ширина изображения в пикселях
-      uint _height = 0;   // высота изображения в пикселях
-      uint _cell_width = 0;  // ширина ячейки в пикселях
-      uint _cell_height = 0; // высота ячейки в пикселях
 
       // конструкторы
       image(ulong new_width, ulong new_height);
-      image(ulong new_width, ulong new_height, const px &pixel);
-      image(const std::string &filename);
+      image(ulong new_width, ulong new_height, const px& color);
+      image(const std::string& filename);
 
       // публичные методы
-      void resize(uint new_width, uint new_height);
-      void fill(const px&);
+      virtual void resize(uint new_width, uint new_height);
+
+      auto get_width(void) const { return width; }
+      auto get_height(void) const { return height; }
+      void fill(const px& color);
       uchar* uchar_t(void) const;
       px* px_data(void) const;
-      void copy(uint col, uint row, image &dst, ulong dst_x, ulong dst_y) const;
+      void copy(image &dst, ulong dst_x, ulong dst_y) const;
   };
 
 
   // Служебный класс для хранения в памяти текстур
   class texture: public image
   {
+    private:
+      void resize(uint, uint) {}
+
+    protected:
+      uint columns = 1;          // число ячеек в строке
+      uint rows =    1;          // число строк
+      uint cell_width = width;   // ширина ячейки в пикселях
+      uint cell_height = height; // высота ячейки в пикселях
 
     public:
       texture(const std::string &filename, uint new_cols = 1, uint new_rows = 1);
-  };
 
+      auto get_cell_width(void) const { return cell_width;  }
+      auto get_cell_height(void) const { return cell_height; }
+      void copy(uint col, uint row, image &dst, ulong dst_x, ulong dst_y) const;
+  };
 
 
   extern std::unique_ptr<char[]> read_chars_file(const std::string &FileName);
   extern int get_msec(void);   // число миллисекунд от начала суток.
   extern int random_int(void);
   extern std::list<std::string> dirs_list(const std::string &path);
-  extern void textstring_place(const image& FontImg, const std::string& TextString,
+  extern void textstring_place(const texture& FontImg, const std::string& TextString,
                      image& Dst, ulong x, ulong y);
 
   extern unsigned char side_opposite(unsigned char s);

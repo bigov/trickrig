@@ -98,9 +98,9 @@ class app: public interface_gl_context
     void button(ELEMENT_ID id, ulong x, ulong y, const std::string& Name,
                 bool button_is_active = true );
     void button_make_body(image &Data, STATE);
-    void cursor_text_row(const image &_Fn, image &_Dst, size_t position);
+    void cursor_text_row(const texture& _Fn, image &_Dst, size_t position);
     void title(const std::string& title);
-    void input_text_line(const image &_Fn);
+    void input_text_line(const texture& _Fn);
     void row_text(size_t id, uint x, uint y, uint w, uint h, const std::string &);
     void select_list(uint x, uint y, uint w, uint h);
     void menu_build(void);

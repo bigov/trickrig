@@ -109,11 +109,11 @@ app::~app(void)
 ///
 void app::title(const std::string &title)
 {
-  image label{ ImgGUI._width - 4, Font18s._cell_height * 2 - 4, color_title};
+  image label{ ImgGUI.get_width() - 4, Font18s.get_cell_height() * 2 - 4, color_title};
 
-  ulong x = ImgGUI._width/2 - utf8_size(title) * Font18s._cell_width / 2;
-  textstring_place(Font18s, title, label, x, Font18s._cell_height/2);
-  label.copy(0, 0, ImgGUI, 2, 2);
+  ulong x = ImgGUI.get_width()/2 - utf8_size(title) * Font18s.get_cell_width() / 2;
+  textstring_place(Font18s, title, label, x, Font18s.get_cell_height()/2);
+  label.copy(ImgGUI, 2, 2);
 
   //element Rect(200, 20);
 }
@@ -126,22 +126,22 @@ void app::title(const std::string &title)
 /// \details Рисует указанным шрифтом, в фиксированной позиции, на всю
 ///  ширину экрана
 ///
-void app::input_text_line(const image &Font)
+void app::input_text_line(const texture &Font)
 {
   px color = {0xF0, 0xF0, 0xF0, 0xFF};
-  uint row_width = ImgGUI._width - Font._cell_width * 2;
-  uint row_height = Font._cell_height * 2;
+  uint row_width = ImgGUI.get_width() - Font.get_cell_width() * 2;
+  uint row_height = Font.get_cell_height() * 2;
   image RowInput{ row_width, row_height, color };
 
   // добавить текст, введенный пользователем
-  uint y = (row_height - Font._cell_height)/2;
-  textstring_place(Font, StringBuffer, RowInput, Font._cell_width, y);
+  uint y = (row_height - Font.get_cell_height())/2;
+  textstring_place(Font, StringBuffer, RowInput, Font.get_cell_width(), y);
   cursor_text_row(Font, RowInput, utf8_size(StringBuffer));
 
   // скопировать на экран изображение поля ввода с добавленым текстом
-  auto x = (ImgGUI._width - RowInput._width) / 2;
-  y = ImgGUI._height / 2 - 2 * BUTTTON_HEIGHT;
-  RowInput.copy(0, 0, ImgGUI, x, y);
+  auto x = (ImgGUI.get_width() - RowInput.get_width()) / 2;
+  y = ImgGUI.get_height() / 2 - 2 * BUTTTON_HEIGHT;
+  RowInput.copy(ImgGUI, x, y);
 }
 
 
@@ -152,7 +152,7 @@ void app::input_text_line(const image &Font)
 /// \param position  номер позиции курсора в строке ввода
 /// \details Формирование курсора ввода, моргающего с интервалом в пол-секунды
 ///
-void app::cursor_text_row(const image &_Fn, image &_Dst, size_t position)
+void app::cursor_text_row(const texture &_Fn, image &_Dst, size_t position)
 {
   px c = {0x11, 0xDD, 0x00, 0xFF};
   auto tm = std::chrono::duration_cast<std::chrono::milliseconds>
@@ -162,9 +162,9 @@ void app::cursor_text_row(const image &_Fn, image &_Dst, size_t position)
   if(tm - tc > 500) c.a = 0xFF;
   else c.a = 0x00;
 
-  image Cursor {3, _Fn._cell_height, c};
-  Cursor.copy(0, 0, _Dst, _Fn._cell_width * (position + 1) + 1,
-              (_Dst._cell_height - _Fn._cell_height) / 2 );
+  image Cursor {3, _Fn.get_cell_height(), c};
+  Cursor.copy(_Dst, _Fn.get_cell_width() * (position + 1) + 1,
+              (_Dst.get_height() - _Fn.get_cell_height()) / 2 );
 }
 
 
@@ -209,8 +209,8 @@ void app::row_text(size_t id, uint x, uint y, uint w, uint h, const std::string 
   }
 
   image Row { w, h, bg_color };
-  textstring_place(Font18n, text, Row, Font18n._cell_width/2, 6);
-  Row.copy(0, 0, ImgGUI, x, y);
+  textstring_place(Font18n, text, Row, Font18n.get_cell_width()/2, 6);
+  Row.copy(ImgGUI, x, y);
 }
 
 
@@ -221,9 +221,9 @@ void app::row_text(size_t id, uint x, uint y, uint w, uint h, const std::string 
 void app::select_list(uint lx, uint ly, uint lw, uint lh)
 {
   image ListImg {lw, lh, {0xDD, 0xDD, 0xDD, 0xFF}};             // изображение списка
-  ListImg.copy(0, 0, ImgGUI, lx, ly);
+  ListImg.copy(ImgGUI, lx, ly);
 
-  uint rh = Font18n._cell_height * 1.5f;     // высота строки
+  uint rh = Font18n.get_cell_height() * 1.5f;     // высота строки
   uint rw = lw - 4;                    // ширина строки
   uint max_rows = (lh - 4) / (rh + 2); // число строк, которое может поместиться в списке
 
@@ -391,7 +391,7 @@ void app::button_click(ELEMENT_ID id)
 ///
 void app::button_make_body(image &D, STATE s)
 {
-  double step = static_cast<double>(D._height-3) / 256.0 * 7.0; // градации цвета
+  double step = static_cast<double>(D.get_height() - 3) / 256.0 * 7.0; // градации цвета
 
   // Используемые цвета
   px line_0  { 0xB6, 0xB6, 0xB3, 0xFF }; // верх и боковые
@@ -423,11 +423,11 @@ void app::button_make_body(image &D, STATE s)
 
   // верхняя линия
   size_t i = 0;
-  size_t max = D._width;
+  size_t max = D.get_width();
   while(i < max) D.Data[i++] = line_0;
 
   // вторая линия
-  max += D._width;
+  max += D.get_width();
   while(i < max) D.Data[i++] = line_1;
 
   // основной фон
@@ -435,7 +435,7 @@ void app::button_make_body(image &D, STATE s)
   uint np = 0;       // счетчик значений
   double nr = 0.0;   // счетчик строк
 
-  max += D._width * (D._height - 3);
+  max += D.get_width() * (D.get_height() - 3);
   while (i < max)
   {
     D.Data[i++] = { static_cast<int>(line_bg.r) - S,
@@ -443,7 +443,7 @@ void app::button_make_body(image &D, STATE s)
                     static_cast<int>(line_bg.b)  - S,
                     static_cast<int>(line_bg.a) };
     np++;
-    if(np >= D._width)
+    if(np >= D.get_width())
     {
       np = 0;
       nr += 1.0;
@@ -453,7 +453,7 @@ void app::button_make_body(image &D, STATE s)
   }
 
   // нижняя линия
-  max += D._width;
+  max += D.get_width();
   while(i < max)
   {
     D.Data[i++] = line_f;
@@ -464,7 +464,7 @@ void app::button_make_body(image &D, STATE s)
   while(i < max)
   {
     D.Data[i++] = line_f;
-    i += D._width - 2;
+    i += D.get_width() - 2;
     D.Data[i++] = line_f;
   }
 }
@@ -509,8 +509,8 @@ void app::button(ELEMENT_ID btn_id, ulong x, ulong y,
     button_make_body(Btn, ST_INACTIVE);
   }
 
-  auto t_width = Font18s._cell_width * utf8_size(Name);
-  auto t_height = Font18s._cell_height;
+  auto t_width = Font18s.get_cell_width() * utf8_size(Name);
+  auto t_height = Font18s.get_cell_height();
 
   if(button_is_active)
   {
@@ -522,7 +522,7 @@ void app::button(ELEMENT_ID btn_id, ulong x, ulong y,
     textstring_place(Font18l, Name, Btn, BUTTTON_WIDTH/2 - t_width/2,
            BUTTTON_HEIGHT/2 - t_height/2);
   }
-  Btn.copy(0, 0, ImgGUI, x, y);
+  Btn.copy(ImgGUI, x, y);
 }
 
 
@@ -565,7 +565,7 @@ void app::menu_map_select(void)
 
   select_list(x, y, list_w, list_h);
 
-  x = ImgGUI._width / 2 + 8;
+  x = ImgGUI.get_width() / 2 + 8;
   y = y + list_h + BUTTTON_HEIGHT/2;
 
   button(BTN_CANCEL, x, y, "Отмена");
@@ -602,8 +602,8 @@ void app::menu_map_create(void)
   input_text_line(Font18n);
 
   // две кнопки
-  auto x = ImgGUI._width / 2 - static_cast<ulong>(BUTTTON_WIDTH * 1.25);
-  auto y = ImgGUI._height / 2;
+  auto x = ImgGUI.get_width() / 2 - static_cast<ulong>(BUTTTON_WIDTH * 1.25);
+  auto y = ImgGUI.get_height() / 2;
   button(BTN_ENTER_NAME, x, y, "OK", StringBuffer.length() > 0);
 
   x += BUTTTON_WIDTH * 1.5;  // X координата кнопки
@@ -619,8 +619,8 @@ void app::menu_config(void)
   ImgGUI.fill(bg);
   title("НАСТРОЙКИ");
 
-  int x = ImgGUI._width / 2 - static_cast<ulong>(BUTTTON_WIDTH/2);
-  int y = ImgGUI._height / 2;
+  int x = ImgGUI.get_width() / 2 - static_cast<ulong>(BUTTTON_WIDTH/2);
+  int y = ImgGUI.get_height() / 2;
   button(BTN_CANCEL, x, y, "Отмена");
 }
 
