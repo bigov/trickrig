@@ -13,22 +13,26 @@ namespace tr
 
   class element
   {
-    public:
-      element(void) = default;
-      element(unsigned int width, unsigned int height);
-      ~element(void) = default;
-
-      void draw (STATE new_state = ST_NORMAL);
-
-      void resize (unsigned int new_width, unsigned int new_height);
-      uchar* data(void);
-
     protected:
       px BgColor { 0xFF, 0xFF, 0xFF, 0xFF };
-      unsigned int width = 0;
-      unsigned int height = 0;
       STATE state = ST_NORMAL;
-      std::vector<uchar> Data {};
+      image Image {};
+
+    public:
+      element(void) = default;
+      element(unsigned int width, unsigned int height, px Color = { 0xFF, 0xFF, 0xFF, 0xFF });
+      ~element(void) = default;
+
+      auto draw (STATE new_state = ST_NORMAL);
+      void resize (unsigned int new_width, unsigned int new_height);
+      uchar* data(void);
+      void put(image& TargetImage, uint X, uint Y) { Image.put(TargetImage, X, Y); };
+      auto get_width(void) const { return Image.get_width(); }
+      auto get_height(void) const { return Image.get_height(); }
+
+      //void put(element E, uint X, uint Y)
+
+      //void insert(const element& E, uint left, uint top);
   };
 
 
@@ -39,7 +43,7 @@ namespace tr
 
     protected:
       unsigned int font_id = 0;
-      unsigned int font_height = 0;
+      unsigned int font_height = 12;
 
       std::string text {};
 

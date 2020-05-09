@@ -8,9 +8,10 @@ namespace tr
   /// \param width
   /// \param height
   ///
-  element::element(unsigned int width, unsigned int height)
+  element::element(unsigned int width, unsigned int height, px Color)
   {
-    resize(width, height);
+    BgColor = Color;
+    Image.resize(width, height, BgColor);
   }
 
 
@@ -21,9 +22,7 @@ namespace tr
   ///
   void element::resize(unsigned int new_width, unsigned int new_height)
   {
-    width = new_width;
-    height = new_height;
-    draw(state);
+    Image.resize(new_width, new_height, BgColor);
   }
 
 
@@ -31,11 +30,11 @@ namespace tr
   /// \brief element::draw
   /// \param new_state
   ///
-  void element::draw(STATE new_state)
+  auto element::draw(STATE new_state)
   {
     state = new_state;
-    Data.clear();
-    Data.resize(width * height * 4, 0xFF);
+    return data();
+
   }
 
   ///
@@ -44,7 +43,15 @@ namespace tr
   ///
   uchar* element::data(void)
   {
-    return Data.data();
+    return Image.uchar_t();
   }
 
+
+  ///
+  /// \brief label::label
+  ///
+  label::label(const std::string& new_text)
+  {
+    text = new_text;
+  }
 }

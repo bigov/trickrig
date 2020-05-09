@@ -109,13 +109,17 @@ app::~app(void)
 ///
 void app::title(const std::string &title)
 {
-  image label{ ImgGUI.get_width() - 4, Font18s.get_cell_height() * 2 - 4, color_title};
+  image TitleLabel{ ImgGUI.get_width() - 4, Font18s.get_cell_height() * 2 - 4, color_title};
 
   ulong x = ImgGUI.get_width()/2 - utf8_size(title) * Font18s.get_cell_width() / 2;
-  textstring_place(Font18s, title, label, x, Font18s.get_cell_height()/2);
-  label.copy(ImgGUI, 2, 2);
+  textstring_place(Font18s, title, TitleLabel, x, Font18s.get_cell_height()/2);
+  TitleLabel.put(ImgGUI, 2, 2);
 
-  //element Rect(200, 20);
+  element Rect(ImgGUI.get_width() - 4, 40);
+  label Title {"Добро пожаловать!"};
+  //Title.put(Rect, 2, 2);
+
+  Rect.put(ImgGUI, 2, TitleLabel.get_height() + 10 );
 }
 
 
@@ -141,7 +145,7 @@ void app::input_text_line(const texture &Font)
   // скопировать на экран изображение поля ввода с добавленым текстом
   auto x = (ImgGUI.get_width() - RowInput.get_width()) / 2;
   y = ImgGUI.get_height() / 2 - 2 * BUTTTON_HEIGHT;
-  RowInput.copy(ImgGUI, x, y);
+  RowInput.put(ImgGUI, x, y);
 }
 
 
@@ -163,7 +167,7 @@ void app::cursor_text_row(const texture &_Fn, image &_Dst, size_t position)
   else c.a = 0x00;
 
   image Cursor {3, _Fn.get_cell_height(), c};
-  Cursor.copy(_Dst, _Fn.get_cell_width() * (position + 1) + 1,
+  Cursor.put(_Dst, _Fn.get_cell_width() * (position + 1) + 1,
               (_Dst.get_height() - _Fn.get_cell_height()) / 2 );
 }
 
@@ -210,7 +214,7 @@ void app::row_text(size_t id, uint x, uint y, uint w, uint h, const std::string 
 
   image Row { w, h, bg_color };
   textstring_place(Font18n, text, Row, Font18n.get_cell_width()/2, 6);
-  Row.copy(ImgGUI, x, y);
+  Row.put(ImgGUI, x, y);
 }
 
 
@@ -221,7 +225,7 @@ void app::row_text(size_t id, uint x, uint y, uint w, uint h, const std::string 
 void app::select_list(uint lx, uint ly, uint lw, uint lh)
 {
   image ListImg {lw, lh, {0xDD, 0xDD, 0xDD, 0xFF}};             // изображение списка
-  ListImg.copy(ImgGUI, lx, ly);
+  ListImg.put(ImgGUI, lx, ly);
 
   uint rh = Font18n.get_cell_height() * 1.5f;     // высота строки
   uint rw = lw - 4;                    // ширина строки
@@ -522,7 +526,7 @@ void app::button(ELEMENT_ID btn_id, ulong x, ulong y,
     textstring_place(Font18l, Name, Btn, BUTTTON_WIDTH/2 - t_width/2,
            BUTTTON_HEIGHT/2 - t_height/2);
   }
-  Btn.copy(ImgGUI, x, y);
+  Btn.put(ImgGUI, x, y);
 }
 
 

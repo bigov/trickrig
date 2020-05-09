@@ -68,14 +68,14 @@ namespace tr
       image(const std::string& filename);
 
       // публичные методы
-      virtual void resize(uint new_width, uint new_height);
+      virtual void resize(uint new_width, uint new_height, px Color = {0x00, 0x00, 0x00, 0x00});
 
       auto get_width(void) const { return width; }
       auto get_height(void) const { return height; }
       void fill(const px& color);
       uchar* uchar_t(void) const;
       px* px_data(void) const;
-      void copy(image &dst, ulong dst_x, ulong dst_y) const;
+      void put(image &dst, ulong dst_x, ulong dst_y) const;
   };
 
 
@@ -83,7 +83,7 @@ namespace tr
   class texture: public image
   {
     private:
-      void resize(uint, uint) {}
+      void resize(uint, uint, px) {}
 
     protected:
       uint columns = 1;          // число ячеек в строке
@@ -96,7 +96,7 @@ namespace tr
 
       auto get_cell_width(void) const { return cell_width;  }
       auto get_cell_height(void) const { return cell_height; }
-      void copy(uint col, uint row, image &dst, ulong dst_x, ulong dst_y) const;
+      void put(uint col, uint row, image &dst, ulong dst_x, ulong dst_y) const;
   };
 
 

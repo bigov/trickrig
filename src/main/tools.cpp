@@ -196,11 +196,11 @@ bool operator== (const px &A, const px &B)
   /// \param W
   /// \param H
   ///
-  void image::resize(uint new_width, uint new_height)
+  void image::resize(uint new_width, uint new_height, px Color)
   {
     width = new_width;    // ширина изображения в пикселях
     height = new_height;  // высота изображения в пикселях
-    Data.resize(width * height, {0x00, 0x00, 0x00, 0x00});
+    Data.resize(width * height, Color);
   }
 
 
@@ -269,7 +269,7 @@ bool operator== (const px &A, const px &B)
   /// \param X   координата пикселя приемника
   /// \param Y   координата пикселя приемника
   ///
-  void image::copy(image& dst, ulong X, ulong Y) const
+  void image::put(image& dst, ulong X, ulong Y) const
   {
     uint f_width = width;
     if( dst.width < width + X ) f_width = dst.width - X;
@@ -329,7 +329,7 @@ bool operator== (const px &A, const px &B)
   /// \param X   координата пикселя приемника
   /// \param Y   координата пикселя приемника
   ///
-  void texture::copy(uint C, uint R, image& dst, ulong X, ulong Y) const
+  void texture::put(uint C, uint R, image& dst, ulong X, ulong Y) const
   {
     if(C >= columns) C = 0;
     if(R >= rows) R = 0;
@@ -395,14 +395,14 @@ bool operator== (const px &A, const px &B)
       {
         size_t col = FontMap1.find(TextString[i]);
         if(col == std::string::npos) col = 0;
-        FontImg.copy(col, row, Dst, x + (n++) * FontImg.get_cell_width(), y);
+        FontImg.put(col, row, Dst, x + (n++) * FontImg.get_cell_width(), y);
       }
       else if(t == UTF8_FIRST)
       {
         size_t col = FontMap2.find(TextString.substr(i,2));
         if(col == std::string::npos) col = 0;
         else col = FontMap1_len + col/2;
-        FontImg.copy(col, row, Dst, x + (n++) * FontImg.get_cell_width(), y);
+        FontImg.put(col, row, Dst, x + (n++) * FontImg.get_cell_width(), y);
       }
     }
   }

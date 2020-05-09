@@ -52,8 +52,8 @@ int main(int, char* argv[])
   try
   {
     cfg::load(argv); // загрузка конфигурации
-    app AppGUI {};   // Создать окно приложения
-    AppGUI.show();   // Главный цикл
+    app MyApp {};   // Создать окно приложения
+    MyApp.show();   // Главный цикл
   }
   catch(std::exception & e)
   {
