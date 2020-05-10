@@ -2,37 +2,26 @@
 #define GUI_HPP
 
 #include "main.hpp"
+#include "config.hpp"
 #include "tools.hpp"
 
 namespace tr
 {
   enum HALIGN { LEFT, CENTER, RIGHT };
   enum VALIGN { TOP, MIDDLE, BOTTOM};
-  enum STATE { ST_NORMAL, ST_OVER, ST_PRESSED, ST_INACTIVE };
+  enum STATE { ST_NORMAL, ST_OVER, ST_PRESSED, ST_INACTIVE, ST_COUNT };
 
 
-  class element
+  class element: public image
   {
     protected:
       px BgColor { 0xFF, 0xFF, 0xFF, 0xFF };
       STATE state = ST_NORMAL;
-      image Image {};
 
     public:
       element(void) = default;
-      element(unsigned int width, unsigned int height, px Color = { 0xFF, 0xFF, 0xFF, 0xFF });
-      ~element(void) = default;
-
-      auto draw (STATE new_state = ST_NORMAL);
-      void resize (unsigned int new_width, unsigned int new_height);
-      uchar* data(void);
-      void put(image& TargetImage, uint X, uint Y) { Image.put(TargetImage, X, Y); };
-      auto get_width(void) const { return Image.get_width(); }
-      auto get_height(void) const { return Image.get_height(); }
-
-      //void put(element E, uint X, uint Y)
-
-      //void insert(const element& E, uint left, uint top);
+      element(uint width, uint height, px Color = { 0xFF, 0xFF, 0xFF, 0xFF } );
+      void draw (STATE new_state = ST_COUNT);
   };
 
 
@@ -43,9 +32,11 @@ namespace tr
 
     protected:
       unsigned int font_id = 0;
+      std::string font_file = cfg::AssetsDir + cfg::DS + "DejaVu Sans Mono for Powerline.ttf";
+
       unsigned int font_height = 12;
 
-      std::string text {};
+      std::string Text {};
 
       HALIGN text_halign = CENTER;
       VALIGN text_valign = MIDDLE;

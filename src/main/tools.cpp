@@ -158,12 +158,12 @@ bool operator== (const px &A, const px &B)
   /// \param width
   /// \param height
   ///
-  image::image(ulong new_width, ulong new_height)
+  image::image(uint new_width, uint new_height)
   {
      Data.resize(new_width * new_height);
 
-    width = static_cast<uint>(new_width);  // ширина изображения в пикселях
-    height = static_cast<uint>(new_height); // высота изображения в пикселях
+    width = new_width;  // ширина изображения в пикселях
+    height = new_height; // высота изображения в пикселях
   }
 
   ///
@@ -172,7 +172,7 @@ bool operator== (const px &A, const px &B)
   /// \param height
   /// \param pixel
   ///
-  image::image(ulong new_width, ulong new_height, const px &color)
+  image::image(ulong new_width, ulong new_height, const px& color = { 0xFF, 0xFF, 0xFF, 0xFF })
   {
     width = static_cast<uint>(new_width);  // ширина изображения в пикселях
     height = static_cast<uint>(new_height); // высота изображения в пикселях
@@ -269,23 +269,23 @@ bool operator== (const px &A, const px &B)
   /// \param X   координата пикселя приемника
   /// \param Y   координата пикселя приемника
   ///
-  void image::put(image& dst, ulong X, ulong Y) const
+  void image::put(image& dst, ulong x, ulong y) const
   {
-    uint f_width = width;
-    if( dst.width < width + X ) f_width = dst.width - X;
-    uint f_height = height;
-    if( dst.height < height + Y ) f_height = dst.height - Y;
+    uint src_width = width;
+    if( dst.width < width + x ) src_width = dst.width - x;
+    uint src_height = height;
+    if( dst.height < height + y ) src_height = dst.height - y;
 
-    uint i_max = f_height * f_width; // число копируемых пикселей
-    uint src_i = 0;                  // индекс начала фрагмента
-    uint dst_i = X + Y * dst.width; // индекс начала в приемнике
-    uint i = 0;                      // сумма скопированных пикселей
+    uint i_max = src_height * src_width;// число копируемых пикселей
+    uint src_i = 0;                 // индекс начала фрагмента
+    uint dst_i = x + y * dst.width; // индекс начала в приемнике
+    uint i = 0;                     // сумма скопированных пикселей
 
     while(i < i_max)
     {
       uint s_row = src_i;           // текущий индекс источника
       uint d_row = dst_i;           // текущий индекс приемника
-      uint d_max = d_row + f_width; // конец копируемой строки пикселей
+      uint d_max = d_row + src_width; // конец копируемой строки пикселей
 
       // В данной версии копируются только полностью непрозрачные пиксели
       while(d_row < d_max)
@@ -300,7 +300,73 @@ bool operator== (const px &A, const px &B)
       src_i += width;     // переход на следующую строку источника
     }
   }
+/*
 
+dst - нижнее изобрадение, scr - верхнее
+
+out_a = src_a + dst_a * ( 1 - src_a );
+
+1) out_c = (src_c * scr_a + dst_c * dst_a * ( 1 - src_a )) / out_a
+   out_a == 0 -> out_c = 0
+2) out_c = scr_c + dst_c * ( 1 - src_a );
+*/
+
+  inline float fl(const unsigned char c) { return static_cast<float>(c)/255.f; }
+
+  px blend_1(px& src, px& dst)
+  {
+    uint r=0, g=1, b=2, a=3;
+
+    float S[] = { fl(src.r), fl(src.g), fl(src.b), fl(src.a) };
+    float D[] = { fl(dst.r), fl(dst.g), fl(dst.b), fl(dst.a) };
+    float R[4];
+
+    R[a] = S[a] + D[a] * ( 1.f - S[a] );
+    if(R[a] > 0.f)
+    {
+      R[r] = ( S[r] * S[a] + D[r] * D[a] * ( 1.f - S[a])) / R[a];
+      R[g] = ( S[g] * S[a] + D[g] * D[a] * ( 1.f - S[a])) / R[a];
+      R[b] = ( S[b] * S[a] + D[b] * D[a] * ( 1.f - S[a])) / R[a];
+    } else {
+      R[r] = 0.f;
+      R[g] = 0.f;
+      R[b] = 0.f;
+    }
+    return { static_cast<uchar>(R[r] * 255),
+             static_cast<uchar>(R[g] * 255),
+             static_cast<uchar>(R[b] * 255),
+             static_cast<uchar>(R[a] * 255)
+    };
+  }
+
+  void image::paint_over(uint x, uint y, px* src_data, uint src_width, uint src_height)
+  {
+    auto original_width = src_width;
+    if(src_width + x  > width  ) src_width  = width -  x;
+    if(src_height + y > height ) src_height = height - y;
+
+    uint i = 0;                          // число скопированных пикселей
+    uint i_max = src_height * src_width; // сумма пикселей источника, которые надо скопировать
+    uint src_row_start = 0;              // индекс в начале строки источника
+    uint dst_row_start = x + y * width;  // индекс начального пикселя приемника
+
+    while(i < i_max)
+    {
+      uint row_n = src_width;
+      uint dst = dst_row_start;
+      uint src = src_row_start;
+      while(row_n > 0)
+      {
+        Data[dst] = blend_1( *(src_data + src), Data[dst]);
+        dst += 1;
+        src += 1;
+        row_n -= 1;
+        i += 1;
+      }
+      src_row_start += original_width; // переход на начало следующей строки источника
+      dst_row_start += width;          // переход на начало следующей строки приемника
+    }
+  }
 
   ///
   /// \brief Конструктор c загрузкой данных из файла

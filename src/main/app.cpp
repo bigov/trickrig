@@ -115,11 +115,14 @@ void app::title(const std::string &title)
   textstring_place(Font18s, title, TitleLabel, x, Font18s.get_cell_height()/2);
   TitleLabel.put(ImgGUI, 2, 2);
 
-  element Rect(ImgGUI.get_width() - 4, 40);
-  label Title {"Добро пожаловать!"};
-  //Title.put(Rect, 2, 2);
-
+  element Rect{ ImgGUI.get_width() - 4, 40u, { 230, 255, 0 , 255} };
+  label Title {"123 Привет = HELLO!"};
+  Rect.paint_over(50, 2, Title.px_data(), Title.get_width(), Title.get_height());
   Rect.put(ImgGUI, 2, TitleLabel.get_height() + 10 );
+
+  element Add { 30, 30, { 0, 140, 255, 60 } };
+  ImgGUI.paint_over(25, 65, Add.px_data(), Add.get_width(), Add.get_height());
+
 }
 
 
@@ -422,6 +425,8 @@ void app::button_make_body(image &D, STATE s)
     case ST_NORMAL:
       line_1  = { 0xFA, 0xFA, 0xFA, 0xFF };
       line_bg = { 0xE7, 0xE7, 0xE6, 0xFF };
+      break;
+    default:
       break;
   }
 

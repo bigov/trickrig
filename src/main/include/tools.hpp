@@ -58,14 +58,15 @@ namespace tr
       void load(const std::string &filename);
 
     public:
-      image(void)           = default;
-      virtual ~image(void)  = default;
-      std::vector<px> Data {};
-
       // конструкторы
-      image(ulong new_width, ulong new_height);
+      image(void)                             = default;
+      image(uint new_width, uint new_height);
       image(ulong new_width, ulong new_height, const px& color);
       image(const std::string& filename);
+      virtual ~image(void)  = default;
+
+      std::vector<px> Data {};
+
 
       // публичные методы
       virtual void resize(uint new_width, uint new_height, px Color = {0x00, 0x00, 0x00, 0x00});
@@ -75,7 +76,8 @@ namespace tr
       void fill(const px& color);
       uchar* uchar_t(void) const;
       px* px_data(void) const;
-      void put(image &dst, ulong dst_x, ulong dst_y) const;
+      void put(image &dst, ulong x, ulong y) const;
+      void paint_over(uint x, uint y, px* src_data, uint src_width, uint src_height);
   };
 
 

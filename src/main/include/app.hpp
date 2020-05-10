@@ -3,7 +3,6 @@
 
 #include "main.hpp"
 #include "trgl.hpp"
-#include "config.hpp"
 #include "gui.hpp"
 #include "space.hpp"
 
