@@ -5,6 +5,7 @@
 
 namespace tr
 {
+  static inline int i_mul_if(int i, float f) { return static_cast<int>(f * static_cast<float>(i)); }
 
 ///
 /// \brief element::element
@@ -27,148 +28,66 @@ void element::draw(STATE new_state)
   if(new_state != ST_COUNT) state = new_state;
 }
 
-//////////////////////////////////// D - R - A - F - T ////////////////////////////////////
-inline int i_mul_fi(float f, int i) { return static_cast<int>(f * static_cast<float>(i)); }
-inline int i_mul_if(int i, float f) { return i_mul_fi(f, i); }
-
-
-///
-/// \brief load_font
-/// \param Buffer
-/// \param font_file_name
-///
-void load_font(std::vector<unsigned char>& Buffer, const char* font_file_name)
-{
-  // load font file
-  std::ifstream file (font_file_name, std::ifstream::binary);
-  if (!file) fprintf(stderr, "error: not found font file");
-  file.seekg (0, file.end);    // get length of file
-  auto length = file.tellg();
-  file.seekg (0, file.beg);
-  std::vector<char> buffer(static_cast<size_t>(length), '\0');
-  file.read (buffer.data(),length); // read data as a block
-  if (!file) fprintf(stderr, "error: only %lld could be read", file.gcount());
-  file.close();
-  Buffer.resize(static_cast<size_t>(length), '\0');
-  memmove(Buffer.data(), buffer.data(), Buffer.size());
-}
-
-
-static inline unsigned int UTF2Unicode(const char *txt, unsigned int &i){
-    unsigned int a=txt[i++];
-    if((a&0x80)==0)return a;
-    if((a&0xE0)==0xC0){
-        a=(a&0x1F)<<6;
-        a|=txt[i++]&0x3F;
-    }else if((a&0xF0)==0xE0){
-        a=(a&0xF)<<12;
-        a|=(txt[i++]&0x3F)<<6;
-        a|=txt[i++]&0x3F;
-    }else if((a&0xF8)==0xF0){
-        a=(a&0x7)<<18;
-        a|=(a&0x3F)<<12;
-        a|=(txt[i++]&0x3F)<<6;
-        a|=txt[i++]&0x3F;
-    }
-    return a;
-}
-
-void string2int(std::string& Text, std::vector<int>& V)
-{
-  V.clear();
-  unsigned int max = Text.size();
-  unsigned int i = 0;
-  while (i < max) V.push_back(UTF2Unicode(Text.c_str(), i));
-}
-
-
-//////////////////////////////////// D - R - A - F - T ////////////////////////////////////
-
 
 ///
 /// \brief label::label
 ///
-label::label(const std::string& new_text)
+label::label(const std::string& new_text, unsigned int new_height,
+             FONT_WEIGHT weight, px new_color)
 {
+  height = new_height;
   Text = new_text;
-
-  // Настройка текстуры
-  GLint tex_width = 200;
-  GLint tex_height = 80;
+  const char* font[FONT_COUNT] = { font_normal.c_str(), font_bold.c_str() };
+  text_color = new_color;
 
   stbtt_fontinfo font_info {};
-  std::vector<unsigned char> FnBuffer {};
-
-  load_font(FnBuffer, font_file.c_str());
-
-  if (!stbtt_InitFont(&font_info, FnBuffer.data(), 0)) fprintf(stderr, "failed\n");
-
-  int b_w = tex_width;  // bitmap width
-  int b_h = tex_height; // bitmap height
-  float l_h = 18.f;     // line height
-
-  std::vector<int> VL {};
-  string2int(Text, VL);
-
-  int* word = &VL[0];
-  size_t w_len = VL.size();
-
-
-  // create a bitmap for the phrase
-  std::vector<unsigned char> bitmap( static_cast<size_t>(b_w * b_h), '\0' );
+  auto FnBuffer = load_font_file(font[weight]);
+  if (!stbtt_InitFont(&font_info, FnBuffer.get(), 0)) fprintf(stderr, "failed\n");
 
   // calculate font scaling
-  auto scale = stbtt_ScaleForPixelHeight(&font_info, l_h);
+  auto scale = stbtt_ScaleForPixelHeight(&font_info, static_cast<float>(height));
 
-  int left_dist = 2;  // отступ слева
-  int top_dist = 12;  // отступ сверху
-
-  int x = left_dist;
-
-  int ascent, descent, lineGap;
+  int x = 0, ascent = 0, descent = 0, lineGap = 0;
   stbtt_GetFontVMetrics(&font_info, &ascent, &descent, &lineGap);
 
   ascent = i_mul_if(ascent, scale);
   descent = i_mul_if(descent, scale);
 
-  for (size_t i = 0; i < w_len; ++i)
+  int char_width = 0, kerning = 0;
+  int left_bearing = 0;
+  auto UnicodeText = string2unicode(Text);
+  int offset = 0;
+  int c_x1=0, c_y1=0, c_x2=0, c_y2=0; // bounding box for character
+
+  // Calculate label width
+  width = 0;
+  for (size_t i = 0; i < UnicodeText.size(); ++i)
   {
-   // how wide is this character
-   int ax;
-   int lsb;
-   stbtt_GetCodepointHMetrics(&font_info, word[i], &ax, &lsb);
-
-   /// get bounding box for character (may be offset to account for chars
-   // that dip above or below the line
-   int c_x1, c_y1, c_x2, c_y2;
-   stbtt_GetCodepointBitmapBox(&font_info, word[i], scale, scale, &c_x1,
-       &c_y1, &c_x2, &c_y2);
-
-   // compute y (different characters have different heights
-   int y = top_dist + ascent + c_y1;
-
-   // render character (stride and offset is important here)
-   int byteOffset = x + i_mul_if(lsb, scale) + (y * b_w);
-   stbtt_MakeCodepointBitmap(&font_info, bitmap.data() + byteOffset,
-       c_x2 - c_x1, c_y2 - c_y1, b_w, scale, scale, word[i]);
-
-   // advance x
-   x += i_mul_if(ax, scale);
-
-   // add kerning
-   int kern;
-   kern = stbtt_GetCodepointKernAdvance(&font_info, word[i], word[i + 1]);
-   x += i_mul_if(kern, scale);
+    stbtt_GetCodepointHMetrics(&font_info, UnicodeText[i], &char_width, &left_bearing);
+    kerning = stbtt_GetCodepointKernAdvance(&font_info, UnicodeText[i], UnicodeText[i + 1])
+        + letter_space;
+    width += i_mul_if(char_width + kerning, scale);
   }
 
-  resize(tex_width, tex_height, {0, 100, 0, 0});
+  std::vector<unsigned char> bitmap( static_cast<size_t>(width * height), 0x00 );
+  resize(width, height, text_color);
 
-  auto max = bitmap.size();
-  for(unsigned int i = 0; i < max; ++i)
+  for (size_t i = 0; i < UnicodeText.size(); ++i)
   {
-    auto n = bitmap[i];
-    if(n > 0) Data[i].a = n;
+    stbtt_GetCodepointHMetrics(&font_info, UnicodeText[i], &char_width, &left_bearing);
+    stbtt_GetCodepointBitmapBox(&font_info, UnicodeText[i], scale, scale, &c_x1, &c_y1, &c_x2, &c_y2);
+
+    offset = x + i_mul_if(left_bearing, scale) + (ascent + c_y1) * width;
+    stbtt_MakeCodepointBitmap(&font_info, bitmap.data() + offset,
+      c_x2 - c_x1, c_y2 - c_y1, width, scale, scale, UnicodeText[i]);
+
+    kerning = stbtt_GetCodepointKernAdvance(&font_info, UnicodeText[i], UnicodeText[i + 1])
+        + letter_space;
+    x += i_mul_if(char_width + kerning, scale);
   }
+
+  int i = 0;
+  for(auto& pixel: Data) pixel.a = bitmap[i++];
 
 }
 

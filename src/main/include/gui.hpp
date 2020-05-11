@@ -10,6 +10,7 @@ namespace tr
   enum HALIGN { LEFT, CENTER, RIGHT };
   enum VALIGN { TOP, MIDDLE, BOTTOM};
   enum STATE { ST_NORMAL, ST_OVER, ST_PRESSED, ST_INACTIVE, ST_COUNT };
+  enum FONT_WEIGHT { FONT_NORMAL, FONT_BOLD, FONT_COUNT };
 
 
   class element: public image
@@ -27,21 +28,18 @@ namespace tr
 
   class label: public element
   {
-    public:
-      label(const std::string& new_text);
-
     protected:
       unsigned int font_id = 0;
-      std::string font_file = cfg::AssetsDir + cfg::DS + "DejaVu Sans Mono for Powerline.ttf";
-
-      unsigned int font_height = 12;
-
+      std::string font_normal = cfg::AssetsDir + cfg::DS + "FreeSans.ttf";
+      std::string font_bold = cfg::AssetsDir + cfg::DS + "FreeSansBold.ttf";
       std::string Text {};
+      px text_color {88, 88, 88, 0};
+      int letter_space = 80; // % size of
 
-      HALIGN text_halign = CENTER;
-      VALIGN text_valign = MIDDLE;
-      px text_color { 0x00, 0x00, 0x00, 0xFF };
-      unsigned int text_width = 0;
+    public:
+      label(const std::string& new_text, unsigned int new_height = 18,
+            FONT_WEIGHT weight = FONT_NORMAL, px new_color = {88, 88, 88, 0});
+
   };
 }
 

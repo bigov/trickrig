@@ -548,4 +548,58 @@ i3d i3d_near(const i3d& P, uchar side, int side_len)
     return data;
   }
 
+
+  ///
+  /// \brief load_font_file
+  /// \param font_file_name
+  ///
+  std::unique_ptr<unsigned char[]> load_font_file(const char* font_file_name)
+  {
+    std::ifstream file (font_file_name, std::ifstream::binary);
+    if (!file) fprintf(stderr, "error: not found font file");
+
+    file.seekg (0, file.end);
+    auto length = file.tellg();
+    file.seekg (0, file.beg);
+    std::vector<char> buffer(static_cast<size_t>(length), '\0');
+    file.read (buffer.data(),length);
+    if (!file) fprintf(stderr, "error: only %lld could be read", file.gcount());
+    file.close();
+
+    auto result = std::make_unique<unsigned char[]>(length);
+    memmove(result.get(), buffer.data(), length);
+    return result;
+  }
+
+
+  ///
+  /// \brief string2unicode
+  /// \param Text
+  /// \return Unicode vector
+  ///
+  std::vector<int> string2unicode(std::string& Text)
+  {
+    std::vector<int> Result {};
+    for(size_t i = 0; i < Text.size();)
+    {
+      unsigned int a=Text[i++];
+      //if((a&0x80)==0);
+      if((a&0xE0)==0xC0){
+          a=(a&0x1F)<<6;
+          a|=Text[i++]&0x3F;
+      }else if((a&0xF0)==0xE0){
+          a=(a&0xF)<<12;
+          a|=(Text[i++]&0x3F)<<6;
+          a|=Text[i++]&0x3F;
+      }else if((a&0xF8)==0xF0){
+          a=(a&0x7)<<18;
+          a|=(a&0x3F)<<12;
+          a|=(Text[i++]&0x3F)<<6;
+          a|=Text[i++]&0x3F;
+      }
+      Result.push_back(a);
+    }
+    return Result;
+  }
+
 } //namespace tr

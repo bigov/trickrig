@@ -109,20 +109,12 @@ app::~app(void)
 ///
 void app::title(const std::string &title)
 {
-  image TitleLabel{ ImgGUI.get_width() - 4, Font18s.get_cell_height() * 2 - 4, color_title};
-
-  ulong x = ImgGUI.get_width()/2 - utf8_size(title) * Font18s.get_cell_width() / 2;
-  textstring_place(Font18s, title, TitleLabel, x, Font18s.get_cell_height()/2);
-  TitleLabel.put(ImgGUI, 2, 2);
-
-  element Rect{ ImgGUI.get_width() - 4, 40u, { 230, 255, 0 , 255} };
-  label Title {"123 Привет = HELLO!"};
-  Rect.paint_over(50, 2, Title.px_data(), Title.get_width(), Title.get_height());
-  Rect.put(ImgGUI, 2, TitleLabel.get_height() + 10 );
-
-  element Add { 30, 30, { 0, 140, 255, 60 } };
-  ImgGUI.paint_over(25, 65, Add.px_data(), Add.get_width(), Add.get_height());
-
+  image Box{ ImgGUI.get_width() - 4, 24, color_title};
+  label Text {title, 24, FONT_BOLD};
+  Box.paint_over((Box.get_width() - Text.get_width())/2,
+                 (Box.get_height() - Text.get_height())/2,
+                  Text.px_data(), Text.get_width(), Text.get_height());
+  Box.put(ImgGUI, 2, 2);
 }
 
 
@@ -418,7 +410,7 @@ void app::button_make_body(image &D, STATE s)
       line_bg = { 0xF6, 0xF6, 0xF6, 0xFF };
       break;
     case ST_INACTIVE:
-      line_bg = { 0xD9, 0xD9, 0xD9, 0xFF };
+      line_bg = { 0xCD, 0xCD, 0xCD, 0xFF };
       line_1  = line_bg;
       step = 0;
       break;
@@ -490,6 +482,7 @@ void app::button(ELEMENT_ID btn_id, ulong x, ulong y,
 {
   image Btn { BUTTTON_WIDTH, BUTTTON_HEIGHT };
 
+  px FontColor {24, 24, 24, 0};
   if(button_is_active)
   {
     // Если указатель находится над кнопкой
@@ -516,22 +509,16 @@ void app::button(ELEMENT_ID btn_id, ulong x, ulong y,
   else
   {
     button_make_body(Btn, ST_INACTIVE);
+    FontColor = { 0xFF, 0xFF, 0xFF, 0};
   }
 
-  auto t_width = Font18s.get_cell_width() * utf8_size(Name);
-  auto t_height = Font18s.get_cell_height();
+  label Text(Name, 26, FONT_NORMAL, FontColor);
 
-  if(button_is_active)
-  {
-    textstring_place(Font18s, Name, Btn, BUTTTON_WIDTH/2 - t_width/2,
-           BUTTTON_HEIGHT/2 - t_height/2);
-  }
-  else
-  {
-    textstring_place(Font18l, Name, Btn, BUTTTON_WIDTH/2 - t_width/2,
-           BUTTTON_HEIGHT/2 - t_height/2);
-  }
-  Btn.put(ImgGUI, x, y);
+  Btn.paint_over((Btn.get_width() - Text.get_width())/2,
+                 (Btn.get_height() - Text.get_height())/2,
+      Text.px_data(), Text.get_width(), Text.get_height());
+
+  ImgGUI.paint_over(x, y, Btn.px_data(), Btn.get_width(), Btn.get_height());
 }
 
 

@@ -101,8 +101,10 @@ namespace tr
       void put(uint col, uint row, image &dst, ulong dst_x, ulong dst_y) const;
   };
 
-
   extern std::unique_ptr<char[]> read_chars_file(const std::string &FileName);
+  extern std::unique_ptr<unsigned char[]> load_font_file(const char* font_file_name);
+  extern std::vector<int> string2unicode(std::string& Text);
+
   extern int get_msec(void);   // число миллисекунд от начала суток.
   extern int random_int(void);
   extern std::list<std::string> dirs_list(const std::string &path);
