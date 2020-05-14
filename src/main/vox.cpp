@@ -123,7 +123,7 @@ void vox::position_set(uchar face)
 /// \param side
 /// \param C
 ///
-void vox::color_set(color C)
+void vox::color_set(float_color C)
 {
   size_t i = 0;
   for(uint v = 0; v < vertices_per_face; ++v)

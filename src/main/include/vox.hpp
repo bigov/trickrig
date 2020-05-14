@@ -26,12 +26,12 @@ private:
   float v_sz = 0.125f;            // размер ячейки текстуры по V
   uch2 tex_id[SIDES_COUNT];       // Индексы текстур сторон
   i3d Origin;                     // координаты опорной точки
-  color DefaultColor {.4f, 1.f, .4f, 1.f};
+  float_color DefaultColor {.4f, 1.f, .4f, 1.f};
   int side_len;                   // размер стороны
   float data[digits_per_face] {}; // координаты, цвет, нормали, текстуры одной стороны
 
   void position_set(uchar face);
-  void color_set(color C);
+  void color_set(float_color C);
   void normals_set(uchar face);
   void texture_set(uchar face);
 

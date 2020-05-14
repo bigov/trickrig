@@ -45,7 +45,7 @@ namespace tr
 
       image ImHUD { 0, 0 };      // Текстура HUD окна приложения
 
-      px bg_hud  {0x00, 0x88, 0x00, 0x40}; // Фон панели HUD
+      uchar_color bg_hud {0x00, 0x88, 0x00, 0x40}; // Фон панели HUD
       GLuint vao_id = 0;                   // VAO ID
 
       bool ready = false;

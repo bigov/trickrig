@@ -6,6 +6,22 @@ namespace tr {
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
 ///
+/// \brief check_cursor_location
+/// \param x
+/// \param y
+/// \param L
+/// \return
+///
+/*
+static BTN_STATE check_cursor_location(uint x, uint y, layout L)
+{
+  if((x >= L.left) && (x < (L.left + L.width)) && (y >= L.top) &&  (y < (L.top + L.height)))
+    return BTN_OVER;
+  else return BTN_NORMAL;
+}
+*/
+
+///
 /// \brief gui::gui
 ///
 app::app(void)
@@ -39,8 +55,6 @@ app::app(void)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glBindTexture(GL_TEXTURE_2D, 0);
-
-  ImgGUI.resize(Layout.width, Layout.height);
 
   /// Инициализация GLSL программы обработки текстуры фреймбуфера.
   ///
@@ -109,12 +123,12 @@ app::~app(void)
 ///
 void app::title(const std::string &title)
 {
-  image Box{ ImgGUI.get_width() - 4, 24, color_title};
+  image Box{ MainMenu.get_width() - 4, 24, color_title};
   label Text {title, 24, FONT_BOLD};
   Box.paint_over((Box.get_width() - Text.get_width())/2,
                  (Box.get_height() - Text.get_height())/2,
-                  Text.px_data(), Text.get_width(), Text.get_height());
-  Box.put(ImgGUI, 2, 2);
+                  Text);
+  Box.put(MainMenu, 2, 2);
 }
 
 
@@ -127,8 +141,8 @@ void app::title(const std::string &title)
 ///
 void app::input_text_line(const texture &Font)
 {
-  px color = {0xF0, 0xF0, 0xF0, 0xFF};
-  uint row_width = ImgGUI.get_width() - Font.get_cell_width() * 2;
+  uchar_color color = {0xF0, 0xF0, 0xF0, 0xFF};
+  uint row_width = MainMenu.get_width() - Font.get_cell_width() * 2;
   uint row_height = Font.get_cell_height() * 2;
   image RowInput{ row_width, row_height, color };
 
@@ -138,9 +152,9 @@ void app::input_text_line(const texture &Font)
   cursor_text_row(Font, RowInput, utf8_size(StringBuffer));
 
   // скопировать на экран изображение поля ввода с добавленым текстом
-  auto x = (ImgGUI.get_width() - RowInput.get_width()) / 2;
-  y = ImgGUI.get_height() / 2 - 2 * BUTTTON_HEIGHT;
-  RowInput.put(ImgGUI, x, y);
+  auto x = (MainMenu.get_width() - RowInput.get_width()) / 2;
+  y = MainMenu.get_height() / 2 - 2 * BUTTTON_HEIGHT;
+  RowInput.put(MainMenu, x, y);
 }
 
 
@@ -153,7 +167,7 @@ void app::input_text_line(const texture &Font)
 ///
 void app::cursor_text_row(const texture &_Fn, image &_Dst, size_t position)
 {
-  px c = {0x11, 0xDD, 0x00, 0xFF};
+  uchar_color c = {0x11, 0xDD, 0x00, 0xFF};
   auto tm = std::chrono::duration_cast<std::chrono::milliseconds>
       ( std::chrono::system_clock::now()-TimeStart ).count();
 
@@ -179,7 +193,7 @@ void app::cursor_text_row(const texture &_Fn, image &_Dst, size_t position)
 ///
 void app::row_text(size_t id, uint x, uint y, uint w, uint h, const std::string &text)
 {
-  px
+  uchar_color
     normal = color_title,                   // обычный цвет
     over = { 0xFF, 0xFF, 0xFF, 0xFF },      // цвет строки когда курсор над строкой
     selected = { 0xDD, 0xFF, 0xDD, 0xFF };  // цвет выбранной строки
@@ -189,7 +203,7 @@ void app::row_text(size_t id, uint x, uint y, uint w, uint h, const std::string 
     normal = selected;
     over = selected;
   }
-  px bg_color = normal;
+  uchar_color bg_color = normal;
 
   // Если указатель находится над строкой
   if(mouse_x >= x && mouse_x <= x+w && mouse_y >= y && mouse_y <= y+h)
@@ -209,7 +223,7 @@ void app::row_text(size_t id, uint x, uint y, uint w, uint h, const std::string 
 
   image Row { w, h, bg_color };
   textstring_place(Font18n, text, Row, Font18n.get_cell_width()/2, 6);
-  Row.put(ImgGUI, x, y);
+  Row.put(MainMenu, x, y);
 }
 
 
@@ -220,7 +234,7 @@ void app::row_text(size_t id, uint x, uint y, uint w, uint h, const std::string 
 void app::select_list(uint lx, uint ly, uint lw, uint lh)
 {
   image ListImg {lw, lh, {0xDD, 0xDD, 0xDD, 0xFF}};             // изображение списка
-  ListImg.put(ImgGUI, lx, ly);
+  ListImg.put(MainMenu, lx, ly);
 
   uint rh = Font18n.get_cell_height() * 1.5f;     // высота строки
   uint rw = lw - 4;                    // ширина строки
@@ -267,6 +281,9 @@ void app::cancel(void)
       is_open = false;
       break;
   }
+
+  //@@@
+  menu_build();
 }
 
 
@@ -368,6 +385,9 @@ void app::button_click(ELEMENT_ID id)
     default: break;
   }
 
+  //@@@
+  menu_build();
+
 }
 
 
@@ -388,33 +408,33 @@ void app::button_click(ELEMENT_ID id)
 ///   FFFFFF
 ///   от F6F6F6 -> 24 градации цвета темнее
 ///
-void app::button_make_body(image &D, STATE s)
+void app::button_make_body(image &D, BTN_STATE s)
 {
   double step = static_cast<double>(D.get_height() - 3) / 256.0 * 7.0; // градации цвета
 
   // Используемые цвета
-  px line_0  { 0xB6, 0xB6, 0xB3, 0xFF }; // верх и боковые
-  px line_f  { 0x91, 0x91, 0x8C, 0xFF }; // нижняя
-  px line_1;                             // блик (вторая линия)
-  px line_bg;                            // фоновый цвет
+  uchar_color line_0  { 0xB6, 0xB6, 0xB3, 0xFF }; // верх и боковые
+  uchar_color line_f  { 0x91, 0x91, 0x8C, 0xFF }; // нижняя
+  uchar_color line_1;                             // блик (вторая линия)
+  uchar_color line_bg;                            // фоновый цвет
 
   // Настройка цветовых значений
   switch (s) {
-    case ST_PRESSED:
+    case BTN_PRESSED:
       line_bg = { 0xDE, 0xDE, 0xDE, 0xFF };
       line_1  = line_bg;
       step = 0;
       break;
-    case ST_OVER:
+    case BTN_OVER:
       line_1  = { 0xFF, 0xFF, 0xFF, 0xFF };
       line_bg = { 0xF6, 0xF6, 0xF6, 0xFF };
       break;
-    case ST_INACTIVE:
+    case BTN_DISABLE:
       line_bg = { 0xCD, 0xCD, 0xCD, 0xFF };
       line_1  = line_bg;
       step = 0;
       break;
-    case ST_NORMAL:
+    case BTN_NORMAL:
       line_1  = { 0xFA, 0xFA, 0xFA, 0xFF };
       line_bg = { 0xE7, 0xE7, 0xE6, 0xFF };
       break;
@@ -423,26 +443,27 @@ void app::button_make_body(image &D, STATE s)
   }
 
   // верхняя линия
+  uchar_color* DData = D.color_data();
   size_t i = 0;
   size_t max = D.get_width();
-  while(i < max) D.Data[i++] = line_0;
+  while(i < max) DData[i++] = line_0;
 
   // вторая линия
   max += D.get_width();
-  while(i < max) D.Data[i++] = line_1;
+  while(i < max) DData[i++] = line_1;
 
   // основной фон
-  int S = 0;         // коэффициент построчного уменьшения яркости
+  uchar S = 0;         // коэффициент построчного уменьшения яркости
   uint np = 0;       // счетчик значений
   double nr = 0.0;   // счетчик строк
 
   max += D.get_width() * (D.get_height() - 3);
   while (i < max)
   {
-    D.Data[i++] = { static_cast<int>(line_bg.r) - S,
-                    static_cast<int>(line_bg.g) - S,
-                    static_cast<int>(line_bg.b)  - S,
-                    static_cast<int>(line_bg.a) };
+    DData[i++] = { static_cast<uchar>(line_bg.r - S),
+                    static_cast<uchar>(line_bg.g - S),
+                    static_cast<uchar>(line_bg.b - S),
+                    static_cast<uchar>(line_bg.a) };
     np++;
     if(np >= D.get_width())
     {
@@ -457,16 +478,16 @@ void app::button_make_body(image &D, STATE s)
   max += D.get_width();
   while(i < max)
   {
-    D.Data[i++] = line_f;
+    DData[i++] = line_f;
   }
 
   // боковинки
   i = 0;
   while(i < max)
   {
-    D.Data[i++] = line_f;
+    DData[i++] = line_f;
     i += D.get_width() - 2;
-    D.Data[i++] = line_f;
+    DData[i++] = line_f;
   }
 }
 
@@ -477,13 +498,13 @@ void app::button_make_body(image &D, STATE s)
 /// Вначале формируется отдельное изображение кнопки, потом оно копируется
 /// в указанное координатами (x,y) место окна.
 ///
-void app::button(ELEMENT_ID btn_id, ulong x, ulong y,
-                     const std::string &Name, bool button_is_active)
+void app::btn(ELEMENT_ID btn_id, ulong x, ulong y,
+                     const std::string &Name, bool enable)
 {
-  image Btn { BUTTTON_WIDTH, BUTTTON_HEIGHT };
+  image BtnImage { BUTTTON_WIDTH, BUTTTON_HEIGHT };
 
-  px FontColor {24, 24, 24, 0};
-  if(button_is_active)
+  uchar_color FontColor {24, 24, 24, 0};
+  if(enable)
   {
     // Если указатель находится над кнопкой
     if( mouse_x >= x && mouse_x <= x + BUTTTON_WIDTH &&
@@ -494,31 +515,30 @@ void app::button(ELEMENT_ID btn_id, ulong x, ulong y,
       // и если кнопку "кликнули" указателем мыши
       if(mouse_left == PRESS)
       {
-        button_make_body(Btn, ST_PRESSED);
+        button_make_body(BtnImage, BTN_PRESSED);
       }
       else
       {
-        button_make_body(Btn, ST_OVER);
+        button_make_body(BtnImage, BTN_OVER);
       }
     }
     else
     {
-      button_make_body(Btn, ST_NORMAL);
+      button_make_body(BtnImage, BTN_NORMAL);
     }
   }
   else
   {
-    button_make_body(Btn, ST_INACTIVE);
+    button_make_body(BtnImage, BTN_DISABLE);
     FontColor = { 0xFF, 0xFF, 0xFF, 0};
   }
 
-  label Text(Name, 26, FONT_NORMAL, FontColor);
+  label Text(Name, 26, FONT_NORMAL, {FontColor.r, FontColor.g, FontColor.b, FontColor.a } );
 
-  Btn.paint_over((Btn.get_width() - Text.get_width())/2,
-                 (Btn.get_height() - Text.get_height())/2,
-      Text.px_data(), Text.get_width(), Text.get_height());
+  BtnImage.paint_over((BtnImage.get_width() - Text.get_width())/2,
+                 (BtnImage.get_height() - Text.get_height())/2, Text);
 
-  ImgGUI.paint_over(x, y, Btn.px_data(), Btn.get_width(), Btn.get_height());
+  MainMenu.paint_over(x, y, BtnImage);
 }
 
 
@@ -527,18 +547,20 @@ void app::button(ELEMENT_ID btn_id, ulong x, ulong y,
 ///
 void app::menu_start(void)
 {
-  ImgGUI.fill(bg);
-  title("Trick Rig");
+  MainMenu = menu_screen(Layout.width, Layout.height, "New TrickRig");
 
   uint x = Layout.width/2 - BUTTTON_WIDTH/2;   // X координата кнопки
   uint y = Layout.height/2 - BUTTTON_HEIGHT/2;  // Y координата кнопки
-  button(BTN_CONFIG, x, y, "Настроить");
 
-  y -= 1.5 * BUTTTON_HEIGHT;
-  button(BTN_LOCATION, x, y, "Старт");
+  MainMenu.add_button(x, y, "Настроить"); //BTN_CONFIG
 
-  y += 3 * BUTTTON_HEIGHT;
-  button(BTN_CANCEL, x, y, "Закрыть");
+  y -= 1.2 * BUTTTON_HEIGHT;
+  MainMenu.add_button(x, y, "Старт"); // BTN_LOCATION
+
+  y += 2.4 * BUTTTON_HEIGHT;
+  MainMenu.add_button(x, y, "Закрыть"); // BTN_CANCEL
+
+  update_texture_gui();
 }
 
 
@@ -547,7 +569,7 @@ void app::menu_start(void)
 ///
 void app::menu_map_select(void)
 {
-  ImgGUI.fill(bg);
+  MainMenu.fill(bgColor);
   title("ВЫБОР КАРТЫ");
 
   // Список фиксированой ширины и один ряд кнопок размещается в центре окна на
@@ -561,13 +583,13 @@ void app::menu_map_select(void)
 
   select_list(x, y, list_w, list_h);
 
-  x = ImgGUI.get_width() / 2 + 8;
+  x = MainMenu.get_width() / 2 + 8;
   y = y + list_h + BUTTTON_HEIGHT/2;
 
-  button(BTN_CANCEL, x, y, "Отмена");
-  button(BTN_MAP_DELETE, x + BUTTTON_WIDTH + 16, y, "Удалить", row_selected > 0);
-  button(BTN_OPEN, x - (BUTTTON_WIDTH + 16), y, "Открыть", row_selected > 0);
-  button(BTN_CREATE, x - (BUTTTON_WIDTH + 16)*2, y, "Создать");
+  btn(BTN_CANCEL, x, y, "Отмена");
+  btn(BTN_MAP_DELETE, x + BUTTTON_WIDTH + 16, y, "Удалить", row_selected > 0);
+  btn(BTN_OPEN, x - (BUTTTON_WIDTH + 16), y, "Открыть", row_selected > 0);
+  btn(BTN_CREATE, x - (BUTTTON_WIDTH + 16)*2, y, "Создать");
 
 }
 
@@ -581,7 +603,7 @@ void app::menu_map_select(void)
 ///
 void app::menu_map_create(void)
 {
-  ImgGUI.fill(bg);
+  MainMenu.fill(bgColor);
   title("ВВЕДИТЕ НАЗВАНИЕ");
 
   if((key == KEY_BACKSPACE) && // Удаление введенных символов
@@ -598,12 +620,12 @@ void app::menu_map_create(void)
   input_text_line(Font18n);
 
   // две кнопки
-  auto x = ImgGUI.get_width() / 2 - static_cast<ulong>(BUTTTON_WIDTH * 1.25);
-  auto y = ImgGUI.get_height() / 2;
-  button(BTN_ENTER_NAME, x, y, "OK", StringBuffer.length() > 0);
+  auto x = MainMenu.get_width() / 2 - static_cast<ulong>(BUTTTON_WIDTH * 1.25);
+  auto y = MainMenu.get_height() / 2;
+  btn(BTN_ENTER_NAME, x, y, "OK", StringBuffer.length() > 0);
 
   x += BUTTTON_WIDTH * 1.5;  // X координата кнопки
-  button(BTN_LOCATION, x, y, "Отмена");
+  btn(BTN_LOCATION, x, y, "Отмена");
 }
 
 
@@ -612,12 +634,25 @@ void app::menu_map_create(void)
 ///
 void app::menu_config(void)
 {
-  ImgGUI.fill(bg);
+  MainMenu.fill(bgColor);
   title("НАСТРОЙКИ");
 
-  int x = ImgGUI.get_width() / 2 - static_cast<ulong>(BUTTTON_WIDTH/2);
-  int y = ImgGUI.get_height() / 2;
-  button(BTN_CANCEL, x, y, "Отмена");
+  int x = MainMenu.get_width() / 2 - static_cast<ulong>(BUTTTON_WIDTH/2);
+  int y = MainMenu.get_height() / 2;
+  btn(BTN_CANCEL, x, y, "Отмена");
+}
+
+
+///
+/// \brief app::update_texture_gui
+///
+void app::update_texture_gui(void)
+{
+  glBindTexture(GL_TEXTURE_2D, texture_gui);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+               static_cast<GLint>(Layout.width),
+               static_cast<GLint>(Layout.height),
+               0, GL_RGBA, GL_UNSIGNED_BYTE, MainMenu.uchar_t());
 }
 
 
@@ -644,14 +679,6 @@ void app::menu_build(void)
       break;
     default: break;
    }
-
-  // каждый кадр на текстуре окна обновляем изображение меню
-  glBindTexture(GL_TEXTURE_2D, texture_gui);
-
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-               static_cast<GLint>(Layout.width),
-               static_cast<GLint>(Layout.height),
-               0, GL_RGBA, GL_UNSIGNED_BYTE, ImgGUI.uchar_t());
 
   // Обработка состояния мыши: клавиша отпущена над элементом меню
   if((mouse_left == RELEASE) && (element_over != NONE))
@@ -695,10 +722,12 @@ void app::show(void)
   GLContext->set_close_observer(*this);     // закрытие окна
   GLContext->set_focuslost_observer(*this); // потеря окном фокуса ввода
 
+  menu_build();    // рендер GUI окна приложения
+
   while(is_open)
   {
     Space->render(); // рендер 3D сцены
-    screen_render(); // прорисовка окна приложения
+    AppWin_render(); // прорисовка окна приложения
 
     // переключить буфер рендера
     vbo_mtx.lock();
@@ -722,12 +751,12 @@ void app::show(void)
 /// прямоугольник окна. Курсор и дополнительные (HUD) элементы окна
 /// изображаются как наложеные сверху дополнительные текстуры
 ///
-void app::screen_render(void)
+void app::AppWin_render(void)
 {
   if(GuiMode == GUI_3D_MODE) {
     glBindTexture(GL_TEXTURE_2D, Space->texture_hud);
   } else {
-    menu_build();    // рендер GUI меню
+    //menu_build();    // рендер GUI меню
     glBindTexture(GL_TEXTURE_2D, texture_gui);
   }
 
@@ -772,7 +801,7 @@ void app::resize_event(int w, int h)
   Cursor3D.y = static_cast<float>(h/2);
 
   // пересчет размеров изображения GUI
-  ImgGUI.resize(w,h);
+  MainMenu.resize(w,h);
 }
 
 
@@ -799,19 +828,6 @@ void app::character_event(uint ch)
 
 
 ///
-/// \brief gui::cursor_event
-/// \param x
-/// \param y
-/// \details Изменение координат положения курсора мыши в окне
-///
-void app::cursor_event(double x, double y)
-{
-  mouse_x = x;
-  mouse_y = y;
-}
-
-
-///
 /// \brief win_data::close_event
 ///
 void app::close_event(void)
@@ -827,6 +843,22 @@ void app::close_event(void)
 void app::error_event(const char* message)
 {
   std::cerr << message;
+}
+
+
+///
+/// \brief gui::cursor_event
+/// \param x
+/// \param y
+/// \details Изменение координат положения курсора мыши в окне
+///
+void app::cursor_event(double x, double y)
+{
+  mouse_x = x;
+  mouse_y = y;
+
+  if (MainMenu.cursor_event(static_cast<uint>(rint(x)), static_cast<uint>(rint(y))))
+    update_texture_gui();
 }
 
 

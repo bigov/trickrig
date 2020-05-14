@@ -51,11 +51,13 @@ class app: public interface_gl_context
       ROW_MAP_NAME,
       NONE
     };
+
     struct map{
-        map(const std::string &f, const std::string &n): Folder(f), Name(n){}
+        map(const std::string &f, const std::string &n): Folder(f), Name(n) {}
         std::string Folder;
         std::string Name;
     };
+
     std::shared_ptr<trgl> GLContext = nullptr;
     std::unique_ptr<glsl> Program2d = nullptr;           // Шейдерная программа GUI
     glm::vec3 Cursor3D = { 200.f, 200.f, 0.f };          // положение и размер прицела
@@ -70,7 +72,7 @@ class app: public interface_gl_context
     int key = -1;
 
     bool is_open = true;                     // состояние окна
-    layout Layout {400, 400, 0, 0};          // размеры и положение
+    layout Layout {400, 400, 0, 0};          // положение окна и размеры
     float aspect = 1.0f;                     // соотношение размеров окна
     std::unique_ptr<space> Space = nullptr;
 
@@ -79,9 +81,9 @@ class app: public interface_gl_context
     double mouse_x = 0.0;                    // позиция указателя относительно левой границы
     double mouse_y = 0.0;                    // позиция указателя относительно верхней границы
 
-    px bg      {0xE0, 0xE0, 0xE0, 0xC0};     // фон заполнения неактивного окна
-    image ImgGUI { 0, 0 };                     // GUI текстура окна приложения
-    px color_title {0xFF, 0xFF, 0xDD, 0xFF}; // фон заголовка
+    uchar_color bgColor {0xE0, 0xE0, 0xE0, 0xC0}; // цвет фона неактивного окна
+    menu_screen MainMenu {};                      // GUI окна приложения
+    uchar_color color_title {0xFF, 0xFF, 0xDD, 0xFF}; // фон заголовка
     int mouse_left = EMPTY;                 // нажатие на левую кнопку мыши
 
     GLuint texture_gui = 0;                  // id тектуры HUD
@@ -94,9 +96,9 @@ class app: public interface_gl_context
     GLuint vao_quad_id  = 0;
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
-    void button(ELEMENT_ID id, ulong x, ulong y, const std::string& Name,
-                bool button_is_active = true );
-    void button_make_body(image &Data, STATE);
+    void btn(ELEMENT_ID id, ulong x, ulong y, const std::string& Name,
+                bool enable = true );
+    void button_make_body(image &Data, BTN_STATE);
     void cursor_text_row(const texture& _Fn, image &_Dst, size_t position);
     void title(const std::string& title);
     void input_text_line(const texture& _Fn);
@@ -109,11 +111,11 @@ class app: public interface_gl_context
     void menu_config(void);
     void button_click(ELEMENT_ID);
     void cancel(void);
-    void screen_render(void);
+    void AppWin_render(void);
     void create_map(void);
     void remove_map(void);
     void layout_set(const layout &L);
-
+    void update_texture_gui(void);
 };
 
 } //tr

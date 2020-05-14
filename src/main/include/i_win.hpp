@@ -1,5 +1,5 @@
-#ifndef INTERFACE_GL_CONTENT
-#define INTERFACE_GL_CONTENT
+#ifndef INTERFACE_GL_CONTEXT
+#define INTERFACE_GL_CONTEXT
 
 #define GLFW_INCLUDE_NONE
 #include "GLFW/glfw3.h"
@@ -24,5 +24,5 @@ public:
     virtual void focus_lost_event(void) {}
 };
 
-}
-#endif
+}      // namespace tr
+#endif //INTERFACE_GL_CONTEXT

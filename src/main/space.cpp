@@ -497,7 +497,7 @@ void space::hud_draw(void)
   glBindTexture(GL_TEXTURE_2D, texture_hud);
 
   // счетчик FPS
-  px bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения
+  uchar_color bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения
   uint fps_length = 4;               // количество символов в надписи
   image Fps {fps_length * Font15n.get_cell_width() + 4, Font15n.get_cell_height() + 2, bg};
   char line[5];                       // длина строки с '\0'

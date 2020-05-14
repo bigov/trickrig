@@ -179,21 +179,9 @@ static const GLsizeiptr bytes_per_vertex = digits_per_vertex * sizeof(GLfloat);
 static const char fname_cfg[] = "config.db";
 static const char fname_map[] = "map.db";
 
-struct normal
-{
-  float nx = 0.0f;
-  float ny = 0.0f;
-  float nz = 0.0f;
-};
-
-struct color
-{
-  float r = 1.0f;
-  float g = 1.0f;
-  float b = 1.0f;
-  float a = 1.0f;
-};
-
+struct normal      { float nx = 0.0f, ny = 0.0f, nz = 0.0f; };
+struct float_color {         float r = 1.0f, g = 1.0f, b = 1.0f, a = 1.0f; };
+struct uchar_color { unsigned char r = 0xff, g = 0xff, b = 0xff, a = 0xff; };
 
 // структуры для оперирования опорными точками в пространстве трехмерных координат
 struct i3d
@@ -202,6 +190,7 @@ struct i3d
   int y = 0;
   int z = 0;
 };
+
 extern bool operator== (const i3d&, const i3d&);
 
 }
