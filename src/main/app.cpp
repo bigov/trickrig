@@ -854,11 +854,9 @@ void app::error_event(const char* message)
 ///
 void app::cursor_event(double x, double y)
 {
-  mouse_x = x;
-  mouse_y = y;
-
-  if (MainMenu.cursor_event(static_cast<uint>(rint(x)), static_cast<uint>(rint(y))))
-    update_texture_gui();
+  //mouse_x = x;
+  //mouse_y = y;
+  if (MainMenu.cursor_event(x, y)) update_texture_gui();
 }
 
 
@@ -870,11 +868,11 @@ void app::cursor_event(double x, double y)
 ///
 void app::mouse_event(int _button, int _action, int _mods)
 {
-  mods   = _mods;
-  action = _action;
-
-  if (_button == MOUSE_BUTTON_LEFT) mouse_left = _action;
-  else mouse_left = EMPTY;
+  //mods   = _mods;
+  //action = _action;
+  //if (_button == MOUSE_BUTTON_LEFT) mouse_left = _action;
+  //else mouse_left = EMPTY;
+  if (MainMenu.mouse_event(_button, _action, _mods)) update_texture_gui();
 }
 
 

@@ -587,14 +587,16 @@ void menu_screen::add_button(uint x, uint y, const std::string& Label)
   Buttons.push_back({Btn, {Btn.get_width(), Btn.get_height(), x, y}});
 }
 
+
 ///
 /// \brief menu_screen::cursor_event
 /// \param x
 /// \param y
 /// \return
 ///
-bool menu_screen::cursor_event(uint x, uint y)
+bool menu_screen::cursor_event(double x, double y)
 {
+  //auto _x = static_cast<uint>(rint(x))
   bool result = false;
 
   for(auto& P: Buttons)
@@ -605,6 +607,7 @@ bool menu_screen::cursor_event(uint x, uint y)
        (y >= P.second.top) && (y < (P.second.top + P.second.height)))
     {
       state = BTN_OVER;
+      if(P.first.state_get() == BTN_PRESSED) state = BTN_PRESSED;
     }
 
     if(P.first.state_update(state))
@@ -612,6 +615,43 @@ bool menu_screen::cursor_event(uint x, uint y)
       paint_over(P.second.left, P.second.top, P.first);
       result = true;
     }
+  }
+  return result;
+}
+
+
+///
+/// \brief menu_screen::mouse_event
+/// \param button
+/// \param action
+/// \param mods
+/// \return
+///
+bool menu_screen::mouse_event(int button, int action, int)
+{
+  bool result = false;
+
+  for(auto& P: Buttons)
+  {
+    auto state = P.first.state_get();
+
+    if((button == MOUSE_BUTTON_LEFT) && (action == PRESS) && (state == BTN_OVER))
+    {
+      state = BTN_PRESSED;
+      result = P.first.state_update(state);
+      if(result) paint_over(P.second.left, P.second.top, P.first);
+    }
+
+    // !!!
+    // TODO: тут надо вызвать подключенную к кнопке функцию
+    // !!!
+    if((button == MOUSE_BUTTON_LEFT) && (action == RELEASE) && (state == BTN_PRESSED))
+    {
+      state = BTN_OVER;
+      result = P.first.state_update(state);
+      if(result) paint_over(P.second.left, P.second.top, P.first);
+    }
+
   }
   return result;
 }

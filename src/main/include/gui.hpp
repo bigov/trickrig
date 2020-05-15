@@ -126,7 +126,8 @@ class button: public image
     button& operator=(const button&) = default;
 
     button(const std::string& LabelText);
-    bool state_update (BTN_STATE new_state);
+    bool state_update(BTN_STATE new_state);
+    BTN_STATE state_get(void) const { return state;}
 };
 
 
@@ -139,7 +140,6 @@ class menu_screen: public image
     uchar_color ColorMainBg  { 0xE0, 0xE0, 0xE0, 0xC0 };
     uchar_color ColorTitleBg { 0xFF, 0xFF, 0xDD, 0xFF };
     uchar_color ColorTitleFg { 0x00, 0x00, 0x00, 0x00 };
-
     std::list<std::pair<button, layout>> Buttons {};
 
   public:
@@ -147,7 +147,8 @@ class menu_screen: public image
     menu_screen(uint new_width, uint new_height, const std::string& Title);
 
     void add_button(uint x, uint y, const std::string& Label);
-    bool cursor_event(uint x, uint y);
+    bool cursor_event(double x, double y);
+    bool mouse_event(int button, int action, int mods);
 };
 
 }
