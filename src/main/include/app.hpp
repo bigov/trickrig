@@ -8,6 +8,18 @@
 
 namespace tr {
 
+struct map
+{
+  map(const std::string &f, const std::string &n): Folder(f), Name(n) {}
+  std::string Folder;
+  std::string Name;
+};
+
+// Идентификаторы кнопок GIU
+enum ELEMENT_ID { BTN_OPEN, BTN_CANCEL, BTN_CONFIG, BTN_LOCATION, BTN_MAP_DELETE,
+                  BTN_CREATE, BTN_ENTER_NAME, ROW_MAP_NAME, NONE };
+
+
 class app: public interface_gl_context
 {
   public:
@@ -40,58 +52,41 @@ class app: public interface_gl_context
       GUI_MENU_CREATE,  // создание нового района
       GUI_MENU_CONFIG,  // настройки
     };
-    enum ELEMENT_ID {   // Идентификаторы кнопок GIU
-      BTN_OPEN,
-      BTN_CANCEL,
-      BTN_CONFIG,
-      BTN_LOCATION,
-      BTN_MAP_DELETE,
-      BTN_CREATE,
-      BTN_ENTER_NAME,
-      ROW_MAP_NAME,
-      NONE
-    };
-
-    struct map{
-        map(const std::string &f, const std::string &n): Folder(f), Name(n) {}
-        std::string Folder;
-        std::string Name;
-    };
 
     std::shared_ptr<trgl> GLContext = nullptr;
     std::unique_ptr<glsl> Program2d = nullptr;           // Шейдерная программа GUI
     glm::vec3 Cursor3D = { 200.f, 200.f, 0.f };          // положение и размер прицела
-    const uint BUTTTON_WIDTH = 120;                      // ширина кнопки GUI
-    const uint BUTTTON_HEIGHT = 36;                      // высота кнопки GUI
-    const uint MIN_GUI_WIDTH = (BUTTTON_WIDTH + 16) * 4; // минимально допустимая ширина окна
-    const uint MIN_GUI_HEIGHT = BUTTTON_HEIGHT * 4 + 8;  // минимально допустимая высота окна
+    static const uint BUTTTON_WIDTH = 120;                      // ширина кнопки GUI
+    static const uint BUTTTON_HEIGHT = 36;                      // высота кнопки GUI
+    static const uint MIN_GUI_WIDTH = (BUTTTON_WIDTH + 16) * 4; // минимально допустимая ширина окна
+    static const uint MIN_GUI_HEIGHT = BUTTTON_HEIGHT * 4 + 8;  // минимально допустимая высота окна
 
     int scancode = -1;
     int mods = -1;
     int action = -1;
     int key = -1;
 
-    bool is_open = true;                     // состояние окна
-    layout Layout {400, 400, 0, 0};          // положение окна и размеры
+    static bool is_open;                     // состояние окна
+    static layout Layout;                    // положение окна и размеры
     float aspect = 1.0f;                     // соотношение размеров окна
     std::unique_ptr<space> Space = nullptr;
 
     bool text_mode = false;                  // режим ввода текста
     std::string StringBuffer {};             // строка ввода пользователя
-    double mouse_x = 0.0;                    // позиция указателя относительно левой границы
-    double mouse_y = 0.0;                    // позиция указателя относительно верхней границы
+    static double mouse_x;                    // позиция указателя относительно левой границы
+    static double mouse_y;                    // позиция указателя относительно верхней границы
 
     uchar_color bgColor {0xE0, 0xE0, 0xE0, 0xC0}; // цвет фона неактивного окна
-    menu_screen MainMenu {};                      // GUI окна приложения
-    uchar_color color_title {0xFF, 0xFF, 0xDD, 0xFF}; // фон заголовка
-    int mouse_left = EMPTY;                 // нажатие на левую кнопку мыши
+    static menu_screen MainMenu;            // GUI окна приложения
+    static uchar_color color_title;         // фон заголовка
+    static int mouse_left;                  // нажатие на левую кнопку мыши
+    static ELEMENT_ID element_over;         // Над какой GIU кнопкой курсор
 
-    GLuint texture_gui = 0;                  // id тектуры HUD
+    static GLuint texture_gui;              // id тектуры HUD
 
-    std::vector<map> Maps {};           // список карт
-    GUI_MODES GuiMode = GUI_MENU_START; // режим окна приложения
-    ELEMENT_ID element_over = NONE;     // Над какой GIU кнопкой курсор
-    size_t row_selected = 0;            // какая строка выбрана
+    static std::vector<map> Maps;           // список карт
+    GUI_MODES GuiMode = GUI_MENU_START;     // режим окна приложения
+    static size_t row_selected;             // какая строка выбрана
 
     GLuint vao_quad_id  = 0;
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
@@ -102,20 +97,21 @@ class app: public interface_gl_context
     void cursor_text_row(const texture& _Fn, image &_Dst, size_t position);
     void title(const std::string& title);
     void input_text_line(const texture& _Fn);
-    void row_text(size_t id, uint x, uint y, uint w, uint h, const std::string &);
-    void select_list(uint x, uint y, uint w, uint h);
+    static void row_text(size_t id, uint x, uint y, uint w, uint h, const std::string &);
+    static void select_list(uint x, uint y, uint w, uint h);
     void menu_build(void);
     void menu_map_create(void);
-    void menu_map_select(void);
-    void menu_start(void);
-    void menu_config(void);
+    static void menu_map_select(void);
+    static void menu_start(void);
+    static void menu_config(void);
     void button_click(ELEMENT_ID);
     void cancel(void);
     void AppWin_render(void);
     void create_map(void);
     void remove_map(void);
     void layout_set(const layout &L);
-    void update_texture_gui(void);
+    static void update_texture_gui(void);
+    static void app_close(void);
 };
 
 } //tr

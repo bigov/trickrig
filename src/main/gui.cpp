@@ -555,19 +555,26 @@ void button::make_body(void)
 
 
 ///
-/// \brief menu_screen::menu_screen
-/// \param new_width
-/// \param new_height
-/// \param Title
+/// \brief menu_screen::buttons_clear
 ///
-menu_screen::menu_screen(uint new_width, uint new_height, const std::string& Title)
+void menu_screen::init(uint new_width, uint new_height, const std::string& Title)
 {
+  Buttons.clear();
   width = new_width;
   height = new_height;
   resize(width, height, ColorMainBg);
+  title_draw(Title);
+}
 
+
+///
+/// \brief menu_screen::title_draw
+/// \param NewTitle
+///
+void menu_screen::title_draw(const std::string &NewTitle)
+{
   image TitleBox{ width - 4, 24, ColorTitleBg};
-  label Text {Title, 24, FONT_BOLD};
+  label Text {NewTitle, 24, FONT_BOLD};
   TitleBox.paint_over( (TitleBox.get_width() - Text.get_width()) / 2,
     (TitleBox.get_height() - Text.get_height()) / 2, Text);
   paint_over(2, 2, TitleBox);
@@ -580,11 +587,11 @@ menu_screen::menu_screen(uint new_width, uint new_height, const std::string& Tit
 /// \param y
 /// \param Label
 ///
-void menu_screen::add_button(uint x, uint y, const std::string& Label)
+void menu_screen::button_add(uint x, uint y, const std::string& Label, void(*new_caller)(void))
 {
   button Btn(Label);
   paint_over(x, y, Btn);
-  Buttons.push_back({Btn, {Btn.get_width(), Btn.get_height(), x, y}});
+  Buttons.push_back({x, y, Btn, new_caller});
 }
 
 
@@ -599,20 +606,20 @@ bool menu_screen::cursor_event(double x, double y)
   //auto _x = static_cast<uint>(rint(x))
   bool result = false;
 
-  for(auto& P: Buttons)
+  for(auto& Item: Buttons)
   {
     BTN_STATE state = BTN_NORMAL;
 
-    if((x >= P.second.left) && (x < (P.second.left + P.second.width)) &&
-       (y >= P.second.top) && (y < (P.second.top + P.second.height)))
+    if((x >= Item.x) && (x < (Item.x + Item.Button.get_width())) &&
+       (y >= Item.y) && (y < (Item.y + Item.Button.get_height())))
     {
       state = BTN_OVER;
-      if(P.first.state_get() == BTN_PRESSED) state = BTN_PRESSED;
+      if(Item.Button.state_get() == BTN_PRESSED) state = BTN_PRESSED;
     }
 
-    if(P.first.state_update(state))
+    if(Item.Button.state_update(state))
     {
-      paint_over(P.second.left, P.second.top, P.first);
+      paint_over(Item.x, Item.y, Item.Button);
       result = true;
     }
   }
@@ -631,25 +638,26 @@ bool menu_screen::mouse_event(int button, int action, int)
 {
   bool result = false;
 
-  for(auto& P: Buttons)
+  for(auto& Item: Buttons)
   {
-    auto state = P.first.state_get();
+    auto state = Item.Button.state_get();
 
     if((button == MOUSE_BUTTON_LEFT) && (action == PRESS) && (state == BTN_OVER))
     {
       state = BTN_PRESSED;
-      result = P.first.state_update(state);
-      if(result) paint_over(P.second.left, P.second.top, P.first);
+      result = Item.Button.state_update(state);
+      if(result) paint_over(Item.x, Item.y, Item.Button);
     }
 
-    // !!!
-    // TODO: тут надо вызвать подключенную к кнопке функцию
-    // !!!
     if((button == MOUSE_BUTTON_LEFT) && (action == RELEASE) && (state == BTN_PRESSED))
     {
       state = BTN_OVER;
-      result = P.first.state_update(state);
-      if(result) paint_over(P.second.left, P.second.top, P.first);
+      result = Item.Button.state_update(state);
+      if(result)
+      {
+        if(Item.caller != nullptr) Item.caller();
+        paint_over(Item.x, Item.y, Item.Button);
+      }
     }
 
   }

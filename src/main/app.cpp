@@ -5,21 +5,19 @@ namespace tr {
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
-///
-/// \brief check_cursor_location
-/// \param x
-/// \param y
-/// \param L
-/// \return
-///
-/*
-static BTN_STATE check_cursor_location(uint x, uint y, layout L)
-{
-  if((x >= L.left) && (x < (L.left + L.width)) && (y >= L.top) &&  (y < (L.top + L.height)))
-    return BTN_OVER;
-  else return BTN_NORMAL;
-}
-*/
+
+menu_screen app::MainMenu {};          // Начальное меню приложения
+bool        app::is_open = true;       // состояние окна
+GLuint      app::texture_gui = 0;      // id тектуры HUD
+layout      app::Layout {};            // размеры и положение окна
+std::vector<map> app::Maps {};    // список карт
+uchar_color app::color_title {0xFF, 0xFF, 0xDD, 0xFF}; // фон заголовка
+size_t      app::row_selected = 0;     // какая строка выбрана
+double      app::mouse_x = 0.0;        // позиция указателя относительно левой границы
+double      app::mouse_y = 0.0;        // позиция указателя относительно верхней границы
+int         app::mouse_left = EMPTY;   // нажатие на левую кнопку мыши
+ELEMENT_ID  app::element_over = NONE;  // Над какой GIU кнопкой курсор
+
 
 ///
 /// \brief gui::gui
@@ -237,13 +235,13 @@ void app::select_list(uint lx, uint ly, uint lw, uint lh)
   ListImg.put(MainMenu, lx, ly);
 
   uint rh = Font18n.get_cell_height() * 1.5f;     // высота строки
-  uint rw = lw - 4;                    // ширина строки
-  uint max_rows = (lh - 4) / (rh + 2); // число строк, которое может поместиться в списке
+  uint rw = lw - 4;                               // ширина строки
+  uint max_rows = (lh - 4) / (rh + 2);            // число строк, которое может поместиться в списке
 
   uint id = 0;
-  for(auto &TheMap: Maps)
+  for(auto& Item: Maps)
   {
-    row_text(id + 1, lx + 2, ly + id * (rh + 2) + 2, rw, rh, TheMap.Name);
+    row_text(id + 1, lx + 2, ly + id * (rh + 2) + 2, rw, rh, Item.Name);
     if(++id > max_rows) break;
   }
 }
@@ -543,22 +541,30 @@ void app::btn(ELEMENT_ID btn_id, ulong x, ulong y,
 
 
 ///
+/// \brief app::app_close
+///
+void app::app_close(void)
+{
+  is_open = false;
+}
+
+///
 /// \brief Начальный экран приложения
 ///
 void app::menu_start(void)
 {
-  MainMenu = menu_screen(Layout.width, Layout.height, "New TrickRig");
+  MainMenu.init(Layout.width, Layout.height, "New TrickRig");
 
   uint x = Layout.width/2 - BUTTTON_WIDTH/2;   // X координата кнопки
   uint y = Layout.height/2 - BUTTTON_HEIGHT/2;  // Y координата кнопки
 
-  MainMenu.add_button(x, y, "Настроить"); //BTN_CONFIG
+  MainMenu.button_add(x, y, "Настроить", menu_config); //BTN_CONFIG
 
   y -= 1.2 * BUTTTON_HEIGHT;
-  MainMenu.add_button(x, y, "Старт"); // BTN_LOCATION
+  MainMenu.button_add(x, y, "Старт", menu_map_select); // BTN_LOCATION
 
   y += 2.4 * BUTTTON_HEIGHT;
-  MainMenu.add_button(x, y, "Закрыть"); // BTN_CANCEL
+  MainMenu.button_add(x, y, "Закрыть", app_close); // BTN_CANCEL
 
   update_texture_gui();
 }
@@ -569,8 +575,7 @@ void app::menu_start(void)
 ///
 void app::menu_map_select(void)
 {
-  MainMenu.fill(bgColor);
-  title("ВЫБОР КАРТЫ");
+  MainMenu.init(Layout.width, Layout.height, "Выбор карты");
 
   // Список фиксированой ширины и один ряд кнопок размещается в центре окна на
   // расстоянии 1/8 высоты окна сверху и снизу, и 1/8 ширины окна по бокам.
@@ -586,11 +591,16 @@ void app::menu_map_select(void)
   x = MainMenu.get_width() / 2 + 8;
   y = y + list_h + BUTTTON_HEIGHT/2;
 
+  MainMenu.button_add(x, y, "Отмена", menu_start);
+  MainMenu.button_add(x + BUTTTON_WIDTH + 16, y, "Удалить");
+  MainMenu.button_add(x - (BUTTTON_WIDTH + 16), y, "Открыть");
+  MainMenu.button_add(x - (BUTTTON_WIDTH + 16)*2, y, "Создать");
+  /*
   btn(BTN_CANCEL, x, y, "Отмена");
   btn(BTN_MAP_DELETE, x + BUTTTON_WIDTH + 16, y, "Удалить", row_selected > 0);
   btn(BTN_OPEN, x - (BUTTTON_WIDTH + 16), y, "Открыть", row_selected > 0);
   btn(BTN_CREATE, x - (BUTTTON_WIDTH + 16)*2, y, "Создать");
-
+  */
 }
 
 
@@ -634,12 +644,12 @@ void app::menu_map_create(void)
 ///
 void app::menu_config(void)
 {
-  MainMenu.fill(bgColor);
-  title("НАСТРОЙКИ");
+  MainMenu.init(Layout.width, Layout.height,"Настройка");
 
-  int x = MainMenu.get_width() / 2 - static_cast<ulong>(BUTTTON_WIDTH/2);
+  int x = MainMenu.get_width() / 2 - static_cast<ulong>(BUTTTON_WIDTH / 2);
   int y = MainMenu.get_height() / 2;
-  btn(BTN_CANCEL, x, y, "Отмена");
+  MainMenu.button_add(x, y, "Отмена", menu_start);
+  update_texture_gui();
 }
 
 

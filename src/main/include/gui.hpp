@@ -136,17 +136,25 @@ class button: public image
 ///
 class menu_screen: public image
 {
+  struct buttons
+  {
+    uint x = 0; uint y = 0;
+    button Button {};
+    void (*caller)(void) = nullptr;
+  };
+
   private:
     uchar_color ColorMainBg  { 0xE0, 0xE0, 0xE0, 0xC0 };
     uchar_color ColorTitleBg { 0xFF, 0xFF, 0xDD, 0xFF };
     uchar_color ColorTitleFg { 0x00, 0x00, 0x00, 0x00 };
-    std::list<std::pair<button, layout>> Buttons {};
+    std::list<buttons> Buttons {};
 
   public:
     menu_screen(void) = default;
-    menu_screen(uint new_width, uint new_height, const std::string& Title);
 
-    void add_button(uint x, uint y, const std::string& Label);
+    void init(uint new_width, uint new_height, const std::string& Title);
+    void title_draw(const std::string& NewTitle);
+    void button_add(uint x, uint y, const std::string& Label, void(*new_caller)(void) = nullptr);
     bool cursor_event(double x, double y);
     bool mouse_event(int button, int action, int mods);
 };
