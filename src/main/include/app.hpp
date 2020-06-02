@@ -15,10 +15,6 @@ struct map
   std::string Name;
 };
 
-// Идентификаторы кнопок GIU
-enum ELEMENT_ID { BTN_OPEN, BTN_CANCEL, BTN_CONFIG, BTN_LOCATION, BTN_MAP_DELETE,
-                  BTN_CREATE, BTN_ENTER_NAME, ROW_MAP_NAME, NONE };
-
 
 class app: public interface_gl_context
 {
@@ -80,7 +76,6 @@ class app: public interface_gl_context
     static menu_screen MainMenu;            // GUI окна приложения
     static uchar_color color_title;         // фон заголовка
     static int mouse_left;                  // нажатие на левую кнопку мыши
-    static ELEMENT_ID element_over;         // Над какой GIU кнопкой курсор
 
     static GLuint texture_gui;              // id тектуры HUD
 
@@ -91,26 +86,21 @@ class app: public interface_gl_context
     GLuint vao_quad_id  = 0;
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
-    void btn(ELEMENT_ID id, ulong x, ulong y, const std::string& Name,
-                bool enable = true );
-    void button_make_body(image &Data, BTN_STATE);
     void cursor_text_row(const texture& _Fn, image &_Dst, size_t position);
     void title(const std::string& title);
     void input_text_line(const texture& _Fn);
     static void row_text(size_t id, uint x, uint y, uint w, uint h, const std::string &);
     static void select_list(uint x, uint y, uint w, uint h);
-    void menu_build(void);
     void menu_map_create(void);
-    static void menu_map_select(void);
+    static void menu_select(void);
     static void menu_start(void);
     static void menu_config(void);
-    void button_click(ELEMENT_ID);
     void cancel(void);
     void AppWin_render(void);
     void create_map(void);
     void remove_map(void);
     void layout_set(const layout &L);
-    static void update_texture_gui(void);
+    static void update_gui_image(void);
     static void app_close(void);
 };
 

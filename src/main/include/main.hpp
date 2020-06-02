@@ -8,12 +8,15 @@
 #ifndef MAIN_HPP
 #define MAIN_HPP
 
+#ifndef NDEBUD
+#include <cassert>
+#endif
+
 #include <sys/stat.h>
 //#include <any>
 #include <array>
 #include <atomic>
 #include <bitset>
-#include <cassert>
 #include <cstdint>
 #include <cstring>
 #include <chrono>

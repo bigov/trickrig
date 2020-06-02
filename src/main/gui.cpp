@@ -425,10 +425,13 @@ label::label(const std::string& new_text, unsigned int new_height,
 /// \param new_label
 /// \param new_state
 ///
-button::button(const std::string& LabelText)
+button::button(const std::string& LabelText, uint new_x, uint new_y, void(*new_caller)(void))
 {
   width = default_width;
   height = default_height;
+  x = new_x;
+  y = new_y;
+  caller = new_caller;
   Label = label(LabelText, default_label_height, FONT_NORMAL, FontColor);
   make_body();
 }
@@ -443,7 +446,7 @@ button::button(const std::string& LabelText)
 ///
 bool button::state_update(BTN_STATE new_state)
 {
-  assert(new_state < STATES_COUNT);
+  assert( (new_state < STATES_COUNT) && "new_state out of range" );
   if(state == new_state) return false;
 
   state = new_state;
@@ -559,7 +562,7 @@ void button::make_body(void)
 ///
 void menu_screen::init(uint new_width, uint new_height, const std::string& Title)
 {
-  Buttons.clear();
+  MenuItems.clear();
   width = new_width;
   height = new_height;
   resize(width, height, ColorMainBg);
@@ -578,6 +581,7 @@ void menu_screen::title_draw(const std::string &NewTitle)
   TitleBox.paint_over( (TitleBox.get_width() - Text.get_width()) / 2,
     (TitleBox.get_height() - Text.get_height()) / 2, Text);
   paint_over(2, 2, TitleBox);
+  title_height = TitleBox.get_height();
 }
 
 
@@ -589,10 +593,31 @@ void menu_screen::title_draw(const std::string &NewTitle)
 ///
 void menu_screen::button_add(uint x, uint y, const std::string& Label, void(*new_caller)(void))
 {
-  button Btn(Label);
+  button Btn(Label, x, y, new_caller);
   paint_over(x, y, Btn);
-  Buttons.push_back({x, y, Btn, new_caller});
+  MenuItems.push_back(Btn);
 }
+
+
+///
+/// \brief menu_screen::list_add
+/// \param ItemsList
+///
+void menu_screen::list_add(const std::list<std::string>& ItemsList)
+{
+  uint vertical_distance = 8; //pixels
+  uint x = width / 2;
+  uint y = title_height + vertical_distance;
+
+  for(auto& Item: ItemsList)
+  {
+    button Btn(Item);
+    y += Btn.get_height() + vertical_distance;
+    paint_over(x - Btn.get_width()/2, y, Btn);
+    MenuItems.push_back(Btn);
+  }
+}
+
 
 
 ///
@@ -606,20 +631,20 @@ bool menu_screen::cursor_event(double x, double y)
   //auto _x = static_cast<uint>(rint(x))
   bool result = false;
 
-  for(auto& Item: Buttons)
+  for(auto& Item: MenuItems)
   {
     BTN_STATE state = BTN_NORMAL;
 
-    if((x >= Item.x) && (x < (Item.x + Item.Button.get_width())) &&
-       (y >= Item.y) && (y < (Item.y + Item.Button.get_height())))
+    if((x >= Item.x) && (x < (Item.x + Item.get_width())) &&
+       (y >= Item.y) && (y < (Item.y + Item.get_height())))
     {
       state = BTN_OVER;
-      if(Item.Button.state_get() == BTN_PRESSED) state = BTN_PRESSED;
+      if(Item.state_get() == BTN_PRESSED) state = BTN_PRESSED;
     }
 
-    if(Item.Button.state_update(state))
+    if(Item.state_update(state))
     {
-      paint_over(Item.x, Item.y, Item.Button);
+      paint_over(Item.x, Item.y, Item);
       result = true;
     }
   }
@@ -634,34 +659,30 @@ bool menu_screen::cursor_event(double x, double y)
 /// \param mods
 /// \return
 ///
-bool menu_screen::mouse_event(int button, int action, int)
+fn_pointer menu_screen::mouse_event(int mouse_button, int action, int)
 {
-  bool result = false;
-
-  for(auto& Item: Buttons)
+  for(auto& Item: MenuItems)
   {
-    auto state = Item.Button.state_get();
+    auto state = Item.state_get();
 
-    if((button == MOUSE_BUTTON_LEFT) && (action == PRESS) && (state == BTN_OVER))
+    if((mouse_button == MOUSE_BUTTON_LEFT) && (action == PRESS) && (state == BTN_OVER))
     {
       state = BTN_PRESSED;
-      result = Item.Button.state_update(state);
-      if(result) paint_over(Item.x, Item.y, Item.Button);
+      if(Item.state_update(state)) paint_over(Item.x, Item.y, Item);
     }
 
-    if((button == MOUSE_BUTTON_LEFT) && (action == RELEASE) && (state == BTN_PRESSED))
+    if((mouse_button == MOUSE_BUTTON_LEFT) && (action == RELEASE) && (state == BTN_PRESSED))
     {
       state = BTN_OVER;
-      result = Item.Button.state_update(state);
-      if(result)
+      if(Item.state_update(state))
       {
-        if(Item.caller != nullptr) Item.caller();
-        paint_over(Item.x, Item.y, Item.Button);
+        paint_over(Item.x, Item.y, Item);
+        return Item.caller;
       }
     }
 
   }
-  return result;
+  return nullptr;
 }
 
 } //namespace tr
