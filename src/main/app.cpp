@@ -149,7 +149,7 @@ void app::input_text_line(const texture &Font)
 
   // скопировать на экран изображение поля ввода с добавленым текстом
   auto x = (MainMenu.get_width() - RowInput.get_width()) / 2;
-  y = MainMenu.get_height() / 2 - 2 * BUTTTON_HEIGHT;
+  y = MainMenu.get_height() / 2 - 2 * button_default_height;
   RowInput.put(MainMenu, x, y);
 }
 
@@ -345,15 +345,15 @@ void app::app_close(void)
 void app::menu_start(void)
 {
   MainMenu.init(Layout.width, Layout.height, "New TrickRig");
-  int x = MainMenu.get_width() / 2 - static_cast<ulong>(BUTTTON_WIDTH / 2);
+  int x = MainMenu.get_width() / 2 - static_cast<ulong>(button_default_width / 2);
   int y = MainMenu.get_height() / 2;
 
   MainMenu.button_add(x, y, "Настроить", menu_config);
 
-  y -= 1.2 * BUTTTON_HEIGHT;
+  y -= 1.2 * button_default_height;
   MainMenu.button_add(x, y, "Выбор карты", menu_select);
 
-  y += 2.4 * BUTTTON_HEIGHT;
+  y += 2.4 * button_default_height;
   MainMenu.button_add(x, y, "Закрыть", app_close);
 
   update_gui_image();
@@ -366,12 +366,12 @@ void app::menu_start(void)
 void app::menu_config(void)
 {
   MainMenu.init(Layout.width, Layout.height, "Настройка конфигурации");
-  int x = MainMenu.get_width() / 2 - static_cast<ulong>(BUTTTON_WIDTH / 2);
+  int x = MainMenu.get_width() / 2 - static_cast<ulong>(button_default_width / 2);
   int y = MainMenu.get_height() / 2;
 
   MainMenu.button_add(x, y, "Отмена", menu_start);
-
   update_gui_image();
+
 }
 
 
@@ -388,36 +388,8 @@ void app::menu_select(void)
   ItemsList.push_back(" == Debug 0 == ");
   ItemsList.push_back(" == Debug 1 == ");
 
-  uint y = MainMenu.list_add(ItemsList);
-  MainMenu.button_add(10, y, "Отмена", menu_start);
-
+  MainMenu.list_add(ItemsList, menu_start);
   update_gui_image();
-/*
-
-  // Список фиксированой ширины и один ряд кнопок размещается в центре окна на
-  // расстоянии 1/8 высоты окна сверху и снизу, и 1/8 ширины окна по бокам.
-  // Расстояние между списком и кнопками равно половине высоты кнопки.
-
-  uint y = Layout.height/8; // отступ сверху (и снизу)
-  uint list_h = Layout.height - y * 2 - BUTTTON_HEIGHT * 1.5f;
-  uint list_w = MIN_GUI_WIDTH - 4;
-  uint x = (Layout.width - list_w)/2;  // отступ слева (и справа)
-
-  select_list(x, y, list_w, list_h);
-
-  x = MainMenu.get_width() / 2 + 8;
-  y = y + list_h + BUTTTON_HEIGHT/2;
-
-  MainMenu.button_add(x, y, "Отмена", menu_start);
-  MainMenu.button_add(x + BUTTTON_WIDTH + 16, y, "Удалить");
-  MainMenu.button_add(x - (BUTTTON_WIDTH + 16), y, "Открыть");
-  MainMenu.button_add(x - (BUTTTON_WIDTH + 16)*2, y, "Создать");
-
-  btn(BTN_CANCEL, x, y, "Отмена");
-  btn(BTN_MAP_DELETE, x + BUTTTON_WIDTH + 16, y, "Удалить", row_selected > 0);
-  btn(BTN_OPEN, x - (BUTTTON_WIDTH + 16), y, "Открыть", row_selected > 0);
-  btn(BTN_CREATE, x - (BUTTTON_WIDTH + 16)*2, y, "Создать");
-  */
 }
 
 
@@ -528,8 +500,7 @@ void app::AppWin_render(void)
   if(GuiMode == GUI_3D_MODE) {
     glBindTexture(GL_TEXTURE_2D, Space->texture_hud);
   } else {
-    //menu_build();    // рендер GUI меню
-    glBindTexture(GL_TEXTURE_2D, texture_gui);
+    glBindTexture(GL_TEXTURE_2D, texture_gui);  // рендер GUI меню
   }
 
   glBindVertexArray(vao_quad_id);
@@ -638,7 +609,7 @@ void app::cursor_event(double x, double y)
 ///
 void app::mouse_event(int _button, int _action, int _mods)
 {
-  fn_pointer caller = MainMenu.mouse_event(_button, _action, _mods);
+  func_ptr caller = MainMenu.mouse_event(_button, _action, _mods);
   update_gui_image();
   if ( caller != nullptr ) caller();
 }

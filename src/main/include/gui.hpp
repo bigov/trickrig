@@ -7,14 +7,17 @@
 
 namespace tr
 {
-typedef void (*fn_pointer)(void);
+typedef void (*func_ptr)(void);
 
 enum FONT_STYLE { FONT_NORMAL, FONT_BOLD, FONT_COUNT };
 enum BTN_STATE { BTN_NORMAL, BTN_OVER, BTN_PRESSED, BTN_DISABLE, STATES_COUNT };
 
-const uint button_default_width = 120;
-const uint button_default_height = 32;
-const uint label_default_height = 24;
+static const uint button_default_width = 140; // ширина кнопки GUI
+static const uint button_default_height = 32; // высота кнопки GUI
+static const uint label_default_height = 24;
+
+static const uint MIN_GUI_WIDTH = button_default_width * 5.2; // минимально допустимая ширина окна
+static const uint MIN_GUI_HEIGHT = button_default_height * 4 + 8;  // минимально допустимая высота окна
 
 const uchar_color TextDefaultColor          { 0x24, 0x24, 0x24, 0xFF };
 const uchar_color LinePressedDefaultBgColor { 0xFE, 0xFE, 0xFE, 0xFF };
@@ -125,12 +128,12 @@ class button: public image
     button(void)                     = default;
     button(const button&)            = default;
     button& operator=(const button&) = default;
-    button(const std::string& LabelText, void(*new_caller)(void) = nullptr,
+    button(const std::string& LabelText, func_ptr new_caller = nullptr,
            uint x = 0, uint y = 0, MODE new_mode = BUTTON,
            uint new_width = button_default_width, uint new_height = button_default_height);
 
-    uint x = 0; uint y = 0;             // положение кнопки
-    fn_pointer caller = nullptr;        // функция, вызываемая по нажатию на кнопку
+    uint x = 0; uint y = 0;       // положение кнопки
+    func_ptr caller = nullptr;    // функция, вызываемая по нажатию на кнопку
 
     bool state_update(BTN_STATE new_state);
     BTN_STATE state_get(void) const { return state;}
@@ -162,10 +165,13 @@ class menu_screen: public image
 
     void init(uint new_width, uint new_height, const std::string& Title);
     void title_draw(const std::string& NewTitle);
-    void button_add(uint x, uint y, const std::string& Label, void(*new_caller)(void) = nullptr);
-    uint list_add(const std::list<std::string>& ItemsList);
+    void button_add(uint x, uint y, const std::string& Label,
+                    func_ptr new_caller = nullptr, BTN_STATE new_state = BTN_NORMAL);
+    void list_add(const std::list<std::string>& ItemsList,
+                  func_ptr fn_exit = nullptr, func_ptr fn_select = nullptr,
+                  func_ptr fn_add = nullptr, func_ptr fn_delete = nullptr);
     bool cursor_event(double x, double y);
-    fn_pointer mouse_event(int mouse_button, int action, int mods);
+    func_ptr mouse_event(int mouse_button, int action, int mods);
 };
 
 }

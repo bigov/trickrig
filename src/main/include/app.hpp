@@ -52,10 +52,6 @@ class app: public interface_gl_context
     std::shared_ptr<trgl> GLContext = nullptr;
     std::unique_ptr<glsl> Program2d = nullptr;           // Шейдерная программа GUI
     glm::vec3 Cursor3D = { 200.f, 200.f, 0.f };          // положение и размер прицела
-    static const uint BUTTTON_WIDTH = 120;                      // ширина кнопки GUI
-    static const uint BUTTTON_HEIGHT = 36;                      // высота кнопки GUI
-    static const uint MIN_GUI_WIDTH = (BUTTTON_WIDTH + 16) * 4; // минимально допустимая ширина окна
-    static const uint MIN_GUI_HEIGHT = BUTTTON_HEIGHT * 4 + 8;  // минимально допустимая высота окна
 
     int scancode = -1;
     int mods = -1;

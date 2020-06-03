@@ -426,7 +426,7 @@ label::label(const std::string& new_text, unsigned int new_height,
 /// \param new_label
 /// \param new_state
 ///
-button::button(const std::string& LabelText, void(*new_caller)(void),
+button::button(const std::string& LabelText, func_ptr new_caller,
                uint new_x, uint new_y, MODE new_mode, uint new_width, uint new_height)
 {
   width = new_width;
@@ -462,6 +462,8 @@ bool button::state_update(BTN_STATE new_state)
       draw_button();
       break;
   }
+  // Добавить надпись
+  paint_over((width - Label.get_width())/2, (height - Label.get_height())/2, Label);
   return true;
 }
 
@@ -562,9 +564,6 @@ void button::draw_button(void)
     i += width - 2;
     Data[i++] = line_f;
   }
-
-  // Добавить надпись
-  paint_over((width - Label.get_width())/2, (height - Label.get_height())/2, Label);
 }
 
 
@@ -587,8 +586,6 @@ void button::draw_list_entry(void)
     case BTN_NORMAL:
       fill(LineNormalDefaultBgColor);
   }
-  // Добавить надпись
-  paint_over((width - Label.get_width())/2, (height - Label.get_height())/2, Label);
 }
 
 
@@ -626,9 +623,11 @@ void menu_screen::title_draw(const std::string &NewTitle)
 /// \param y
 /// \param Label
 ///
-void menu_screen::button_add(uint x, uint y, const std::string& Label, void(*new_caller)(void))
+void menu_screen::button_add(uint x, uint y, const std::string& Label,
+                             func_ptr new_caller, BTN_STATE new_state)
 {
   button Btn(Label, new_caller, x, y);
+  Btn.state_update(new_state);
   paint_over(x, y, Btn);
   MenuItems.push_back(Btn);
 }
@@ -638,7 +637,9 @@ void menu_screen::button_add(uint x, uint y, const std::string& Label, void(*new
 /// \brief menu_screen::list_add
 /// \param ItemsList
 ///
-uint menu_screen::list_add(const std::list<std::string>& ItemsList)
+void menu_screen::list_add(const std::list<std::string>& ItemsList,
+                           func_ptr fn_exit, func_ptr fn_select,
+                           func_ptr fn_add, func_ptr fn_delete)
 {
   uint border = 10;
   uint list_width = width - 2 * border;
@@ -655,7 +656,34 @@ uint menu_screen::list_add(const std::list<std::string>& ItemsList)
     y += Btn.get_height() + 1;
   }
 
-  return y + border;
+  y += border;
+  uint bx[4] = {0, 0, 0, 0};
+  uint by[4] = {y, y, y, y};
+  uint buttons_distance = button_default_height * 0.2;
+
+  // 4 кнопки распределяем по-горизонтали
+  if( width > 5*(button_default_width + buttons_distance))
+  {
+    bx[0] = width/2 - buttons_distance/2 - 2*button_default_width - buttons_distance;
+    bx[1] = bx[0] + button_default_width + buttons_distance;
+    bx[2] = bx[1] + button_default_width + buttons_distance;
+    bx[3] = bx[2] + button_default_width + buttons_distance;
+  }
+  else // или в два ряда по две
+  {
+    bx[0] = width/2 - buttons_distance/2 - button_default_width;
+    bx[1] = bx[0] + button_default_width + buttons_distance;
+    bx[2] = bx[0];
+    bx[3] = bx[1];
+    by[2] = by[0] + button_default_height + buttons_distance;
+    by[3] = by[2];
+  }
+
+  button_add(bx[0], by[0], "Отмена",   fn_exit);
+  button_add(bx[1], by[1], "Старт",    fn_select, BTN_DISABLE);
+  button_add(bx[2], by[2], "Добавить", fn_add);
+  button_add(bx[3], by[3], "Удалить",  fn_delete, BTN_DISABLE);
+
 }
 
 
@@ -667,11 +695,11 @@ uint menu_screen::list_add(const std::list<std::string>& ItemsList)
 ///
 bool menu_screen::cursor_event(double x, double y)
 {
-  //auto _x = static_cast<uint>(rint(x))
   bool result = false;
 
   for(auto& Item: MenuItems)
   {
+    if(Item.state_get() == BTN_DISABLE) continue;
     BTN_STATE state = BTN_NORMAL;
 
     if((x >= Item.x) && (x < (Item.x + Item.get_width())) &&
@@ -698,7 +726,7 @@ bool menu_screen::cursor_event(double x, double y)
 /// \param mods
 /// \return
 ///
-fn_pointer menu_screen::mouse_event(int mouse_button, int action, int)
+func_ptr menu_screen::mouse_event(int mouse_button, int action, int)
 {
   for(auto& Item: MenuItems)
   {
