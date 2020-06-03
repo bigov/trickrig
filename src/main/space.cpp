@@ -75,67 +75,19 @@ space::space(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
   load_textures();
 
   OGLContext->add_size_observer(*this); //пересчет при изменении размера
-}
 
-
-///
-/// \brief space::~space
-///
-space::~space()
-{
-  render_indices.store(0); // Индикатор для остановки потока загрузки в рендер из БД
-  if(nullptr != data_loader) if(data_loader->joinable())
-    data_loader->join();      // Ожидание завершения потока
-}
-
-
-///
-/// \brief space::enable
-///
-void space::enable(void)
-{
-  // Настройка матрицы проекции
-  GLsizei width, height;
-  OGLContext->get_frame_buffer_size(&width, &height);
-  auto aspect = static_cast<float>(width) / static_cast<float>(height);
-  MatProjection = glm::perspective(fovy, aspect, zNear, zFar);
-
-  xpos = width/2;  // координаты центра экрана
-  ypos = height/2;
-
-  OGLContext->cursor_hide();  // выключить отображение курсора мыши в окне
-  OGLContext->set_cursor_pos(xpos, ypos);
-
-  if(render_indices == 0) init_buffers();   // Создать VAO, VBO и поток обмена данными
-
-  OGLContext->set_cursor_observer(*this);    // Подключить обработчики: курсора мыши
-  OGLContext->set_button_observer(*this);    //  -- кнопки мыши
-
-  on_front = 0; // клавиша вперед
-  on_back  = 0; // клавиша назад
-  on_right = 0; // клавиша вправо
-  on_left  = 0; // клавиша влево
-  on_up    = 0; // клавиша вверх
-  on_down  = 0; // клавиша вниз
-  fb_way   = 0; // движение вперед
-  ud_way   = 0; // движение вверх
-  rl_way   = 0; // движение в сторону
-
-  hud_load();
-  ready = true;
+  init_buffers();
 }
 
 
 ///
 /// \brief space::init_buffers
+/// \details Инициализация VAO и VBO
 ///
 void space::init_buffers(void)
 {
   glGenVertexArrays(1, &vao_id);
   glBindVertexArray(vao_id);
-
-  vbo VBOdata  (GL_ARRAY_BUFFER);          // Буфер данных
-  vbo VBOindex (GL_ELEMENT_ARRAY_BUFFER);  // Индексный буфер
 
   // Число сторон куба в объеме с длиной стороны LOD (2*dist_xx) элементов:
   uint n = static_cast<uint>(pow((border_dist_b4 + border_dist_b4 + 1), 3));
@@ -154,14 +106,56 @@ void space::init_buffers(void)
     for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
     stride += 4;                                                     // по 4 вершины на сторону
   }
-  VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get()); // и заполнить данными.
+
+  vbo VBOindex { GL_ELEMENT_ARRAY_BUFFER };                          // Индексный буфер
+  VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get()); // заполнить данными.
   glBindVertexArray(0);
 
+  hud_load();
+}
+
+
+///
+/// \brief space::enable
+///
+void space::enable(void)
+{
+  // Настройка матрицы проекции
+  GLsizei width, height;
+  OGLContext->get_frame_buffer_size(&width, &height);
+  auto aspect = static_cast<float>(width) / static_cast<float>(height);
+  MatProjection = glm::perspective(fovy, aspect, zNear, zFar);
+
+  xpos = width/2;                          // координаты центра экрана
+  ypos = height/2;
+
+  OGLContext->cursor_hide();               // выключить отображение курсора мыши в окне
+  OGLContext->set_cursor_pos(xpos, ypos);
+  OGLContext->set_cursor_observer(*this);  // Подключить обработчики: курсора мыши
+  OGLContext->set_button_observer(*this);  //  -- кнопки мыши
+
+  on_front = 0; // клавиша вперед
+  on_back  = 0; // клавиша назад
+  on_right = 0; // клавиша вправо
+  on_left  = 0; // клавиша влево
+  on_up    = 0; // клавиша вверх
+  on_down  = 0; // клавиша вниз
+  fb_way   = 0; // движение вперед
+  ud_way   = 0; // движение вверх
+  rl_way   = 0; // движение в сторону
+
+  ready = true;
+}
+
+
+///
+/// \brief space::load_map_data
+///
+void space::map_load(void)
+{
+  render_indices.store(0);
   // Поток обмена данными с базой
   data_loader = std::make_unique<std::thread>(db_control, OGLContext, ViewFrom, VBOdata.get_id(), VBOdata.get_size());
-
-  while (render_indices < indices_per_face) // Подождать пока хоть одна сторона загрузится
-    std::this_thread::sleep_for(std::chrono::milliseconds(1));
 }
 
 
@@ -286,6 +280,7 @@ void space::calc_render_time(void)
 void space::render(void)
 {
   if(!ready) return;
+  if(render_indices.load() < indices_per_face) return;
 
   calc_render_time();
   calc_position();
@@ -494,8 +489,6 @@ void space::hud_load(void)
 ///
 void space::hud_draw(void)
 {
-  glBindTexture(GL_TEXTURE_2D, texture_hud);
-
   // счетчик FPS
   uchar_color bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения
   uint fps_length = 4;               // количество символов в надписи
@@ -505,6 +498,7 @@ void space::hud_draw(void)
   textstring_place(Font15n, line, Fps, 2, 1);
 
   vbo_mtx.lock();
+  glBindTexture(GL_TEXTURE_2D, texture_hud);
   glTexSubImage2D(GL_TEXTURE_2D, 0, 2, static_cast<GLint>(ImHUD.get_height() - Fps.get_height() - 2),
                 static_cast<GLsizei>(Fps.get_width()),  // width
                 static_cast<GLsizei>(Fps.get_height()),  // height
@@ -527,6 +521,17 @@ void space::hud_draw(void)
                 GL_RGBA, GL_UNSIGNED_BYTE,           // mode
                 Coord.uchar_t());                      // data
   vbo_mtx.unlock();
+}
+
+
+///
+/// \brief space::~space
+///
+space::~space()
+{
+  render_indices.store(0); // Индикатор для остановки потока загрузки в рендер из БД
+  if(nullptr != data_loader) if(data_loader->joinable())
+    data_loader->join();      // Ожидание завершения потока
 }
 
 } // namespace tr

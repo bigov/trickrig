@@ -7,7 +7,9 @@
 
 namespace tr
 {
-typedef void (*func_ptr)(void);
+
+typedef void(*func_ptr)(void);
+typedef void(*func_ptr_1uint)(uint);
 
 enum FONT_STYLE { FONT_NORMAL, FONT_BOLD, FONT_COUNT };
 enum BTN_STATE { BTN_NORMAL, BTN_OVER, BTN_PRESSED, BTN_DISABLE, STATES_COUNT };

@@ -16,6 +16,12 @@ double      app::mouse_x = 0.0;        // позиция указателя от
 double      app::mouse_y = 0.0;        // позиция указателя относительно верхней границы
 int         app::mouse_left = EMPTY;   // нажатие на левую кнопку мыши
 
+std::unique_ptr<space> app::Space = nullptr;
+app::GUI_MODES app::GuiMode = GUI_MENU_START;    // режим окна приложения
+glm::vec3 app::Cursor3D = { 200.f, 200.f, 0.f }; // положение и размер прицела
+std::unique_ptr<glsl> app::Program2d = nullptr;  // Шейдерная программа GUI
+
+GLuint app::vao_quad_id  = 0;
 
 ///
 /// \brief gui::gui
@@ -292,7 +298,6 @@ void app::create_map(void)
   auto MapDir = cfg::create_map(StringBuffer);
   Maps.push_back(map(MapDir, StringBuffer));
   row_selected = Maps.size();     // выбрать номер карты
-  //button_click(BTN_OPEN);         // открыть
 }
 
 
@@ -388,10 +393,23 @@ void app::menu_select(void)
   ItemsList.push_back(" == Debug 0 == ");
   ItemsList.push_back(" == Debug 1 == ");
 
-  MainMenu.list_add(ItemsList, menu_start);
+  MainMenu.list_add(ItemsList, menu_start, map_open);
   update_gui_image();
 }
 
+
+///
+/// \brief app::map_open
+///
+void app::map_open(void)
+{
+  uint map_id = 0;
+  cfg::map_view_load(Maps[map_id].Folder, Space->ViewFrom, Space->look_dir);
+  Space->map_load();     // Загрузка карты занимает некоторое время
+  Space->enable();
+  Cursor3D[2] = 4.0f;    // Активировать прицел
+  GuiMode = GUI_3D_MODE;
+}
 
 ///
 /// \brief Экран ввода названия для создания новой карты
@@ -479,7 +497,7 @@ void app::show(void)
     vbo_mtx.unlock();
 
   #ifndef NDEBUG
-    if(glGetError() != GL_NO_ERROR) std::cerr << "ERROR in the function 'gui::render_screen'.";
+    CHECK_OPENGL_ERRORS
   #endif
 
   }
@@ -585,7 +603,7 @@ void app::close_event(void)
 ///
 void app::error_event(const char* message)
 {
-  std::cerr << message;
+  std::cerr << message << std::endl;
 }
 
 

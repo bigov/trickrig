@@ -54,6 +54,35 @@
 #include "version.hpp"
 
 #define ERR throw std::runtime_error
+
+// Макрос проверки статуса ошибок при работе с OpenGL
+#define CHECK_OPENGL_ERRORS switch (glGetError())\
+{ case GL_NO_ERROR:\
+    break;\
+  case GL_INVALID_ENUM:\
+  std::cerr << "\n" << __PRETTY_FUNCTION__ << "\n"\
+            << "An unacceptable value is specified for an enumerated argument. The offending command is ignored and has no other side effect than to set the error flag." << std::endl;\
+    break;\
+  case GL_INVALID_VALUE:\
+    std::cerr << "\n" << __PRETTY_FUNCTION__ << "\n"\
+              << "A numeric argument is out of range. The offending command is ignored and has no other side effect than to set the error flag." << std::endl;\
+    break;\
+  case GL_INVALID_OPERATION:\
+    std::cerr << "\n" << __PRETTY_FUNCTION__ << "\n"\
+              << "The specified operation is not allowed in the current state. The offending command is ignored and has no other side effect than to set the error flag." << std::endl;\
+    break;\
+  case GL_INVALID_FRAMEBUFFER_OPERATION:\
+    std::cerr << "\n" << __PRETTY_FUNCTION__ << "\n"\
+              << "The command is trying to render to or read from the framebuffer while the currently bound framebuffer is not framebuffer complete." << std::endl;\
+    break;\
+  case GL_OUT_OF_MEMORY:\
+    std::cerr << "\n" << __PRETTY_FUNCTION__ << "\n"\
+              << "There is not enough memory left to execute the command. The state of the GL is undefined, except for the state of the error flags, after this error is recorded." << std::endl;\
+    break;\
+  default:\
+    std::cerr << "\n" << __PRETTY_FUNCTION__ << "\n"\
+               << "Undefined error using OpenGL functional." << std::endl; }
+
 namespace fs = std::filesystem;
 
 namespace tr {

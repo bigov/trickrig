@@ -18,12 +18,6 @@ namespace tr
       glsl(const std::list<std::pair<GLenum, std::string>>& L);
       ~glsl(void);
 
-      // Запретить копирование и перенос экземпляров класса
-      glsl(const glsl&) = delete;
-      glsl& operator=(const glsl&) = delete;
-      glsl(glsl&&) = delete;
-      glsl& operator=(glsl&&) = delete;
-
       // Список описаний атрибутов для VBO
       std::list<glsl_attributes> AtribsList {};
 
@@ -42,6 +36,14 @@ namespace tr
       void validate(void);
 
     private:
+      glsl(void) = delete;
+
+      // Запретить копирование и перенос экземпляров класса
+      glsl(const glsl&) = delete;
+      glsl& operator=(const glsl&) = delete;
+      glsl(glsl&&) = delete;
+      glsl& operator=(glsl&&) = delete;
+
       GLuint id = 0;
       GLint isLinked = 0;
       std::vector<GLuint> Shaders {};

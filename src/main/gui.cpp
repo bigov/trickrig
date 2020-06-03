@@ -680,7 +680,7 @@ void menu_screen::list_add(const std::list<std::string>& ItemsList,
   }
 
   button_add(bx[0], by[0], "Отмена",   fn_exit);
-  button_add(bx[1], by[1], "Старт",    fn_select, BTN_DISABLE);
+  button_add(bx[1], by[1], "Старт",    fn_select);//, BTN_DISABLE);
   button_add(bx[2], by[2], "Добавить", fn_add);
   button_add(bx[3], by[3], "Удалить",  fn_delete, BTN_DISABLE);
 

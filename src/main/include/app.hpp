@@ -50,8 +50,8 @@ class app: public interface_gl_context
     };
 
     std::shared_ptr<trgl> GLContext = nullptr;
-    std::unique_ptr<glsl> Program2d = nullptr;           // Шейдерная программа GUI
-    glm::vec3 Cursor3D = { 200.f, 200.f, 0.f };          // положение и размер прицела
+    static std::unique_ptr<glsl> Program2d;           // Шейдерная программа GUI
+    static glm::vec3 Cursor3D;          // положение и размер прицела
 
     int scancode = -1;
     int mods = -1;
@@ -61,7 +61,7 @@ class app: public interface_gl_context
     static bool is_open;                     // состояние окна
     static layout Layout;                    // положение окна и размеры
     float aspect = 1.0f;                     // соотношение размеров окна
-    std::unique_ptr<space> Space = nullptr;
+    static std::unique_ptr<space> Space;     // = nullptr;
 
     bool text_mode = false;                  // режим ввода текста
     std::string StringBuffer {};             // строка ввода пользователя
@@ -75,11 +75,11 @@ class app: public interface_gl_context
 
     static GLuint texture_gui;              // id тектуры HUD
 
-    static std::vector<map> Maps;           // список карт
-    GUI_MODES GuiMode = GUI_MENU_START;     // режим окна приложения
-    static size_t row_selected;             // какая строка выбрана
+    static std::vector<map> Maps;          // список карт
+    static GUI_MODES GuiMode;              // режим окна приложения
+    static size_t row_selected;            // какая строка выбрана
 
-    GLuint vao_quad_id  = 0;
+    static GLuint vao_quad_id;
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
     void cursor_text_row(const texture& _Fn, image &_Dst, size_t position);
@@ -92,9 +92,10 @@ class app: public interface_gl_context
     static void menu_start(void);
     static void menu_config(void);
     void cancel(void);
-    void AppWin_render(void);
+    static void AppWin_render(void);
     void create_map(void);
     void remove_map(void);
+    static void map_open(void);
     void layout_set(const layout &L);
     static void update_gui_image(void);
     static void app_close(void);

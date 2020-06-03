@@ -35,11 +35,14 @@ namespace tr
       int FPS = 500;     // частота кадров (для коррекции скорости движения)
       GLuint texture_hud = 0;  // ID HUD текстуры в GPU
 
+      void map_load(void);
+
     private:
       std::unique_ptr<std::thread> data_loader = nullptr;
       space(const space &);
       space operator=(const space &);
 
+      vbo VBOdata { GL_ARRAY_BUFFER };        // Буфер данных
       std::shared_ptr<trgl>& OGLContext;      // основное окно приложения
       std::unique_ptr<glsl> Program3d = nullptr;
 

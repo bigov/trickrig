@@ -20,7 +20,7 @@
 namespace tr
 {
   // Инициализация глобальных объектов
-  std::atomic<int> render_indices {0};
+  std::atomic<GLsizei> render_indices {0};
   std::atomic<int> click_side_vertex_id {0};
   std::mutex view_mtx {};  // Доступ к положению камеры
   std::mutex vbo_mtx {};   // Доступ к буферу вершин
@@ -64,7 +64,7 @@ int main(int, char* argv[])
   }
   catch(...)
   {
-    std::cerr << "FAILURE: undefined exception";
+    std::cerr << "FAILURE: undefined exception" << std::endl;
     std::cerr.rdbuf(_cerr);  // restore System std::cerr
     std::clog.rdbuf(_clog);  // restore System std::clog
     return EXIT_FAILURE;
