@@ -9,8 +9,18 @@ namespace tr
 {
 typedef void (*fn_pointer)(void);
 
-enum BTN_STATE { BTN_NORMAL, BTN_OVER, BTN_PRESSED, BTN_DISABLE, STATES_COUNT };
 enum FONT_STYLE { FONT_NORMAL, FONT_BOLD, FONT_COUNT };
+enum BTN_STATE { BTN_NORMAL, BTN_OVER, BTN_PRESSED, BTN_DISABLE, STATES_COUNT };
+
+const uint button_default_width = 120;
+const uint button_default_height = 32;
+const uint label_default_height = 24;
+
+const uchar_color TextDefaultColor          { 0x24, 0x24, 0x24, 0xFF };
+const uchar_color LinePressedDefaultBgColor { 0xFE, 0xFE, 0xFE, 0xFF };
+const uchar_color LineOverDefaultBgColor    { 0xEE, 0xEE, 0xFF, 0xFF };
+const uchar_color LineDisableDefaultBgColor { 0xCD, 0xCD, 0xCD, 0xFF };
+const uchar_color LineNormalDefaultBgColor  { 0xE7, 0xE7, 0xE6, 0xFF };
 
 class texture;
 class image;
@@ -91,18 +101,16 @@ class texture: public image
 class label: public image
 {
   protected:
-    uchar_color BgColor { 0x00, 0x00, 0x00, 0x00 };
-    unsigned int font_id = 0;
     std::string font_normal = cfg::AssetsDir + cfg::DS + "FreeSans.ttf";
     std::string font_bold = cfg::AssetsDir + cfg::DS + "FreeSansBold.ttf";
     std::string Text {};
-    uchar_color TextColor {88, 88, 88, 0};
+    uchar_color TextColor = TextDefaultColor;
     int letter_space = 80; // % size of
 
   public:
     label(void) = default;
     label(const std::string& new_text, unsigned int new_height = 18,
-          FONT_STYLE weight = FONT_NORMAL, uchar_color NewColor = {88, 88, 88, 0});
+          FONT_STYLE weight = FONT_NORMAL, uchar_color NewColor = TextDefaultColor);
 };
 
 
@@ -111,28 +119,29 @@ class label: public image
 ///
 class button: public image
 {
-  protected:
-    BTN_STATE state = BTN_NORMAL;
-    uint default_width = 120;
-    uint default_height = 32;
-    uint default_label_height = 24;
-    uchar_color FontColor {0x24, 0x24, 0x24, 0xFF};
-    label Label {};
-
-    void make_body(void);
-
   public:
+    enum MODE { BUTTON, LIST_ENTRY, MODES_COUNT };   // вид кнопки
+
     button(void)                     = default;
     button(const button&)            = default;
     button& operator=(const button&) = default;
-    button(const std::string& LabelText, uint x = 0, uint y = 0, void(*new_caller)(void) = nullptr);
+    button(const std::string& LabelText, void(*new_caller)(void) = nullptr,
+           uint x = 0, uint y = 0, MODE new_mode = BUTTON,
+           uint new_width = button_default_width, uint new_height = button_default_height);
 
     uint x = 0; uint y = 0;             // положение кнопки
+    fn_pointer caller = nullptr;        // функция, вызываемая по нажатию на кнопку
 
-    //void (*caller)(void) = nullptr;     // функция, вызываемая по нажатию на кнопку
-    fn_pointer caller = nullptr;
     bool state_update(BTN_STATE new_state);
     BTN_STATE state_get(void) const { return state;}
+
+  protected:
+    BTN_STATE state = STATES_COUNT;
+    label Label {};
+    MODE mode = MODES_COUNT;
+
+    void draw_button(void);
+    void draw_list_entry(void);
 };
 
 
@@ -154,7 +163,7 @@ class menu_screen: public image
     void init(uint new_width, uint new_height, const std::string& Title);
     void title_draw(const std::string& NewTitle);
     void button_add(uint x, uint y, const std::string& Label, void(*new_caller)(void) = nullptr);
-    void list_add(const std::list<std::string>& ItemsList);
+    uint list_add(const std::list<std::string>& ItemsList);
     bool cursor_event(double x, double y);
     fn_pointer mouse_event(int mouse_button, int action, int mods);
 };

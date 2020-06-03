@@ -364,9 +364,10 @@ void texture::put(uint C, uint R, image& dst, ulong X, ulong Y) const
 label::label(const std::string& new_text, unsigned int new_height,
              FONT_STYLE weight, uchar_color NewColor)
 {
+  const char* font[FONT_COUNT] = { font_normal.c_str(), font_bold.c_str() };
+
   height = new_height;
   Text = new_text;
-  const char* font[FONT_COUNT] = { font_normal.c_str(), font_bold.c_str() };
   TextColor = NewColor;
 
   stbtt_fontinfo font_info {};
@@ -425,15 +426,17 @@ label::label(const std::string& new_text, unsigned int new_height,
 /// \param new_label
 /// \param new_state
 ///
-button::button(const std::string& LabelText, uint new_x, uint new_y, void(*new_caller)(void))
+button::button(const std::string& LabelText, void(*new_caller)(void),
+               uint new_x, uint new_y, MODE new_mode, uint new_width, uint new_height)
 {
-  width = default_width;
-  height = default_height;
+  width = new_width;
+  height = new_height;
   x = new_x;
   y = new_y;
+  mode = new_mode;
   caller = new_caller;
-  Label = label(LabelText, default_label_height, FONT_NORMAL, FontColor);
-  make_body();
+  Label = label(LabelText, label_default_height, FONT_NORMAL, TextDefaultColor);
+  state_update(BTN_NORMAL);
 }
 
 
@@ -448,9 +451,17 @@ bool button::state_update(BTN_STATE new_state)
 {
   assert( (new_state < STATES_COUNT) && "new_state out of range" );
   if(state == new_state) return false;
-
   state = new_state;
-  make_body();
+
+  switch (mode) {
+    case LIST_ENTRY:
+      draw_list_entry();
+      break;
+    case BUTTON:
+    default:
+      draw_button();
+      break;
+  }
   return true;
 }
 
@@ -470,7 +481,7 @@ bool button::state_update(BTN_STATE new_state)
 ///   FFFFFF
 ///   от F6F6F6 -> 24 градации цвета темнее
 ///
-void button::make_body(void)
+void button::draw_button(void)
 {
   Data.resize(width * height);
   double step = static_cast<double>(height - 3) / 256.0 * 7.0; // градации цвета
@@ -558,6 +569,30 @@ void button::make_body(void)
 
 
 ///
+/// \brief button::make_list_entry
+///
+void button::draw_list_entry(void)
+{
+  switch (state) {
+    case BTN_PRESSED:
+      fill(LinePressedDefaultBgColor);
+      break;
+    case BTN_OVER:
+      fill(LineOverDefaultBgColor);
+      break;
+    case BTN_DISABLE:
+      fill(LineDisableDefaultBgColor);
+      break;
+    default:
+    case BTN_NORMAL:
+      fill(LineNormalDefaultBgColor);
+  }
+  // Добавить надпись
+  paint_over((width - Label.get_width())/2, (height - Label.get_height())/2, Label);
+}
+
+
+///
 /// \brief menu_screen::buttons_clear
 ///
 void menu_screen::init(uint new_width, uint new_height, const std::string& Title)
@@ -593,7 +628,7 @@ void menu_screen::title_draw(const std::string &NewTitle)
 ///
 void menu_screen::button_add(uint x, uint y, const std::string& Label, void(*new_caller)(void))
 {
-  button Btn(Label, x, y, new_caller);
+  button Btn(Label, new_caller, x, y);
   paint_over(x, y, Btn);
   MenuItems.push_back(Btn);
 }
@@ -603,21 +638,25 @@ void menu_screen::button_add(uint x, uint y, const std::string& Label, void(*new
 /// \brief menu_screen::list_add
 /// \param ItemsList
 ///
-void menu_screen::list_add(const std::list<std::string>& ItemsList)
+uint menu_screen::list_add(const std::list<std::string>& ItemsList)
 {
-  uint vertical_distance = 8; //pixels
-  uint x = width / 2;
-  uint y = title_height + vertical_distance;
+  uint border = 10;
+  uint list_width = width - 2 * border;
+  uint row_height = label_default_height + 4;
+
+  uint x = border;
+  uint y = title_height + border;
 
   for(auto& Item: ItemsList)
   {
-    button Btn(Item);
-    y += Btn.get_height() + vertical_distance;
-    paint_over(x - Btn.get_width()/2, y, Btn);
+    button Btn(Item, nullptr, x, y, button::LIST_ENTRY, list_width, row_height);
+    paint_over(x, y, Btn);
     MenuItems.push_back(Btn);
+    y += Btn.get_height() + 1;
   }
-}
 
+  return y + border;
+}
 
 
 ///

@@ -383,12 +383,13 @@ void app::menu_select(void)
   MainMenu.init(Layout.width, Layout.height, "Выбор карты");
   std::list<std::string> ItemsList {};
   for(auto& Map: Maps) ItemsList.push_back(Map.Name);
-  //ItemsList.push_back(" == Debug 0 == ");
-  //ItemsList.push_back(" == Debug 1 == ");
-  //ItemsList.push_back(" == Debug 2 == ");
-  MainMenu.list_add(ItemsList);
-  //MainMenu.button_add(20, 20, " == TST == ", nullptr);
-  MainMenu.button_add(40, 80, "Отмена", menu_start);
+
+  // DEBUG //
+  ItemsList.push_back(" == Debug 0 == ");
+  ItemsList.push_back(" == Debug 1 == ");
+
+  uint y = MainMenu.list_add(ItemsList);
+  MainMenu.button_add(10, y, "Отмена", menu_start);
 
   update_gui_image();
 /*
