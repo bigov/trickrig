@@ -9,7 +9,7 @@ namespace tr
 {
 
 typedef void(*func_ptr)(void);
-typedef void(*func_ptr_1uint)(uint);
+typedef void(*func_with_param_ptr)(uint);
 
 enum FONT_STYLE { FONT_NORMAL, FONT_BOLD, FONT_COUNT };
 enum BTN_STATE { BTN_NORMAL, BTN_OVER, BTN_PRESSED, BTN_DISABLE, STATES_COUNT };
@@ -161,6 +161,8 @@ class menu_screen: public image
     uchar_color ColorTitleFg { 0x00, 0x00, 0x00, 0x00 };
     std::list<button> MenuItems {};
     uint title_height = 0;
+    static func_with_param_ptr callback_selected_row;
+    static uint selected_row_id;
 
   public:
     menu_screen(void) = default;
@@ -170,10 +172,11 @@ class menu_screen: public image
     void button_add(uint x, uint y, const std::string& Label,
                     func_ptr new_caller = nullptr, BTN_STATE new_state = BTN_NORMAL);
     void list_add(const std::list<std::string>& ItemsList,
-                  func_ptr fn_exit = nullptr, func_ptr fn_select = nullptr,
+                  func_ptr fn_exit = nullptr, func_with_param_ptr fn_select = nullptr,
                   func_ptr fn_add = nullptr, func_ptr fn_delete = nullptr);
     bool cursor_event(double x, double y);
     func_ptr mouse_event(int mouse_button, int action, int mods);
+    static void row_selected(void);
 };
 
 }

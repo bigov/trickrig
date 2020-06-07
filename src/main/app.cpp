@@ -401,15 +401,17 @@ void app::menu_select(void)
 ///
 /// \brief app::map_open
 ///
-void app::map_open(void)
+void app::map_open(uint map_id)
 {
-  uint map_id = 0;
+  assert((map_id < Maps.size()) && "Map id out of range");
+
   cfg::map_view_load(Maps[map_id].Folder, Space->ViewFrom, Space->look_dir);
   Space->map_load();     // Загрузка карты занимает некоторое время
   Space->enable();
   Cursor3D[2] = 4.0f;    // Активировать прицел
   GuiMode = GUI_3D_MODE;
 }
+
 
 ///
 /// \brief Экран ввода названия для создания новой карты

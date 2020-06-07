@@ -1,0 +1,10 @@
+
+Доработать пример d:\dev_cpp\WORKSPACE\daft-lib\OpenGL\text_ttf\freetype2 
+
+- избавиться от объекта Глиф и перейти на использование Глиф-Слот
+  d:\dev_cpp\WORKSPACE\daft-lib\OpenGL\text_ttf\manual_src\src1.cpp 
+  https://www.freetype.org/freetype2/docs/reference/ft2-base_interface.html#ft_glyphslot
+
+- добавить конвертер UTF8 -> Unicode
+
+

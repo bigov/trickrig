@@ -95,7 +95,7 @@ class app: public interface_gl_context
     static void AppWin_render(void);
     void create_map(void);
     void remove_map(void);
-    static void map_open(void);
+    static void map_open(uint map_id);
     void layout_set(const layout &L);
     static void update_gui_image(void);
     static void app_close(void);

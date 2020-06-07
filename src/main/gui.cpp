@@ -8,6 +8,9 @@ namespace tr
 
 static inline int i_mul_if(int i, float f) { return static_cast<int>(f * static_cast<float>(i)); }
 
+func_with_param_ptr menu_screen::callback_selected_row = nullptr;
+uint menu_screen::selected_row_id = 0;
+
 uint f_len = 160; // количество символов в текстуре шрифта
 texture Font12n { "../assets/font_07x12_nr.png", f_len }; //шрифт 07х12 (норм)
 texture Font15n { "../assets/font_08x15_nr.png", f_len }; //шрифт 08х15 (норм)
@@ -638,9 +641,10 @@ void menu_screen::button_add(uint x, uint y, const std::string& Label,
 /// \param ItemsList
 ///
 void menu_screen::list_add(const std::list<std::string>& ItemsList,
-                           func_ptr fn_exit, func_ptr fn_select,
+                           func_ptr fn_exit, func_with_param_ptr fn_select,
                            func_ptr fn_add, func_ptr fn_delete)
 {
+  callback_selected_row = fn_select;
   uint border = 10;
   uint list_width = width - 2 * border;
   uint row_height = label_default_height + 4;
@@ -680,10 +684,19 @@ void menu_screen::list_add(const std::list<std::string>& ItemsList,
   }
 
   button_add(bx[0], by[0], "Отмена",   fn_exit);
-  button_add(bx[1], by[1], "Старт",    fn_select);//, BTN_DISABLE);
+  button_add(bx[1], by[1], "Старт",    row_selected);//, BTN_DISABLE);
   button_add(bx[2], by[2], "Добавить", fn_add);
   button_add(bx[3], by[3], "Удалить",  fn_delete, BTN_DISABLE);
 
+}
+
+
+///
+/// \brief menu_screen::row_selected
+///
+void menu_screen::row_selected(void)
+{
+  callback_selected_row(selected_row_id);
 }
 
 
