@@ -1,6 +1,8 @@
 #ifndef GUI_HPP
 #define GUI_HPP
 
+#include "wft/wft.hpp"
+
 #include "main.hpp"
 #include "config.hpp"
 #include "tools.hpp"
@@ -16,7 +18,7 @@ enum BTN_STATE { BTN_NORMAL, BTN_OVER, BTN_PRESSED, BTN_DISABLE, STATES_COUNT };
 
 static const uint button_default_width = 140; // ширина кнопки GUI
 static const uint button_default_height = 32; // высота кнопки GUI
-static const uint label_default_height = 24;
+static const uint label_default_height = 15;
 
 static const uint MIN_GUI_WIDTH = button_default_width * 5.2; // минимально допустимая ширина окна
 static const uint MIN_GUI_HEIGHT = button_default_height * 4 + 8;  // минимально допустимая высота окна
@@ -107,6 +109,7 @@ class label: public image
 {
   protected:
     std::string font_normal = cfg::AssetsDir + cfg::DS + "FreeSans.ttf";
+    //std::string font_normal = "../libs/wft/font/LiberationSans-Regular.ttf";
     std::string font_bold = cfg::AssetsDir + cfg::DS + "FreeSansBold.ttf";
     std::string Text {};
     uchar_color TextColor = TextDefaultColor;
