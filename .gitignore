@@ -66,4 +66,5 @@ qrc_*.cpp
 */build
 tags
 ui_*.h
+assets/tmp.*
 
