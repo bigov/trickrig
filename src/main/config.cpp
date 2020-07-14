@@ -93,12 +93,8 @@ void cfg::load(char** argv)
 #endif
 
   fs::path p = argv[0];
-
-  // Путь к папке приложения "../_bin/app_dbg"
-  if(p.parent_path().string() == ".")
-    AssetsDir = fs::absolute(p).parent_path().parent_path().parent_path().string() + DS + "assets";
-  else
-    AssetsDir = fs::absolute(p).parent_path().parent_path().string() + DS + "assets";
+  AssetsDir = fs::absolute(p).parent_path().string() + DS + "assets";
+  if(!fs::exists(AssetsDir)) ERR("Not found assets dir: " + AssetsDir);
 
   set_user_dir();
   AppParams = DataBase.open_app(UserDir + DS);
@@ -137,7 +133,7 @@ void cfg::set_user_dir(void)
 
 #ifndef NDEBUG
   // На время разработки конфиг пользователя и база данных данных расположена в папке приложения
-  UserDir = AssetsDir + DS + "tmp.database";
+  UserDir = AssetsDir + DS + "database";
 #else
   if(!fs::exists(UserDir)) fs::create_directory(UserDir);
   UserDir += DS + "TrickRig";

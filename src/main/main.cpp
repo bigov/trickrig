@@ -46,7 +46,7 @@ int main(int, char* argv[])
   std::clog.rdbuf(tr_log_file.rdbuf()); // Redirect std::clog in file
 
   time_t rawtime {}; time(&rawtime);
-  std::clog << ctime(&rawtime);         // Current time
+  std::clog << ctime(&rawtime) << std::endl;         // Current time
 
   using namespace tr;
   try

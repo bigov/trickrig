@@ -1,4 +1,5 @@
 #include "gui.hpp"
+#include "../assets/font/map.hpp"
 
 namespace tr
 {
@@ -6,25 +7,8 @@ namespace tr
 func_with_param_ptr menu_screen::callback_selected_row = nullptr;
 uint menu_screen::selected_row_id = 0;
 
-uint f_len = 160; // количество символов в текстуре шрифта
-texture Font12n { "../assets/font_07x12_nr.png", f_len }; //шрифт 07х12 (норм)
-texture Font15n { "../assets/font_08x15_nr.png", f_len }; //шрифт 08х15 (норм)
-texture Font18n { "../assets/font_10x18_nr.png", f_len }; //шрифт 10x18 (норм)
-texture Font18s { "../assets/font_10x18_sh.png", f_len }; //шрифт 10x18 (тень)
-texture Font18l { "../assets/font_10x18_lt.png", f_len }; //шрифт 10x18 (светл)
-
-
-// Настройка пиксельных шрифтов
-// ----------------------------
-// "FontMap1" - однобайтовые символы
-const std::string FontMap1 { "_'\"~!?@#$%^&*-+=(){}[]<>\\|/,.:;abcdefghi"
-                             "jklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUYWXYZ0"
-                             "123456789 "};
-// "FontMap2" - каждый символ занимает по два байта
-const std::string FontMap2 { "абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗ"
-                             "ИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ" };
-uint FontMap1_len = 0; // значение будет присвоено в конструкторе класса
-
+std::string font_dir = "../assets/font/";
+texture TextureFont { font_dir + font::texture_file, font::texture_cols, font::texture_rows };
 
 inline float fl(const unsigned char c) { return static_cast<float>(c)/255.f; }
 
@@ -81,36 +65,24 @@ uchar_color blend_1(uchar_color& src, uchar_color& dst)
 /// \param х - координата
 /// \param y - координата
 ///
-void textstring_place(const texture &FontImg, const std::string &TextString,
+void textstring_place(const texture &FontImg, const std::string &OutTextString,
                    image& Dst, ulong x, ulong y)
 {
+  auto TextString = font::string2vector(OutTextString);
+
   #ifndef NDEBUG
-  if(x > Dst.get_width() - utf8_size(TextString) * FontImg.get_cell_width())
+  if(x > Dst.get_width() - TextString.size() * FontImg.get_cell_width())
     ERR ("gui::add_text - X overflow");
   if(y > Dst.get_height() - FontImg.get_cell_height())
     ERR ("gui::add_text - Y overflow");
   #endif
 
-  uint row = 0;                        // номер строки в текстуре шрифта
-  uint n = 0;                          // номер буквы в выводимой строке
-  size_t text_size = TextString.size(); // число байт в строке
 
-  for(size_t i = 0; i < text_size; ++i)
+  ulong n = 0;
+  for(const auto& Symbol: TextString)
   {
-    auto t = char_type(TextString[i]);
-    if(t == SINGLE)
-    {
-      size_t col = FontMap1.find(TextString[i]);
-      if(col == std::string::npos) col = 0;
-      FontImg.put(col, row, Dst, x + (n++) * FontImg.get_cell_width(), y);
-    }
-    else if(t == UTF8_FIRST)
-    {
-      size_t col = FontMap2.find(TextString.substr(i,2));
-      if(col == std::string::npos) col = 0;
-      else col = FontMap1_len + col/2;
-      FontImg.put(col, row, Dst, x + (n++) * FontImg.get_cell_width(), y);
-    }
+    auto L = font::map_location(Symbol);
+    FontImg.put(L[0], L[1], Dst, x + (n++) * FontImg.get_cell_width(), y);
   }
 }
 

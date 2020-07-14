@@ -32,23 +32,10 @@ const uchar_color LineNormalDefaultBgColor  { 0xE7, 0xE7, 0xE6, 0xFF };
 class texture;
 class image;
 
-extern uint f_len; // количество символов в текстуре шрифта
-extern texture Font12n; //шрифт 07х12 (норм)
-extern texture Font15n; //шрифт 08х15 (норм)
-extern texture Font18n; //шрифт 10x18 (норм)
-extern texture Font18s; //шрифт 10x18 (тень)
-extern texture Font18l; //шрифт 10x18 (светл)
+extern texture TextureFont; //текстура шрифта
 
 extern void textstring_place(const texture& FontImg, const std::string& TextString,
                    image& Dst, ulong x, ulong y);
-
-// Настройка пиксельных шрифтов
-// ----------------------------
-// "FontMap1" - однобайтовые символы
-extern const std::string FontMap1;
-// "FontMap2" - каждый символ занимает по два байта
-extern const std::string FontMap2;
-extern uint FontMap1_len; // значение будет присвоено в конструкторе класса
 
 ///
 /// Класс для хранения в памяти избражений

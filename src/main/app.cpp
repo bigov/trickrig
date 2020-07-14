@@ -42,7 +42,6 @@ app::app(void)
   layout_set(cfg::WinLayout);
   GLContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
   Space = std::make_unique<space>(GLContext);
-  FontMap1_len = static_cast<uint>(FontMap1.length());
   TimeStart = std::chrono::system_clock::now();
 
   // Составить список карт в каталоге пользователя
@@ -241,7 +240,7 @@ void app::select_list(uint lx, uint ly, uint lw, uint lh)
   image ListImg {lw, lh, {0xDD, 0xDD, 0xDD, 0xFF}};             // изображение списка
   ListImg.put(MainMenu, lx, ly);
 
-  uint rh = Font18n.get_cell_height() * 1.5f;     // высота строки
+  uint rh = TextureFont.get_cell_height() * 1.5f;     // высота строки
   uint rw = lw - 4;                               // ширина строки
   uint max_rows = (lh - 4) / (rh + 2);            // число строк, которое может поместиться в списке
 
@@ -436,7 +435,7 @@ void app::menu_map_create(void)
   }
 
   // строка ввода текста
-  input_text_line(Font18n);
+  input_text_line(TextureFont);
 
   // две кнопки
 //  auto x = MainMenu.get_width() / 2 - static_cast<ulong>(BUTTTON_WIDTH * 1.25);
