@@ -1,9 +1,9 @@
 #version 330
 
 in vec2 Texcoord;
-uniform sampler2D texture_1;
-uniform sampler2D texture_2;
-uniform vec3 Cursor; // x,y - 2d координаты; z - длина стороны курсора
+uniform sampler2D texture_1; // 3D сцена
+uniform sampler2D texture_2; // 2D HUD
+uniform vec3 Cursor;         // x,y - 2d координаты; z - длина стороны курсора
 
 out vec4 FragColor;
 

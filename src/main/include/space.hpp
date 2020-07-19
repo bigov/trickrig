@@ -114,8 +114,8 @@ namespace tr
       void calc_position(void);
       void init_buffers(void);
 
-      void hud_load(void);
-      void hud_draw(void);
+      void hud_init(void);
+      void hud_update(void);
   };
 
 } //namespace

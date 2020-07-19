@@ -1,5 +1,5 @@
 #include "gui.hpp"
-#include "../assets/font/map.hpp"
+#include "../assets/fonts/map.hpp"
 
 namespace tr
 {
@@ -7,7 +7,7 @@ namespace tr
 func_with_param_ptr menu_screen::callback_selected_row = nullptr;
 uint menu_screen::selected_row_id = 0;
 
-std::string font_dir = "../assets/font/";
+std::string font_dir = "../assets/fonts/";
 texture TextureFont { font_dir + font::texture_file, font::texture_cols, font::texture_rows };
 
 inline float fl(const unsigned char c) { return static_cast<float>(c)/255.f; }

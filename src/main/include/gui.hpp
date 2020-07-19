@@ -95,9 +95,8 @@ class texture: public image
 class label: public image
 {
   protected:
-    std::string font_normal = cfg::AssetsDir + cfg::DS + "FreeSans.ttf";
-    //std::string font_normal = "../libs/wft/font/LiberationSans-Regular.ttf";
-    std::string font_bold = cfg::AssetsDir + cfg::DS + "FreeSansBold.ttf";
+    std::string font_normal = cfg::AssetsDir + cfg::DS + "fonts" + cfg::DS + "FreeSans.ttf";
+    std::string font_bold = cfg::AssetsDir + cfg::DS + "fonts" + cfg::DS + "FreeSansBold.ttf";
     std::string Text {};
     uchar_color TextColor = TextDefaultColor;
     int letter_space = 80; // % size of

@@ -111,7 +111,7 @@ void space::init_buffers(void)
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get()); // заполнить данными.
   glBindVertexArray(0);
 
-  hud_load();
+  hud_init();
 }
 
 
@@ -315,7 +315,7 @@ void space::render(void)
   hl_vertex_id_from = vertex_id - (vertex_id % vertices_per_face);
   hl_vertex_id_end = hl_vertex_id_from + vertices_per_face - 1;
 
-  hud_draw();
+  hud_update();
 }
 
 
@@ -460,7 +460,7 @@ void space::keyboard_event(int _key, int _scancode, int _action, int _mods)
 /// в памяти. Небольшие локальные фрагменты (вроде FPS-счетчика) обновляются
 /// напрямую через память GPU.
 ///
-void space::hud_load(void)
+void space::hud_init(void)
 {
   glBindTexture(GL_TEXTURE_2D, texture_hud);
 
@@ -487,7 +487,7 @@ void space::hud_load(void)
 ///
 /// \brief space::hud_draw
 ///
-void space::hud_draw(void)
+void space::hud_update(void)
 {
   // счетчик FPS
   uchar_color bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения

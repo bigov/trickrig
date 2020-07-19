@@ -219,6 +219,10 @@ std::string cfg::app_key(APP_INIT D)
   }
 #endif
 
+  // Имя файла шейдера
+  if((D >= SHADER_VERT_SCENE) and (D <= SHADER_FRAG_SCREEN))
+    return AssetsDir + DS + "shaders" + DS + AppParams[D];
+
   // Имя файла в папке "assets"
   if(D < ASSETS_LIST_END) return AssetsDir + DS + AppParams[D];
   else return AppParams[D];

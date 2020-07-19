@@ -592,11 +592,11 @@ void db::init_app_config(const std::string &FilePName)
   const char tpl[] = "INSERT INTO init (key, val) VALUES (%d, '%s');";
   sprintf(q, tpl, PNG_TEXTURE0,       "tex0_512.png");       Q += q;
   sprintf(q, tpl, DB_TPL_FNAME,       "surf_tpl.db");        Q += q;
-  sprintf(q, tpl, SHADER_VERT_SCENE,  "vert.glsl");          Q += q;
-  sprintf(q, tpl, SHADER_GEOM_SCENE,  "geom.glsl");          Q += q;
-  sprintf(q, tpl, SHADER_FRAG_SCENE,  "frag.glsl");          Q += q;
-  sprintf(q, tpl, SHADER_VERT_SCREEN, "scr_vert.glsl");      Q += q;
-  sprintf(q, tpl, SHADER_FRAG_SCREEN, "scr_frag.glsl");      Q += q;
+  sprintf(q, tpl, SHADER_VERT_SCENE,  "3d_vert.glsl");          Q += q;
+  sprintf(q, tpl, SHADER_GEOM_SCENE,  "3d_geom.glsl");          Q += q;
+  sprintf(q, tpl, SHADER_FRAG_SCENE,  "3d_frag.glsl");          Q += q;
+  sprintf(q, tpl, SHADER_VERT_SCREEN, "win_vert.glsl");      Q += q;
+  sprintf(q, tpl, SHADER_FRAG_SCREEN, "win_frag.glsl");      Q += q;
   sprintf(q, tpl, WINDOW_SCREEN_FULL, "0");                  Q += q;
   sprintf(q, tpl, WINDOW_WIDTH,       "800");                Q += q;
   sprintf(q, tpl, WINDOW_HEIGHT,      "600");                Q += q;
