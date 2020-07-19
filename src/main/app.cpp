@@ -21,7 +21,8 @@ app::GUI_MODES app::GuiMode = GUI_MENU_START;    // режим окна прил
 glm::vec3 app::Cursor3D = { 200.f, 200.f, 0.f }; // положение и размер прицела
 std::unique_ptr<glsl> app::Program2d = nullptr;  // Шейдерная программа GUI
 
-GLuint app::vao_quad_id  = 0;
+GLuint app::vao2d  = 0;
+
 
 ///
 /// \brief gui::gui
@@ -65,22 +66,28 @@ app::app(void)
   /// становится более привычный верхний-левый угол, и загруженные из файла
   /// изображения текстур применяются без дополнительного переворота.
 
-  GLfloat Position[8] = { // XY координаты вершин
+  GLfloat Position[] = { // XY координаты вершин
     -1.f,-1.f,
      1.f,-1.f,
+     1.f, 1.f,
+
+     1.f, 1.f,
     -1.f, 1.f,
-     1.f, 1.f
+    -1.f,-1.f,
   };
 
-  GLfloat Texcoord[8] = { // UV координаты текстуры
+  GLfloat Texcoord[] = { // UV координаты текстуры
     0.f, 1.f, //3
     1.f, 1.f, //4
-    0.f, 0.f, //1
     1.f, 0.f, //2
+
+    1.f, 0.f, //2
+    0.f, 0.f, //1
+    0.f, 1.f, //3
   };
 
-  glGenVertexArrays(1, &vao_quad_id);
-  glBindVertexArray(vao_quad_id);
+  glGenVertexArrays(1, &vao2d);
+  glBindVertexArray(vao2d);
 
   std::list<std::pair<GLenum, std::string>> Shaders {};
   Shaders.push_back({ GL_VERTEX_SHADER, cfg::app_key(SHADER_VERT_SCREEN) });
@@ -140,7 +147,7 @@ void app::title(const std::string &title)
 /// \details Рисует указанным шрифтом, в фиксированной позиции, на всю
 ///  ширину экрана
 ///
-void app::input_text_line(const texture &Font)
+void app::input_text_line(const atlas &Font)
 {
   uchar_color color = {0xF0, 0xF0, 0xF0, 0xFF};
   uint row_width = MainMenu.get_width() - Font.get_cell_width() * 2;
@@ -166,7 +173,7 @@ void app::input_text_line(const texture &Font)
 /// \param position  номер позиции курсора в строке ввода
 /// \details Формирование курсора ввода, моргающего с интервалом в пол-секунды
 ///
-void app::cursor_text_row(const texture &_Fn, image &_Dst, size_t position)
+void app::cursor_text_row(const atlas &_Fn, image &_Dst, size_t position)
 {
   uchar_color c = {0x11, 0xDD, 0x00, 0xFF};
   auto tm = std::chrono::duration_cast<std::chrono::milliseconds>
@@ -475,7 +482,7 @@ void app::update_gui_image(void)
 ///
 void app::show(void)
 {
-  GLContext->set_char_observer(*this);
+  GLContext->set_char_observer(*this);      // ввод с клавиатуры
   GLContext->set_error_observer(*this);     // отслеживание ошибок
   GLContext->set_cursor_observer(*this);    // курсор мыши в окне
   GLContext->set_button_observer(*this);    // кнопки мыши
@@ -516,18 +523,21 @@ void app::show(void)
 ///
 void app::AppWin_render(void)
 {
+
+  glActiveTexture(GL_TEXTURE2);
+
   if(GuiMode == GUI_3D_MODE) {
     glBindTexture(GL_TEXTURE_2D, Space->texture_hud);
   } else {
     glBindTexture(GL_TEXTURE_2D, texture_gui);  // рендер GUI меню
   }
 
-  glBindVertexArray(vao_quad_id);
+  glBindVertexArray(vao2d);
   glDisable(GL_DEPTH_TEST);
   Program2d->use();
   vbo_mtx.lock();
   Program2d->set_uniform("Cursor", Cursor3D);
-  glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
   vbo_mtx.unlock();
   Program2d->unuse();
 }

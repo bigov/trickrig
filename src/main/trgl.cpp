@@ -176,7 +176,7 @@ void trgl::set_cursor_pos(double x, double y)
 /// \param width
 /// \param height
 ///
-void trgl::get_frame_buffer_size(int* width, int* height)
+void trgl::get_frame_size(int* width, int* height)
 {
   glfwGetFramebufferSize(win_main, width, height);
 }

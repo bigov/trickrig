@@ -29,12 +29,12 @@ const uchar_color LineOverDefaultBgColor    { 0xEE, 0xEE, 0xFF, 0xFF };
 const uchar_color LineDisableDefaultBgColor { 0xCD, 0xCD, 0xCD, 0xFF };
 const uchar_color LineNormalDefaultBgColor  { 0xE7, 0xE7, 0xE6, 0xFF };
 
-class texture;
+class atlas;
 class image;
 
-extern texture TextureFont; //текстура шрифта
+extern atlas TextureFont; //текстура шрифта
 
-extern void textstring_place(const texture& FontImg, const std::string& TextString,
+extern void textstring_place(const atlas& FontImg, const std::string& TextString,
                    image& Dst, ulong x, ulong y);
 
 ///
@@ -69,7 +69,7 @@ class image
 
 
 // Служебный класс для хранения в памяти текстур
-class texture: public image
+class atlas: public image
 {
   private:
     void resize(uint, uint, const uchar_color&) = delete;
@@ -81,7 +81,7 @@ class texture: public image
     uint cell_height = 0;  // высота ячейки в пикселях
 
   public:
-    texture(const std::string &filename, uint new_cols = 1, uint new_rows = 1);
+    atlas(const std::string &filename, uint new_cols = 1, uint new_rows = 1);
 
     auto get_cell_width(void) const { return cell_width;  }
     auto get_cell_height(void) const { return cell_height; }

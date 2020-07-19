@@ -74,18 +74,11 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
   glGenFramebuffers(1, &id);
   glBindFramebuffer(GL_FRAMEBUFFER, id);
 
-  // настройка текстуры для рендера 3D пространства
-  glActiveTexture(GL_TEXTURE1);
+  glActiveTexture(GL_TEXTURE1); // текстура для рендера 3D пространства
   TexColor = std::make_unique<gl_texture>(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, TexColor->id(), 0);
 
-  // Настройка текстуры для идентификации примитивов. Блок GL_TEXTURE3 нужен для
-  // выделения памяти под хранение текстуры идентификации пикселей. В шейдерной
-  // программе он не используется.
-  glActiveTexture(GL_TEXTURE3);
-
-  ident_format = GL_RED_INTEGER;   // параметры format и type используются
-  ident_type = GL_INT;             // еще и в frame_buffer::read_pixel
+  glActiveTexture(GL_TEXTURE3); // текстура идентификации примитивов
   TexIdent = std::make_unique<gl_texture>(GL_R32I, ident_format, ident_type);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, TexIdent->id(), 0);
 

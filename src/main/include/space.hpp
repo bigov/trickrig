@@ -33,7 +33,10 @@ namespace tr
       std::shared_ptr<glm::vec3> ViewFrom = nullptr;             // 3D координаты точки положения
       float look_dir[2] = {0.0f, 0.0f};  // Направление: азимут (0 - X) и тангаж (0 - горизОнталь, пи/2 - вертикаль)
       int FPS = 500;     // частота кадров (для коррекции скорости движения)
+
+      GLuint texture_3d = 0;
       GLuint texture_hud = 0;  // ID HUD текстуры в GPU
+      GLuint texture_font = 0;
 
       void map_load(void);
 
@@ -42,14 +45,18 @@ namespace tr
       space(const space &);
       space operator=(const space &);
 
-      vbo VBOdata { GL_ARRAY_BUFFER };        // Буфер данных
-      std::shared_ptr<trgl>& OGLContext;      // основное окно приложения
-      std::unique_ptr<glsl> Program3d = nullptr;
+      vbo VBOdata3d  { GL_ARRAY_BUFFER };            // Буфер данных
+      vbo VBOdata2d { GL_ARRAY_BUFFER };            // Буфер текста
+
+      std::shared_ptr<trgl>& OGLContext;         // основное окно приложения
+      std::unique_ptr<glsl> Program3d = nullptr; // построение 3D пространства
+      std::unique_ptr<glsl> Program2d = nullptr; // построение HUD
 
       image ImHUD { 0, 0 };      // Текстура HUD окна приложения
 
       uchar_color bg_hud {0x00, 0x88, 0x00, 0x40}; // Фон панели HUD
-      GLuint vao_id = 0;                   // VAO ID
+      GLuint vao_3d = 0;
+      GLuint vao_2d = 0;
 
       bool ready = false;
       float cursor_dx = 0.f; // Cмещение мыши в активном окне между кадрами
@@ -113,6 +120,9 @@ namespace tr
       void load_textures(void);
       void calc_position(void);
       void init_buffers(void);
+
+      void init_prog_3d(void);
+      void init_prog_2d(void);
 
       void hud_init(void);
       void hud_update(void);

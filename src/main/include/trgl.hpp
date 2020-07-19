@@ -27,7 +27,7 @@ class trgl
     void cursor_hide(void);
     void cursor_restore(void);
     void set_cursor_pos(double x, double y);
-    void get_frame_buffer_size(int* width, int* height);
+    void get_frame_size(int* width, int* height);
     GLFWwindow* get_id(void) const;
 
     void set_error_observer(interface_gl_context& ref);    // отслеживание ошибок

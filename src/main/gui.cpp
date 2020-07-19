@@ -8,7 +8,7 @@ func_with_param_ptr menu_screen::callback_selected_row = nullptr;
 uint menu_screen::selected_row_id = 0;
 
 std::string font_dir = "../assets/fonts/";
-texture TextureFont { font_dir + font::texture_file, font::texture_cols, font::texture_rows };
+atlas TextureFont { font_dir + font::texture_file, font::texture_cols, font::texture_rows };
 
 inline float fl(const unsigned char c) { return static_cast<float>(c)/255.f; }
 
@@ -65,7 +65,7 @@ uchar_color blend_1(uchar_color& src, uchar_color& dst)
 /// \param х - координата
 /// \param y - координата
 ///
-void textstring_place(const texture &FontImg, const std::string &OutTextString,
+void textstring_place(const atlas &FontImg, const std::string &OutTextString,
                    image& Dst, ulong x, ulong y)
 {
   auto TextString = font::string2vector(OutTextString);
@@ -270,7 +270,7 @@ void image::paint_over(uint x, uint y, const image& Src)
 /// \param cols
 /// \param rows
 ///
-texture::texture(const std::string& filename, uint new_cols, uint new_rows)
+atlas::atlas(const std::string& filename, uint new_cols, uint new_rows)
 {
   columns = new_cols;
   rows = new_rows;
@@ -291,7 +291,7 @@ texture::texture(const std::string& filename, uint new_cols, uint new_rows)
 /// \param X   координата пикселя приемника
 /// \param Y   координата пикселя приемника
 ///
-void texture::put(uint C, uint R, image& dst, ulong X, ulong Y) const
+void atlas::put(uint C, uint R, image& dst, ulong X, ulong Y) const
 {
   if(C >= columns) C = 0;
   if(R >= rows) R = 0;

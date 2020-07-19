@@ -40,8 +40,10 @@ private:
   std::unique_ptr<gl_texture> TexColor = nullptr;
   std::unique_ptr<gl_texture> TexIdent = nullptr;
 
-  GLenum ident_format = 0;
-  GLenum ident_type = 0;
+  // Параметры буфера идентификации примитива
+  GLenum ident_format = GL_RED_INTEGER;   // параметры format и type используются
+  GLenum ident_type = GL_INT;             // еще и в frame_buffer::read_pixel
+
 
 public:
   frame_buffer(void) {}

@@ -79,12 +79,12 @@ class app: public interface_gl_context
     static GUI_MODES GuiMode;              // режим окна приложения
     static size_t row_selected;            // какая строка выбрана
 
-    static GLuint vao_quad_id;
+    static GLuint vao2d;
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
-    void cursor_text_row(const texture& _Fn, image &_Dst, size_t position);
+    void cursor_text_row(const atlas& _Fn, image &_Dst, size_t position);
     void title(const std::string& title);
-    void input_text_line(const texture& _Fn);
+    void input_text_line(const atlas& _Fn);
     static void row_text(size_t id, uint x, uint y, uint w, uint h, const std::string &);
     static void select_list(uint x, uint y, uint w, uint h);
     void menu_map_create(void);
