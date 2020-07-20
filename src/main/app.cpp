@@ -527,7 +527,7 @@ void app::AppWin_render(void)
   glActiveTexture(GL_TEXTURE2);
 
   if(GuiMode == GUI_3D_MODE) {
-    glBindTexture(GL_TEXTURE_2D, Space->texture_hud);
+    //glBindTexture(GL_TEXTURE_2D, Space->HUD.texture_id);
   } else {
     glBindTexture(GL_TEXTURE_2D, texture_gui);  // рендер GUI меню
   }

@@ -27,6 +27,7 @@ extern std::string wstring2string(const std::wstring &w);
 
 extern uchar int2uchar(int v); // Вспомогательная функция для структуры "px"
 
+extern std::vector<std::string> string2vector(const std::string& Text);
 extern std::vector<int> string2unicode(std::string& Text);
 
 extern int get_msec(void);   // число миллисекунд от начала суток.
@@ -37,6 +38,7 @@ extern i3d i3d_near(const i3d& P, uchar side, int side_len);
 
 extern std::unique_ptr<char[]> read_chars_file(const std::string &FileName);
 extern std::unique_ptr<unsigned char[]> load_font_file(const char* font_file_name);
+
 
 }
 

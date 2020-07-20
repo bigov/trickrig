@@ -11,9 +11,92 @@
 
 #include "space.hpp"
 #include "config.hpp"
+#include "../assets/fonts/map.hpp"
 
 namespace tr
 {
+
+
+///
+/// \brief convert2opengl
+/// \param x - число пикселей от края по х
+/// \param y - число пикселей от края по y
+/// \param x_max - ширина окна
+/// \param y_max - высота окна
+/// \return
+/// \details Преобразование координат точки из пикселей в нормальзованый формат OpenGL
+///
+std::pair<float, float> convert2opengl(int x, int y, int x_max, int y_max)
+{
+  float fx = static_cast<float>(x) * (2.f / static_cast<float>(x_max)) - 1.f;
+  float fy = static_cast<float>(y_max - y) * (2.f / static_cast<float>(y_max)) - 1.f;
+  return {fx, fy};
+}
+
+/// нормализованные координаты текстуры символа
+std::array<float, 4> char_uv(const std::string& Sym)
+{
+
+  unsigned int i;
+  for(i = 0; i < font::symbols_map.size(); i++) if( font::symbols_map[i].S == Sym ) break;
+
+  float u = static_cast<float>(font::symbols_map[i].u);
+  float v = static_cast<float>(font::symbols_map[i].v);
+
+  float u0 = font::sym_u_size * u,  v1 = font::sym_v_size * v;
+  float u1 = font::sym_u_size + u0, v0 = font::sym_v_size + v1;
+
+  return { u0, v0, u1, v1 };
+}
+
+
+///
+/// \brief buffer_data_create
+/// \param win_w
+/// \param win_h
+/// \param Text
+/// \param size
+/// \param left
+/// \param top
+/// \return
+///
+std::vector<float> buffer_data_create(int win_w, int win_h,
+                                      int left, int top,
+                                      int size_x, int size_y = 0,
+                                      float_color Color = { 0.7f, 0.7f, 0.7f, 1.f},
+                                      const std::string& Text = " ")
+{
+  std::vector<float> vertices {};
+  if(size_y == 0) size_y = size_x;
+
+  int x0 = left;
+  int y0 = win_h - top;
+  int x1 = x0 + size_x;
+  int y1 = y0 - size_y;
+
+  std::vector<std::string> SymbolsUTF8 = string2vector(Text);
+
+  for(const auto& Symbol: SymbolsUTF8)
+  {
+    auto T = char_uv( Symbol );
+    auto L0 = convert2opengl(x0, y1, win_w, win_h);
+    auto L1 = convert2opengl(x1, y0, win_w, win_h);
+
+    std::vector<float> quad_array {
+      L0.first, L0.second, Color.r, Color.g, Color.b, Color.a, T[0], T[1],
+      L1.first, L0.second, Color.r, Color.g, Color.b, Color.a, T[2], T[1],
+      L1.first, L1.second, Color.r, Color.g, Color.b, Color.a, T[2], T[3],
+      L0.first, L1.second, Color.r, Color.g, Color.b, Color.a, T[0], T[3],
+    };
+
+    vertices.insert(vertices.end(), quad_array.begin(), quad_array.end());
+    x0 += size_x;
+    x1 += size_x;
+  }
+
+  return vertices;
+}
+
 
 ///
 /// \brief space::space
@@ -48,8 +131,6 @@ space::space(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
   // настройка рендер-буфера
   GLsizei width, height;
   OGLContext->get_frame_size(&width, &height);
-
-  ImHUD.resize( static_cast<uint>(width), static_cast<uint>(height));
 
   RenderBuffer = std::make_unique<frame_buffer> ();
   if(!RenderBuffer->init(width, height)) ERR("Error on creating Render Buffer.");
@@ -96,10 +177,6 @@ void space::init_prog_3d(void)
 ///
 void space::init_prog_2d(void)
 {
-  // vec2 vPos;
-  // vec4 vColor;
-  // vec2 vTex;
-
   static const GLsizeiptr digits_per_dot = 8;
   static const GLsizeiptr bytes_per_dot = digits_per_dot * sizeof(GLfloat);
 
@@ -110,11 +187,11 @@ void space::init_prog_2d(void)
   Program2d = std::make_unique<glsl>(Shaders);
   Program2d->use();
 
-  Program2d->AtribsList.push_back({Program2d->attrib("vPos"), 2, GL_FLOAT, GL_TRUE, bytes_per_dot, 0 * sizeof(GLfloat)});
+  Program2d->AtribsList.push_back({Program2d->attrib("vCoordXY"), 2, GL_FLOAT, GL_TRUE, bytes_per_dot, 0 * sizeof(GLfloat)});
   Program2d->AtribsList.push_back({Program2d->attrib("vColor"), 4, GL_FLOAT, GL_TRUE, bytes_per_dot, 2 * sizeof(GLfloat)});
-  Program2d->AtribsList.push_back({Program2d->attrib("vTex"), 2, GL_FLOAT, GL_TRUE, bytes_per_dot, 6 * sizeof(GLfloat)});
+  Program2d->AtribsList.push_back({Program2d->attrib("vCoordUV"), 2, GL_FLOAT, GL_TRUE, bytes_per_dot, 6 * sizeof(GLfloat)});
 
-  glUniform1i(Program2d->uniform("font"), 4);  // glActiveTexture(GL_TEXTURE4)
+  glUniform1i(Program2d->uniform("font_texture"), 4);  // glActiveTexture(GL_TEXTURE4)
 
   Program2d->unuse();
 
@@ -152,23 +229,34 @@ void space::init_buffers(void)
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get()); // заполнить данными.
   glBindVertexArray(0);
 
+  hud_init();
+
   glGenVertexArrays(1, &vao_2d);
   glBindVertexArray(vao_2d);
 
-  float data_2d[] = {
-    0.0f, 0.0f, .0f, .0f, .0f, 1.0f, 0.0f, 0.0f,
-    0.2f, 0.0f, .0f, .0f, .0f, 1.0f, 1.0f, 0.0f,
-    0.2f, 0.2f, .0f, .0f, .0f, 1.0f, 1.0f, 1.0f,
-    0.2f, 0.2f, .0f, .0f, .0f, 1.0f, 1.0f, 1.0f,
-    0.0f, 0.2f, .0f, .0f, .0f, 1.0f, 0.0f, 1.0f,
-    0.0f, 0.0f, .0f, .0f, .0f, 1.0f, 0.0f, 0.0f,
-  };
+  GLsizei width, height;
+  OGLContext->get_frame_size(&width, &height);
 
-  VBOdata2d.allocate( sizeof(data_2d), data_2d );
+  float_color C = {
+    HUD.bg_color.r/255.f,
+    HUD.bg_color.g/255.f,
+    HUD.bg_color.b/255.f,
+    HUD.bg_color.a/255.f
+  };
+  auto V = buffer_data_create(width, height, 0, height - HUD.height, width, HUD.height, C);
+  auto FPS = buffer_data_create(width, height, 2, height - 16, 14, 14, C, "FPS:0000");
+  V.insert(V.begin(), FPS.begin(), FPS.end());
+
+  VBOdata2d.allocate(V.size() * sizeof(float), V.data());
+  HUD.indices = V.size() / HUD.digits_per_quad * HUD.indices_per_quad;
+
   VBOdata2d.set_attributes(Program2d->AtribsList);
+
+  // Очередность обхода вершин такая-же, как и при построении 3D элементов,
+  // поэтому в "vao_2d" можно использовать один общий с "vao_3d" индексный буфер
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOindex.get_id());
   glBindVertexArray(0);
 
-  hud_init();
 }
 
 
@@ -245,8 +333,8 @@ void space::load_textures(void)
 
   // Настройка текстуры для отрисовки HUD
   glActiveTexture(GL_TEXTURE2);
-  glGenTextures(1, &texture_hud);
-  glBindTexture(GL_TEXTURE_2D, texture_hud);
+  glGenTextures(1, &(HUD.texture_id));
+  glBindTexture(GL_TEXTURE_2D, HUD.texture_id);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -260,10 +348,13 @@ void space::load_textures(void)
   level_of_details = 0;
   frame = 0;
 
-  glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RED,
+  GLint internalFormat = GL_RED; // Number of color components provided by source image
+  GLenum format = GL_RGBA;       // The format, how the image is represented in memory
+
+  glTexImage2D(GL_TEXTURE_2D, level_of_details, internalFormat,
                static_cast<GLsizei>(TextureFont.get_width()),
                static_cast<GLsizei>(TextureFont.get_height()),
-               frame, GL_RGBA, GL_UNSIGNED_BYTE, TextureFont.uchar_t());
+               frame, format, GL_UNSIGNED_BYTE, TextureFont.uchar_t());
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
@@ -367,29 +458,26 @@ void space::render(void)
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
 
+  // Построение 3D элементов пространства
   glBindVertexArray(vao_3d);
-
   Program3d->use();
   for(const auto& A: Program3d->AtribsList) glEnableVertexAttribArray(A.index);
-
   Program3d->set_uniform("mvp", MatMVP);                      // матрица пространства
   Program3d->set_uniform("light_direction", light_direction); // направление
   Program3d->set_uniform("light_bright", light_bright);       // цвет/яркость
   Program3d->set_uniform("MinId", hl_vertex_id_from);         // начальная вершина подсветки поверхности
   Program3d->set_uniform("MaxId", hl_vertex_id_end);          // последняя вершина подсветки
   glDrawElements(GL_TRIANGLES, render_indices.load(), GL_UNSIGNED_INT, nullptr);
-
   for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
   Program3d->unuse();
 
-  ///
+  // Построение 2D элементов HUD
   glBindVertexArray(vao_2d);
   Program2d->use();
   for(const auto& A: Program2d->AtribsList) glEnableVertexAttribArray(A.index);
-  glDrawArrays(GL_TRIANGLES, 0, 6);
+  glDrawElements(GL_TRIANGLES, HUD.indices, GL_UNSIGNED_INT, nullptr);
   for(const auto& A: Program2d->AtribsList) glDisableVertexAttribArray(A.index);
   Program2d->unuse();
-  ///
 
   RenderBuffer->unbind();
   glBindVertexArray(0);
@@ -414,10 +502,6 @@ void space::resize_event(int width, int height)
   // пересчет матрицы проекции
   auto aspect = static_cast<float>(width) / static_cast<float>(height);
   MatProjection = glm::perspective(fovy, aspect, zNear, zFar);
-
-  // Пересчет размера HUD
-  ImHUD.resize( static_cast<uint>(width), static_cast<uint>(height));
-
   RenderBuffer->resize(width, height);
 }
 
@@ -538,35 +622,24 @@ void space::keyboard_event(int _key, int _scancode, int _action, int _mods)
 /// \brief загрузка HUD в GPU
 ///
 /// \details Пока HUD имеет упрощенный вид в форме полупрозрачной прямоугольной
-/// области в нижней части окна. Эта область формируется в ранее очищеной HUD
-/// текстуре окна и зазгружается в память GPU. Загрузка производится разово
-/// в момент открытия штроки (cover_) за счет обработки флага "renew". Далее,
-/// в процессе взаимодействия с окруженим трехмерной сцены, текструра хранится
-/// в памяти. Небольшие локальные фрагменты (вроде FPS-счетчика) обновляются
-/// напрямую через память GPU.
+/// области в нижней части окна.
 ///
 void space::hud_init(void)
 {
+  GLsizei width, height;
+  OGLContext->get_frame_size(&width, &height);
+
   glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_2D, texture_hud);
+  glBindTexture(GL_TEXTURE_2D, HUD.texture_id);
 
-  auto width = static_cast<GLint>(ImHUD.get_width());
-  auto height = static_cast<GLint>(ImHUD.get_height());
-
+  image H {static_cast<uint>(width), static_cast<uint>(height), {0,0,0,0}};
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
-           0, GL_RGBA, GL_UNSIGNED_BYTE, ImHUD.uchar_t());
+           0, GL_RGBA, GL_UNSIGNED_BYTE, H.uchar_t());
 
   // Панель инструментов для HUD в нижней части окна
-  uint h = 48;                           // высота панели инструментов HUD
-  if(h > ImHUD.get_height()) h = ImHUD.get_height();   // не может быть выше GuiImg
-  image HudPanel {ImHUD.get_width(), h, bg_hud};
-
-  auto y = static_cast<GLint>(ImHUD.get_height() - HudPanel.get_height()); // верхняя граница панели
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 0, y,
-                static_cast<GLsizei>(HudPanel.get_width()), // width
-                static_cast<GLsizei>(HudPanel.get_height()), // height
-                GL_RGBA, GL_UNSIGNED_BYTE,             // mode
-                HudPanel.uchar_t());                   // data
+  int hud_height = 48;
+  if(hud_height > height) HUD.height = 0;   // не может быть выше GuiImg
+  else HUD.height = 48;
 }
 
 
@@ -575,32 +648,30 @@ void space::hud_init(void)
 ///
 void space::hud_update(void)
 {
-  // счетчик FPS
-  uchar_color bg = { 0xF0, 0xF0, 0xF0, 0xA0 }; // фон заполнения
-  uint fps_length = 4;               // количество символов в надписи
-  image Fps {fps_length * TextureFont.get_cell_width() + 4, TextureFont.get_cell_height() + 2, bg};
-  char line[5];                       // длина строки с '\0'
-  std::sprintf(line, "%.4i", FPS);
-  textstring_place(TextureFont, line, Fps, 2, 1);
+  // размеры окна (в пикселях)
+  GLsizei width =0, height = 0;
+  OGLContext->get_frame_size(&width, &height);
 
-  vbo_mtx.lock();
-  glBindTexture(GL_TEXTURE_2D, texture_hud);
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 2, static_cast<GLint>(ImHUD.get_height() - Fps.get_height() - 2),
-                static_cast<GLsizei>(Fps.get_width()),  // width
-                static_cast<GLsizei>(Fps.get_height()), // height
-                GL_RGBA, GL_UNSIGNED_BYTE,              // mode
-                Fps.uchar_t());                         // data
-  vbo_mtx.unlock();
+  // счетчик FPS
+  char line[5] = {'\0'};                                // длина строки с '\0'
+  std::sprintf(line, "%.4i", FPS);
+  auto FpsVector = buffer_data_create(width, height, 2+14*4, height - 16, 14, 14, {1}, line);
+  glBindBuffer(GL_ARRAY_BUFFER, VBOdata2d.get_id());
+  glBufferSubData(GL_ARRAY_BUFFER, HUD.fps_data_start, FpsVector.size() * sizeof (float), FpsVector.data());
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   // Координаты в пространстве
   uint c_length = 60;               // количество символов в надписи
-  image Coord {c_length * TextureFont.get_cell_width() + 4, TextureFont.get_cell_height() + 2, bg};
+  image Coord {c_length * TextureFont.get_cell_width() + 4, TextureFont.get_cell_height() + 2, HUD.bg_color};
   char ln[60];                       // длина строки с '\0'
   std::sprintf(ln, "X:%+06.1f, Y:%+06.1f, Z:%+06.1f, a:%+04.3f, t:%+04.3f",
                   ViewFrom->x, ViewFrom->y, ViewFrom->z, look_dir[0], look_dir[1]);
   textstring_place(TextureFont, ln, Coord, 2, 1);
 
   vbo_mtx.lock();
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_2D, HUD.texture_id);
+
   glTexSubImage2D(GL_TEXTURE_2D, 0, 2, 2,            // top, left
                 static_cast<GLsizei>(Coord.get_width()),  // width
                 static_cast<GLsizei>(Coord.get_height()),  // height

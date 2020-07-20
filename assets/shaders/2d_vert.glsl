@@ -1,15 +1,18 @@
 #version 330
 
-in vec2 vPos;
+in vec2 vCoordXY;
 in vec4 vColor;
-in vec2 vTex;
+in vec2 vCoordUV;
 
-out vec4 color;
-out vec2 tex_coord;
+out vec4 FgColor;
+out vec4 BgColor;
+out vec2 CoordUV;
 
 void main(void)
 {
-  gl_Position = vec4(vPos, 0.0, 1.0);
-  color = vColor;
-  tex_coord = vTex;
+  FgColor = vec4(0.f, 0.f, 0.f, 1.f);
+  BgColor = vColor;
+  CoordUV = vCoordUV;
+
+  gl_Position = vec4(vCoordXY, 0.0, 1.0);
 }

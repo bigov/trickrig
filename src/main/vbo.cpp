@@ -106,8 +106,7 @@ void vbo::attrib(GLuint index, GLint d_size, GLenum type, GLboolean normalized,
 {
   glEnableVertexAttribArray(index);
   glBindBuffer(gl_buffer_type, id);
-  glVertexAttribPointer(index, d_size, type, normalized, stride,
-                        reinterpret_cast<void*>(pointer));
+  glVertexAttribPointer(index, d_size, type, normalized, stride, reinterpret_cast<void*>(pointer));
   glBindBuffer(gl_buffer_type, 0);
 }
 
@@ -122,8 +121,7 @@ void vbo::attrib(GLuint index, GLint d_size, GLenum type, GLboolean normalized,
 ///
 /// \details  Настройка атрибутов для int
 ///
-void vbo::attrib_i(GLuint index, GLint d_size, GLenum type,
-  GLsizei stride, const GLvoid* pointer)
+void vbo::attrib_i(GLuint index, GLint d_size, GLenum type, GLsizei stride, const GLvoid* pointer)
 {
   glEnableVertexAttribArray(index);
   glBindBuffer(gl_buffer_type, id);

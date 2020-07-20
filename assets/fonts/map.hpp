@@ -54,57 +54,6 @@ static const std::vector<sprite> symbols_map = {
   {"}",12,3}, {"!",13,3}, {"?",14,3}, {" ",15,3},
 };
 
-
-///
-/// \brief string2vector
-/// \param Text
-/// \return
-/// \details Конвертирует UTF-8 текстовую строку в массив (вектор) отдельных
-/// символов, независимо от числа байт в символе.
-///
-std::vector<std::string> string2vector(const std::string& Text)
-{
-  std::vector<std::string> result {};
-  for(size_t i = 0; i < Text.size();)
-  {
-    size_t bytes = 1;
-    auto c = static_cast<unsigned char>(Text[i]);
-    if( c >= 0xD0 ) bytes = 2;
-    result.push_back(Text.substr(i, bytes));
-    i += bytes;
-  }
-  return result;
-}
-
-
-std::array<float, 4> char_location(const std::string& Sym)
-{
-  unsigned int i;
-  for(i = 0; i < symbols_map.size(); i++) if( symbols_map[i].S == Sym ) break;
-
-  float u = static_cast<float>(symbols_map[i].u);
-  float v = static_cast<float>(symbols_map[i].v);
-
-  float u0 = sym_u_size * u,  v1 = sym_v_size * v;
-  float u1 = sym_u_size + u0, v0 = sym_v_size + v1;
-
-  std::array<float, 4> result { u0, v0, u1, v1 };
-  return result;
-}
-
-
-std::array<unsigned int, 2> map_location(const std::string& Sym)
-{
-  unsigned int i;
-  for(i = 0; i < symbols_map.size(); i++) if( symbols_map[i].S == Sym ) break;
-
-  unsigned int u = symbols_map[i].u;
-  unsigned int v = symbols_map[i].v;
-
-  std::array<unsigned int, 2> result { u, v };
-  return result;
-}
-
 } //namespace
 
 

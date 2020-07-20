@@ -55,6 +55,13 @@ uchar_color blend_1(uchar_color& src, uchar_color& dst)
   };
 }
 
+/// положение символа в текстурной карте
+std::array<unsigned int, 2> map_location(const std::string& Sym)
+{
+  unsigned int i;
+  for(i = 0; i < font::symbols_map.size(); i++) if( font::symbols_map[i].S == Sym ) break;
+  return { font::symbols_map[i].u, font::symbols_map[i].v };
+}
 
 ///
 /// \brief Добавление текста из текстурного атласа
@@ -68,7 +75,7 @@ uchar_color blend_1(uchar_color& src, uchar_color& dst)
 void textstring_place(const atlas &FontImg, const std::string &OutTextString,
                    image& Dst, ulong x, ulong y)
 {
-  auto TextString = font::string2vector(OutTextString);
+  auto TextString = string2vector(OutTextString);
 
   #ifndef NDEBUG
   if(x > Dst.get_width() - TextString.size() * FontImg.get_cell_width())
@@ -81,7 +88,7 @@ void textstring_place(const atlas &FontImg, const std::string &OutTextString,
   ulong n = 0;
   for(const auto& Symbol: TextString)
   {
-    auto L = font::map_location(Symbol);
+    auto L = map_location(Symbol);
     FontImg.put(L[0], L[1], Dst, x + (n++) * FontImg.get_cell_width(), y);
   }
 }

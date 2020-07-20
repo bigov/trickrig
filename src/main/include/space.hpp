@@ -35,7 +35,6 @@ namespace tr
       int FPS = 500;     // частота кадров (для коррекции скорости движения)
 
       GLuint texture_3d = 0;
-      GLuint texture_hud = 0;  // ID HUD текстуры в GPU
       GLuint texture_font = 0;
 
       void map_load(void);
@@ -45,16 +44,23 @@ namespace tr
       space(const space &);
       space operator=(const space &);
 
-      vbo VBOdata3d  { GL_ARRAY_BUFFER };            // Буфер данных
-      vbo VBOdata2d { GL_ARRAY_BUFFER };            // Буфер текста
+      vbo VBOdata3d { GL_ARRAY_BUFFER };         // Буфер данных
+      vbo VBOdata2d { GL_ARRAY_BUFFER };         // Буфер текста
 
       std::shared_ptr<trgl>& OGLContext;         // основное окно приложения
       std::unique_ptr<glsl> Program3d = nullptr; // построение 3D пространства
       std::unique_ptr<glsl> Program2d = nullptr; // построение HUD
 
-      image ImHUD { 0, 0 };      // Текстура HUD окна приложения
+      struct {
+        uint height = 48;
+        uchar_color bg_color {0x00, 0x88, 0x00, 0x40}; // Фон панели HUD
+        GLuint texture_id = 0;                         // ID HUD текстуры в GPU
+        GLsizei indices = 0; //number of indices
+        GLsizei indices_per_quad = 6;
+        GLsizei digits_per_quad = 32; // 4 вершины по 8 цифр (x,y,r,g,b,a,u,v)
+        GLsizei fps_data_start = 4 * digits_per_quad * sizeof(float); // цифры счетчика fps начинаются с 4-й позиции
+      } HUD;
 
-      uchar_color bg_hud {0x00, 0x88, 0x00, 0x40}; // Фон панели HUD
       GLuint vao_3d = 0;
       GLuint vao_2d = 0;
 

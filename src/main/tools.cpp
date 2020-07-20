@@ -10,6 +10,7 @@
 
 namespace tr
 {
+
 ///
 /// \brief dir_list
 /// \param path
@@ -26,6 +27,8 @@ std::list<std::string> dirs_list(const std::string &path)
 
   return D;
 }
+
+
 
 
 ///
@@ -230,6 +233,28 @@ i3d i3d_near(const i3d& P, uchar side, int side_len)
 
     auto result = std::make_unique<unsigned char[]>(length);
     memmove(result.get(), buffer.data(), length);
+    return result;
+  }
+
+
+  ///
+  /// \brief string2vector
+  /// \param Text
+  /// \return
+  /// \details Конвертирует UTF-8 текстовую строку в массив (вектор)
+  /// отдельных UTF-8 символов независимо от числа байт в символе.
+  ///
+  std::vector<std::string> string2vector(const std::string& Text)
+  {
+    std::vector<std::string> result {};
+    for(size_t i = 0; i < Text.size();)
+    {
+      size_t bytes = 1;
+      auto c = static_cast<unsigned char>(Text[i]);
+      if( c >= 0xD0 ) bytes = 2;
+      result.push_back(Text.substr(i, bytes));
+      i += bytes;
+    }
     return result;
   }
 
