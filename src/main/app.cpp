@@ -18,14 +18,70 @@ int         app::mouse_left = EMPTY;   // нажатие на левую кно�
 
 std::unique_ptr<space> app::Space = nullptr;
 app::GUI_MODES app::GuiMode = GUI_MENU_START;    // режим окна приложения
-glm::vec3 app::Cursor3D = { 200.f, 200.f, 0.f }; // положение и размер прицела
-std::unique_ptr<glsl> app::ProgramWin = nullptr;  // Шейдерная программа GUI
+glm::vec3 app::Cursor3D = { 200.f, 200.f, 4.f }; // положение и размер прицела
+std::unique_ptr<glsl> app::ProgramWin = nullptr; // Шейдерная программа рендера фреймбуфера
+std::unique_ptr<glsl> app::PrograMenu = nullptr; // Шейдерная программа GUI меню
 
 GLuint app::vao2d  = 0;
 
+std::unique_ptr<glsl> Program2d = nullptr; // построение 2D элементов
 
 ///
-/// \brief gui::gui
+/// \brief init_prog_2d
+///
+void init_prog_2d(void)
+{
+  std::list<std::pair<GLenum, std::string>> Shaders {};
+  Shaders.push_back({ GL_VERTEX_SHADER, "assets\\shaders\\2d_vert.glsl" });
+  Shaders.push_back({ GL_FRAGMENT_SHADER, "assets\\shaders\\2d_frag.glsl" });
+
+  Program2d = std::make_unique<glsl>(Shaders);
+  Program2d->use();
+
+  // VBO2d_base Обработка массива с данными 2D-координат и цвета вершин
+  GLsizei stride = sizeof(GLfloat) * 6;
+  Program2d->AtribsList.push_back({Program2d->attrib("vCoordXY"), 2, GL_FLOAT, GL_TRUE, stride, 0 * sizeof(GLfloat)});
+  Program2d->AtribsList.push_back({Program2d->attrib("vColor"), 4, GL_FLOAT, GL_TRUE, stride, 2 * sizeof(GLfloat)});
+
+  // VBO2d_uv Массив текстурных координат UV заполняется отдельно. Может меняться динамически.
+  Program2d->AtribsList.push_back({Program2d->attrib("vCoordUV"), 2, GL_FLOAT, GL_TRUE, 0, 0});
+
+  glUniform1i(Program2d->uniform("font_texture"), 4);  // glActiveTexture(GL_TEXTURE4)
+
+  Program2d->unuse();
+}
+
+
+///
+/// \brief load_font_texture
+/// \details  Загрузка текстуры шрифта
+///
+void load_font_texture(void)
+{
+  glActiveTexture(GL_TEXTURE4);
+  GLuint texture_font = 0;
+  glGenTextures(1, &texture_font);
+  glBindTexture(GL_TEXTURE_2D, texture_font);
+
+  GLint level_of_details = 0;
+  GLint frame = 0;
+
+  GLint internalFormat = GL_RED; // Number of color components provided by source image
+  GLenum format = GL_RGBA;       // The format, how the image is represented in memory
+
+  glTexImage2D(GL_TEXTURE_2D, level_of_details, internalFormat,
+               static_cast<GLsizei>(TextureFont.get_width()),
+               static_cast<GLsizei>(TextureFont.get_height()),
+               frame, format, GL_UNSIGNED_BYTE, TextureFont.uchar_t());
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+  glGenerateMipmap(GL_TEXTURE_2D);
+}
+
+
+///
+///
 ///
 app::app(void)
 {
@@ -42,12 +98,15 @@ app::app(void)
   GLContext = std::make_shared<trgl>(title.c_str());
   layout_set(cfg::WinLayout);
   GLContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
+  init_prog_2d();
   Space = std::make_unique<space>(GLContext);
   TimeStart = std::chrono::system_clock::now();
 
   // Составить список карт в каталоге пользователя
   auto MapsDirs = dirs_list(cfg::user_dir()); // список директорий с картами
   for(auto &P: MapsDirs) { Maps.push_back(map(P, cfg::map_name(P))); }
+
+  load_font_texture();
 
   // настройка текстуры для GUI
   glActiveTexture(GL_TEXTURE2);     // текстура для GUI
@@ -65,25 +124,16 @@ app::app(void)
   /// становится более привычный верхний-левый угол, и загруженные из файла
   /// изображения текстур применяются без дополнительного переворота.
 
-  GLfloat Position[] = { // XY координаты вершин
-    -1.f,-1.f,
-     1.f,-1.f,
-     1.f, 1.f,
+  GLfloat WinData[] = { // XY координаты вершин, UV координаты текстуры
+    -1.f,-1.f, 0.f, 1.f, //3
+     1.f,-1.f, 1.f, 1.f, //4
+     1.f, 1.f, 1.f, 0.f, //2
 
-     1.f, 1.f,
-    -1.f, 1.f,
-    -1.f,-1.f,
+     1.f, 1.f, 1.f, 0.f, //2
+    -1.f, 1.f, 0.f, 0.f, //1
+    -1.f,-1.f, 0.f, 1.f, //3
   };
-
-  GLfloat Texcoord[] = { // UV координаты текстуры
-    0.f, 1.f, //3
-    1.f, 1.f, //4
-    1.f, 0.f, //2
-
-    1.f, 0.f, //2
-    0.f, 0.f, //1
-    0.f, 1.f, //3
-  };
+  int vertex_bytes = sizeof(GLfloat) * 4;
 
   glGenVertexArrays(1, &vao2d);
   glBindVertexArray(vao2d);
@@ -94,21 +144,24 @@ app::app(void)
 
   ProgramWin = std::make_unique<glsl>(Shaders);
   ProgramWin->use();
-
-  vbo VboPosition { GL_ARRAY_BUFFER };
-
-  VboPosition.allocate( sizeof(Position), Position );
-  VboPosition.attrib( ProgramWin->attrib("position"), 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-  vbo VboTexcoord { GL_ARRAY_BUFFER };
-
-  VboTexcoord.allocate( sizeof(Texcoord), Texcoord );
-  VboTexcoord.attrib( ProgramWin->attrib("texcoord"), 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-  //glUniform1i(ProgramWin->uniform("WinTexture"), 1); // Текстурный блок фрейм-буфера - GL_TEXTURE1
-  //glUniform1i(ProgramWin->uniform("WinTexture"), 2); // В зависимости от режима GUI - GL_TEXTURE2
-
+  ProgramWin->AtribsList.push_back(
+    { ProgramWin->attrib("position"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 0 * sizeof(GLfloat) });
+  ProgramWin->AtribsList.push_back(
+    { ProgramWin->attrib("texcoord"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 2 * sizeof(GLfloat) });
   ProgramWin->unuse();
+
+  vbo VboWin { GL_ARRAY_BUFFER };
+  VboWin.allocate( sizeof(WinData), WinData );
+  VboWin.set_attributes(ProgramWin->AtribsList); // настройка положения атрибутов GLSL программы
+
+  std::list<std::pair<GLenum, std::string>> MenuShaders {};
+  MenuShaders.push_back({ GL_VERTEX_SHADER, "assets\\shaders\\menu_vert.glsl" });
+  MenuShaders.push_back({ GL_FRAGMENT_SHADER, "assets\\shaders\\menu_frag.glsl" });
+  PrograMenu = std::make_unique<glsl>(MenuShaders);
+  PrograMenu->AtribsList = ProgramWin->AtribsList;
+  PrograMenu->use();
+  PrograMenu->unuse();
+
   glBindVertexArray(0);
 }
 
@@ -236,28 +289,6 @@ void app::row_text(size_t, uint, uint, uint, uint, const std::string&)
 
 
 ///
-/// \brief gui::draw_list_select
-/// \details Отображение списка выбора
-///
-void app::select_list(uint lx, uint ly, uint lw, uint lh)
-{
-  image ListImg {lw, lh, {0xDD, 0xDD, 0xDD, 0xFF}};             // изображение списка
-  ListImg.put(MainMenu, lx, ly);
-
-  uint rh = TextureFont.get_cell_height() * 1.5f;     // высота строки
-  uint rw = lw - 4;                               // ширина строки
-  uint max_rows = (lh - 4) / (rh + 2);            // число строк, которое может поместиться в списке
-
-  uint id = 0;
-  for(auto& Item: Maps)
-  {
-    row_text(id + 1, lx + 2, ly + id * (rh + 2) + 2, rw, rh, Item.Name);
-    if(++id > max_rows) break;
-  }
-}
-
-
-///
 /// \brief gui::cancel Отмена текущего режима
 ///
 void app::cancel(void)
@@ -270,7 +301,6 @@ void app::cancel(void)
     case GUI_3D_MODE:
       cfg::map_view_save(Space->ViewFrom, Space->look_dir);
       GuiMode = GUI_MENU_LSELECT;
-      Cursor3D[2] = 0.0f;                      // Спрятать прицел
       GLContext->cursor_restore();             // Включить указатель мыши
       GLContext->set_cursor_observer(*this);   // переключить обработчик смещения курсора
       GLContext->set_button_observer(*this);   // обработчик кнопок мыши
@@ -411,7 +441,6 @@ void app::map_open(uint map_id)
   cfg::map_view_load(Maps[map_id].Folder, Space->ViewFrom, Space->look_dir);
   Space->map_load();     // Загрузка карты занимает некоторое время
   Space->enable();
-  Cursor3D[2] = 4.0f;    // Активировать прицел
   GuiMode = GUI_3D_MODE;
 }
 
@@ -456,6 +485,7 @@ void app::menu_map_create(void)
 ///
 void app::update_gui_image(void)
 {
+  glActiveTexture(GL_TEXTURE2);
   glBindTexture(GL_TEXTURE_2D, texture_gui);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                static_cast<GLint>(Layout.width),
@@ -519,19 +549,31 @@ void app::show(void)
 ///
 void app::AppWin_render(void)
 {
-  ProgramWin->use();
-  // Текстура GUI - GL_TEXTURE2
-  if(GuiMode != GUI_3D_MODE) glUniform1i(ProgramWin->uniform("WinTexture"), 2);
-  // Текстурный блок фрейм-буфера - GL_TEXTURE1
-  else glUniform1i(ProgramWin->uniform("WinTexture"), 1);
+  if(GuiMode == GUI_3D_MODE)
+  {
+    ProgramWin->use();
+    glUniform1i(ProgramWin->uniform("WinTexture"), 1); // Текстура GUI - GL_TEXTURE2
+    glBindVertexArray(vao2d);
+    glDisable(GL_DEPTH_TEST);
+    vbo_mtx.lock();
+    ProgramWin->set_uniform("Cursor", Cursor3D);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    vbo_mtx.unlock();
+    ProgramWin->unuse();
+  }
+  else
+  {
+    PrograMenu->use();
+    glUniform1i(PrograMenu->uniform("WinTexture"), 2); // Текстура фрейм-буфера - GL_TEXTURE1
+    glBindVertexArray(vao2d);
+    glDisable(GL_DEPTH_TEST);
+    vbo_mtx.lock();
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    vbo_mtx.unlock();
+    PrograMenu->unuse();
+  }
 
-  glBindVertexArray(vao2d);
-  glDisable(GL_DEPTH_TEST);
-  vbo_mtx.lock();
-  ProgramWin->set_uniform("Cursor", Cursor3D);
-  glDrawArrays(GL_TRIANGLES, 0, 6);
-  vbo_mtx.unlock();
-  ProgramWin->unuse();
+
 }
 
 
@@ -665,7 +707,6 @@ void app::focus_lost_event()
   {
      cfg::map_view_save(Space->ViewFrom, Space->look_dir);
      GuiMode = GUI_MENU_LSELECT;
-     Cursor3D[2] = 0.0f;                      // Спрятать прицел
      GLContext->cursor_restore();            // Включить указатель мыши
      GLContext->set_cursor_observer(*this);  // переключить обработчик смещения курсора
      GLContext->set_button_observer(*this);  // обработчик кнопок мыши

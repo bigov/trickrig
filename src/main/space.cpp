@@ -143,8 +143,7 @@ space::space(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   init_prog_3d();
-  init_prog_2d();
-
+  //init_prog_2d();
 
   // настройка рендер-буфера
   GLsizei width, height;
@@ -153,8 +152,7 @@ space::space(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
   RenderBuffer = std::make_unique<frame_buffer> ();
   if(!RenderBuffer->init(width, height)) ERR("Error on creating Render Buffer.");
 
-  // загрузка текстур
-  load_textures();
+  load_surf_textures(); // загрузка текстурной карты поверхностей
 
   OGLContext->add_size_observer(*this); //пересчет при изменении размера
 
@@ -176,7 +174,7 @@ void space::init_prog_3d(void)
 
   // Заполнить список атрибутов GLSL программы
   Program3d->AtribsList.push_back(
-    { Program3d->attrib("position"), 3, GL_FLOAT, GL_FALSE,bytes_per_vertex, 0 * sizeof(GLfloat) });
+    { Program3d->attrib("position"), 3, GL_FLOAT,GL_FALSE, bytes_per_vertex, 0 * sizeof(GLfloat) });
   Program3d->AtribsList.push_back(
     { Program3d->attrib("color"),    4, GL_FLOAT, GL_TRUE, bytes_per_vertex, 3 * sizeof(GLfloat) });
   Program3d->AtribsList.push_back(
@@ -187,33 +185,6 @@ void space::init_prog_3d(void)
   glUniform1i(Program3d->uniform("texture_0"), 0);  // glActiveTexture(GL_TEXTURE0)
 
   Program3d->unuse();
-}
-
-
-///
-/// \brief space::init_prog_hud
-///
-void space::init_prog_2d(void)
-{
-  std::list<std::pair<GLenum, std::string>> Shaders {};
-  Shaders.push_back({ GL_VERTEX_SHADER, "assets\\shaders\\2d_vert.glsl" });
-  Shaders.push_back({ GL_FRAGMENT_SHADER, "assets\\shaders\\2d_frag.glsl" });
-
-  Program2d = std::make_unique<glsl>(Shaders);
-  Program2d->use();
-
-  // VBO2d_base
-  GLsizei stride = sizeof(GLfloat) * 6;
-  Program2d->AtribsList.push_back({Program2d->attrib("vCoordXY"), 2, GL_FLOAT, GL_TRUE, stride, 0 * sizeof(GLfloat)});
-  Program2d->AtribsList.push_back({Program2d->attrib("vColor"), 4, GL_FLOAT, GL_TRUE, stride, 2 * sizeof(GLfloat)});
-
-  // VBO2d_uv
-  Program2d->AtribsList.push_back({Program2d->attrib("vCoordUV"), 2, GL_FLOAT, GL_TRUE, 0, 0});
-
-  glUniform1i(Program2d->uniform("font_texture"), 4);  // glActiveTexture(GL_TEXTURE4)
-
-  Program2d->unuse();
-
 }
 
 
@@ -377,7 +348,7 @@ void space::map_load(void)
 /// \param index
 /// \param fname
 ///
-void space::load_textures(void)
+void space::load_surf_textures(void)
 {
   // Загрузка текстур поверхностей воксов
   glActiveTexture(GL_TEXTURE0);
@@ -398,26 +369,6 @@ void space::load_textures(void)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-  // Текстура шрифтов
-  glActiveTexture(GL_TEXTURE4);
-  glGenTextures(1, &texture_font);
-  glBindTexture(GL_TEXTURE_2D, texture_font);
-
-  level_of_details = 0;
-  frame = 0;
-
-  GLint internalFormat = GL_RED; // Number of color components provided by source image
-  GLenum format = GL_RGBA;       // The format, how the image is represented in memory
-
-  glTexImage2D(GL_TEXTURE_2D, level_of_details, internalFormat,
-               static_cast<GLsizei>(TextureFont.get_width()),
-               static_cast<GLsizei>(TextureFont.get_height()),
-               frame, format, GL_UNSIGNED_BYTE, TextureFont.uchar_t());
-
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-  glGenerateMipmap(GL_TEXTURE_2D);
 }
 
 

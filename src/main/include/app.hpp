@@ -50,8 +50,9 @@ class app: public interface_gl_context
     };
 
     std::shared_ptr<trgl> GLContext = nullptr;
-    static std::unique_ptr<glsl> ProgramWin;           // Шейдерная программа GUI
-    static glm::vec3 Cursor3D;          // положение и размер прицела
+    static std::unique_ptr<glsl> ProgramWin; // Шейдерная программа GUI
+    static std::unique_ptr<glsl> PrograMenu; // Шейдерная программа GUI
+    static glm::vec3 Cursor3D;               // положение и размер прицела
 
     int scancode = -1;
     int mods = -1;
@@ -86,7 +87,6 @@ class app: public interface_gl_context
     void title(const std::string& title);
     void input_text_line(const atlas& _Fn);
     static void row_text(size_t id, uint x, uint y, uint w, uint h, const std::string &);
-    static void select_list(uint x, uint y, uint w, uint h);
     void menu_map_create(void);
     static void menu_select(void);
     static void menu_start(void);

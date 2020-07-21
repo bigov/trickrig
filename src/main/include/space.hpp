@@ -16,6 +16,8 @@ using sys_clock = std::chrono::system_clock;
 
 namespace tr
 {
+  extern std::unique_ptr<glsl> Program2d; // построение 2D элементов
+
   class space: public interface_gl_context
   {
     public:
@@ -35,8 +37,6 @@ namespace tr
       int FPS = 500;     // частота кадров (для коррекции скорости движения)
 
       GLuint texture_3d = 0;
-      GLuint texture_font = 0;
-
       void map_load(void);
 
     private:
@@ -50,7 +50,6 @@ namespace tr
 
       std::shared_ptr<trgl>& OGLContext;         // основное окно приложения
       std::unique_ptr<glsl> Program3d = nullptr; // построение 3D пространства
-      std::unique_ptr<glsl> Program2d = nullptr; // построение HUD
 
       static const GLsizei uv_data_size = sizeof(float) * 8; // размер блока UV данных (4 вершины по 2 координаты)
       struct {
@@ -125,12 +124,12 @@ namespace tr
         ViewTo {};                // направление взгляда
 
       void calc_render_time(void);
-      void load_textures(void);
+      void load_surf_textures(void);
       void calc_position(void);
       void init_buffers(void);
 
       void init_prog_3d(void);
-      void init_prog_2d(void);
+      //void init_prog_2d(void);
 
       void hud_init(void);
       void hud_update(void);
