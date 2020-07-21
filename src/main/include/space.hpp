@@ -44,21 +44,23 @@ namespace tr
       space(const space &);
       space operator=(const space &);
 
-      vbo VBOdata3d { GL_ARRAY_BUFFER };         // Буфер данных
-      vbo VBOdata2d { GL_ARRAY_BUFFER };         // Буфер текста
+      vbo VBO3d      { GL_ARRAY_BUFFER }; // Буфер данных
+      vbo VBO2d_base { GL_ARRAY_BUFFER }; // Буфер текста (координаты и цвет вершин)
+      vbo VBO2d_txuv   { GL_ARRAY_BUFFER }; // Буфер текста (текстурные координаты)
 
       std::shared_ptr<trgl>& OGLContext;         // основное окно приложения
       std::unique_ptr<glsl> Program3d = nullptr; // построение 3D пространства
       std::unique_ptr<glsl> Program2d = nullptr; // построение HUD
 
+      static const GLsizei uv_data_size = sizeof(float) * 8; // размер блока UV данных (4 вершины по 2 координаты)
       struct {
         uint height = 48;
         uchar_color bg_color {0x00, 0x88, 0x00, 0x40}; // Фон панели HUD
         GLuint texture_id = 0;                         // ID HUD текстуры в GPU
-        GLsizei indices = 0; //number of indices
-        GLsizei indices_per_quad = 6;
-        GLsizei digits_per_quad = 32; // 4 вершины по 8 цифр (x,y,r,g,b,a,u,v)
-        GLsizei fps_data_start = 4 * digits_per_quad * sizeof(float); // цифры счетчика fps начинаются с 4-й позиции
+        GLsizei indices = 0;                           //number of indices
+        const GLsizei indices_per_quad = 6;
+        const GLsizei digits_per_quad = 32;            // 4 вершины по 8 цифр (x,y,r,g,b,a,u,v)
+        const GLsizei fps_uv_data = uv_data_size * 5;  // цифры счетчика fps начинаются с 5-й позиции
       } HUD;
 
       GLuint vao_3d = 0;

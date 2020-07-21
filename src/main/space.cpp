@@ -51,6 +51,24 @@ std::array<float, 4> char_uv(const std::string& Sym)
 
 
 ///
+/// \brief uv_data_create
+/// \param Text
+/// \return UV array
+///
+std::vector<float> uv_data_create(const std::string& Text = " ")
+{
+  std::vector<float> UV {};
+  std::vector<std::string> SymbolsUTF8 = string2vector(Text);
+  for(const auto& Symbol: SymbolsUTF8)
+  {
+    auto T = char_uv(Symbol);
+    UV.insert(UV.end(),{ T[0], T[1], T[2], T[1], T[2], T[3], T[0], T[3] });
+  }
+  return UV;
+}
+
+
+///
 /// \brief buffer_data_create
 /// \param win_w
 /// \param win_h
@@ -177,9 +195,6 @@ void space::init_prog_3d(void)
 ///
 void space::init_prog_2d(void)
 {
-  static const GLsizeiptr digits_per_dot = 8;
-  static const GLsizeiptr bytes_per_dot = digits_per_dot * sizeof(GLfloat);
-
   std::list<std::pair<GLenum, std::string>> Shaders {};
   Shaders.push_back({ GL_VERTEX_SHADER, "assets\\shaders\\2d_vert.glsl" });
   Shaders.push_back({ GL_FRAGMENT_SHADER, "assets\\shaders\\2d_frag.glsl" });
@@ -187,9 +202,13 @@ void space::init_prog_2d(void)
   Program2d = std::make_unique<glsl>(Shaders);
   Program2d->use();
 
-  Program2d->AtribsList.push_back({Program2d->attrib("vCoordXY"), 2, GL_FLOAT, GL_TRUE, bytes_per_dot, 0 * sizeof(GLfloat)});
-  Program2d->AtribsList.push_back({Program2d->attrib("vColor"), 4, GL_FLOAT, GL_TRUE, bytes_per_dot, 2 * sizeof(GLfloat)});
-  Program2d->AtribsList.push_back({Program2d->attrib("vCoordUV"), 2, GL_FLOAT, GL_TRUE, bytes_per_dot, 6 * sizeof(GLfloat)});
+  // VBO2d_base
+  GLsizei stride = sizeof(GLfloat) * 6;
+  Program2d->AtribsList.push_back({Program2d->attrib("vCoordXY"), 2, GL_FLOAT, GL_TRUE, stride, 0 * sizeof(GLfloat)});
+  Program2d->AtribsList.push_back({Program2d->attrib("vColor"), 4, GL_FLOAT, GL_TRUE, stride, 2 * sizeof(GLfloat)});
+
+  // VBO2d_uv
+  Program2d->AtribsList.push_back({Program2d->attrib("vCoordUV"), 2, GL_FLOAT, GL_TRUE, 0, 0});
 
   glUniform1i(Program2d->uniform("font_texture"), 4);  // glActiveTexture(GL_TEXTURE4)
 
@@ -197,6 +216,37 @@ void space::init_prog_2d(void)
 
 }
 
+
+std::vector<float> get_uv_data(const std::vector<float>& V)
+{
+  std::vector<float> result {};
+
+  for(size_t i = 0; i < V.size();)
+  {
+    i += 6; // x, y, r, g, b,a - pass
+    result.push_back(V[i++]); // u
+    result.push_back(V[i++]); // v
+  }
+  return result;
+}
+
+
+std::vector<float> get_base_data(const std::vector<float>& V)
+{
+  std::vector<float> result {};
+
+  for(size_t i = 0; i < V.size();)
+  {
+    result.push_back(V[i++]); // x
+    result.push_back(V[i++]); // y
+    result.push_back(V[i++]); // r
+    result.push_back(V[i++]); // g
+    result.push_back(V[i++]); // b
+    result.push_back(V[i++]); // a
+    i += 2; // u,v - pass
+  }
+  return result;
+}
 
 ///
 /// \brief space::init_buffers
@@ -209,8 +259,8 @@ void space::init_buffers(void)
 
   // Число сторон куба в объеме с длиной стороны LOD (2*dist_xx) элементов:
   uint n = static_cast<uint>(pow((border_dist_b4 + border_dist_b4 + 1), 3));
-  VBOdata3d.allocate(n * bytes_per_face);          // Размер данных VBO для размещения сторон вокселей:
-  VBOdata3d.set_attributes(Program3d->AtribsList); // настройка положения атрибутов GLSL программы
+  VBO3d.allocate(n * bytes_per_face);          // Размер данных VBO для размещения сторон вокселей:
+  VBO3d.set_attributes(Program3d->AtribsList); // настройка положения атрибутов GLSL программы
 
   // Так как все четырехугольники сторон индексируются одинаково, то индексный массив
   // заполняем один раз "под завязку" и забываем про него. Число используемых индексов
@@ -244,13 +294,24 @@ void space::init_buffers(void)
     HUD.bg_color.a/255.f
   };
   auto V = buffer_data_create(width, height, 0, height - HUD.height, width, HUD.height, C);
-  auto FPS = buffer_data_create(width, height, 2, height - 16, 14, 14, C, "FPS:0000");
-  V.insert(V.begin(), FPS.begin(), FPS.end());
+  auto FPS = buffer_data_create(width, height, 2, height - 16, 14, 14, {0,0,0,0}, "FPS:0000");
 
-  VBOdata2d.allocate(V.size() * sizeof(float), V.data());
+  V.insert(V.end(), FPS.begin(), FPS.end());
+
   HUD.indices = V.size() / HUD.digits_per_quad * HUD.indices_per_quad;
 
-  VBOdata2d.set_attributes(Program2d->AtribsList);
+  auto V_Base = get_base_data(V);
+  auto V_TxUV = get_uv_data(V);
+
+  VBO2d_base.allocate(V_Base.size() * sizeof(float), V_Base.data());
+  VBO2d_txuv.allocate(V_TxUV.size() * sizeof(float), V_TxUV.data());
+
+  auto A = Program2d->AtribsList.begin();
+  VBO2d_base.attrib(A->index, A->d_size, A->type, A->normalized, A->stride, A->pointer);
+  ++A;
+  VBO2d_base.attrib(A->index, A->d_size, A->type, A->normalized, A->stride, A->pointer);
+  ++A;
+  VBO2d_txuv.attrib(A->index, A->d_size, A->type, A->normalized, A->stride, A->pointer);
 
   // Очередность обхода вершин такая-же, как и при построении 3D элементов,
   // поэтому в "vao_2d" можно использовать один общий с "vao_3d" индексный буфер
@@ -300,7 +361,7 @@ void space::map_load(void)
 {
   render_indices.store(0);
   // Поток обмена данными с базой
-  data_loader = std::make_unique<std::thread>(db_control, OGLContext, ViewFrom, VBOdata3d.get_id(), VBOdata3d.get_size());
+  data_loader = std::make_unique<std::thread>(db_control, OGLContext, ViewFrom, VBO3d.get_id(), VBO3d.get_size());
 }
 
 
@@ -472,6 +533,7 @@ void space::render(void)
   Program3d->unuse();
 
   // Построение 2D элементов HUD
+  glDisable(GL_DEPTH_TEST);
   glBindVertexArray(vao_2d);
   Program2d->use();
   for(const auto& A: Program2d->AtribsList) glEnableVertexAttribArray(A.index);
@@ -655,9 +717,9 @@ void space::hud_update(void)
   // счетчик FPS
   char line[5] = {'\0'};                                // длина строки с '\0'
   std::sprintf(line, "%.4i", FPS);
-  auto FpsVector = buffer_data_create(width, height, 2+14*4, height - 16, 14, 14, {1}, line);
-  glBindBuffer(GL_ARRAY_BUFFER, VBOdata2d.get_id());
-  glBufferSubData(GL_ARRAY_BUFFER, HUD.fps_data_start, FpsVector.size() * sizeof (float), FpsVector.data());
+  auto FpsUV = uv_data_create(line);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO2d_txuv.get_id());
+  glBufferSubData(GL_ARRAY_BUFFER, HUD.fps_uv_data, FpsUV.size() * sizeof (float), FpsUV.data());
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
   // Координаты в пространстве
