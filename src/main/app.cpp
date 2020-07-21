@@ -19,7 +19,7 @@ int         app::mouse_left = EMPTY;   // нажатие на левую кно�
 std::unique_ptr<space> app::Space = nullptr;
 app::GUI_MODES app::GuiMode = GUI_MENU_START;    // режим окна приложения
 glm::vec3 app::Cursor3D = { 200.f, 200.f, 0.f }; // положение и размер прицела
-std::unique_ptr<glsl> app::Program2d = nullptr;  // Шейдерная программа GUI
+std::unique_ptr<glsl> app::ProgramWin = nullptr;  // Шейдерная программа GUI
 
 GLuint app::vao2d  = 0;
 
@@ -93,25 +93,23 @@ app::app(void)
   Shaders.push_back({ GL_VERTEX_SHADER, cfg::app_key(SHADER_VERT_SCREEN) });
   Shaders.push_back({ GL_FRAGMENT_SHADER, cfg::app_key(SHADER_FRAG_SCREEN) });
 
-  Program2d = std::make_unique<glsl>(Shaders);
-  Program2d->use();
+  ProgramWin = std::make_unique<glsl>(Shaders);
+  ProgramWin->use();
 
   vbo VboPosition { GL_ARRAY_BUFFER };
 
   VboPosition.allocate( sizeof(Position), Position );
-  VboPosition.attrib( Program2d->attrib("position"),
-      2, GL_FLOAT, GL_FALSE, 0, 0);
+  VboPosition.attrib( ProgramWin->attrib("position"), 2, GL_FLOAT, GL_FALSE, 0, 0);
 
   vbo VboTexcoord { GL_ARRAY_BUFFER };
 
   VboTexcoord.allocate( sizeof(Texcoord), Texcoord );
-  VboTexcoord.attrib( Program2d->attrib("texcoord"),
-      2, GL_FLOAT, GL_FALSE, 0, 0);
+  VboTexcoord.attrib( ProgramWin->attrib("texcoord"), 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-  glUniform1i(Program2d->uniform("texture_1"), 1); // Текстурный блок фрейм-буфера - glActiveTecsture(GL_TEXTURE1)
-  glUniform1i(Program2d->uniform("texture_2"), 2); // В зависимости от режима HUD или GUI - glActiveTecsture(GL_TEXTURE2)
+  glUniform1i(ProgramWin->uniform("texture_1"), 1); // Текстурный блок фрейм-буфера - glActiveTecsture(GL_TEXTURE1)
+  glUniform1i(ProgramWin->uniform("texture_2"), 2); // В зависимости от режима HUD или GUI - glActiveTecsture(GL_TEXTURE2)
 
-  Program2d->unuse();
+  ProgramWin->unuse();
   glBindVertexArray(0);
 }
 
@@ -466,6 +464,7 @@ void app::update_gui_image(void)
                0, GL_RGBA, GL_UNSIGNED_BYTE, MainMenu.uchar_t());
 }
 
+GLuint hud_texture_id = 0;
 
 ///
 /// \brief Создание элементов интерфейса окна
@@ -491,6 +490,16 @@ void app::show(void)
   GLContext->add_size_observer(*this);      // размер окна
   GLContext->set_close_observer(*this);     // закрытие окна
   GLContext->set_focuslost_observer(*this); // потеря окном фокуса ввода
+
+  // Настройка текстуры для отрисовки HUD
+  glActiveTexture(GL_TEXTURE2);
+  glGenTextures(1, &hud_texture_id);
+  glBindTexture(GL_TEXTURE_2D, hud_texture_id);
+  image H {1, 1, {0, 0, 0, 0}};
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, H.uchar_t());
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glBindTexture(GL_TEXTURE_2D, 0);
 
   menu_start();
 
@@ -523,23 +532,21 @@ void app::show(void)
 ///
 void app::AppWin_render(void)
 {
-
   glActiveTexture(GL_TEXTURE2);
 
-  if(GuiMode == GUI_3D_MODE) {
-    //glBindTexture(GL_TEXTURE_2D, Space->HUD.texture_id);
-  } else {
+  if(GuiMode == GUI_3D_MODE)
+    glBindTexture(GL_TEXTURE_2D, hud_texture_id);
+  else
     glBindTexture(GL_TEXTURE_2D, texture_gui);  // рендер GUI меню
-  }
 
   glBindVertexArray(vao2d);
   glDisable(GL_DEPTH_TEST);
-  Program2d->use();
+  ProgramWin->use();
   vbo_mtx.lock();
-  Program2d->set_uniform("Cursor", Cursor3D);
+  ProgramWin->set_uniform("Cursor", Cursor3D);
   glDrawArrays(GL_TRIANGLES, 0, 6);
   vbo_mtx.unlock();
-  Program2d->unuse();
+  ProgramWin->unuse();
 }
 
 

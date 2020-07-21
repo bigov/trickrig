@@ -293,9 +293,16 @@ void space::init_buffers(void)
     HUD.bg_color.b/255.f,
     HUD.bg_color.a/255.f
   };
-  auto V = buffer_data_create(width, height, 0, height - HUD.height, width, HUD.height, C);
-  auto FPS = buffer_data_create(width, height, 2, height - 16, 14, 14, {0,0,0,0}, "FPS:0000");
+  auto V = buffer_data_create(width, height, 0, height - HUD.height, width, HUD.height, C); // зеленая панель внизу экрана
+  auto FPS = buffer_data_create(width, height, 0, 0, 60, 18, {1.f, 1.f, 1.f, 0.4f});        // фон индикатора
+  V.insert(V.end(), FPS.begin(), FPS.end());
 
+  FPS.clear();
+  FPS = buffer_data_create(width, height, 2, 3, 7, 14, {0,0,0,0}, "FPS:0000");
+  V.insert(V.end(), FPS.begin(), FPS.end());
+
+  FPS.clear();
+  FPS = buffer_data_create(width, height, 2, 20, 7, 14, {0,0,0,0}, "X:+000.0, Y:+000.0, Z:+000.0, A:+0.000, T:+0.000");
   V.insert(V.end(), FPS.begin(), FPS.end());
 
   HUD.indices = V.size() / HUD.digits_per_quad * HUD.indices_per_quad;
@@ -391,15 +398,6 @@ void space::load_textures(void)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-  // Настройка текстуры для отрисовки HUD
-  glActiveTexture(GL_TEXTURE2);
-  glGenTextures(1, &(HUD.texture_id));
-  glBindTexture(GL_TEXTURE_2D, HUD.texture_id);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glBindTexture(GL_TEXTURE_2D, 0);
-
 
   // Текстура шрифтов
   glActiveTexture(GL_TEXTURE4);
@@ -691,14 +689,7 @@ void space::hud_init(void)
   GLsizei width, height;
   OGLContext->get_frame_size(&width, &height);
 
-  glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_2D, HUD.texture_id);
-
-  image H {static_cast<uint>(width), static_cast<uint>(height), {0,0,0,0}};
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height,
-           0, GL_RGBA, GL_UNSIGNED_BYTE, H.uchar_t());
-
-  // Панель инструментов для HUD в нижней части окна
+  // Размер панель инструментов HUD в нижней части окна
   int hud_height = 48;
   if(hud_height > height) HUD.height = 0;   // не может быть выше GuiImg
   else HUD.height = 48;
@@ -718,28 +709,32 @@ void space::hud_update(void)
   char line[5] = {'\0'};                                // длина строки с '\0'
   std::sprintf(line, "%.4i", FPS);
   auto FpsUV = uv_data_create(line);
-  glBindBuffer(GL_ARRAY_BUFFER, VBO2d_txuv.get_id());
-  glBufferSubData(GL_ARRAY_BUFFER, HUD.fps_uv_data, FpsUV.size() * sizeof (float), FpsUV.data());
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-  // Координаты в пространстве
-  uint c_length = 60;               // количество символов в надписи
-  image Coord {c_length * TextureFont.get_cell_width() + 4, TextureFont.get_cell_height() + 2, HUD.bg_color};
   char ln[60];                       // длина строки с '\0'
   std::sprintf(ln, "X:%+06.1f, Y:%+06.1f, Z:%+06.1f, a:%+04.3f, t:%+04.3f",
                   ViewFrom->x, ViewFrom->y, ViewFrom->z, look_dir[0], look_dir[1]);
-  textstring_place(TextureFont, ln, Coord, 2, 1);
+  auto Location = uv_data_create(ln);
 
-  vbo_mtx.lock();
-  glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_2D, HUD.texture_id);
+  glBindBuffer(GL_ARRAY_BUFFER, VBO2d_txuv.get_id());
+  glBufferSubData(GL_ARRAY_BUFFER, HUD.fps_uv_data, FpsUV.size() * sizeof(float), FpsUV.data());
+  glBufferSubData(GL_ARRAY_BUFFER, HUD.location_uv_data, Location.size() * sizeof(float), Location.data());
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-  glTexSubImage2D(GL_TEXTURE_2D, 0, 2, 2,            // top, left
-                static_cast<GLsizei>(Coord.get_width()),  // width
-                static_cast<GLsizei>(Coord.get_height()),  // height
-                GL_RGBA, GL_UNSIGNED_BYTE,           // mode
-                Coord.uchar_t());                      // data
-  vbo_mtx.unlock();
+  // Координаты в пространстве
+//  uint c_length = 60;               // количество символов в надписи
+//  image Coord {c_length * TextureFont.get_cell_width() + 4, TextureFont.get_cell_height() + 2, HUD.bg_color};
+//  textstring_place(TextureFont, ln, Coord, 2, 1);
+//
+//  vbo_mtx.lock();
+//  glActiveTexture(GL_TEXTURE2);
+//  glBindTexture(GL_TEXTURE_2D, HUD.texture_id);
+//
+//  glTexSubImage2D(GL_TEXTURE_2D, 0, 2, 60,            // left, top
+//                static_cast<GLsizei>(Coord.get_width()),  // width
+//                static_cast<GLsizei>(Coord.get_height()),  // height
+//                GL_RGBA, GL_UNSIGNED_BYTE,           // mode
+//                Coord.uchar_t());                      // data
+//  vbo_mtx.unlock();
 }
 
 

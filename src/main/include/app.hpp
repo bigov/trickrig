@@ -50,7 +50,7 @@ class app: public interface_gl_context
     };
 
     std::shared_ptr<trgl> GLContext = nullptr;
-    static std::unique_ptr<glsl> Program2d;           // Шейдерная программа GUI
+    static std::unique_ptr<glsl> ProgramWin;           // Шейдерная программа GUI
     static glm::vec3 Cursor3D;          // положение и размер прицела
 
     int scancode = -1;

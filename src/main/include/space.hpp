@@ -56,11 +56,11 @@ namespace tr
       struct {
         uint height = 48;
         uchar_color bg_color {0x00, 0x88, 0x00, 0x40}; // Фон панели HUD
-        GLuint texture_id = 0;                         // ID HUD текстуры в GPU
         GLsizei indices = 0;                           //number of indices
         const GLsizei indices_per_quad = 6;
         const GLsizei digits_per_quad = 32;            // 4 вершины по 8 цифр (x,y,r,g,b,a,u,v)
-        const GLsizei fps_uv_data = uv_data_size * 5;  // цифры счетчика fps начинаются с 5-й позиции
+        const GLsizei fps_uv_data = uv_data_size * 6;  // цифры счетчика fps начинаются
+        const GLsizei location_uv_data = uv_data_size * 10;  // цифры положения камеры
       } HUD;
 
       GLuint vao_3d = 0;
