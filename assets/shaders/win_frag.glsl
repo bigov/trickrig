@@ -1,8 +1,7 @@
 #version 330
 
 in vec2 Texcoord;
-uniform sampler2D texture_1; // 3D сцена
-uniform sampler2D texture_2; // 2D HUD
+uniform sampler2D WinTexture; // 3D сцена
 uniform vec3 Cursor;         // x,y - 2d координаты; z - длина стороны курсора
 
 out vec4 FragColor;
@@ -11,10 +10,8 @@ void main(void)
 {
   float thickness = 1.5f; // Толщина линий курсора
 
-  vec4 tex_space = texture(texture_1, Texcoord);
-  vec4 tex_hud = texture(texture_2, Texcoord);
-
-  FragColor = mix(tex_space, tex_hud, tex_hud.a);
+  FragColor = texture2D(WinTexture, Texcoord); // "texture2D()" - deprecated
+  //FragColor = texture(WinTexture, Texcoord); // recommended using "texture()"
 
   // Формирование курсора c длиной стороны, равной Cursor.z
   // в точке с координатами (Cursor.x; Cursor.y)

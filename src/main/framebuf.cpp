@@ -2,6 +2,10 @@
  * filename: framebuf.cpp
  *
  * Класс управления фрейм-буфером
+ *
+ *  glActiveTexture(GL_TEXTURE1); // текстура для рендера 3D пространства
+ *  glActiveTexture(GL_TEXTURE3); // текстура идентификации примитивов
+ *
  */
 
 #include "framebuf.hpp"
@@ -71,6 +75,7 @@ GLuint gl_texture::id(void) const
 ///
 bool frame_buffer::init(GLsizei w, GLsizei h)
 {
+
   glGenFramebuffers(1, &id);
   glBindFramebuffer(GL_FRAMEBUFFER, id);
 
@@ -149,7 +154,7 @@ void frame_buffer::read_pixel(GLint x, GLint y, void* pixel_data)
 ///
 void frame_buffer::unbind(void)
 {
-  glBindTexture(GL_TEXTURE_2D, 0);
+  //glBindTexture(GL_TEXTURE_2D, 0);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }

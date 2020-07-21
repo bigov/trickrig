@@ -720,21 +720,6 @@ void space::hud_update(void)
   glBufferSubData(GL_ARRAY_BUFFER, HUD.location_uv_data, Location.size() * sizeof(float), Location.data());
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-  // Координаты в пространстве
-//  uint c_length = 60;               // количество символов в надписи
-//  image Coord {c_length * TextureFont.get_cell_width() + 4, TextureFont.get_cell_height() + 2, HUD.bg_color};
-//  textstring_place(TextureFont, ln, Coord, 2, 1);
-//
-//  vbo_mtx.lock();
-//  glActiveTexture(GL_TEXTURE2);
-//  glBindTexture(GL_TEXTURE_2D, HUD.texture_id);
-//
-//  glTexSubImage2D(GL_TEXTURE_2D, 0, 2, 60,            // left, top
-//                static_cast<GLsizei>(Coord.get_width()),  // width
-//                static_cast<GLsizei>(Coord.get_height()),  // height
-//                GL_RGBA, GL_UNSIGNED_BYTE,           // mode
-//                Coord.uchar_t());                      // data
-//  vbo_mtx.unlock();
 }
 
 
