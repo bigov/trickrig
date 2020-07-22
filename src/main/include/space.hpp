@@ -16,7 +16,8 @@ using sys_clock = std::chrono::system_clock;
 
 namespace tr
 {
-  extern std::unique_ptr<glsl> Program2d; // построение 2D элементов
+  extern std::unique_ptr<glsl> Program2d;            // построение 2D элементов
+  extern std::unique_ptr<frame_buffer> RenderBuffer; // рендер-буфер окна
 
   class space: public interface_gl_context
   {
@@ -24,7 +25,7 @@ namespace tr
       space(std::shared_ptr<trgl>& OpenGLContext);
       ~space(void);
 
-      void enable(void);
+      void load(void);
       void render(void);
 
       virtual void resize_event(int width, int height);
@@ -37,7 +38,6 @@ namespace tr
       int FPS = 500;     // частота кадров (для коррекции скорости движения)
 
       GLuint texture_3d = 0;
-      void map_load(void);
 
     private:
       std::unique_ptr<std::thread> data_loader = nullptr;
@@ -65,7 +65,6 @@ namespace tr
       GLuint vao_3d = 0;
       GLuint vao_2d = 0;
 
-      bool ready = false;
       float cursor_dx = 0.f; // Cмещение мыши в активном окне между кадрами
       float cursor_dy = 0.f; // в режиме 3D (режим прицела) при скрытом курсоре.
       double xpos = 0.0;     // позиция указателя относительно левой границы
@@ -95,7 +94,6 @@ namespace tr
       const float up_max = hPi - 0.001f;   // Максимальный угол вверх
       const float down_max = -up_max;      // Максимальный угол вниз
 
-      std::unique_ptr<frame_buffer> RenderBuffer = nullptr; // рендер-буфер окна
       double frame_time;            // время (в секундах) на рендер кадра
 
       glm::vec3 light_direction {}; // направление освещения

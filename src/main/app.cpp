@@ -24,7 +24,8 @@ std::unique_ptr<glsl> app::PrograMenu = nullptr; // Шейдерная прог�
 
 GLuint app::vao2d  = 0;
 
-std::unique_ptr<glsl> Program2d = nullptr; // построение 2D элементов
+std::unique_ptr<glsl> Program2d = nullptr;            // построение 2D элементов
+std::unique_ptr<frame_buffer> RenderBuffer = nullptr; // рендер-буфер окна
 
 ///
 /// \brief init_prog_2d
@@ -98,7 +99,13 @@ app::app(void)
   GLContext = std::make_shared<trgl>(title.c_str());
   layout_set(cfg::WinLayout);
   GLContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
-  init_prog_2d();
+
+  init_prog_2d();      // Шейдерная программа для построения 2D элементов пользовательского интерфейса
+  load_font_texture(); // Загрузчик текстуры со шрифтом
+
+  // настройка рендер-буфера
+  RenderBuffer = std::make_unique<frame_buffer>(Layout.width, Layout.height);
+
   Space = std::make_unique<space>(GLContext);
   TimeStart = std::chrono::system_clock::now();
 
@@ -106,15 +113,11 @@ app::app(void)
   auto MapsDirs = dirs_list(cfg::user_dir()); // список директорий с картами
   for(auto &P: MapsDirs) { Maps.push_back(map(P, cfg::map_name(P))); }
 
-  load_font_texture();
-
-  // настройка текстуры для GUI
-  glActiveTexture(GL_TEXTURE2);     // текстура для GUI
+  glActiveTexture(GL_TEXTURE2);     // текстура для GUI (меню приложения)
   glGenTextures(1, &texture_gui);
   glBindTexture(GL_TEXTURE_2D, texture_gui);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  //glBindTexture(GL_TEXTURE_2D, 0);
 
   /// Инициализация GLSL программы обработки текстуры фреймбуфера.
   ///
@@ -148,6 +151,8 @@ app::app(void)
     { ProgramWin->attrib("position"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 0 * sizeof(GLfloat) });
   ProgramWin->AtribsList.push_back(
     { ProgramWin->attrib("texcoord"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 2 * sizeof(GLfloat) });
+  glUniform1i(ProgramWin->uniform("WinTexture"), 1); // GL_TEXTURE1 - фрейм-буфер
+  ProgramWin->set_uniform("Cursor", Cursor3D);
   ProgramWin->unuse();
 
   vbo VboWin { GL_ARRAY_BUFFER };
@@ -160,6 +165,7 @@ app::app(void)
   PrograMenu = std::make_unique<glsl>(MenuShaders);
   PrograMenu->AtribsList = ProgramWin->AtribsList;
   PrograMenu->use();
+  glUniform1i(PrograMenu->uniform("WinTexture"), 2); // GL_TEXTURE2 - пользовательский GUI
   PrograMenu->unuse();
 
   glBindVertexArray(0);
@@ -303,7 +309,7 @@ void app::cancel(void)
       GuiMode = GUI_MENU_LSELECT;
       GLContext->cursor_restore();             // Включить указатель мыши
       GLContext->set_cursor_observer(*this);   // переключить обработчик смещения курсора
-      GLContext->set_button_observer(*this);   // обработчик кнопок мыши
+      GLContext->set_mbutton_observer(*this);   // обработчик кнопок мыши
       GLContext->set_keyboard_observer(*this); // и клавиатуры
       break;
     case GUI_MENU_LSELECT:
@@ -383,6 +389,7 @@ void app::app_close(void)
 void app::menu_start(void)
 {
   MainMenu.init(Layout.width, Layout.height, "New TrickRig");
+
   int x = MainMenu.get_width() / 2 - static_cast<ulong>(button_default_width / 2);
   int y = MainMenu.get_height() / 2;
 
@@ -439,8 +446,7 @@ void app::map_open(uint map_id)
   assert((map_id < Maps.size()) && "Map id out of range");
 
   cfg::map_view_load(Maps[map_id].Folder, Space->ViewFrom, Space->look_dir);
-  Space->map_load();     // Загрузка карты занимает некоторое время
-  Space->enable();
+  Space->load();
   GuiMode = GUI_3D_MODE;
 }
 
@@ -493,6 +499,7 @@ void app::update_gui_image(void)
                0, GL_RGBA, GL_UNSIGNED_BYTE, MainMenu.uchar_t());
 }
 
+
 ///
 /// \brief Создание элементов интерфейса окна
 ///
@@ -511,7 +518,7 @@ void app::show(void)
   GLContext->set_char_observer(*this);      // ввод с клавиатуры
   GLContext->set_error_observer(*this);     // отслеживание ошибок
   GLContext->set_cursor_observer(*this);    // курсор мыши в окне
-  GLContext->set_button_observer(*this);    // кнопки мыши
+  GLContext->set_mbutton_observer(*this);   // кнопки мыши
   GLContext->set_keyboard_observer(*this);  // клавиши клавиатуры
   GLContext->set_position_observer(*this);  // положение окна
   GLContext->add_size_observer(*this);      // размер окна
@@ -522,60 +529,43 @@ void app::show(void)
 
   while(is_open)
   {
-    Space->render(); // рендер 3D сцены
-    AppWin_render(); // прорисовка окна приложения
-
-    // переключить буфер рендера
-    vbo_mtx.lock();
-    GLContext->swap_buffers();
-    vbo_mtx.unlock();
-
-  #ifndef NDEBUG
-    CHECK_OPENGL_ERRORS
-  #endif
-
+    if(GuiMode == GUI_3D_MODE)
+    {
+      Space->render(); // рендер 3D сцены
+      ProgramWin->use();
+      window_frame_render();
+      ProgramWin->unuse();
+    }
+    else
+    {
+      PrograMenu->use();
+      window_frame_render();
+      PrograMenu->unuse();
+    }
   }
 }
 
 
 ///
-/// \brief gui::screen_render
-///
-/// \details Рендер окна с текстурами фреймбуфера и GIU
+/// \brief app::window_frame_render
+/// \details
 /// Кадр сцены рендерится в изображение на (2D) "холсте" фреймбуфера,
-/// после чего это изображение в виде текстуры накладывается на
-/// прямоугольник окна. Курсор и дополнительные (HUD) элементы окна
-/// изображаются как наложеные сверху дополнительные текстуры
+/// или текстуре интерфейса меню. После этого изображение в виде
+/// текстуры накладывается на прямоугольник окна приложения.
 ///
-void app::AppWin_render(void)
+void app::window_frame_render(void)
 {
-  if(GuiMode == GUI_3D_MODE)
-  {
-    ProgramWin->use();
-    glUniform1i(ProgramWin->uniform("WinTexture"), 1); // Текстура GUI - GL_TEXTURE2
-    glBindVertexArray(vao2d);
-    glDisable(GL_DEPTH_TEST);
-    vbo_mtx.lock();
-    ProgramWin->set_uniform("Cursor", Cursor3D);
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    vbo_mtx.unlock();
-    ProgramWin->unuse();
-  }
-  else
-  {
-    PrograMenu->use();
-    glUniform1i(PrograMenu->uniform("WinTexture"), 2); // Текстура фрейм-буфера - GL_TEXTURE1
-    glBindVertexArray(vao2d);
-    glDisable(GL_DEPTH_TEST);
-    vbo_mtx.lock();
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    vbo_mtx.unlock();
-    PrograMenu->unuse();
-  }
+  glDisable(GL_DEPTH_TEST);
+  vbo_mtx.lock();
+  glBindVertexArray(vao2d);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+  GLContext->swap_buffers();
+  vbo_mtx.unlock();
 
-
+#ifndef NDEBUG
+  CHECK_OPENGL_ERRORS
+#endif
 }
-
 
 ///
 /// \brief gui::window_pos_event
@@ -709,7 +699,7 @@ void app::focus_lost_event()
      GuiMode = GUI_MENU_LSELECT;
      GLContext->cursor_restore();            // Включить указатель мыши
      GLContext->set_cursor_observer(*this);  // переключить обработчик смещения курсора
-     GLContext->set_button_observer(*this);  // обработчик кнопок мыши
+     GLContext->set_mbutton_observer(*this);  // обработчик кнопок мыши
   }
 }
 

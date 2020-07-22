@@ -143,17 +143,7 @@ space::space(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   init_prog_3d();
-  //init_prog_2d();
-
-  // настройка рендер-буфера
-  GLsizei width, height;
-  OGLContext->get_frame_size(&width, &height);
-
-  RenderBuffer = std::make_unique<frame_buffer> ();
-  if(!RenderBuffer->init(width, height)) ERR("Error on creating Render Buffer.");
-
   load_surf_textures(); // загрузка текстурной карты поверхностей
-
   OGLContext->add_size_observer(*this); //пересчет при изменении размера
 
   init_buffers();
@@ -295,15 +285,18 @@ void space::init_buffers(void)
   // поэтому в "vao_2d" можно использовать один общий с "vao_3d" индексный буфер
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOindex.get_id());
   glBindVertexArray(0);
-
 }
 
 
 ///
 /// \brief space::enable
 ///
-void space::enable(void)
+void space::load(void)
 {
+  render_indices.store(0);
+  // Поток обмена данными с базой. Загрузка карты занимает некоторое время
+  data_loader = std::make_unique<std::thread>(db_control, OGLContext, ViewFrom, VBO3d.get_id(), VBO3d.get_size());
+
   // Настройка матрицы проекции
   GLsizei width, height;
   OGLContext->get_frame_size(&width, &height);
@@ -316,7 +309,7 @@ void space::enable(void)
   OGLContext->cursor_hide();               // выключить отображение курсора мыши в окне
   OGLContext->set_cursor_pos(xpos, ypos);
   OGLContext->set_cursor_observer(*this);  // Подключить обработчики: курсора мыши
-  OGLContext->set_button_observer(*this);  //  -- кнопки мыши
+  OGLContext->set_mbutton_observer(*this);  //  -- кнопки мыши
 
   on_front = 0; // клавиша вперед
   on_back  = 0; // клавиша назад
@@ -327,19 +320,6 @@ void space::enable(void)
   fb_way   = 0; // движение вперед
   ud_way   = 0; // движение вверх
   rl_way   = 0; // движение в сторону
-
-  ready = true;
-}
-
-
-///
-/// \brief space::load_map_data
-///
-void space::map_load(void)
-{
-  render_indices.store(0);
-  // Поток обмена данными с базой
-  data_loader = std::make_unique<std::thread>(db_control, OGLContext, ViewFrom, VBO3d.get_id(), VBO3d.get_size());
 }
 
 
@@ -454,7 +434,6 @@ void space::calc_render_time(void)
 ///
 void space::render(void)
 {
-  if(!ready) return;
   if(render_indices.load() < indices_per_face) return;
 
   calc_render_time();

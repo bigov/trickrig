@@ -96,7 +96,7 @@ void trgl::set_cursor_observer(interface_gl_context& ref)
 {
   cursor_observer = &ref;
 }
-void trgl::set_button_observer(interface_gl_context& ref)
+void trgl::set_mbutton_observer(interface_gl_context& ref)
 {
   button_observer = &ref;
 }

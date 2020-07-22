@@ -69,13 +69,12 @@ GLuint gl_texture::id(void) const
 
 
 ///
-/// \brief frame_buffer::init
-/// \param GLsizei w, GLsizei h
-/// \return
+/// \brief frame_buffer::frame_buffer
+/// \param w
+/// \param h
 ///
-bool frame_buffer::init(GLsizei w, GLsizei h)
+frame_buffer::frame_buffer(GLsizei w, GLsizei h)
 {
-
   glGenFramebuffers(1, &id);
   glBindFramebuffer(GL_FRAMEBUFFER, id);
 
@@ -98,7 +97,11 @@ bool frame_buffer::init(GLsizei w, GLsizei h)
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
   resize(w, h);
-  return glGetError() == GL_NO_ERROR;
+
+#ifndef NDEBUG
+  CHECK_OPENGL_ERRORS
+#endif
+  if(glGetError() != GL_NO_ERROR) ERR("Failure: can't init frame buffer.");
 }
 
 

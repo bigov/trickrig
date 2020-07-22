@@ -46,10 +46,9 @@ private:
 
 
 public:
-  frame_buffer(void) {}
+  frame_buffer(GLsizei w, GLsizei h);
   ~frame_buffer(void);
 
-  bool init(GLsizei w, GLsizei h);
   void resize(int w, int h);
   void read_pixel(GLint screen_coord_x, GLint screen_coord_y, void* pixel_data);
   void bind(void);

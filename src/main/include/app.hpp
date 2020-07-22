@@ -91,8 +91,8 @@ class app: public interface_gl_context
     static void menu_select(void);
     static void menu_start(void);
     static void menu_config(void);
+    void window_frame_render(void);
     void cancel(void);
-    static void AppWin_render(void);
     void create_map(void);
     void remove_map(void);
     static void map_open(uint map_id);

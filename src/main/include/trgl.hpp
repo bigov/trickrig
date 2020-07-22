@@ -32,7 +32,7 @@ class trgl
 
     void set_error_observer(interface_gl_context& ref);    // отслеживание ошибок
     void set_cursor_observer(interface_gl_context& ref);   // курсор мыши в окне
-    void set_button_observer(interface_gl_context& ref);   // кнопки мыши
+    void set_mbutton_observer(interface_gl_context& ref);   // кнопки мыши
     void set_keyboard_observer(interface_gl_context& ref); // клавиши клавиатуры
     void set_position_observer(interface_gl_context& ref); // положение окна
     void add_size_observer(interface_gl_context& ref);     // размер окна
