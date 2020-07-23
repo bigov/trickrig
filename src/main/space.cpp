@@ -26,28 +26,15 @@ namespace tr
 /// \return
 /// \details Преобразование координат точки из пикселей в нормальзованый формат OpenGL
 ///
-std::pair<float, float> convert2opengl(int x, int y, int x_max, int y_max)
-{
-  float fx = static_cast<float>(x) * (2.f / static_cast<float>(x_max)) - 1.f;
-  float fy = static_cast<float>(y_max - y) * (2.f / static_cast<float>(y_max)) - 1.f;
-  return {fx, fy};
-}
-
-/// нормализованные координаты текстуры символа
-std::array<float, 4> char_uv(const std::string& Sym)
-{
-
-  unsigned int i;
-  for(i = 0; i < font::symbols_map.size(); i++) if( font::symbols_map[i].S == Sym ) break;
-
-  float u = static_cast<float>(font::symbols_map[i].u);
-  float v = static_cast<float>(font::symbols_map[i].v);
-
-  float u0 = font::sym_u_size * u,  v1 = font::sym_v_size * v;
-  float u1 = font::sym_u_size + u0, v0 = font::sym_v_size + v1;
-
-  return { u0, v0, u1, v1 };
-}
+extern std::pair<float, float> convert2opengl(int x, int y, int x_max, int y_max);
+extern std::array<float, 4> char_uv(const std::string& Sym);
+extern std::vector<float> buffer_data_create(int win_w, int win_h,
+                                      int left, int top,
+                                      int size_x, int size_y = 0,
+                                      float_color Color = { 0.7f, 0.7f, 0.7f, 1.f},
+                                      const std::string& Text = " ");
+extern std::vector<float> get_uv_data(const std::vector<float>& V);
+extern std::vector<float> get_base_data(const std::vector<float>& V);
 
 
 ///
@@ -69,58 +56,10 @@ std::vector<float> uv_data_create(const std::string& Text = " ")
 
 
 ///
-/// \brief buffer_data_create
-/// \param win_w
-/// \param win_h
-/// \param Text
-/// \param size
-/// \param left
-/// \param top
-/// \return
-///
-std::vector<float> buffer_data_create(int win_w, int win_h,
-                                      int left, int top,
-                                      int size_x, int size_y = 0,
-                                      float_color Color = { 0.7f, 0.7f, 0.7f, 1.f},
-                                      const std::string& Text = " ")
-{
-  std::vector<float> vertices {};
-  if(size_y == 0) size_y = size_x;
-
-  int x0 = left;
-  int y0 = win_h - top;
-  int x1 = x0 + size_x;
-  int y1 = y0 - size_y;
-
-  std::vector<std::string> SymbolsUTF8 = string2vector(Text);
-
-  for(const auto& Symbol: SymbolsUTF8)
-  {
-    auto T = char_uv( Symbol );
-    auto L0 = convert2opengl(x0, y1, win_w, win_h);
-    auto L1 = convert2opengl(x1, y0, win_w, win_h);
-
-    std::vector<float> quad_array {
-      L0.first, L0.second, Color.r, Color.g, Color.b, Color.a, T[0], T[1],
-      L1.first, L0.second, Color.r, Color.g, Color.b, Color.a, T[2], T[1],
-      L1.first, L1.second, Color.r, Color.g, Color.b, Color.a, T[2], T[3],
-      L0.first, L1.second, Color.r, Color.g, Color.b, Color.a, T[0], T[3],
-    };
-
-    vertices.insert(vertices.end(), quad_array.begin(), quad_array.end());
-    x0 += size_x;
-    x1 += size_x;
-  }
-
-  return vertices;
-}
-
-
-///
 /// \brief space::space
 /// \details Формирование 3D пространства
 ///
-space::space(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
+space_3d::space_3d(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
 {
   render_indices.store(0);
   ViewFrom = std::make_shared<glm::vec3> ();
@@ -153,7 +92,7 @@ space::space(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
 ///
 /// \brief space::init_prog_3d
 ///
-void space::init_prog_3d(void)
+void space_3d::init_prog_3d(void)
 {
   std::list<std::pair<GLenum, std::string>> Shaders {};
   Shaders.push_back({ GL_VERTEX_SHADER, cfg::app_key(SHADER_VERT_SCENE) });
@@ -178,42 +117,11 @@ void space::init_prog_3d(void)
 }
 
 
-std::vector<float> get_uv_data(const std::vector<float>& V)
-{
-  std::vector<float> result {};
-
-  for(size_t i = 0; i < V.size();)
-  {
-    i += 6; // x, y, r, g, b,a - pass
-    result.push_back(V[i++]); // u
-    result.push_back(V[i++]); // v
-  }
-  return result;
-}
-
-
-std::vector<float> get_base_data(const std::vector<float>& V)
-{
-  std::vector<float> result {};
-
-  for(size_t i = 0; i < V.size();)
-  {
-    result.push_back(V[i++]); // x
-    result.push_back(V[i++]); // y
-    result.push_back(V[i++]); // r
-    result.push_back(V[i++]); // g
-    result.push_back(V[i++]); // b
-    result.push_back(V[i++]); // a
-    i += 2; // u,v - pass
-  }
-  return result;
-}
-
 ///
 /// \brief space::init_buffers
 /// \details Инициализация VAO и VBO
 ///
-void space::init_buffers(void)
+void space_3d::init_buffers(void)
 {
   glGenVertexArrays(1, &vao_3d);
   glBindVertexArray(vao_3d);
@@ -291,7 +199,7 @@ void space::init_buffers(void)
 ///
 /// \brief space::enable
 ///
-void space::load(void)
+void space_3d::load(void)
 {
   render_indices.store(0);
   // Поток обмена данными с базой. Загрузка карты занимает некоторое время
@@ -328,7 +236,7 @@ void space::load(void)
 /// \param index
 /// \param fname
 ///
-void space::load_surf_textures(void)
+void space_3d::load_surf_textures(void)
 {
   // Загрузка текстур поверхностей воксов
   glActiveTexture(GL_TEXTURE0);
@@ -358,7 +266,7 @@ void space::load_surf_textures(void)
 /// \param t: время прорисовки кадра в микросекундах
 /// \details Расчет положения и направления движения камеры
 ///
-void space::calc_position(void)
+void space_3d::calc_position(void)
 {
   look_dir[0] -= speed_rotate * cursor_dx;
   cursor_dx = 0.f;
@@ -400,7 +308,7 @@ void space::calc_position(void)
 ///
 /// \brief space::calc_render_time
 ///
-void space::calc_render_time(void)
+void space_3d::calc_render_time(void)
 {
   std::chrono::time_point<sys_clock> t_frame = sys_clock::now();
 
@@ -432,7 +340,7 @@ void space::calc_render_time(void)
 /// на число вершин в группе, определить какая по номеру из вершин начинает
 /// эту группу и какая заканчивает.( hl_point_id_from, hl_point_id_end )
 ///
-void space::render(void)
+void space_3d::render(void)
 {
   if(render_indices.load() < indices_per_face) return;
 
@@ -487,7 +395,7 @@ void space::render(void)
 /// \param width
 /// \param height
 ///
-void space::resize_event(int width, int height)
+void space_3d::resize_event(int width, int height)
 {
   // пересчет матрицы проекции
   auto aspect = static_cast<float>(width) / static_cast<float>(height);
@@ -501,7 +409,7 @@ void space::resize_event(int width, int height)
 /// \param x
 /// \param y
 ///
-void space::cursor_event(double x, double y)
+void space_3d::cursor_event(double x, double y)
 {
   // Накапливаем дистанцию смещения мыши между кадрами рендера.
   // Чем больше значение, тем выше скрость поворота камеры.
@@ -519,7 +427,7 @@ void space::cursor_event(double x, double y)
 /// \param _action
 /// \param _mods
 ///
-void space::mouse_event(int _button, int _action, int _mods)
+void space_3d::mouse_event(int _button, int _action, int _mods)
 {
   mods   = _mods;
   mouse  = _button;
@@ -548,7 +456,7 @@ void space::mouse_event(int _button, int _action, int _mods)
 /// \param _action
 /// \param _mods
 ///
-void space::keyboard_event(int _key, int _scancode, int _action, int _mods)
+void space_3d::keyboard_event(int _key, int _scancode, int _action, int _mods)
 {
   mouse    = -1;
   key      = _key;
@@ -614,7 +522,7 @@ void space::keyboard_event(int _key, int _scancode, int _action, int _mods)
 /// \details Пока HUD имеет упрощенный вид в форме полупрозрачной прямоугольной
 /// области в нижней части окна.
 ///
-void space::hud_init(void)
+void space_3d::hud_init(void)
 {
   GLsizei width, height;
   OGLContext->get_frame_size(&width, &height);
@@ -627,9 +535,9 @@ void space::hud_init(void)
 
 
 ///
-/// \brief space::hud_draw
+/// \brief space::hud_update
 ///
-void space::hud_update(void)
+void space_3d::hud_update(void)
 {
   // размеры окна (в пикселях)
   GLsizei width =0, height = 0;
@@ -640,6 +548,7 @@ void space::hud_update(void)
   std::sprintf(line, "%.4i", FPS);
   auto FpsUV = uv_data_create(line);
 
+  // индикаторы координат
   char ln[60];                       // длина строки с '\0'
   std::sprintf(ln, "X:%+06.1f, Y:%+06.1f, Z:%+06.1f, a:%+04.3f, t:%+04.3f",
                   ViewFrom->x, ViewFrom->y, ViewFrom->z, look_dir[0], look_dir[1]);
@@ -656,7 +565,7 @@ void space::hud_update(void)
 ///
 /// \brief space::~space
 ///
-space::~space()
+space_3d::~space_3d()
 {
   render_indices.store(0); // Индикатор для остановки потока загрузки в рендер из БД
   if(nullptr != data_loader) if(data_loader->joinable())

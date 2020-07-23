@@ -699,4 +699,363 @@ func_ptr menu_screen::mouse_event(int mouse_button, int action, int)
   return nullptr;
 }
 
+///////////////////////////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+///
+/// \brief convert2opengl
+/// \param x - число пикселей от края по х
+/// \param y - число пикселей от края по y
+/// \param x_max - ширина окна
+/// \param y_max - высота окна
+/// \return
+/// \details Преобразование координат точки из пикселей в нормальзованый формат OpenGL
+///
+std::pair<float, float> convert2opengl(int x, int y, int x_max, int y_max)
+{
+  float fx = static_cast<float>(x) * (2.f / static_cast<float>(x_max)) - 1.f;
+  float fy = static_cast<float>(y_max - y) * (2.f / static_cast<float>(y_max)) - 1.f;
+  return {fx, fy};
+}
+
+
+/// нормализованные координаты текстуры символа
+std::array<float, 4> char_uv(const std::string& Sym)
+{
+
+  unsigned int i;
+  for(i = 0; i < font::symbols_map.size(); i++) if( font::symbols_map[i].S == Sym ) break;
+
+  float u = static_cast<float>(font::symbols_map[i].u);
+  float v = static_cast<float>(font::symbols_map[i].v);
+
+  float u0 = font::sym_u_size * u,  v1 = font::sym_v_size * v;
+  float u1 = font::sym_u_size + u0, v0 = font::sym_v_size + v1;
+
+  return { u0, v0, u1, v1 };
+}
+
+
+///
+/// \brief buffer_data_create
+/// \param win_w
+/// \param win_h
+/// \param Text
+/// \param size
+/// \param left
+/// \param top
+/// \return
+///
+std::vector<float> buffer_data_create(int win_w, int win_h,
+                                      int left, int top,
+                                      int size_x, int size_y = 0,
+                                      float_color Color = { 0.7f, 0.7f, 0.7f, 1.f},
+                                      const std::string& Text = " ")
+{
+  std::vector<float> vertices {};
+  if(size_y == 0) size_y = size_x;
+
+  int x0 = left;
+  int y0 = win_h - top;
+  int x1 = x0 + size_x;
+  int y1 = y0 - size_y;
+
+  std::vector<std::string> SymbolsUTF8 = string2vector(Text);
+
+  for(const auto& Symbol: SymbolsUTF8)
+  {
+    auto T = char_uv( Symbol );
+    auto L0 = convert2opengl(x0, y1, win_w, win_h);
+    auto L1 = convert2opengl(x1, y0, win_w, win_h);
+
+    std::vector<float> quad_array {
+      L0.first, L0.second, Color.r, Color.g, Color.b, Color.a, T[0], T[1],
+      L1.first, L0.second, Color.r, Color.g, Color.b, Color.a, T[2], T[1],
+      L1.first, L1.second, Color.r, Color.g, Color.b, Color.a, T[2], T[3],
+      L0.first, L1.second, Color.r, Color.g, Color.b, Color.a, T[0], T[3],
+    };
+
+    vertices.insert(vertices.end(), quad_array.begin(), quad_array.end());
+    x0 += size_x;
+    x1 += size_x;
+  }
+
+  return vertices;
+}
+
+
+///////////////////////////!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+///
+/// \brief get_uv_data
+/// \param V
+/// \return
+///
+std::vector<float> get_uv_data(const std::vector<float>& V)
+{
+  std::vector<float> result {};
+
+  for(size_t i = 0; i < V.size();)
+  {
+    i += 6; // x, y, r, g, b,a - pass
+    result.push_back(V[i++]); // u
+    result.push_back(V[i++]); // v
+  }
+  return result;
+}
+
+
+///
+/// \brief get_base_data
+/// \param V
+/// \return
+///
+std::vector<float> get_base_data(const std::vector<float>& V)
+{
+  std::vector<float> result {};
+
+  for(size_t i = 0; i < V.size();)
+  {
+    result.push_back(V[i++]); // x
+    result.push_back(V[i++]); // y
+    result.push_back(V[i++]); // r
+    result.push_back(V[i++]); // g
+    result.push_back(V[i++]); // b
+    result.push_back(V[i++]); // a
+    i += 2; // u,v - pass
+  }
+  return result;
+}
+
+
+///
+/// \brief graphical_user_interface::graphical_user_interface
+/// \param OpenGLContext
+///
+gui::gui(std::shared_ptr<trgl>& OpenGLContext): OGLContext(OpenGLContext)
+{
+  OGLContext->get_frame_size(&window_width, &window_height);
+  init_vao();
+  start_screen();
+}
+
+
+///
+/// \brief gui::init_vao
+///
+void gui::init_vao(void)
+{
+  glGenVertexArrays(1, &vao_gui);
+  glBindVertexArray(vao_gui);
+
+  // TODO:
+  // Так как все четырехугольники сторон индексируются одинаково, то можно
+  // использовать общий индексный буфер с "vao_3d" из Space3d
+
+  GLuint n = 500;
+  size_t idx_size = static_cast<size_t>(6 * n * sizeof(GLuint)); // Размер индексного массива
+  auto idx_data = std::unique_ptr<GLuint[]> {new GLuint[idx_size]};
+
+  GLuint idx[6] = {0, 1, 2, 2, 3, 0};                                // шаблон четырехугольника
+  GLuint stride = 0;                                                 // число описаных вершин
+  for(size_t i = 0; i < idx_size; i += 6) {                          // заполнить массив для VBO
+    for(size_t x = 0; x < 6; x++) idx_data[x + i] = idx[x] + stride;
+    stride += 4;                                                     // по 4 вершины на сторону
+  }
+
+  vbo VBOindex { GL_ELEMENT_ARRAY_BUFFER };                          // Индексный буфер
+  VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get()); // заполнить данными.
+
+  glBindVertexArray(0);
+}
+
+
+///
+/// \brief graphical_user_interface::escape
+///
+void gui::escape(void)
+{
+
+}
+
+
+///
+/// \brief gui::update
+///
+void gui::update(void)
+{
+  switch (mode) {
+    case START_SCREEN:
+      break;
+    case HUD:
+      hud_update();
+      break;
+    default:
+      break;
+  }
+}
+
+
+///
+/// \brief graphical_user_interface::render
+///
+void gui::render(void)
+{
+  RenderBuffer->bind();
+  glEnable(GL_BLEND);
+  glDisable(GL_DEPTH_TEST);
+  glClear(GL_COLOR_BUFFER_BIT);
+
+  glBindVertexArray(vao_gui);
+  Program2d->use();
+  for(const auto& A: Program2d->AtribsList) glEnableVertexAttribArray(A.index);
+  glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, nullptr);
+  for(const auto& A: Program2d->AtribsList) glDisableVertexAttribArray(A.index);
+  Program2d->unuse();
+
+  RenderBuffer->unbind();
+  glBindVertexArray(0);
+
+}
+
+///
+/// \brief gui::mouse_event
+/// \param _button
+/// \param _action
+/// \param _mods
+///
+void gui::mouse_event(int _button, int _action, int)
+{
+  if( (_button == MOUSE_BUTTON_LEFT)
+  and (_action == RELEASE) )
+    std::clog << "mouse event on gui" << std::endl;
+}
+
+
+///
+/// \brief graphical_user_interface::keyboard_event
+/// \param key
+/// \param scancode
+/// \param action
+/// \param mods
+///
+void gui::keyboard_event(int key, int, int action, int)
+{
+  if((key == KEY_ESCAPE) && (action == RELEASE)) escape();
+}
+
+
+///
+/// \brief gui::data_xy_append
+/// \param left
+/// \param top
+/// \param width
+/// \param height
+///
+void gui::data_xy_prepare(int left, int top, uint width, uint height)
+{
+  if(left > window_width) left = window_width;
+  if(top > window_height) top = window_height;
+  float x0 = static_cast<float>(left) * (2.f / static_cast<float>(window_width)) - 1.f;
+  float y0 = static_cast<float>(window_height - top) * (2.f / static_cast<float>(window_height)) - 1.f;
+
+  left += width;
+  top += height;
+
+  if(left > window_width) left = window_width;
+  if(top > window_height) top = window_height;
+  float x1 = static_cast<float>(left) * (2.f / static_cast<float>(window_width)) - 1.f;
+  float y1 = static_cast<float>(window_height - top) * (2.f / static_cast<float>(window_height)) - 1.f;
+
+  x0 = -0.9f; x1 =  0.9f;
+  y0 =  0.9f; y1 = -0.9f;
+  Vxy.insert(Vxy.end(), { x0,y0,  x1,y0,  x1,y1,  x0,y1 });
+}
+
+
+///
+/// \brief gui::data_rgba_prepare
+/// \param C
+///
+void gui::data_rgba_prepare(float_color C)
+{
+  Vrgba.insert(Vrgba.end(), { C.r,C.g,C.b,C.a, C.r,C.g,C.b,C.a, C.r,C.g,C.b,C.a, C.r,C.g,C.b,C.a});
+}
+
+
+///
+/// \brief gui::data_uv_prepare
+/// \param u0
+/// \param v0
+/// \param u1
+/// \param v1
+///
+void gui::data_uv_prepare(float u0, float v0, float u1, float v1)
+{
+  Vuv.insert(Vuv.end(), { u0,v0,  u1,v0,  u1,v1,  u0,v1 });
+}
+
+
+///
+/// \brief gui::buttom_create
+/// \param left
+/// \param top
+/// \param width
+/// \param height
+/// \param caller
+/// \param Label
+///
+void gui::rect_prepare(uint left, uint top, uint width, uint height,
+                   float_color rgba)
+{
+  indices += 6;
+  data_xy_prepare(left, top, width, height);
+  data_rgba_prepare(rgba);
+  data_uv_prepare( 1.f, 0.f, 1.f, 0.f );
+}
+
+
+///
+/// \brief gui::start_screen
+///
+void gui::start_screen(void)
+{
+  glBindVertexArray(vao_gui);
+
+  unsigned int border = 20;
+  rect_prepare(border, border, window_width - border, window_height - border, {1.f, 1.f, 1.f, 1.f});
+
+  VBO_xy.allocate(Vxy.size() * sizeof(float), Vxy.data());
+  VBO_rgba.allocate(Vrgba.size() * sizeof(float), Vrgba.data());
+  VBO_uv.allocate(Vuv.size() * sizeof(float), Vuv.data());
+
+  auto A = Program2d->AtribsList.begin();
+
+  VBO_xy.attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
+  ++A;
+  VBO_rgba.attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
+  ++A;
+  VBO_uv.attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
+
+  glBindVertexArray(0);
+}
+
+
+///
+/// \brief gui::hud
+///
+void gui::hud_init(void)
+{
+
+}
+
+
+///
+/// \brief gui::hud_update
+///
+void gui::hud_update(void)
+{
+
+}
+
 } //namespace tr

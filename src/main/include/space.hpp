@@ -11,6 +11,7 @@
 
 #include "area.hpp"
 #include "framebuf.hpp"
+#include "gui.hpp"
 
 using sys_clock = std::chrono::system_clock;
 
@@ -19,11 +20,11 @@ namespace tr
   extern std::unique_ptr<glsl> Program2d;            // построение 2D элементов
   extern std::unique_ptr<frame_buffer> RenderBuffer; // рендер-буфер окна
 
-  class space: public interface_gl_context
+  class space_3d: public interface_gl_context
   {
     public:
-      space(std::shared_ptr<trgl>& OpenGLContext);
-      ~space(void);
+      space_3d(std::shared_ptr<trgl>& OpenGLContext);
+      ~space_3d(void);
 
       void load(void);
       void render(void);
@@ -41,8 +42,8 @@ namespace tr
 
     private:
       std::unique_ptr<std::thread> data_loader = nullptr;
-      space(const space &);
-      space operator=(const space &);
+      space_3d(const space_3d &);
+      space_3d operator=(const space_3d &);
 
       vbo VBO3d      { GL_ARRAY_BUFFER }; // Буфер данных
       vbo VBO2d_base { GL_ARRAY_BUFFER }; // Буфер текста (координаты и цвет вершин)

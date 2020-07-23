@@ -7,7 +7,7 @@
 #ifndef FRBUF_HPP
 #define FRBUF_HPP
 
-#include "gui.hpp"
+#include "main.hpp"
 
 namespace tr
 {

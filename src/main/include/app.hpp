@@ -41,13 +41,14 @@ class app: public interface_gl_context
     virtual void focus_lost_event();
 
   private:
-    enum GUI_MODES {    // режимы окна
-      GUI_3D_MODE,      // основной режим - без шторки
-      GUI_MENU_START,   // начальное меню
-      GUI_MENU_LSELECT, // выбор игры
-      GUI_MENU_CREATE,  // создание нового района
-      GUI_MENU_CONFIG,  // настройки
+    enum MENU_MODES {    // режимы окна
+      SCREEN_START,   // начальное меню
+      SCREEN_LSELECT, // выбор игры
+      SCREEN_CREATE,  // создание нового района
+      SCREEN_CONFIG,  // настройки
     };
+
+    static bool RUN_3D;
 
     std::shared_ptr<trgl> GLContext = nullptr;
     static std::unique_ptr<glsl> ProgramWin; // Шейдерная программа GUI
@@ -62,7 +63,8 @@ class app: public interface_gl_context
     static bool is_open;                     // состояние окна
     static layout Layout;                    // положение окна и размеры
     float aspect = 1.0f;                     // соотношение размеров окна
-    static std::unique_ptr<space> Space;     // = nullptr;
+    static std::unique_ptr<space_3d> Space3d;     // = nullptr;
+    static std::unique_ptr<gui> AppGUI; // = nullptr
 
     bool text_mode = false;                  // режим ввода текста
     std::string StringBuffer {};             // строка ввода пользователя
@@ -70,14 +72,14 @@ class app: public interface_gl_context
     static double mouse_y;                    // позиция указателя относительно верхней границы
 
     uchar_color bgColor {0xE0, 0xE0, 0xE0, 0xC0}; // цвет фона неактивного окна
-    static menu_screen MainMenu;            // GUI окна приложения
+    static menu_screen MenuOnImage;            // GUI окна приложения
     static uchar_color color_title;         // фон заголовка
     static int mouse_left;                  // нажатие на левую кнопку мыши
 
     static GLuint texture_gui;              // id тектуры HUD
 
     static std::vector<map> Maps;          // список карт
-    static GUI_MODES GuiMode;              // режим окна приложения
+    static MENU_MODES MenuMode;              // режим окна приложения
     static size_t row_selected;            // какая строка выбрана
 
     static GLuint vao2d;

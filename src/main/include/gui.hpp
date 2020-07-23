@@ -4,6 +4,8 @@
 #include "wft/wft.hpp"
 
 #include "main.hpp"
+#include "vbo.hpp"
+#include "framebuf.hpp"
 #include "config.hpp"
 #include "tools.hpp"
 
@@ -32,7 +34,9 @@ const uchar_color LineNormalDefaultBgColor  { 0xE7, 0xE7, 0xE6, 0xFF };
 class atlas;
 class image;
 
-extern atlas TextureFont; //текстура шрифта
+extern atlas TextureFont;                    //текстура шрифта
+extern std::unique_ptr<glsl> Program2d;      // построение 2D элементов
+extern std::unique_ptr<frame_buffer> RenderBuffer; // рендер-буфер окна
 
 extern void textstring_place(const atlas& FontImg, const std::string& TextString,
                    image& Dst, ulong x, ulong y);
@@ -166,6 +170,54 @@ class menu_screen: public image
     bool cursor_event(double x, double y);
     func_ptr mouse_event(int mouse_button, int action, int mods);
     static void row_selected(void);
+};
+
+
+///
+/// \brief The gui class
+///
+class gui: public interface_gl_context
+{
+  public:
+    gui(std::shared_ptr<trgl>& OpenGLContext);
+    ~gui(void) = default;
+
+    //virtual void resize_event(int width, int height);
+    //virtual void cursor_event(double x, double y) {}                                //x, y
+    virtual void mouse_event(int _button, int _action, int _mods);                // _button, _action, _mods
+    virtual void keyboard_event(int _key, int _scancode, int _action, int _mods); // _key, _scancode, _action, _mods
+    //virtual void character_event(unsigned int) {}
+
+    void render(void);
+
+  private:
+    int window_width = 0;
+    int window_height = 0;
+    unsigned int indices = 0;
+
+    enum GUI_MODE { START_SCREEN, HUD };
+    GUI_MODE mode = START_SCREEN;
+
+    GLuint vao_gui = 0;
+    std::shared_ptr<trgl>& OGLContext; // OpenGL контекст окна приложения
+    vbo VBO_xy   { GL_ARRAY_BUFFER };  // координаты вершин
+    vbo VBO_rgba { GL_ARRAY_BUFFER };  // цвет вершин
+    vbo VBO_uv   { GL_ARRAY_BUFFER };  // текстурные координаты
+    std::vector<float> Vxy {};
+    std::vector<float> Vrgba {};
+    std::vector<float> Vuv {};
+
+    void init_vao(void);
+    void escape(void);
+    void update(void);
+    void data_xy_prepare(int left, int top, uint width, uint height);
+    void data_rgba_prepare(float_color rgba);
+    void data_uv_prepare(float u0, float v0, float u1, float v1);
+    void rect_prepare(uint left, uint top, uint width, uint height, float_color rgba);
+
+    void start_screen(void);
+    void hud_init(void);
+    void hud_update(void);
 };
 
 }

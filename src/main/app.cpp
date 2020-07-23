@@ -5,7 +5,7 @@ namespace tr {
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
-menu_screen app::MainMenu {};          // Начальное меню приложения
+menu_screen app::MenuOnImage {};          // Начальное меню приложения
 bool        app::is_open = true;       // состояние окна
 GLuint      app::texture_gui = 0;      // id тектуры HUD
 layout      app::Layout {};            // размеры и положение окна
@@ -16,8 +16,11 @@ double      app::mouse_x = 0.0;        // позиция указателя от
 double      app::mouse_y = 0.0;        // позиция указателя относительно верхней границы
 int         app::mouse_left = EMPTY;   // нажатие на левую кнопку мыши
 
-std::unique_ptr<space> app::Space = nullptr;
-app::GUI_MODES app::GuiMode = GUI_MENU_START;    // режим окна приложения
+std::unique_ptr<space_3d> app::Space3d = nullptr;
+std::unique_ptr<gui> app::AppGUI = nullptr;
+
+app::MENU_MODES app::MenuMode = SCREEN_START;    // режим окна приложения
+bool app::RUN_3D = false;
 glm::vec3 app::Cursor3D = { 200.f, 200.f, 4.f }; // положение и размер прицела
 std::unique_ptr<glsl> app::ProgramWin = nullptr; // Шейдерная программа рендера фреймбуфера
 std::unique_ptr<glsl> app::PrograMenu = nullptr; // Шейдерная программа GUI меню
@@ -106,7 +109,9 @@ app::app(void)
   // настройка рендер-буфера
   RenderBuffer = std::make_unique<frame_buffer>(Layout.width, Layout.height);
 
-  Space = std::make_unique<space>(GLContext);
+  AppGUI = std::make_unique<gui>(GLContext);
+  Space3d = std::make_unique<space_3d>(GLContext);
+
   TimeStart = std::chrono::system_clock::now();
 
   // Составить список карт в каталоге пользователя
@@ -187,12 +192,12 @@ app::~app(void)
 ///
 void app::title(const std::string &title)
 {
-  image Box{ MainMenu.get_width() - 4, 24, color_title};
+  image Box{ MenuOnImage.get_width() - 4, 24, color_title};
   label Text {title, 24, FONT_BOLD};
   Box.paint_over((Box.get_width() - Text.get_width())/2,
                  (Box.get_height() - Text.get_height())/2,
                   Text);
-  Box.put(MainMenu, 2, 2);
+  Box.put(MenuOnImage, 2, 2);
 }
 
 
@@ -206,7 +211,7 @@ void app::title(const std::string &title)
 void app::input_text_line(const atlas &Font)
 {
   uchar_color color = {0xF0, 0xF0, 0xF0, 0xFF};
-  uint row_width = MainMenu.get_width() - Font.get_cell_width() * 2;
+  uint row_width = MenuOnImage.get_width() - Font.get_cell_width() * 2;
   uint row_height = Font.get_cell_height() * 2;
   image RowInput{ row_width, row_height, color };
 
@@ -216,9 +221,9 @@ void app::input_text_line(const atlas &Font)
   cursor_text_row(Font, RowInput, utf8_size(StringBuffer));
 
   // скопировать на экран изображение поля ввода с добавленым текстом
-  auto x = (MainMenu.get_width() - RowInput.get_width()) / 2;
-  y = MainMenu.get_height() / 2 - 2 * button_default_height;
-  RowInput.put(MainMenu, x, y);
+  auto x = (MenuOnImage.get_width() - RowInput.get_width()) / 2;
+  y = MenuOnImage.get_height() / 2 - 2 * button_default_height;
+  RowInput.put(MenuOnImage, x, y);
 }
 
 
@@ -302,26 +307,29 @@ void app::cancel(void)
   key    = EMPTY;
   action = EMPTY;
 
-  switch (GuiMode)
+  if(RUN_3D)
   {
-    case GUI_3D_MODE:
-      cfg::map_view_save(Space->ViewFrom, Space->look_dir);
-      GuiMode = GUI_MENU_LSELECT;
-      GLContext->cursor_restore();             // Включить указатель мыши
-      GLContext->set_cursor_observer(*this);   // переключить обработчик смещения курсора
-      GLContext->set_mbutton_observer(*this);   // обработчик кнопок мыши
-      GLContext->set_keyboard_observer(*this); // и клавиатуры
+    cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
+    RUN_3D = false;
+    GLContext->cursor_restore();             // Включить указатель мыши
+    GLContext->set_cursor_observer(*this);   // переключить обработчик смещения курсора
+    GLContext->set_mbutton_observer(*this);   // обработчик кнопок мыши
+    GLContext->set_keyboard_observer(*this); // и клавиатуры
+    return;
+  }
+
+  switch (MenuMode)
+  {
+    case SCREEN_LSELECT:
+      MenuMode = SCREEN_START;
       break;
-    case GUI_MENU_LSELECT:
-      GuiMode = GUI_MENU_START;
+    case SCREEN_CREATE:
+      MenuMode = SCREEN_LSELECT;
       break;
-    case GUI_MENU_CREATE:
-      GuiMode = GUI_MENU_LSELECT;
+    case SCREEN_CONFIG:
+      MenuMode = SCREEN_START;
       break;
-    case GUI_MENU_CONFIG:
-      GuiMode = GUI_MENU_START;
-      break;
-    case GUI_MENU_START:
+    case SCREEN_START:
       is_open = false;
       break;
   }
@@ -388,18 +396,18 @@ void app::app_close(void)
 ///
 void app::menu_start(void)
 {
-  MainMenu.init(Layout.width, Layout.height, "New TrickRig");
+  MenuOnImage.init(Layout.width, Layout.height, "New TrickRig");
 
-  int x = MainMenu.get_width() / 2 - static_cast<ulong>(button_default_width / 2);
-  int y = MainMenu.get_height() / 2;
+  int x = MenuOnImage.get_width() / 2 - static_cast<ulong>(button_default_width / 2);
+  int y = MenuOnImage.get_height() / 2;
 
-  MainMenu.button_add(x, y, "Настроить", menu_config);
+  MenuOnImage.button_add(x, y, "Настроить", menu_config);
 
   y -= 1.2 * button_default_height;
-  MainMenu.button_add(x, y, "Выбор карты", menu_select);
+  MenuOnImage.button_add(x, y, "Выбор карты", menu_select);
 
   y += 2.4 * button_default_height;
-  MainMenu.button_add(x, y, "Закрыть", app_close);
+  MenuOnImage.button_add(x, y, "Закрыть", app_close);
 
   update_gui_image();
 }
@@ -410,11 +418,11 @@ void app::menu_start(void)
 ///
 void app::menu_config(void)
 {
-  MainMenu.init(Layout.width, Layout.height, "Настройка конфигурации");
-  int x = MainMenu.get_width() / 2 - static_cast<ulong>(button_default_width / 2);
-  int y = MainMenu.get_height() / 2;
+  MenuOnImage.init(Layout.width, Layout.height, "Настройка конфигурации");
+  int x = MenuOnImage.get_width() / 2 - static_cast<ulong>(button_default_width / 2);
+  int y = MenuOnImage.get_height() / 2;
 
-  MainMenu.button_add(x, y, "Отмена", menu_start);
+  MenuOnImage.button_add(x, y, "Отмена", menu_start);
   update_gui_image();
 
 }
@@ -425,7 +433,7 @@ void app::menu_config(void)
 ///
 void app::menu_select(void)
 {
-  MainMenu.init(Layout.width, Layout.height, "Выбор карты");
+  MenuOnImage.init(Layout.width, Layout.height, "Выбор карты");
   std::list<std::string> ItemsList {};
   for(auto& Map: Maps) ItemsList.push_back(Map.Name);
 
@@ -433,7 +441,7 @@ void app::menu_select(void)
   ItemsList.push_back(" == Debug 0 == ");
   ItemsList.push_back(" == Debug 1 == ");
 
-  MainMenu.list_add(ItemsList, menu_start, map_open);
+  MenuOnImage.list_add(ItemsList, menu_start, map_open);
   update_gui_image();
 }
 
@@ -445,9 +453,9 @@ void app::map_open(uint map_id)
 {
   assert((map_id < Maps.size()) && "Map id out of range");
 
-  cfg::map_view_load(Maps[map_id].Folder, Space->ViewFrom, Space->look_dir);
-  Space->load();
-  GuiMode = GUI_3D_MODE;
+  cfg::map_view_load(Maps[map_id].Folder, Space3d->ViewFrom, Space3d->look_dir);
+  Space3d->load();
+  RUN_3D = true;
 }
 
 
@@ -460,7 +468,7 @@ void app::map_open(uint map_id)
 ///
 void app::menu_map_create(void)
 {
-  MainMenu.fill(bgColor);
+  MenuOnImage.fill(bgColor);
   title("ВВЕДИТЕ НАЗВАНИЕ");
 
   if((key == KEY_BACKSPACE) && // Удаление введенных символов
@@ -496,7 +504,7 @@ void app::update_gui_image(void)
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
                static_cast<GLint>(Layout.width),
                static_cast<GLint>(Layout.height),
-               0, GL_RGBA, GL_UNSIGNED_BYTE, MainMenu.uchar_t());
+               0, GL_RGBA, GL_UNSIGNED_BYTE, MenuOnImage.uchar_t());
 }
 
 
@@ -525,22 +533,27 @@ void app::show(void)
   GLContext->set_close_observer(*this);     // закрытие окна
   GLContext->set_focuslost_observer(*this); // потеря окном фокуса ввода
 
-  menu_start();
+  //menu_start();
 
   while(is_open)
   {
-    if(GuiMode == GUI_3D_MODE)
+    if(RUN_3D)
     {
-      Space->render(); // рендер 3D сцены
+      Space3d->render(); // рендер 3D сцены
       ProgramWin->use();
       window_frame_render();
       ProgramWin->unuse();
     }
     else
     {
-      PrograMenu->use();
+      AppGUI->render();
+      ProgramWin->use();
       window_frame_render();
-      PrograMenu->unuse();
+      ProgramWin->unuse();
+
+      //PrograMenu->use();
+      //window_frame_render();
+      //PrograMenu->unuse();
     }
   }
 }
@@ -597,7 +610,7 @@ void app::resize_event(int w, int h)
   Cursor3D.y = static_cast<float>(h/2);
 
   // пересчет размеров изображения GUI
-  MainMenu.resize(w,h);
+  MenuOnImage.resize(w,h);
 }
 
 
@@ -650,7 +663,7 @@ void app::error_event(const char* message)
 ///
 void app::cursor_event(double x, double y)
 {
-  if (MainMenu.cursor_event(x, y)) update_gui_image();
+  if (MenuOnImage.cursor_event(x, y)) update_gui_image();
 }
 
 
@@ -662,9 +675,11 @@ void app::cursor_event(double x, double y)
 ///
 void app::mouse_event(int _button, int _action, int _mods)
 {
-  func_ptr caller = MainMenu.mouse_event(_button, _action, _mods);
-  update_gui_image();
-  if ( caller != nullptr ) caller();
+  //func_ptr caller = MenuOnImage.mouse_event(_button, _action, _mods);
+  //update_gui_image();
+  //if ( caller != nullptr ) caller();
+  AppGUI->mouse_event(_button, _action, _mods);
+  map_open(0);
 }
 
 
@@ -682,7 +697,8 @@ void app::keyboard_event(int _key, int _scancode, int _action, int _mods)
   action   = _action;
   mods     = _mods;
   if((key == KEY_ESCAPE) && (action == RELEASE)) cancel();
-  if (GUI_3D_MODE == GuiMode) Space->keyboard_event(_key, _scancode, _action, _mods);
+  if (RUN_3D) Space3d->keyboard_event(_key, _scancode, _action, _mods);
+  else AppGUI->keyboard_event(_key, _scancode, _action, _mods);
 }
 
 
@@ -693,10 +709,10 @@ void app::keyboard_event(int _key, int _scancode, int _action, int _mods)
 ///
 void app::focus_lost_event()
 {
-  if (GUI_3D_MODE == GuiMode)
+  if (RUN_3D)
   {
-     cfg::map_view_save(Space->ViewFrom, Space->look_dir);
-     GuiMode = GUI_MENU_LSELECT;
+     cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
+     RUN_3D = false;
      GLContext->cursor_restore();            // Включить указатель мыши
      GLContext->set_cursor_observer(*this);  // переключить обработчик смещения курсора
      GLContext->set_mbutton_observer(*this);  // обработчик кнопок мыши
