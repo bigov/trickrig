@@ -23,7 +23,7 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
 endif()
 
 project(
-  TrickRig VERSION "0.0.3.1"
+  TrickRig VERSION "0.0.3.2"
   DESCRIPTION "Graphical engine project"
   HOMEPAGE_URL "https://www.trickrig.net"
   LANGUAGES "CXX"

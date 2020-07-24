@@ -18,44 +18,6 @@ namespace tr
 
 
 ///
-/// \brief convert2opengl
-/// \param x - число пикселей от края по х
-/// \param y - число пикселей от края по y
-/// \param x_max - ширина окна
-/// \param y_max - высота окна
-/// \return
-/// \details Преобразование координат точки из пикселей в нормальзованый формат OpenGL
-///
-extern std::pair<float, float> convert2opengl(int x, int y, int x_max, int y_max);
-extern std::array<float, 4> char_uv(const std::string& Sym);
-extern std::vector<float> buffer_data_create(int win_w, int win_h,
-                                      int left, int top,
-                                      int size_x, int size_y = 0,
-                                      float_color Color = { 0.7f, 0.7f, 0.7f, 1.f},
-                                      const std::string& Text = " ");
-extern std::vector<float> get_uv_data(const std::vector<float>& V);
-extern std::vector<float> get_base_data(const std::vector<float>& V);
-
-
-///
-/// \brief uv_data_create
-/// \param Text
-/// \return UV array
-///
-std::vector<float> uv_data_create(const std::string& Text = " ")
-{
-  std::vector<float> UV {};
-  std::vector<std::string> SymbolsUTF8 = string2vector(Text);
-  for(const auto& Symbol: SymbolsUTF8)
-  {
-    auto T = char_uv(Symbol);
-    UV.insert(UV.end(),{ T[0], T[1], T[2], T[1], T[2], T[3], T[0], T[3] });
-  }
-  return UV;
-}
-
-
-///
 /// \brief space::space
 /// \details Формирование 3D пространства
 ///
@@ -147,52 +109,6 @@ void space_3d::init_buffers(void)
   vbo VBOindex { GL_ELEMENT_ARRAY_BUFFER };                          // Индексный буфер
   VBOindex.allocate(static_cast<GLsizei>(idx_size), idx_data.get()); // заполнить данными.
   glBindVertexArray(0);
-
-  hud_init();
-
-  glGenVertexArrays(1, &vao_2d);
-  glBindVertexArray(vao_2d);
-
-  GLsizei width, height;
-  OGLContext->get_frame_size(&width, &height);
-
-  float_color C = {
-    HUD.bg_color.r/255.f,
-    HUD.bg_color.g/255.f,
-    HUD.bg_color.b/255.f,
-    HUD.bg_color.a/255.f
-  };
-  auto V = buffer_data_create(width, height, 0, height - HUD.height, width, HUD.height, C); // зеленая панель внизу экрана
-  auto FPS = buffer_data_create(width, height, 0, 0, 60, 18, {1.f, 1.f, 1.f, 0.4f});        // фон индикатора
-  V.insert(V.end(), FPS.begin(), FPS.end());
-
-  FPS.clear();
-  FPS = buffer_data_create(width, height, 2, 3, 7, 14, {0,0,0,0}, "FPS:0000");
-  V.insert(V.end(), FPS.begin(), FPS.end());
-
-  FPS.clear();
-  FPS = buffer_data_create(width, height, 2, 20, 7, 14, {0,0,0,0}, "X:+000.0, Y:+000.0, Z:+000.0, A:+0.000, T:+0.000");
-  V.insert(V.end(), FPS.begin(), FPS.end());
-
-  HUD.indices = V.size() / HUD.digits_per_quad * HUD.indices_per_quad;
-
-  auto V_Base = get_base_data(V);
-  auto V_TxUV = get_uv_data(V);
-
-  VBO2d_base.allocate(V_Base.size() * sizeof(float), V_Base.data());
-  VBO2d_txuv.allocate(V_TxUV.size() * sizeof(float), V_TxUV.data());
-
-  auto A = Program2d->AtribsList.begin();
-  VBO2d_base.attrib(A->index, A->d_size, A->type, A->normalized, A->stride, A->pointer);
-  ++A;
-  VBO2d_base.attrib(A->index, A->d_size, A->type, A->normalized, A->stride, A->pointer);
-  ++A;
-  VBO2d_txuv.attrib(A->index, A->d_size, A->type, A->normalized, A->stride, A->pointer);
-
-  // Очередность обхода вершин такая-же, как и при построении 3D элементов,
-  // поэтому в "vao_2d" можно использовать один общий с "vao_3d" индексный буфер
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, VBOindex.get_id());
-  glBindVertexArray(0);
 }
 
 
@@ -280,6 +196,12 @@ void space_3d::calc_position(void)
 
   //if (!space_is_empty(Eye.ViewFrom)) _k *= 0.1f;       // TODO: скорость/туман в воде
 
+  // время (в секундах) прошедшее между фреймами
+  std::chrono::time_point<sys_clock> t_now = sys_clock::now();
+  static auto cycle_start = t_now;
+  double frame_time = std::chrono::duration_cast<std::chrono::microseconds>(t_now - cycle_start).count() / 1000000.0;
+  cycle_start = t_now;
+
   float dist  = speed_moving * static_cast<float>(frame_time); // Дистанция перемещения
   rl = dist * rl_way;
   fb = dist * fb_way;   // по трем нормалям от камеры
@@ -306,32 +228,6 @@ void space_3d::calc_position(void)
 
 
 ///
-/// \brief space::calc_render_time
-///
-void space_3d::calc_render_time(void)
-{
-  std::chrono::time_point<sys_clock> t_frame = sys_clock::now();
-
-  static int _fps = 0;
-  static std::chrono::time_point<sys_clock> cycle_start = t_frame;
-  static std::chrono::time_point<sys_clock> fps_start = t_frame;
-  static const std::chrono::seconds one_second(1);
-
-  _fps++;
-  if (t_frame - fps_start >= one_second)
-  {
-    fps_start = t_frame;
-    FPS = _fps;
-    _fps = 0;
-  }
-
-  // время (в секундах) прошедшее после предыдущего вызова данный функции
-  frame_time = std::chrono::duration_cast<std::chrono::microseconds>(t_frame - cycle_start).count() / 1000000.0;
-  cycle_start = t_frame;
-}
-
-
-///
 /// Рендер 3D пространства сцены в буфер "RenderBuffer"
 ///
 /// \details
@@ -344,9 +240,7 @@ void space_3d::render(void)
 {
   if(render_indices.load() < indices_per_face) return;
 
-  calc_render_time();
   calc_position();
-
   uint vertex_id = 0;    // переменная для приема ID вершины из VBO
   vbo_mtx.lock();
 
@@ -368,17 +262,8 @@ void space_3d::render(void)
   for(const auto& A: Program3d->AtribsList) glDisableVertexAttribArray(A.index);
   Program3d->unuse();
 
-  // Построение 2D элементов HUD
-  glDisable(GL_DEPTH_TEST);
-  glBindVertexArray(vao_2d);
-  Program2d->use();
-  for(const auto& A: Program2d->AtribsList) glEnableVertexAttribArray(A.index);
-  glDrawElements(GL_TRIANGLES, HUD.indices, GL_UNSIGNED_INT, nullptr);
-  for(const auto& A: Program2d->AtribsList) glDisableVertexAttribArray(A.index);
-  Program2d->unuse();
-
+  glBindVertexArray(0); // vao_3d
   RenderBuffer->unbind();
-  glBindVertexArray(0);
 
   RenderBuffer->read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
   vbo_mtx.unlock();
@@ -386,7 +271,6 @@ void space_3d::render(void)
   hl_vertex_id_from = vertex_id - (vertex_id % vertices_per_face);
   hl_vertex_id_end = hl_vertex_id_from + vertices_per_face - 1;
 
-  hud_update();
 }
 
 
@@ -513,52 +397,6 @@ void space_3d::keyboard_event(int _key, int _scancode, int _action, int _mods)
   fb_way = on_front - on_back;
   ud_way = on_down  - on_up;
   rl_way = on_left  - on_right;
-}
-
-
-///
-/// \brief загрузка HUD в GPU
-///
-/// \details Пока HUD имеет упрощенный вид в форме полупрозрачной прямоугольной
-/// области в нижней части окна.
-///
-void space_3d::hud_init(void)
-{
-  GLsizei width, height;
-  OGLContext->get_frame_size(&width, &height);
-
-  // Размер панель инструментов HUD в нижней части окна
-  int hud_height = 48;
-  if(hud_height > height) HUD.height = 0;   // не может быть выше GuiImg
-  else HUD.height = 48;
-}
-
-
-///
-/// \brief space::hud_update
-///
-void space_3d::hud_update(void)
-{
-  // размеры окна (в пикселях)
-  GLsizei width =0, height = 0;
-  OGLContext->get_frame_size(&width, &height);
-
-  // счетчик FPS
-  char line[5] = {'\0'};                                // длина строки с '\0'
-  std::sprintf(line, "%.4i", FPS);
-  auto FpsUV = uv_data_create(line);
-
-  // индикаторы координат
-  char ln[60];                       // длина строки с '\0'
-  std::sprintf(ln, "X:%+06.1f, Y:%+06.1f, Z:%+06.1f, a:%+04.3f, t:%+04.3f",
-                  ViewFrom->x, ViewFrom->y, ViewFrom->z, look_dir[0], look_dir[1]);
-  auto Location = uv_data_create(ln);
-
-  glBindBuffer(GL_ARRAY_BUFFER, VBO2d_txuv.get_id());
-  glBufferSubData(GL_ARRAY_BUFFER, HUD.fps_uv_data, FpsUV.size() * sizeof(float), FpsUV.data());
-  glBufferSubData(GL_ARRAY_BUFFER, HUD.location_uv_data, Location.size() * sizeof(float), Location.data());
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-
 }
 
 

@@ -13,13 +13,9 @@
 #include "framebuf.hpp"
 #include "gui.hpp"
 
-using sys_clock = std::chrono::system_clock;
 
 namespace tr
 {
-  extern std::unique_ptr<glsl> Program2d;            // построение 2D элементов
-  extern std::unique_ptr<frame_buffer> RenderBuffer; // рендер-буфер окна
-
   class space_3d: public interface_gl_context
   {
     public:
@@ -36,8 +32,6 @@ namespace tr
 
       std::shared_ptr<glm::vec3> ViewFrom = nullptr;             // 3D координаты точки положения
       float look_dir[2] = {0.0f, 0.0f};  // Направление: азимут (0 - X) и тангаж (0 - горизОнталь, пи/2 - вертикаль)
-      int FPS = 500;     // частота кадров (для коррекции скорости движения)
-
       GLuint texture_3d = 0;
 
     private:
@@ -46,25 +40,13 @@ namespace tr
       space_3d operator=(const space_3d &);
 
       vbo VBO3d      { GL_ARRAY_BUFFER }; // Буфер данных
-      vbo VBO2d_base { GL_ARRAY_BUFFER }; // Буфер текста (координаты и цвет вершин)
-      vbo VBO2d_txuv   { GL_ARRAY_BUFFER }; // Буфер текста (текстурные координаты)
 
       std::shared_ptr<trgl>& OGLContext;         // основное окно приложения
       std::unique_ptr<glsl> Program3d = nullptr; // построение 3D пространства
 
       static const GLsizei uv_data_size = sizeof(float) * 8; // размер блока UV данных (4 вершины по 2 координаты)
-      struct {
-        uint height = 48;
-        uchar_color bg_color {0x00, 0x88, 0x00, 0x40}; // Фон панели HUD
-        GLsizei indices = 0;                           //number of indices
-        const GLsizei indices_per_quad = 6;
-        const GLsizei digits_per_quad = 32;            // 4 вершины по 8 цифр (x,y,r,g,b,a,u,v)
-        const GLsizei fps_uv_data = uv_data_size * 6;  // цифры счетчика fps начинаются
-        const GLsizei location_uv_data = uv_data_size * 10;  // цифры положения камеры
-      } HUD;
 
       GLuint vao_3d = 0;
-      GLuint vao_2d = 0;
 
       float cursor_dx = 0.f; // Cмещение мыши в активном окне между кадрами
       float cursor_dy = 0.f; // в режиме 3D (режим прицела) при скрытом курсоре.
@@ -95,8 +77,6 @@ namespace tr
       const float up_max = hPi - 0.001f;   // Максимальный угол вверх
       const float down_max = -up_max;      // Максимальный угол вниз
 
-      double frame_time;            // время (в секундах) на рендер кадра
-
       glm::vec3 light_direction {}; // направление освещения
       glm::vec3 light_bright {};    // яркость света
 
@@ -122,16 +102,11 @@ namespace tr
         UpWard {0.0, -1.0, 0.0},  // направление наверх
         ViewTo {};                // направление взгляда
 
-      void calc_render_time(void);
       void load_surf_textures(void);
       void calc_position(void);
       void init_buffers(void);
-
       void init_prog_3d(void);
-      //void init_prog_2d(void);
 
-      void hud_init(void);
-      void hud_update(void);
   };
 
 } //namespace

@@ -9,6 +9,8 @@
 #include "config.hpp"
 #include "tools.hpp"
 
+using sys_clock = std::chrono::system_clock;
+
 namespace tr
 {
 
@@ -179,7 +181,7 @@ class menu_screen: public image
 class gui: public interface_gl_context
 {
   public:
-    gui(std::shared_ptr<trgl>& OpenGLContext);
+    gui(std::shared_ptr<trgl>& OpenGLContext, std::shared_ptr<glm::vec3> CameraLocation);
     ~gui(void) = default;
 
     //virtual void resize_event(int width, int height);
@@ -188,35 +190,39 @@ class gui: public interface_gl_context
     virtual void keyboard_event(int _key, int _scancode, int _action, int _mods); // _key, _scancode, _action, _mods
     //virtual void character_event(unsigned int) {}
 
+    uchar_color bg_color {0x00, 0x88, 0x00, 0x40}; // Фон панели HUD
+
     void render(void);
+    void hud_enable(void);
 
   private:
     int window_width = 0;
     int window_height = 0;
     unsigned int indices = 0;
+    bool hud_is_enabled = false;
+    int FPS = 500;                                 // частота кадров
+    GLsizei fps_uv_data = 0;                       // смещение данных FPS в буфере UV
 
     enum GUI_MODE { START_SCREEN, HUD };
     GUI_MODE mode = START_SCREEN;
 
     GLuint vao_gui = 0;
-    std::shared_ptr<trgl>& OGLContext; // OpenGL контекст окна приложения
-    vbo VBO_xy   { GL_ARRAY_BUFFER };  // координаты вершин
-    vbo VBO_rgba { GL_ARRAY_BUFFER };  // цвет вершин
-    vbo VBO_uv   { GL_ARRAY_BUFFER };  // текстурные координаты
-    std::vector<float> Vxy {};
-    std::vector<float> Vrgba {};
-    std::vector<float> Vuv {};
+    std::shared_ptr<trgl>& OGLContext;   // OpenGL контекст окна приложения
+    std::shared_ptr<glm::vec3> ViewFrom; // 3D координаты камеры вида
+    vbo VBO_xy   { GL_ARRAY_BUFFER };    // координаты вершин
+    vbo VBO_rgba { GL_ARRAY_BUFFER };    // цвет вершин
+    vbo VBO_uv   { GL_ARRAY_BUFFER };    // текстурные координаты
 
     void init_vao(void);
-    void escape(void);
-    void update(void);
-    void data_xy_prepare(int left, int top, uint width, uint height);
-    void data_rgba_prepare(float_color rgba);
-    void data_uv_prepare(float u0, float v0, float u1, float v1);
-    void rect_prepare(uint left, uint top, uint width, uint height, float_color rgba);
+    void vbo_clear(void);
+    std::vector<float> rect_xy(int left, int top, uint width, uint height);
+    std::vector<float> rect_rgba(float_color rgba);
+    std::vector<float> rect_uv(const std::string& Symbol);
+    void rectangle(uint left, uint top, uint width, uint height, float_color rgba);
+    void textrow(uint left, uint top, const std::vector<std::string>& Text, uint sybol_width, uint height);
 
     void start_screen(void);
-    void hud_init(void);
+    void calc_fps(void);
     void hud_update(void);
 };
 

@@ -52,6 +52,7 @@ void vbo::allocate (GLsizeiptr new_size)
 #endif //------------------------------------------------------------------
 
   glBindBuffer(gl_buffer_type, 0);
+  hem = 0;  // данные не переданы, поэтому указатель ставим в начало
 }
 
 
@@ -130,6 +131,29 @@ void vbo::attrib_i(GLuint index, GLint d_size, GLenum type, GLsizei stride, cons
 }
 
 
+///
+/// \brief vbo::append
+/// \param d_size
+/// \param data
+/// \return
+///
+/// \details Добавление данных в конец VBO (с контролем границы размера
+/// буфера). Вносит данные в буфер по указателю границы данных блока (hem),
+/// и сдвигает границу указателя на размер внесенных данных для приема
+/// следующеего блока данных
+///
+void vbo::append(const GLsizeiptr data_size, const GLvoid* data)
+{
+  #ifndef NDEBUG // проверка свободного места в буфере----------------------
+  if((allocated - hem) < data_size) ERR("VBO::SubDataAppend got overflow buffer");
+  if(data == nullptr) ERR("VBO::append can't add nullptr");
+  #endif //------------------------------------------------------------------
+
+  glBindBuffer(gl_buffer_type, id);
+  glBufferSubData(gl_buffer_type, hem, data_size, data);
+  glBindBuffer(gl_buffer_type, 0);
+  hem += data_size;
+}
 // ------------------------------- vbo_ctrl ------------------------------------------
 
 

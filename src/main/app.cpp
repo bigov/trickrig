@@ -109,8 +109,8 @@ app::app(void)
   // настройка рендер-буфера
   RenderBuffer = std::make_unique<frame_buffer>(Layout.width, Layout.height);
 
-  AppGUI = std::make_unique<gui>(GLContext);
   Space3d = std::make_unique<space_3d>(GLContext);
+  AppGUI = std::make_unique<gui>(GLContext, Space3d->ViewFrom);
 
   TimeStart = std::chrono::system_clock::now();
 
@@ -455,6 +455,7 @@ void app::map_open(uint map_id)
 
   cfg::map_view_load(Maps[map_id].Folder, Space3d->ViewFrom, Space3d->look_dir);
   Space3d->load();
+  AppGUI->hud_enable();
   RUN_3D = true;
 }
 
@@ -537,24 +538,13 @@ void app::show(void)
 
   while(is_open)
   {
-    if(RUN_3D)
-    {
-      Space3d->render(); // рендер 3D сцены
-      ProgramWin->use();
-      window_frame_render();
-      ProgramWin->unuse();
-    }
-    else
-    {
-      AppGUI->render();
-      ProgramWin->use();
-      window_frame_render();
-      ProgramWin->unuse();
+    if(RUN_3D) Space3d->render(); // рендер 3D сцены
+    AppGUI->render();
+    window_frame_render();
 
-      //PrograMenu->use();
-      //window_frame_render();
-      //PrograMenu->unuse();
-    }
+    //PrograMenu->use();
+    //window_frame_render();
+    //PrograMenu->unuse();
   }
 }
 
@@ -568,12 +558,13 @@ void app::show(void)
 ///
 void app::window_frame_render(void)
 {
-  glDisable(GL_DEPTH_TEST);
+  ProgramWin->use();
   vbo_mtx.lock();
   glBindVertexArray(vao2d);
   glDrawArrays(GL_TRIANGLES, 0, 6);
   GLContext->swap_buffers();
   vbo_mtx.unlock();
+  ProgramWin->unuse();
 
 #ifndef NDEBUG
   CHECK_OPENGL_ERRORS
