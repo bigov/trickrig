@@ -21,9 +21,8 @@ std::unique_ptr<gui> app::AppGUI = nullptr;
 
 app::MENU_MODES app::MenuMode = SCREEN_START;    // режим окна приложения
 bool app::RUN_3D = false;
-glm::vec3 app::Cursor3D = { 200.f, 200.f, 4.f }; // положение и размер прицела
-std::unique_ptr<glsl> app::ProgramWin = nullptr; // Шейдерная программа рендера фреймбуфера
-std::unique_ptr<glsl> app::PrograMenu = nullptr; // Шейдерная программа GUI меню
+glm::vec3 app::Cursor3D = { 200.f, 200.f, 2.f }; // положение и размер прицела
+std::unique_ptr<glsl> app::ShowScene = nullptr;  // Вывод текстуры фреймбуфера на окно
 
 GLuint app::vao2d  = 0;
 
@@ -150,28 +149,19 @@ app::app(void)
   Shaders.push_back({ GL_VERTEX_SHADER, cfg::app_key(SHADER_VERT_SCREEN) });
   Shaders.push_back({ GL_FRAGMENT_SHADER, cfg::app_key(SHADER_FRAG_SCREEN) });
 
-  ProgramWin = std::make_unique<glsl>(Shaders);
-  ProgramWin->use();
-  ProgramWin->AtribsList.push_back(
-    { ProgramWin->attrib("position"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 0 * sizeof(GLfloat) });
-  ProgramWin->AtribsList.push_back(
-    { ProgramWin->attrib("texcoord"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 2 * sizeof(GLfloat) });
-  glUniform1i(ProgramWin->uniform("WinTexture"), 1); // GL_TEXTURE1 - фрейм-буфер
-  ProgramWin->set_uniform("Cursor", Cursor3D);
-  ProgramWin->unuse();
+  ShowScene = std::make_unique<glsl>(Shaders);
+  ShowScene->use();
+  ShowScene->AtribsList.push_back(
+    { ShowScene->attrib("position"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 0 * sizeof(GLfloat) });
+  ShowScene->AtribsList.push_back(
+    { ShowScene->attrib("texcoord"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 2 * sizeof(GLfloat) });
+  glUniform1i(ShowScene->uniform("WinTexture"), 1); // GL_TEXTURE1 - фрейм-буфер
+  ShowScene->set_uniform("Cursor", {0.f, 0.f, 0.f});
+  ShowScene->unuse();
 
   vbo VboWin { GL_ARRAY_BUFFER };
   VboWin.allocate( sizeof(WinData), WinData );
-  VboWin.set_attributes(ProgramWin->AtribsList); // настройка положения атрибутов GLSL программы
-
-  std::list<std::pair<GLenum, std::string>> MenuShaders {};
-  MenuShaders.push_back({ GL_VERTEX_SHADER, "assets\\shaders\\menu_vert.glsl" });
-  MenuShaders.push_back({ GL_FRAGMENT_SHADER, "assets\\shaders\\menu_frag.glsl" });
-  PrograMenu = std::make_unique<glsl>(MenuShaders);
-  PrograMenu->AtribsList = ProgramWin->AtribsList;
-  PrograMenu->use();
-  glUniform1i(PrograMenu->uniform("WinTexture"), 2); // GL_TEXTURE2 - пользовательский GUI
-  PrograMenu->unuse();
+  VboWin.set_attributes(ShowScene->AtribsList); // настройка положения атрибутов GLSL программы
 
   glBindVertexArray(0);
 }
@@ -183,6 +173,20 @@ app::app(void)
 app::~app(void)
 {
   cfg::save(Layout); // Сохранение положения окна
+}
+
+
+void app::mode_3d(void)
+{
+  RUN_3D = true;
+  ShowScene->set_uniform("Cursor", Cursor3D);
+}
+
+
+void app::mode_2d(void)
+{
+  RUN_3D = false;
+  ShowScene->set_uniform("Cursor", {0.f, 0.f, 0.f});
 }
 
 
@@ -310,7 +314,7 @@ void app::cancel(void)
   if(RUN_3D)
   {
     cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
-    RUN_3D = false;
+    mode_2d();
     GLContext->cursor_restore();             // Включить указатель мыши
     GLContext->set_cursor_observer(*this);   // переключить обработчик смещения курсора
     GLContext->set_mbutton_observer(*this);   // обработчик кнопок мыши
@@ -456,7 +460,7 @@ void app::map_open(uint map_id)
   cfg::map_view_load(Maps[map_id].Folder, Space3d->ViewFrom, Space3d->look_dir);
   Space3d->load();
   AppGUI->hud_enable();
-  RUN_3D = true;
+  mode_3d();
 }
 
 
@@ -541,10 +545,6 @@ void app::show(void)
     if(RUN_3D) Space3d->render(); // рендер 3D сцены
     AppGUI->render();
     window_frame_render();
-
-    //PrograMenu->use();
-    //window_frame_render();
-    //PrograMenu->unuse();
   }
 }
 
@@ -558,13 +558,13 @@ void app::show(void)
 ///
 void app::window_frame_render(void)
 {
-  ProgramWin->use();
+  ShowScene->use();
   vbo_mtx.lock();
   glBindVertexArray(vao2d);
   glDrawArrays(GL_TRIANGLES, 0, 6);
   GLContext->swap_buffers();
   vbo_mtx.unlock();
-  ProgramWin->unuse();
+  ShowScene->unuse();
 
 #ifndef NDEBUG
   CHECK_OPENGL_ERRORS
@@ -703,7 +703,7 @@ void app::focus_lost_event()
   if (RUN_3D)
   {
      cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
-     RUN_3D = false;
+     mode_2d();
      GLContext->cursor_restore();            // Включить указатель мыши
      GLContext->set_cursor_observer(*this);  // переключить обработчик смещения курсора
      GLContext->set_mbutton_observer(*this);  // обработчик кнопок мыши

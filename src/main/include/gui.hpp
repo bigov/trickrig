@@ -18,7 +18,7 @@ typedef void(*func_ptr)(void);
 typedef void(*func_with_param_ptr)(uint);
 
 enum FONT_STYLE { FONT_NORMAL, FONT_BOLD, FONT_COUNT };
-enum BTN_STATE { BTN_NORMAL, BTN_OVER, BTN_PRESSED, BTN_DISABLE, STATES_COUNT };
+enum btn_state { BTN_NORMAL, BTN_OVER, BTN_PRESSED, BTN_DISABLE, STATES_COUNT };
 
 static const uint button_default_width = 140; // ширина кнопки GUI
 static const uint button_default_height = 32; // высота кнопки GUI
@@ -132,11 +132,11 @@ class button: public image
     uint x = 0; uint y = 0;       // положение кнопки
     func_ptr caller = nullptr;    // функция, вызываемая по нажатию на кнопку
 
-    bool state_update(BTN_STATE new_state);
-    BTN_STATE state_get(void) const { return state;}
+    bool state_update(btn_state new_state);
+    btn_state state_get(void) const { return state;}
 
   protected:
-    BTN_STATE state = STATES_COUNT;
+    btn_state state = STATES_COUNT;
     label Label {};
     MODE mode = MODES_COUNT;
 
@@ -165,7 +165,7 @@ class menu_screen: public image
     void init(uint new_width, uint new_height, const std::string& Title);
     void title_draw(const std::string& NewTitle);
     void button_add(uint x, uint y, const std::string& Label,
-                    func_ptr new_caller = nullptr, BTN_STATE new_state = BTN_NORMAL);
+                    func_ptr new_caller = nullptr, btn_state new_state = BTN_NORMAL);
     void list_add(const std::list<std::string>& ItemsList,
                   func_ptr fn_exit = nullptr, func_with_param_ptr fn_select = nullptr,
                   func_ptr fn_add = nullptr, func_ptr fn_delete = nullptr);
@@ -190,8 +190,6 @@ class gui: public interface_gl_context
     virtual void keyboard_event(int _key, int _scancode, int _action, int _mods); // _key, _scancode, _action, _mods
     //virtual void character_event(unsigned int) {}
 
-    uchar_color bg_color {0x00, 0x88, 0x00, 0x40}; // Фон панели HUD
-
     void render(void);
     void hud_enable(void);
 
@@ -203,8 +201,17 @@ class gui: public interface_gl_context
     int FPS = 500;                                 // частота кадров
     GLsizei fps_uv_data = 0;                       // смещение данных FPS в буфере UV
 
-    enum GUI_MODE { START_SCREEN, HUD };
-    GUI_MODE mode = START_SCREEN;
+    const float_color TitleColor  { 1.0f, 1.0f, 0.85f, 1.0f };
+    const float_color BorderColor { 0.7f, 0.7f, 0.7f, 1.0f };
+
+    struct button_data {
+        int pos[2] = {0,0};           // Экранные координаты кнопки
+        int stride_color = 0;         // Адрес цвета в VBO
+        btn_state state = BTN_NORMAL; // Состояние кнопки
+        func_ptr caller = nullptr;    // Адрес функции, вызываемой по нажатию
+    };
+
+    std::vector<button_data> buttons {};
 
     GLuint vao_gui = 0;
     std::shared_ptr<trgl>& OGLContext;   // OpenGL контекст окна приложения
@@ -219,11 +226,13 @@ class gui: public interface_gl_context
     std::vector<float> rect_rgba(float_color rgba);
     std::vector<float> rect_uv(const std::string& Symbol);
     void rectangle(uint left, uint top, uint width, uint height, float_color rgba);
-    void textrow(uint left, uint top, const std::vector<std::string>& Text, uint sybol_width, uint height);
+    void textrow(uint left, uint top, const std::vector<std::string>& Text, uint sybol_width, uint height, uint kerning);
 
     void start_screen(void);
     void calc_fps(void);
     void hud_update(void);
+
+    void button(const std::string& Label);
 };
 
 }

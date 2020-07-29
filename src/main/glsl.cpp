@@ -26,7 +26,9 @@ glsl::glsl(const std::list<std::pair<GLenum, std::string>>& L)
 ///
 glsl::~glsl(void)
 {
-  unuse();
+  if(!is_linked) return;
+  if(use_on) unuse();
+
   for(auto shader_id: Shaders)
   {
     glDetachShader(id, shader_id);
@@ -71,16 +73,16 @@ void glsl::validate(void)
 //
 void glsl::link()
 {
-  if(true == isLinked) return;
+  if(true == is_linked) return;
 
-  glGetProgramiv(id, GL_LINK_STATUS, &isLinked);
+  glGetProgramiv(id, GL_LINK_STATUS, &is_linked);
   // Если уже была слинкована внешней процедурой, то просто выходим
-  if(true == isLinked) return;
+  if(true == is_linked) return;
   // ,иначе линкуем на месте
   glLinkProgram(id);
-  glGetProgramiv(id, GL_LINK_STATUS, &isLinked);
+  glGetProgramiv(id, GL_LINK_STATUS, &is_linked);
   // и проверяем результат
-  if(false == isLinked)
+  if(false == is_linked)
   {
     GLsizei log_length = 0;
     GLchar message[1024];
@@ -98,7 +100,14 @@ void glsl::link()
 //
 void glsl::unuse(void)
 {
+  if(!use_on){
+    std::cerr << std::endl << __PRETTY_FUNCTION__
+              << ": status use_on = false" << std::endl;
+    return;
+  }
+
   glUseProgram(0);
+  use_on = false;
 
 #ifndef NDEBUG
   CHECK_OPENGL_ERRORS
@@ -113,8 +122,15 @@ void glsl::unuse(void)
 //
 void glsl::use(void)
 {
-  if(false == isLinked) link();
+  if(use_on){
+    std::cerr << std::endl << __PRETTY_FUNCTION__
+              << ": status use_on = true" << std::endl;
+    return;
+  }
+
+  if(false == is_linked) link();
   glUseProgram(id);
+  use_on = true;
   return;
 }
 
@@ -124,7 +140,7 @@ void glsl::use(void)
 //
 GLuint glsl::attrib(const char * name )
 {
-  if(!isLinked)
+  if(!is_linked)
   {
     std::string msg = "Can't get attrib \"";
     msg += name;
@@ -148,7 +164,7 @@ GLuint glsl::attrib(const char * name )
 //
 GLint glsl::uniform(const char * name )
 {
-  if(!isLinked)
+  if(!is_linked)
   {
     std::string msg = "Can't get uniform \"";
     msg += name;

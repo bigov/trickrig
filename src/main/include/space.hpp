@@ -32,12 +32,16 @@ namespace tr
 
       std::shared_ptr<glm::vec3> ViewFrom = nullptr;             // 3D координаты точки положения
       float look_dir[2] = {0.0f, 0.0f};  // Направление: азимут (0 - X) и тангаж (0 - горизОнталь, пи/2 - вертикаль)
-      GLuint texture_3d = 0;
 
     private:
       std::unique_ptr<std::thread> data_loader = nullptr;
-      space_3d(const space_3d &);
-      space_3d operator=(const space_3d &);
+
+      // Запретить копирование и перенос экземпляров класса
+      space_3d(const space_3d&) = delete;
+      space_3d& operator=(const space_3d&) = delete;
+      space_3d(space_3d&&) = delete;
+      space_3d& operator=(space_3d&&) = delete;
+      space_3d(void) = delete;
 
       vbo VBO3d      { GL_ARRAY_BUFFER }; // Буфер данных
 
@@ -106,7 +110,6 @@ namespace tr
       void calc_position(void);
       void init_buffers(void);
       void init_prog_3d(void);
-
   };
 
 } //namespace

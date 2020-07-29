@@ -45,7 +45,8 @@ namespace tr
       glsl& operator=(glsl&&) = delete;
 
       GLuint id = 0;
-      GLint isLinked = 0;
+      GLint is_linked = 0;
+      bool use_on = false;
       std::vector<GLuint> Shaders {};
       void attach_shader(GLenum shader_type, const std::string& file_name);
   };

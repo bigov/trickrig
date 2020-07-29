@@ -10,21 +10,22 @@ void main(void)
 {
   float thickness = 1.5f; // Толщина линий курсора
 
-  FragColor = texture2D(WinTexture, Texcoord); // "texture2D()" - deprecated
-  //FragColor = texture(WinTexture, Texcoord); // recommended using "texture()"
+  FragColor = texture2D(WinTexture, Texcoord);
 
-  // Формирование курсора c длиной стороны, равной Cursor.z
-  // в точке с координатами (Cursor.x; Cursor.y)
+  float dx = abs(gl_FragCoord.x - Cursor.x);
+  float dy = abs(gl_FragCoord.y - Cursor.y);
+
+
+  // Формирование курсора в точке с координатами (Cursor.x; Cursor.y)
+  // Длинна стороны курсора равна Cursor.z
   if((
-    abs(gl_FragCoord.x - Cursor.x) < thickness &&
-    abs(gl_FragCoord.y - Cursor.y) < Cursor.z
-  )||(
-    abs(gl_FragCoord.y - Cursor.y) < thickness &&
-    abs(gl_FragCoord.x - Cursor.x) < Cursor.z
+       dx < thickness && 1.f < dy && dy < Cursor.z
+     )||(
+       dy < thickness && 1.f < dx && dx < Cursor.z
     ))
   {
     float m = (FragColor.r + FragColor.g + FragColor.b)/3.f;
-    if(m < 0.6f) m += 0.5f; else m -= 0.5f; // "инвертировать" среднюю яркость
+    if(m > 0.5f) m -= 0.5f; else m += 0.5f; // "инвертировать" среднюю яркость
     FragColor = vec4(m, m, m, 1.f);         // получим курсор с инверсной яркостью
   }
 }

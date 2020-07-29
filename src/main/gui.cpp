@@ -384,7 +384,7 @@ button::button(const std::string& LabelText, func_ptr new_caller,
 /// \details Если текущий статус равен new_state - возвращается false,
 /// иначе - статус обновляется, кнопка перерисовывается и возвращается true
 ///
-bool button::state_update(BTN_STATE new_state)
+bool button::state_update(btn_state new_state)
 {
   assert( (new_state < STATES_COUNT) && "new_state out of range" );
   if(state == new_state) return false;
@@ -561,7 +561,7 @@ void menu_screen::title_draw(const std::string &NewTitle)
 /// \param Label
 ///
 void menu_screen::button_add(uint x, uint y, const std::string& Label,
-                             func_ptr new_caller, BTN_STATE new_state)
+                             func_ptr new_caller, btn_state new_state)
 {
   button Btn(Label, new_caller, x, y);
   Btn.state_update(new_state);
@@ -647,7 +647,7 @@ bool menu_screen::cursor_event(double x, double y)
   for(auto& Item: MenuItems)
   {
     if(Item.state_get() == BTN_DISABLE) continue;
-    BTN_STATE state = BTN_NORMAL;
+    btn_state state = BTN_NORMAL;
 
     if((x >= Item.x) && (x < (Item.x + Item.get_width())) &&
        (y >= Item.y) && (y < (Item.y + Item.get_height())))
@@ -767,6 +767,7 @@ void gui::vbo_clear(void)
 ///
 void gui::render(void)
 {
+  calc_fps();
   glDisable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -784,7 +785,6 @@ void gui::render(void)
 
   RenderBuffer->unbind();
   glBindVertexArray(0);
-  calc_fps();
 }
 
 ///
@@ -883,8 +883,9 @@ std::vector<float> gui::rect_uv(const std::string& Sym)
 /// \param height
 ///
 void gui::textrow(uint left, uint top, const std::vector<std::string>& Text,
-                  uint symbol_width = 7, uint height = 7 )
+                  uint symbol_width = 7, uint height = 7, uint kerning = 0)
 {
+
   float_color BgColor = {0.0f, 0.0f, 0.0f, 0.0f};
   for(const auto& Symbol: Text)
   {
@@ -898,7 +899,7 @@ void gui::textrow(uint left, uint top, const std::vector<std::string>& Text,
     VBO_uv.append(Vuv.size() * sizeof(float), Vuv.data());
 
     indices += 6;
-    left += symbol_width;
+    left += symbol_width + kerning;
   }
 }
 
@@ -928,6 +929,29 @@ void gui::rectangle(uint left, uint top, uint width, uint height,
 }
 
 
+void gui::button(const std::string &Label)
+{
+  const uint width = 200;
+  const uint height = 21;
+  float_color BgColor { 0.85f, 0.85f, 0.85f, 1.0f };
+
+  auto Text = string2vector(Label);
+  uint symbol_width = 7;
+  uint symbol_height = 14;
+  uint kerning = 2;
+
+  uint left = window_width/2 - width/2;
+  uint top =  window_height/2 - height/2;
+
+  rectangle(left-1, top-1, width+2, height+2, BorderColor);
+  rectangle(left, top, width, height, BgColor);
+
+  left += width/2 - Text.size() * (symbol_width + kerning) / 2;
+  top += 4;
+  textrow(left, top, Text, symbol_width, symbol_height, kerning);
+}
+
+
 ///
 /// \brief gui::start_screen
 ///
@@ -940,11 +964,16 @@ void gui::start_screen(void)
   auto Text = string2vector("Добро пожаловать в TrickRig!");
   uint symbol_width = 14;
   uint symbol_height = 21;
-  uint title_height = 40;
-  rectangle(border, border, window_width - 2*border, title_height, {1.0f, 1.0f, 0.8f, 1.f});
+  uint title_height = 100;
+  rectangle(border, border, window_width - 2*border, title_height+1, BorderColor);
+  rectangle(border, border, window_width - 2*border, title_height, TitleColor);
   uint left = border + window_width/2 - Text.size() * symbol_width / 2;
   uint top =  border + title_height/2 - symbol_height/2 + 2;
   textrow(left, top, Text, symbol_width, symbol_height);
+
+  // настроить; выбрать карту; закрыть
+
+  button("ВЫБРАТЬ КАРТУ");
 }
 
 
@@ -976,7 +1005,7 @@ void gui::hud_enable(void)
 {
   vbo_clear();
   unsigned int height = 60;
-  rectangle(0, window_height - height, window_width, height, {0.75f, 1.f, 0.75f, 0.5f});
+  rectangle(0, window_height - height, window_width, height, {0.0f, 0.5f, 0.0f, 0.25f});
 
   // FPS
   uint border = 2;

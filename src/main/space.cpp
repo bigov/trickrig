@@ -11,11 +11,9 @@
 
 #include "space.hpp"
 #include "config.hpp"
-#include "../assets/fonts/map.hpp"
 
 namespace tr
 {
-
 
 ///
 /// \brief space::space
@@ -156,6 +154,7 @@ void space_3d::load_surf_textures(void)
 {
   // Загрузка текстур поверхностей воксов
   glActiveTexture(GL_TEXTURE0);
+  GLuint texture_3d = 0;
   glGenTextures(1, &texture_3d);
   glBindTexture(GL_TEXTURE_2D, texture_3d);
   image ImgTex0 { cfg::app_key(PNG_TEXTURE0) };
@@ -178,8 +177,6 @@ void space_3d::load_surf_textures(void)
 
 ///
 /// \brief space::calc_position
-/// \param ev
-/// \param t: время прорисовки кадра в микросекундах
 /// \details Расчет положения и направления движения камеры
 ///
 void space_3d::calc_position(void)
@@ -239,15 +236,12 @@ void space_3d::calc_position(void)
 void space_3d::render(void)
 {
   if(render_indices.load() < indices_per_face) return;
-
   calc_position();
-  uint vertex_id = 0;    // переменная для приема ID вершины из VBO
   vbo_mtx.lock();
 
   RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glEnable(GL_DEPTH_TEST);
-  glEnable(GL_BLEND);
 
   // Построение 3D элементов пространства
   glBindVertexArray(vao_3d);
@@ -265,6 +259,7 @@ void space_3d::render(void)
   glBindVertexArray(0); // vao_3d
   RenderBuffer->unbind();
 
+  uint vertex_id = 0;    // переменная для приема ID вершины из VBO
   RenderBuffer->read_pixel(GLint(xpos), GLint(ypos), &vertex_id);
   vbo_mtx.unlock();
 
