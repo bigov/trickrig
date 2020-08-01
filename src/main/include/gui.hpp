@@ -203,16 +203,6 @@ class gui: public interface_gl_context
     GLsizei fps_uv_data = 0;                       // смещение данных FPS в буфере UV
     static unsigned int menu_border;   // расстояние от меню до края окна
 
-    static const float_color TitleBgColor;
-    static const float_color TitleHemColor;
-
-    static const uint btn_symbol_width;
-    static const uint btn_symbol_height;
-    static const uint btn_kerning;   // расстояние между символами в надписи на кнопке
-    static const uint btn_width;
-    static const uint btn_height;
-    static const uint btn_padding;  // расстояние между кнопками
-
     struct button_data {
         double x0 = 0; // left
         double y0 = 0; // top
@@ -224,35 +214,27 @@ class gui: public interface_gl_context
         size_t label_size = 0;
         func_ptr caller = nullptr;    // Адрес функции, вызываемой по нажатию
     };
-
-    static std::map<btn_state, float_color> BtnBgColor;
-    static std::map<btn_state, float_color> BtnHemColor;
     static std::vector<button_data> Buttons;
 
     GLuint vao_gui = 0;
-    std::shared_ptr<trgl>& OGLContext;   // OpenGL контекст окна приложения
-    std::shared_ptr<glm::vec3> ViewFrom; // 3D координаты камеры вида
-
-    vbo VBO_xy   { GL_ARRAY_BUFFER };    // координаты вершин
-    vbo VBO_rgba { GL_ARRAY_BUFFER };    // цвет вершин
-    vbo VBO_uv   { GL_ARRAY_BUFFER };    // текстурные координаты
+    std::shared_ptr<trgl>& OGLContext;       // OpenGL контекст окна приложения
+    std::shared_ptr<glm::vec3> ViewFrom;     // 3D координаты камеры вида
 
     void init_vao(void);
-    void vbo_clear(void);
 
-    static void close(void) { open = false; }
-    void config_screen(void);
-
+    static void clear(void);
+    static void start_screen(void);
+    static void config_screen(void);
     static std::vector<float> rect_xy(int left, int top, uint width, uint height);
     static std::vector<float> rect_rgba(float_color rgba);
     static std::vector<float> rect_uv(const std::string& Symbol);
-    void rectangle(uint left, uint top, uint width, uint height, float_color rgba);
-    void start_screen(void);
-    void title(const std::string& Label);
-    void button_append(const std::string& Label, func_ptr new_caller);
-    void textrow(uint left, uint top, const std::vector<std::string>& Text, uint sybol_width, uint height, uint kerning);
-    void button_move(button_data& Button, uint x, uint y);
-    std::pair<uint, uint> button_allocation(void);
+    static void rectangle(uint left, uint top, uint width, uint height, float_color rgba);
+    static void title(const std::string& Label);
+    static void button_append(const std::string& Label, func_ptr new_caller);
+    static void textrow(uint left, uint top, const std::vector<std::string>& Text, uint sybol_width, uint height, uint kerning);
+    static void button_move(button_data& Button, uint x, uint y);
+    static std::pair<uint, uint> button_allocation(void);
+    static void close(void) { open = false; }
 
     void calc_fps(void);
     void hud_update(void);

@@ -15,34 +15,37 @@ unsigned int gui::menu_border = 20;   // расстояние от меню до
 int gui::window_width  = 0; // ширина окна приложения
 int gui::window_height = 0; // высота окна приложения
 
-const uint gui::btn_symbol_width = 7;
-const uint gui::btn_symbol_height = 14;
-const uint gui::btn_kerning = 2;   // расстояние между символами в надписи на кнопке
-const uint gui::btn_width = 200;
-const uint gui::btn_height = 23;
-const uint gui::btn_padding = 14;  // расстояние между кнопками
+static const uint btn_symbol_width = 7;
+static const uint btn_symbol_height = 14;
+static const uint btn_kerning = 2;   // расстояние между символами в надписи на кнопке
+static const uint btn_width = 200;
+static const uint btn_height = 23;
+static const uint btn_padding = 14;  // расстояние между кнопками
+
+static std::unique_ptr<vbo> VBO_xy   = nullptr;   // координаты вершин
+static std::unique_ptr<vbo> VBO_rgba = nullptr; // цвет вершин
+static std::unique_ptr<vbo> VBO_uv   = nullptr;   // текстурные координаты
 
 unsigned int gui::indices = 0; // число индексов в 2Д режиме
 
-const float_color gui::TitleBgColor  { 1.0f, 1.0f, 0.85f, 1.0f };
-const float_color gui::TitleHemColor { 0.7f, 0.7f, 0.70f, 1.0f };
+static const float_color TitleBgColor  { 1.0f, 1.0f, 0.85f, 1.0f };
+static const float_color TitleHemColor { 0.7f, 0.7f, 0.70f, 1.0f };
 
-std::map<btn_state, float_color> gui::BtnBgColor {
-  { BTN_NORMAL,  { 0.85f, 0.85f, 0.85f, 1.0f } },
-  { BTN_OVER,    { 0.95f, 0.95f, 0.95f, 1.0f } },
-  { BTN_PRESSED, { 0.85f, 0.85f, 0.85f, 1.0f } },
-  { BTN_DISABLE, { 0.85f, 0.85f, 0.85f, 1.0f } },
+static const float_color BtnBgColor[4] = {
+  { 0.85f, 0.85f, 0.85f, 1.0f },
+  { 0.95f, 0.95f, 0.95f, 1.0f },
+  { 0.85f, 0.85f, 0.85f, 1.0f },
+  { 0.85f, 0.85f, 0.85f, 1.0f },
 };
 
-std::map<btn_state, float_color> gui::BtnHemColor {
-  { BTN_NORMAL,  { 0.70f, 0.70f, 0.70f, 1.0f } },
-  { BTN_OVER,    { 0.70f, 0.70f, 0.70f, 1.0f } },
-  { BTN_PRESSED, { 0.70f, 0.70f, 0.70f, 1.0f } },
-  { BTN_DISABLE, { 0.70f, 0.70f, 0.70f, 1.0f } },
+static const float_color BtnHemColor[4] {
+  { 0.70f, 0.70f, 0.70f, 1.0f },
+  { 0.70f, 0.70f, 0.70f, 1.0f },
+  { 0.70f, 0.70f, 0.70f, 1.0f },
+  { 0.70f, 0.70f, 0.70f, 1.0f },
 };
 
 std::vector<gui::button_data> gui::Buttons {};
-
 
 inline float fl(const unsigned char c) { return static_cast<float>(c)/255.f; }
 
@@ -740,6 +743,10 @@ gui::gui(std::shared_ptr<trgl>& OpenGLContext, std::shared_ptr<glm::vec3> Camera
 ///
 void gui::init_vao(void)
 {
+  VBO_xy   = std::make_unique<vbo>(GL_ARRAY_BUFFER);
+  VBO_rgba = std::make_unique<vbo>(GL_ARRAY_BUFFER);
+  VBO_uv   = std::make_unique<vbo>(GL_ARRAY_BUFFER);
+
   glGenVertexArrays(1, &vao_gui);
   glBindVertexArray(vao_gui);
   size_t max_elements_count = 400; // выделяем память VBO на 400 элементов
@@ -757,16 +764,16 @@ void gui::init_vao(void)
   }
   VBOindex.allocate(sizeof(GLuint) * DataIdx.size(), DataIdx.data());// индексный VBO
 
-  VBO_xy.allocate  (sizeof(float) * 2 * max_elements_count); // XY VBO
-  VBO_uv.allocate  (sizeof(float) * 2 * max_elements_count); // UV VBO
-  VBO_rgba.allocate(sizeof(float) * 4 * max_elements_count); // RGBA VBO
+  VBO_xy->allocate  (sizeof(float) * 2 * max_elements_count); // XY VBO
+  VBO_uv->allocate  (sizeof(float) * 2 * max_elements_count); // UV VBO
+  VBO_rgba->allocate(sizeof(float) * 4 * max_elements_count); // RGBA VBO
 
   auto A = Program2d->AtribsList.begin();
-  VBO_xy.attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
+  VBO_xy->attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
   ++A;
-  VBO_rgba.attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
+  VBO_rgba->attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
   ++A;
-  VBO_uv.attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
+  VBO_uv->attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
 
   glBindVertexArray(0);
 }
@@ -775,12 +782,13 @@ void gui::init_vao(void)
 ///
 /// \brief gui::vbo_clear
 ///
-void gui::vbo_clear(void)
+void gui::clear(void)
 {
   indices = 0;
-  VBO_xy.clear();
-  VBO_uv.clear();
-  VBO_rgba.clear();
+  VBO_xy->clear();
+  VBO_uv->clear();
+  VBO_rgba->clear();
+  Buttons.clear();
 }
 
 
@@ -825,7 +833,7 @@ void gui::cursor_event(double x, double y)
       {
         B.state = BTN_OVER;
         auto Vrgba = rect_rgba(BtnBgColor[B.state]);
-        VBO_rgba.update(Vrgba.size() * sizeof(float), Vrgba.data(), B.rgba_stride);
+        VBO_rgba->update(Vrgba.size() * sizeof(float), Vrgba.data(), B.rgba_stride);
       }
     } else
     {
@@ -833,7 +841,7 @@ void gui::cursor_event(double x, double y)
       {
         B.state = BTN_NORMAL;
         auto Vrgba = rect_rgba(BtnBgColor[B.state]);
-        VBO_rgba.update(Vrgba.size() * sizeof(float), Vrgba.data(), B.rgba_stride);
+        VBO_rgba->update(Vrgba.size() * sizeof(float), Vrgba.data(), B.rgba_stride);
       }
     }
   }
@@ -947,13 +955,13 @@ void gui::textrow(uint left, uint top, const std::vector<std::string>& Text,
   for(const auto& Symbol: Text)
   {
     auto Vxy = rect_xy(left, top, symbol_width, height);
-    VBO_xy.append(Vxy.size() * sizeof(float), Vxy.data());
+    VBO_xy->append(Vxy.size() * sizeof(float), Vxy.data());
 
     auto Vrgba = rect_rgba(BgColor);
-    VBO_rgba.append(Vrgba.size() * sizeof(float), Vrgba.data());
+    VBO_rgba->append(Vrgba.size() * sizeof(float), Vrgba.data());
 
     auto Vuv = rect_uv(Symbol);
-    VBO_uv.append(Vuv.size() * sizeof(float), Vuv.data());
+    VBO_uv->append(Vuv.size() * sizeof(float), Vuv.data());
 
     indices += 6;
     left += symbol_width + kerning;
@@ -974,13 +982,13 @@ void gui::rectangle(uint left, uint top, uint width, uint height,
                    float_color rgba)
 {
   auto Vxy = rect_xy(left, top, width, height);
-  VBO_xy.append(Vxy.size() * sizeof(float), Vxy.data());
+  VBO_xy->append(Vxy.size() * sizeof(float), Vxy.data());
 
   auto Vrgba = rect_rgba(rgba);
-  VBO_rgba.append(Vrgba.size() * sizeof(float), Vrgba.data());
+  VBO_rgba->append(Vrgba.size() * sizeof(float), Vrgba.data());
 
   auto Vuv = rect_uv(" ");
-  VBO_uv.append(Vuv.size() * sizeof(float), Vuv.data());
+  VBO_uv->append(Vuv.size() * sizeof(float), Vuv.data());
 
   indices += 6;
 }
@@ -1044,14 +1052,14 @@ void gui::button_move(button_data& Button, uint x, uint y)
 
   // Сдвиг рамки
   auto Vxy = rect_xy(new_left - 1, new_top - 1, btn_width + 2, btn_height + 2);
-  VBO_xy.update(Vxy.size() * sizeof(float), Vxy.data(), stride);
+  VBO_xy->update(Vxy.size() * sizeof(float), Vxy.data(), stride);
 
   auto stride_interval = Vxy.size() * sizeof(float);
 
   // Сдвиг основного фона кнопки
   stride += stride_interval;
   Vxy = rect_xy(new_left, new_top, btn_width, btn_height);
-  VBO_xy.update(Vxy.size() * sizeof(float), Vxy.data(), stride);
+  VBO_xy->update(Vxy.size() * sizeof(float), Vxy.data(), stride);
 
   Button.x0 = new_left * 1.0;
   Button.y0 = new_top * 1.0;
@@ -1066,7 +1074,7 @@ void gui::button_move(button_data& Button, uint x, uint y)
   {
     stride += stride_interval;
     Vxy = rect_xy(new_left, new_top, btn_symbol_width, btn_symbol_height);
-    VBO_xy.update(Vxy.size() * sizeof(float), Vxy.data(), stride);
+    VBO_xy->update(Vxy.size() * sizeof(float), Vxy.data(), stride);
     new_left += btn_symbol_width + btn_kerning;
   }
 
@@ -1092,10 +1100,10 @@ void gui::button_append(const std::string &Label, func_ptr new_caller = nullptr)
   Button.y1 = (top + btn_height) * 1.0;
   Button.caller = new_caller;
 
-  Button.xy_stride = VBO_xy.get_hem();
+  Button.xy_stride = VBO_xy->get_hem();
   rectangle(left-1, top-1, btn_width+2, btn_height+2, BtnHemColor[Button.state]);
 
-  Button.rgba_stride = VBO_rgba.get_hem();
+  Button.rgba_stride = VBO_rgba->get_hem();
   rectangle(left, top, btn_width, btn_height, BtnBgColor[Button.state]);
 
   auto Text = string2vector(Label);
@@ -1114,10 +1122,11 @@ void gui::button_append(const std::string &Label, func_ptr new_caller = nullptr)
 ///
 void gui::start_screen(void)
 {
+  clear();
   rectangle(menu_border, menu_border, window_width - 2*menu_border,
             window_height - 2*menu_border, {0.9f, 1.f, 0.9f, 1.f});
   title("Добро пожаловать в TrickRig!");
-  button_append("НАСТРОИТЬ");
+  button_append("НАСТРОИТЬ", config_screen);
   button_append("ВЫБРАТЬ КАРТУ");
   button_append("ЗАКРЫТЬ", close);
 }
@@ -1128,10 +1137,11 @@ void gui::start_screen(void)
 ///
 void gui::config_screen(void)
 {
+  clear();
   rectangle(menu_border, menu_border, window_width - 2*menu_border,
             window_height - 2*menu_border, {0.9f, 1.f, 0.9f, 1.f});
   title("НАСТРОЙКИ ПРИЛОЖЕНИЯ");
-  button_append("ЗАКРЫТЬ");
+  button_append("ЗАКРЫТЬ", start_screen);
 }
 
 ///
@@ -1160,7 +1170,7 @@ void gui::calc_fps(void)
 ///
 void gui::hud_enable(void)
 {
-  vbo_clear();
+  clear();
   unsigned int height = 60;
   rectangle(0, window_height - height, window_width, height, {0.0f, 0.5f, 0.0f, 0.25f});
 
@@ -1197,7 +1207,7 @@ void gui::hud_update(void)
     FPSuv.insert(FPSuv.end(), uv.begin(), uv.end());
   }
 
-  glBindBuffer(GL_ARRAY_BUFFER, VBO_uv.get_id());
+  glBindBuffer(GL_ARRAY_BUFFER, VBO_uv->get_id());
   glBufferSubData(GL_ARRAY_BUFFER, fps_uv_data, FPSuv.size() * sizeof(float), FPSuv.data());
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
