@@ -59,7 +59,6 @@ class app: public interface_gl_context
     int action = -1;
     int key = -1;
 
-    static bool is_open;                     // состояние окна
     static layout Layout;                    // положение окна и размеры
     float aspect = 1.0f;                     // соотношение размеров окна
     static std::unique_ptr<space_3d> Space3d;     // = nullptr;

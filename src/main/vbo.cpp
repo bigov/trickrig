@@ -144,16 +144,36 @@ void vbo::attrib_i(GLuint index, GLint d_size, GLenum type, GLsizei stride, cons
 ///
 void vbo::append(const GLsizeiptr data_size, const GLvoid* data)
 {
-  #ifndef NDEBUG // проверка свободного места в буфере----------------------
+  #ifndef NDEBUG
   if((allocated - hem) < data_size) ERR("VBO::SubDataAppend got overflow buffer");
-  if(data == nullptr) ERR("VBO::append can't add nullptr");
-  #endif //------------------------------------------------------------------
+  #endif
 
   glBindBuffer(gl_buffer_type, id);
   glBufferSubData(gl_buffer_type, hem, data_size, data);
   glBindBuffer(gl_buffer_type, 0);
   hem += data_size;
 }
+
+
+///
+/// \brief vbo::update
+/// \param data_size
+/// \param data
+/// \param stride
+///
+void vbo::update(const GLsizeiptr data_size, const GLvoid *data, GLsizeiptr stride)
+{
+  #ifndef NDEBUG
+  if((stride + data_size) > allocated) ERR("vbo::update overflow the buffer");
+  if((stride + data_size) > hem) std::cerr << "vbo::update overflow the current hem buffer";
+  #endif
+
+  glBindBuffer(gl_buffer_type, id);
+  glBufferSubData(gl_buffer_type, stride, data_size, data);
+  glBindBuffer(gl_buffer_type, 0);
+}
+
+
 // ------------------------------- vbo_ctrl ------------------------------------------
 
 

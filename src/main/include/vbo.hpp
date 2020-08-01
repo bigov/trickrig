@@ -39,6 +39,7 @@ class vbo
     void allocate (GLsizeiptr new_size);
     void allocate (GLsizeiptr new_size, const GLvoid* data);
     void append(const GLsizeiptr data_size, const GLvoid* data);
+    void update(const GLsizeiptr data_size, const GLvoid* data, GLsizeiptr stride);
     void clear(void) { hem = 0; }
 
     GLsizeiptr max_size(void);

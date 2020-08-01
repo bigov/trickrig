@@ -5,8 +5,7 @@ namespace tr {
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
-menu_screen app::MenuOnImage {};          // Начальное меню приложения
-bool        app::is_open = true;       // состояние окна
+menu_screen app::MenuOnImage {};       // Начальное меню приложения
 GLuint      app::texture_gui = 0;      // id тектуры HUD
 layout      app::Layout {};            // размеры и положение окна
 std::vector<map> app::Maps {};         // список карт
@@ -334,7 +333,7 @@ void app::cancel(void)
       MenuMode = SCREEN_START;
       break;
     case SCREEN_START:
-      is_open = false;
+      AppGUI->open = false;
       break;
   }
 }
@@ -391,7 +390,7 @@ void app::remove_map(void)
 ///
 void app::app_close(void)
 {
-  is_open = false;
+  AppGUI->open = false;
 }
 
 
@@ -528,19 +527,25 @@ void app::update_gui_image(void)
 ///
 void app::show(void)
 {
+
   GLContext->set_char_observer(*this);      // ввод с клавиатуры
   GLContext->set_error_observer(*this);     // отслеживание ошибок
-  GLContext->set_cursor_observer(*this);    // курсор мыши в окне
-  GLContext->set_mbutton_observer(*this);   // кнопки мыши
+
+  //GLContext->set_cursor_observer(*this);    // курсор мыши в окне
+  GLContext->set_cursor_observer(*AppGUI.get());    // курсор мыши в окне
+
+  //GLContext->set_mbutton_observer(*this);   // кнопки мыши
+  GLContext->set_mbutton_observer(*AppGUI.get());   // кнопки мыши
+
   GLContext->set_keyboard_observer(*this);  // клавиши клавиатуры
   GLContext->set_position_observer(*this);  // положение окна
   GLContext->add_size_observer(*this);      // размер окна
   GLContext->set_close_observer(*this);     // закрытие окна
   GLContext->set_focuslost_observer(*this); // потеря окном фокуса ввода
 
-  //menu_start();
+  AppGUI->open = true;
 
-  while(is_open)
+  while(AppGUI->open)
   {
     if(RUN_3D) Space3d->render(); // рендер 3D сцены
     AppGUI->render();
@@ -632,7 +637,7 @@ void app::character_event(uint ch)
 ///
 void app::close_event(void)
 {
-  is_open = false;
+  AppGUI->open = false;
 }
 
 

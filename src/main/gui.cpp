@@ -10,19 +10,42 @@ uint menu_screen::selected_row_id = 0;
 std::string font_dir = "../assets/fonts/";
 atlas TextureFont { font_dir + font::texture_file, font::texture_cols, font::texture_rows };
 
+bool gui::open = false;
+unsigned int gui::menu_border = 20;   // расстояние от меню до края окна
+int gui::window_width  = 0; // ширина окна приложения
+int gui::window_height = 0; // высота окна приложения
+
+const uint gui::btn_symbol_width = 7;
+const uint gui::btn_symbol_height = 14;
+const uint gui::btn_kerning = 2;   // расстояние между символами в надписи на кнопке
+const uint gui::btn_width = 200;
+const uint gui::btn_height = 23;
+const uint gui::btn_padding = 14;  // расстояние между кнопками
+
+unsigned int gui::indices = 0; // число индексов в 2Д режиме
+
+const float_color gui::TitleBgColor  { 1.0f, 1.0f, 0.85f, 1.0f };
+const float_color gui::TitleHemColor { 0.7f, 0.7f, 0.70f, 1.0f };
+
+std::map<btn_state, float_color> gui::BtnBgColor {
+  { BTN_NORMAL,  { 0.85f, 0.85f, 0.85f, 1.0f } },
+  { BTN_OVER,    { 0.95f, 0.95f, 0.95f, 1.0f } },
+  { BTN_PRESSED, { 0.85f, 0.85f, 0.85f, 1.0f } },
+  { BTN_DISABLE, { 0.85f, 0.85f, 0.85f, 1.0f } },
+};
+
+std::map<btn_state, float_color> gui::BtnHemColor {
+  { BTN_NORMAL,  { 0.70f, 0.70f, 0.70f, 1.0f } },
+  { BTN_OVER,    { 0.70f, 0.70f, 0.70f, 1.0f } },
+  { BTN_PRESSED, { 0.70f, 0.70f, 0.70f, 1.0f } },
+  { BTN_DISABLE, { 0.70f, 0.70f, 0.70f, 1.0f } },
+};
+
+std::vector<gui::button_data> gui::Buttons {};
+
+
 inline float fl(const unsigned char c) { return static_cast<float>(c)/255.f; }
 
-/*
-
-dst - базовое изображение, scr - накладываемое
-
-out_a = src_a + dst_a * ( 1 - src_a );
-
-1) out_c = (src_c * scr_a + dst_c * dst_a * ( 1 - src_a )) / out_a
- out_a == 0 -> out_c = 0
-2) out_c = scr_c + dst_c * ( 1 - src_a );
-
-*/
 ///
 /// \brief blend_1
 /// \param src
@@ -386,7 +409,6 @@ button::button(const std::string& LabelText, func_ptr new_caller,
 ///
 bool button::state_update(btn_state new_state)
 {
-  assert( (new_state < STATES_COUNT) && "new_state out of range" );
   if(state == new_state) return false;
   state = new_state;
 
@@ -787,6 +809,37 @@ void gui::render(void)
   glBindVertexArray(0);
 }
 
+
+///
+/// \brief gui::cursor_event
+/// \param x
+/// \param y
+///
+void gui::cursor_event(double x, double y)
+{
+  for(auto& B: Buttons)
+  {
+    if(x > B.x0 && x < B.x1 && y > B.y0 && y < B.y1)
+    {
+      if(B.state != BTN_OVER)
+      {
+        B.state = BTN_OVER;
+        auto Vrgba = rect_rgba(BtnBgColor[B.state]);
+        VBO_rgba.update(Vrgba.size() * sizeof(float), Vrgba.data(), B.rgba_stride);
+      }
+    } else
+    {
+      if(B.state == BTN_OVER)
+      {
+        B.state = BTN_NORMAL;
+        auto Vrgba = rect_rgba(BtnBgColor[B.state]);
+        VBO_rgba.update(Vrgba.size() * sizeof(float), Vrgba.data(), B.rgba_stride);
+      }
+    }
+  }
+}
+
+
 ///
 /// \brief gui::mouse_event
 /// \param _button
@@ -797,7 +850,11 @@ void gui::mouse_event(int _button, int _action, int)
 {
   if( (_button == MOUSE_BUTTON_LEFT)
   and (_action == RELEASE) )
-    std::clog << "mouse event on gui" << std::endl;
+    for(auto& B: Buttons)
+    {
+      if(nullptr == B.caller) continue;
+      if(B.state == BTN_OVER) B.caller();
+    }
 }
 
 
@@ -929,26 +986,126 @@ void gui::rectangle(uint left, uint top, uint width, uint height,
 }
 
 
-void gui::button(const std::string &Label)
+///
+/// \brief gui::title
+/// \param Label
+///
+void gui::title(const std::string& Label)
 {
-  const uint width = 200;
-  const uint height = 21;
-  float_color BgColor { 0.85f, 0.85f, 0.85f, 1.0f };
+  auto Text = string2vector(Label);
+  uint symbol_width = 14;
+  uint symbol_height = 21;
+  uint title_height = 100;
+  rectangle(menu_border, menu_border, window_width - 2*menu_border, title_height+1, TitleHemColor);
+  rectangle(menu_border, menu_border, window_width - 2*menu_border, title_height, TitleBgColor);
+  uint left = menu_border + window_width/2 - Text.size() * symbol_width / 2;
+  uint top =  menu_border + title_height/2 - symbol_height/2 + 2;
+  textrow(left, top, Text, symbol_width, symbol_height);
+}
+
+
+///
+/// \brief gui::button_allocation
+/// \return
+///
+/// \details Возвращает координаты новой кнопки и перераспределяет
+/// по экрану уже существующие кнопки с учетом добавления новой
+///
+std::pair<uint, uint> gui::button_allocation(void)
+{
+  uint left = (window_width - btn_width)/2;
+  uint top = (window_height - btn_height)/2;
+
+  if(Buttons.empty()) return {left, top};
+
+  // Вертикальный сдвиг кнопок
+  uint move_dist = (btn_height + btn_padding) / 2;
+  for(auto& B: Buttons)
+  {
+    button_move(B, 0, -move_dist);
+    top += move_dist;
+  }
+
+  return {left, top};
+}
+
+
+///
+/// \brief gui::button_move
+/// \param Button
+/// \param x
+/// \param y
+///
+void gui::button_move(button_data& Button, uint x, uint y)
+{
+  auto new_left = static_cast<uint>(Button.x0) + x;
+  auto new_top = static_cast<uint>(Button.y0) + y;
+  auto stride = Button.xy_stride;
+
+  // Сдвиг рамки
+  auto Vxy = rect_xy(new_left - 1, new_top - 1, btn_width + 2, btn_height + 2);
+  VBO_xy.update(Vxy.size() * sizeof(float), Vxy.data(), stride);
+
+  auto stride_interval = Vxy.size() * sizeof(float);
+
+  // Сдвиг основного фона кнопки
+  stride += stride_interval;
+  Vxy = rect_xy(new_left, new_top, btn_width, btn_height);
+  VBO_xy.update(Vxy.size() * sizeof(float), Vxy.data(), stride);
+
+  Button.x0 = new_left * 1.0;
+  Button.y0 = new_top * 1.0;
+  Button.x1 = (new_left + btn_width) * 1.0;
+  Button.y1 = (new_top + btn_height) * 1.0;
+
+  // Сдвиг надписи, состоящей из label_size прямоугольников
+  new_left += btn_width/2 - Button.label_size * (btn_symbol_width + btn_kerning) / 2;
+  new_top += 5;
+
+  for(size_t i = 0; i < Button.label_size; ++i)
+  {
+    stride += stride_interval;
+    Vxy = rect_xy(new_left, new_top, btn_symbol_width, btn_symbol_height);
+    VBO_xy.update(Vxy.size() * sizeof(float), Vxy.data(), stride);
+    new_left += btn_symbol_width + btn_kerning;
+  }
+
+}
+
+
+///
+/// \brief gui::button
+/// \param Label
+///
+void gui::button_append(const std::string &Label, func_ptr new_caller = nullptr)
+{
+  auto XY = button_allocation();
+
+  uint left = XY.first;
+  uint top = XY.second;
+
+  button_data Button {};
+  Button.state = BTN_NORMAL;
+  Button.x0 = left * 1.0;
+  Button.y0 = top * 1.0;
+  Button.x1 = (left + btn_width) * 1.0;
+  Button.y1 = (top + btn_height) * 1.0;
+  Button.caller = new_caller;
+
+  Button.xy_stride = VBO_xy.get_hem();
+  rectangle(left-1, top-1, btn_width+2, btn_height+2, BtnHemColor[Button.state]);
+
+  Button.rgba_stride = VBO_rgba.get_hem();
+  rectangle(left, top, btn_width, btn_height, BtnBgColor[Button.state]);
 
   auto Text = string2vector(Label);
-  uint symbol_width = 7;
-  uint symbol_height = 14;
-  uint kerning = 2;
+  Button.label_size = Text.size();
 
-  uint left = window_width/2 - width/2;
-  uint top =  window_height/2 - height/2;
+  left += btn_width/2 - Text.size() * (btn_symbol_width + btn_kerning) / 2;
+  top += 5;
+  textrow(left, top, Text, btn_symbol_width, btn_symbol_height, btn_kerning);
 
-  rectangle(left-1, top-1, width+2, height+2, BorderColor);
-  rectangle(left, top, width, height, BgColor);
-
-  left += width/2 - Text.size() * (symbol_width + kerning) / 2;
-  top += 4;
-  textrow(left, top, Text, symbol_width, symbol_height, kerning);
+  Buttons.push_back(Button);
 }
 
 
@@ -957,25 +1114,25 @@ void gui::button(const std::string &Label)
 ///
 void gui::start_screen(void)
 {
-  unsigned int border = 20;
-  rectangle(border, border, window_width - 2*border, window_height - 2*border, {0.9f, 1.f, 0.9f, 1.f});
-
-  // title
-  auto Text = string2vector("Добро пожаловать в TrickRig!");
-  uint symbol_width = 14;
-  uint symbol_height = 21;
-  uint title_height = 100;
-  rectangle(border, border, window_width - 2*border, title_height+1, BorderColor);
-  rectangle(border, border, window_width - 2*border, title_height, TitleColor);
-  uint left = border + window_width/2 - Text.size() * symbol_width / 2;
-  uint top =  border + title_height/2 - symbol_height/2 + 2;
-  textrow(left, top, Text, symbol_width, symbol_height);
-
-  // настроить; выбрать карту; закрыть
-
-  button("ВЫБРАТЬ КАРТУ");
+  rectangle(menu_border, menu_border, window_width - 2*menu_border,
+            window_height - 2*menu_border, {0.9f, 1.f, 0.9f, 1.f});
+  title("Добро пожаловать в TrickRig!");
+  button_append("НАСТРОИТЬ");
+  button_append("ВЫБРАТЬ КАРТУ");
+  button_append("ЗАКРЫТЬ", close);
 }
 
+
+///
+/// \brief gui::config_screen
+///
+void gui::config_screen(void)
+{
+  rectangle(menu_border, menu_border, window_width - 2*menu_border,
+            window_height - 2*menu_border, {0.9f, 1.f, 0.9f, 1.f});
+  title("НАСТРОЙКИ ПРИЛОЖЕНИЯ");
+  button_append("ЗАКРЫТЬ");
+}
 
 ///
 /// \brief space::calc_render_time
@@ -1028,7 +1185,7 @@ void gui::hud_enable(void)
 ///
 void gui::hud_update(void)
 {
-  // счетчик FPS
+  // счетчик FPS и координаты камеры
   char line[35] = {'\0'}; // длина строки с '\0'
   std::sprintf(line, "%.4i, X:%+06.1f, Y:%+06.1f, Z:%+06.1f",
                FPS, ViewFrom->x, ViewFrom->y, ViewFrom->z);
@@ -1039,9 +1196,6 @@ void gui::hud_update(void)
     auto uv = rect_uv(Symbol);
     FPSuv.insert(FPSuv.end(), uv.begin(), uv.end());
   }
-
-  //std::sprintf(ln, "X:%+06.1f, Y:%+06.1f, Z:%+06.1f, a:%+04.3f, t:%+04.3f",
-  ///                ViewFrom->x, ViewFrom->y, ViewFrom->z, look_dir[0], look_dir[1]);
 
   glBindBuffer(GL_ARRAY_BUFFER, VBO_uv.get_id());
   glBufferSubData(GL_ARRAY_BUFFER, fps_uv_data, FPSuv.size() * sizeof(float), FPSuv.data());

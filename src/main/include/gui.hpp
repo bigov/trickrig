@@ -18,7 +18,7 @@ typedef void(*func_ptr)(void);
 typedef void(*func_with_param_ptr)(uint);
 
 enum FONT_STYLE { FONT_NORMAL, FONT_BOLD, FONT_COUNT };
-enum btn_state { BTN_NORMAL, BTN_OVER, BTN_PRESSED, BTN_DISABLE, STATES_COUNT };
+enum btn_state { BTN_NORMAL, BTN_OVER, BTN_PRESSED, BTN_DISABLE };
 
 static const uint button_default_width = 140; // ширина кнопки GUI
 static const uint button_default_height = 32; // высота кнопки GUI
@@ -136,7 +136,7 @@ class button: public image
     btn_state state_get(void) const { return state;}
 
   protected:
-    btn_state state = STATES_COUNT;
+    btn_state state = BTN_NORMAL;
     label Label {};
     MODE mode = MODES_COUNT;
 
@@ -184,8 +184,9 @@ class gui: public interface_gl_context
     gui(std::shared_ptr<trgl>& OpenGLContext, std::shared_ptr<glm::vec3> CameraLocation);
     ~gui(void) = default;
 
+    static bool open;
     //virtual void resize_event(int width, int height);
-    //virtual void cursor_event(double x, double y) {}                                //x, y
+    virtual void cursor_event(double x, double y);                             // x, y
     virtual void mouse_event(int _button, int _action, int _mods);                // _button, _action, _mods
     virtual void keyboard_event(int _key, int _scancode, int _action, int _mods); // _key, _scancode, _action, _mods
     //virtual void character_event(unsigned int) {}
@@ -194,45 +195,67 @@ class gui: public interface_gl_context
     void hud_enable(void);
 
   private:
-    int window_width = 0;
-    int window_height = 0;
-    unsigned int indices = 0;
+    static int window_width;
+    static int window_height;
+    static unsigned int indices;
     bool hud_is_enabled = false;
     int FPS = 500;                                 // частота кадров
     GLsizei fps_uv_data = 0;                       // смещение данных FPS в буфере UV
+    static unsigned int menu_border;   // расстояние от меню до края окна
 
-    const float_color TitleColor  { 1.0f, 1.0f, 0.85f, 1.0f };
-    const float_color BorderColor { 0.7f, 0.7f, 0.7f, 1.0f };
+    static const float_color TitleBgColor;
+    static const float_color TitleHemColor;
+
+    static const uint btn_symbol_width;
+    static const uint btn_symbol_height;
+    static const uint btn_kerning;   // расстояние между символами в надписи на кнопке
+    static const uint btn_width;
+    static const uint btn_height;
+    static const uint btn_padding;  // расстояние между кнопками
 
     struct button_data {
-        int pos[2] = {0,0};           // Экранные координаты кнопки
-        int stride_color = 0;         // Адрес цвета в VBO
+        double x0 = 0; // left
+        double y0 = 0; // top
+        double x1 = 0; // left + width
+        double y1 = 0; // top + heigth
         btn_state state = BTN_NORMAL; // Состояние кнопки
+        GLsizeiptr xy_stride = 0;     // Адрес в VBO координат кнопки
+        GLsizeiptr rgba_stride = 0;   // Адрес в VBO данных цвета кнопки
+        size_t label_size = 0;
         func_ptr caller = nullptr;    // Адрес функции, вызываемой по нажатию
     };
 
-    std::vector<button_data> buttons {};
+    static std::map<btn_state, float_color> BtnBgColor;
+    static std::map<btn_state, float_color> BtnHemColor;
+    static std::vector<button_data> Buttons;
 
     GLuint vao_gui = 0;
     std::shared_ptr<trgl>& OGLContext;   // OpenGL контекст окна приложения
     std::shared_ptr<glm::vec3> ViewFrom; // 3D координаты камеры вида
+
     vbo VBO_xy   { GL_ARRAY_BUFFER };    // координаты вершин
     vbo VBO_rgba { GL_ARRAY_BUFFER };    // цвет вершин
     vbo VBO_uv   { GL_ARRAY_BUFFER };    // текстурные координаты
 
     void init_vao(void);
     void vbo_clear(void);
-    std::vector<float> rect_xy(int left, int top, uint width, uint height);
-    std::vector<float> rect_rgba(float_color rgba);
-    std::vector<float> rect_uv(const std::string& Symbol);
-    void rectangle(uint left, uint top, uint width, uint height, float_color rgba);
-    void textrow(uint left, uint top, const std::vector<std::string>& Text, uint sybol_width, uint height, uint kerning);
 
+    static void close(void) { open = false; }
+    void config_screen(void);
+
+    static std::vector<float> rect_xy(int left, int top, uint width, uint height);
+    static std::vector<float> rect_rgba(float_color rgba);
+    static std::vector<float> rect_uv(const std::string& Symbol);
+    void rectangle(uint left, uint top, uint width, uint height, float_color rgba);
     void start_screen(void);
+    void title(const std::string& Label);
+    void button_append(const std::string& Label, func_ptr new_caller);
+    void textrow(uint left, uint top, const std::vector<std::string>& Text, uint sybol_width, uint height, uint kerning);
+    void button_move(button_data& Button, uint x, uint y);
+    std::pair<uint, uint> button_allocation(void);
+
     void calc_fps(void);
     void hud_update(void);
-
-    void button(const std::string& Label);
 };
 
 }
