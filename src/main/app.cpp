@@ -5,7 +5,6 @@ namespace tr {
 #define MAX_VERTEX_BUFFER 512 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
-menu_screen app::MenuOnImage {};       // Начальное меню приложения
 GLuint      app::texture_gui = 0;      // id тектуры HUD
 layout      app::Layout {};            // размеры и положение окна
 std::vector<map> app::Maps {};         // список карт
@@ -190,47 +189,6 @@ void app::mode_2d(void)
 
 
 ///
-/// \brief Создание заголовка экрана
-/// \param title
-///
-void app::title(const std::string &title)
-{
-  image Box{ MenuOnImage.get_width() - 4, 24, color_title};
-  label Text {title, 24, FONT_BOLD};
-  Box.paint_over((Box.get_width() - Text.get_width())/2,
-                 (Box.get_height() - Text.get_height())/2,
-                  Text);
-  Box.put(MenuOnImage, 2, 2);
-}
-
-
-///
-/// \brief Нарисовать поле ввода текстовой строки
-/// \param _Fn - шрифт
-///
-/// \details Рисует указанным шрифтом, в фиксированной позиции, на всю
-///  ширину экрана
-///
-void app::input_text_line(const atlas &Font)
-{
-  uchar_color color = {0xF0, 0xF0, 0xF0, 0xFF};
-  uint row_width = MenuOnImage.get_width() - Font.get_cell_width() * 2;
-  uint row_height = Font.get_cell_height() * 2;
-  image RowInput{ row_width, row_height, color };
-
-  // добавить текст, введенный пользователем
-  uint y = (row_height - Font.get_cell_height())/2;
-  textstring_place(Font, StringBuffer, RowInput, Font.get_cell_width(), y);
-  cursor_text_row(Font, RowInput, utf8_size(StringBuffer));
-
-  // скопировать на экран изображение поля ввода с добавленым текстом
-  auto x = (MenuOnImage.get_width() - RowInput.get_width()) / 2;
-  y = MenuOnImage.get_height() / 2 - 2 * button_default_height;
-  RowInput.put(MenuOnImage, x, y);
-}
-
-
-///
 /// \brief gui::add_text_cursor
 /// \param _Fn       шрифт ввода
 /// \param _Dst      строка ввода
@@ -395,61 +353,6 @@ void app::app_close(void)
 
 
 ///
-/// \brief Начальный экран приложения
-///
-void app::menu_start(void)
-{
-  MenuOnImage.init(Layout.width, Layout.height, "New TrickRig");
-
-  int x = MenuOnImage.get_width() / 2 - static_cast<ulong>(button_default_width / 2);
-  int y = MenuOnImage.get_height() / 2;
-
-  MenuOnImage.button_add(x, y, "Настроить", menu_config);
-
-  y -= 1.2 * button_default_height;
-  MenuOnImage.button_add(x, y, "Выбор карты", menu_select);
-
-  y += 2.4 * button_default_height;
-  MenuOnImage.button_add(x, y, "Закрыть", app_close);
-
-  update_gui_image();
-}
-
-
-///
-/// \brief gui::menu_config
-///
-void app::menu_config(void)
-{
-  MenuOnImage.init(Layout.width, Layout.height, "Настройка конфигурации");
-  int x = MenuOnImage.get_width() / 2 - static_cast<ulong>(button_default_width / 2);
-  int y = MenuOnImage.get_height() / 2;
-
-  MenuOnImage.button_add(x, y, "Отмена", menu_start);
-  update_gui_image();
-
-}
-
-
-///
-/// \brief Окно выбора района
-///
-void app::menu_select(void)
-{
-  MenuOnImage.init(Layout.width, Layout.height, "Выбор карты");
-  std::list<std::string> ItemsList {};
-  for(auto& Map: Maps) ItemsList.push_back(Map.Name);
-
-  // DEBUG //
-  ItemsList.push_back(" == Debug 0 == ");
-  ItemsList.push_back(" == Debug 1 == ");
-
-  MenuOnImage.list_add(ItemsList, menu_start, map_open);
-  update_gui_image();
-}
-
-
-///
 /// \brief app::map_open
 ///
 void app::map_open(uint map_id)
@@ -460,55 +363,6 @@ void app::map_open(uint map_id)
   Space3d->load();
   AppGUI->hud_enable();
   mode_3d();
-}
-
-
-///
-/// \brief Экран ввода названия для создания новой карты
-///
-/// \details Предлагается строка ввода названия. При нажатии кнопки
-/// BTN_ENTER_NAME введенный в строке текст будет использован для создания
-/// нового файла хранения данных 3D пространства района.
-///
-void app::menu_map_create(void)
-{
-  MenuOnImage.fill(bgColor);
-  title("ВВЕДИТЕ НАЗВАНИЕ");
-
-  if((key == KEY_BACKSPACE) && // Удаление введенных символов
-    ((action == PRESS)||(action == REPEAT)))
-  {
-    if (StringBuffer.length() == 0) return;
-    if(char_type(StringBuffer[StringBuffer.size()-1]) != SINGLE)
-    { StringBuffer.pop_back(); } // если это UTF-8, то удаляем два байта
-    StringBuffer.pop_back();
-    std::this_thread::sleep_for(std::chrono::milliseconds(75));
-  }
-
-  // строка ввода текста
-  input_text_line(TextureFont);
-
-  // две кнопки
-//  auto x = MainMenu.get_width() / 2 - static_cast<ulong>(BUTTTON_WIDTH * 1.25);
-//  auto y = MainMenu.get_height() / 2;
-//  btn(BTN_ENTER_NAME, x, y, "OK", StringBuffer.length() > 0);
-
-//  x += BUTTTON_WIDTH * 1.5;  // X координата кнопки
-//  btn(BTN_LOCATION, x, y, "Отмена");
-}
-
-
-///
-/// \brief app::update_texture_gui
-///
-void app::update_gui_image(void)
-{
-  glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_2D, texture_gui);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
-               static_cast<GLint>(Layout.width),
-               static_cast<GLint>(Layout.height),
-               0, GL_RGBA, GL_UNSIGNED_BYTE, MenuOnImage.uchar_t());
 }
 
 
@@ -606,7 +460,6 @@ void app::resize_event(int w, int h)
   Cursor3D.y = static_cast<float>(h/2);
 
   // пересчет размеров изображения GUI
-  MenuOnImage.resize(w,h);
 }
 
 
@@ -648,18 +501,6 @@ void app::close_event(void)
 void app::error_event(const char* message)
 {
   std::cerr << message << std::endl;
-}
-
-
-///
-/// \brief gui::cursor_event
-/// \param x
-/// \param y
-/// \details Изменение координат положения курсора мыши в окне
-///
-void app::cursor_event(double x, double y)
-{
-  if (MenuOnImage.cursor_event(x, y)) update_gui_image();
 }
 
 

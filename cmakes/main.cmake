@@ -13,11 +13,10 @@ include_directories( ${GLM_INCLUDE_DIRS} )
 
 # glad             [CMakefile для glad          ]  [бинарник]
 add_subdirectory( "${CMAKE_SOURCE_DIR}/libs/glad" "glad" EXCLUDE_FROM_ALL )
-add_subdirectory( "${CMAKE_SOURCE_DIR}/libs/wft" "wft" EXCLUDE_FROM_ALL )
 
 ## Список библиотек
 SET( TR_LIBS ${TR_LIBS} ${GLFW_LIBRARIES} ${PNG_LIBRARIES} ${SQLITE_LIBRARIES}
-   pthread stdc++fs glad wft)
+   pthread stdc++fs glad)
 
 # список исходников
 file( GLOB MAIN_SRC "${CMAKE_SOURCE_DIR}/src/main/*.cpp" )

@@ -1,8 +1,6 @@
 #ifndef GUI_HPP
 #define GUI_HPP
 
-#include "wft/wft.hpp"
-
 #include "main.hpp"
 #include "vbo.hpp"
 #include "framebuf.hpp"
@@ -92,86 +90,6 @@ class atlas: public image
     auto get_cell_width(void) const { return cell_width;  }
     auto get_cell_height(void) const { return cell_height; }
     void put(uint col, uint row, image &dst, ulong dst_x, ulong dst_y) const;
-};
-
-
-///
-/// \brief The label class
-///
-class label: public image
-{
-  protected:
-    std::string font_normal = cfg::AssetsDir + cfg::DS + "fonts" + cfg::DS + "FreeSans.ttf";
-    std::string font_bold = cfg::AssetsDir + cfg::DS + "fonts" + cfg::DS + "FreeSansBold.ttf";
-    std::string Text {};
-    uchar_color TextColor = TextDefaultColor;
-    int letter_space = 80; // % size of
-
-  public:
-    label(void) = default;
-    label(const std::string& new_text, unsigned int new_height = 18,
-          FONT_STYLE weight = FONT_NORMAL, uchar_color NewColor = TextDefaultColor);
-};
-
-
-///
-/// \brief The button class
-///
-class button: public image
-{
-  public:
-    enum MODE { BUTTON, LIST_ENTRY, MODES_COUNT };   // вид кнопки
-
-    button(void)                     = default;
-    button(const button&)            = default;
-    button& operator=(const button&) = default;
-    button(const std::string& LabelText, func_ptr new_caller = nullptr,
-           uint x = 0, uint y = 0, MODE new_mode = BUTTON,
-           uint new_width = button_default_width, uint new_height = button_default_height);
-
-    uint x = 0; uint y = 0;       // положение кнопки
-    func_ptr caller = nullptr;    // функция, вызываемая по нажатию на кнопку
-
-    bool state_update(btn_state new_state);
-    btn_state state_get(void) const { return state;}
-
-  protected:
-    btn_state state = BTN_NORMAL;
-    label Label {};
-    MODE mode = MODES_COUNT;
-
-    void draw_button(void);
-    void draw_list_entry(void);
-};
-
-
-///
-/// \brief The menu_screen class
-///
-class menu_screen: public image
-{
-  private:
-    uchar_color ColorMainBg  { 0xE0, 0xE0, 0xE0, 0xC0 };
-    uchar_color ColorTitleBg { 0xFF, 0xFF, 0xDD, 0xFF };
-    uchar_color ColorTitleFg { 0x00, 0x00, 0x00, 0x00 };
-    std::list<button> MenuItems {};
-    uint title_height = 0;
-    static func_with_param_ptr callback_selected_row;
-    static uint selected_row_id;
-
-  public:
-    menu_screen(void) = default;
-
-    void init(uint new_width, uint new_height, const std::string& Title);
-    void title_draw(const std::string& NewTitle);
-    void button_add(uint x, uint y, const std::string& Label,
-                    func_ptr new_caller = nullptr, btn_state new_state = BTN_NORMAL);
-    void list_add(const std::list<std::string>& ItemsList,
-                  func_ptr fn_exit = nullptr, func_with_param_ptr fn_select = nullptr,
-                  func_ptr fn_add = nullptr, func_ptr fn_delete = nullptr);
-    bool cursor_event(double x, double y);
-    func_ptr mouse_event(int mouse_button, int action, int mods);
-    static void row_selected(void);
 };
 
 

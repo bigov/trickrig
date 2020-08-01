@@ -33,7 +33,6 @@ class app: public interface_gl_context
     virtual void reposition_event(int left, int top);
     virtual void resize_event(int width, int height);
     virtual void character_event(uint ch);
-    virtual void cursor_event(double x, double y);
     virtual void close_event(void);
     virtual void error_event(const char* message);
     virtual void mouse_event(int _button, int _action, int _mods);
@@ -70,7 +69,6 @@ class app: public interface_gl_context
     static double mouse_y;                    // позиция указателя относительно верхней границы
 
     uchar_color bgColor {0xE0, 0xE0, 0xE0, 0xC0}; // цвет фона неактивного окна
-    static menu_screen MenuOnImage;            // GUI окна приложения
     static uchar_color color_title;         // фон заголовка
     static int mouse_left;                  // нажатие на левую кнопку мыши
 
@@ -86,20 +84,14 @@ class app: public interface_gl_context
     static void mode_3d(void);
     static void mode_2d(void);
     void cursor_text_row(const atlas& _Fn, image &_Dst, size_t position);
-    void title(const std::string& title);
-    void input_text_line(const atlas& _Fn);
     static void row_text(size_t id, uint x, uint y, uint w, uint h, const std::string &);
     void menu_map_create(void);
-    static void menu_select(void);
-    static void menu_start(void);
-    static void menu_config(void);
     void window_frame_render(void);
     void cancel(void);
     void create_map(void);
     void remove_map(void);
     static void map_open(uint map_id);
     void layout_set(const layout &L);
-    static void update_gui_image(void);
     static void app_close(void);
 };
 
