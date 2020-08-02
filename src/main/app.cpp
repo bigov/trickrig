@@ -20,7 +20,7 @@ std::unique_ptr<gui> app::AppGUI = nullptr;
 app::MENU_MODES app::MenuMode = SCREEN_START;    // режим окна приложения
 bool app::RUN_3D = false;
 glm::vec3 app::Cursor3D = { 200.f, 200.f, 2.f }; // положение и размер прицела
-std::unique_ptr<glsl> app::ShowScene = nullptr;  // Вывод текстуры фреймбуфера на окно
+std::unique_ptr<glsl> app::ShowFrameBuf = nullptr;  // Вывод текстуры фреймбуфера на окно
 
 GLuint app::vao2d  = 0;
 
@@ -147,19 +147,19 @@ app::app(void)
   Shaders.push_back({ GL_VERTEX_SHADER, cfg::app_key(SHADER_VERT_SCREEN) });
   Shaders.push_back({ GL_FRAGMENT_SHADER, cfg::app_key(SHADER_FRAG_SCREEN) });
 
-  ShowScene = std::make_unique<glsl>(Shaders);
-  ShowScene->use();
-  ShowScene->AtribsList.push_back(
-    { ShowScene->attrib("position"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 0 * sizeof(GLfloat) });
-  ShowScene->AtribsList.push_back(
-    { ShowScene->attrib("texcoord"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 2 * sizeof(GLfloat) });
-  glUniform1i(ShowScene->uniform("WinTexture"), 1); // GL_TEXTURE1 - фрейм-буфер
-  ShowScene->set_uniform("Cursor", {0.f, 0.f, 0.f});
-  ShowScene->unuse();
+  ShowFrameBuf = std::make_unique<glsl>(Shaders);
+  ShowFrameBuf->use();
+  ShowFrameBuf->AtribsList.push_back(
+    { ShowFrameBuf->attrib("position"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 0 * sizeof(GLfloat) });
+  ShowFrameBuf->AtribsList.push_back(
+    { ShowFrameBuf->attrib("texcoord"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 2 * sizeof(GLfloat) });
+  glUniform1i(ShowFrameBuf->uniform("WinTexture"), 1); // GL_TEXTURE1 - фрейм-буфер
+  ShowFrameBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
+  ShowFrameBuf->unuse();
 
   vbo VboWin { GL_ARRAY_BUFFER };
   VboWin.allocate( sizeof(WinData), WinData );
-  VboWin.set_attributes(ShowScene->AtribsList); // настройка положения атрибутов GLSL программы
+  VboWin.set_attributes(ShowFrameBuf->AtribsList); // настройка положения атрибутов GLSL программы
 
   glBindVertexArray(0);
 }
@@ -177,14 +177,14 @@ app::~app(void)
 void app::mode_3d(void)
 {
   RUN_3D = true;
-  ShowScene->set_uniform("Cursor", Cursor3D);
+  ShowFrameBuf->set_uniform("Cursor", Cursor3D);
 }
 
 
 void app::mode_2d(void)
 {
   RUN_3D = false;
-  ShowScene->set_uniform("Cursor", {0.f, 0.f, 0.f});
+  ShowFrameBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
 }
 
 
@@ -208,55 +208,6 @@ void app::cursor_text_row(const atlas &_Fn, image &_Dst, size_t position)
   image Cursor {3, _Fn.get_cell_height(), c};
   Cursor.put(_Dst, _Fn.get_cell_width() * (position + 1) + 1,
               (_Dst.get_height() - _Fn.get_cell_height()) / 2 );
-}
-
-
-///
-/// \brief gui::draw_text_row
-/// \param id
-/// \param x - координата относительно окна приложения
-/// \param y - координата относительно окна приложения
-/// \param w
-/// \param h
-/// \param text
-/// \details Отобажение тестовой строки, реагирующей на указатель мыши
-///
-//void app::row_text(size_t id, uint x, uint y, uint w, uint h, const std::string &text)
-void app::row_text(size_t, uint, uint, uint, uint, const std::string&)
-{
-
-  /*uchar_color
-    normal = color_title,                   // обычный цвет
-    over = { 0xFF, 0xFF, 0xFF, 0xFF },      // цвет строки когда курсор над строкой
-    selected = { 0xDD, 0xFF, 0xDD, 0xFF };  // цвет выбранной строки
-
-  if(row_selected == id) // если строка уже выбрана, то ее цвет всегда "selected"
-  {                       // не зависимо от положения на экране указателя мыши
-    normal = selected;
-    over = selected;
-  }
-  uchar_color bg_color = normal;
-
-  // Если указатель находится над строкой
-  if(mouse_x >= x && mouse_x <= x+w && mouse_y >= y && mouse_y <= y+h)
-  {
-    element_over = ROW_MAP_NAME; // для обработки в "menu_selector"
-    bg_color = over;
-
-    if(mouse_left == PRESS)
-    {
-      row_selected = id;
-      x += 1; y += 1;
-    }
-    else {
-      x -= 1; y -= 1;
-    }
-  }
-
-  image Row { w, h, bg_color };
-  textstring_place(Font18n, text, Row, Font18n.get_cell_width()/2, 6);
-  Row.put(MainMenu, x, y);
-  */
 }
 
 
@@ -344,15 +295,6 @@ void app::remove_map(void)
 
 
 ///
-/// \brief app::app_close
-///
-void app::app_close(void)
-{
-  AppGUI->open = false;
-}
-
-
-///
 /// \brief app::map_open
 ///
 void app::map_open(uint map_id)
@@ -403,7 +345,7 @@ void app::show(void)
   {
     if(RUN_3D) Space3d->render(); // рендер 3D сцены
     AppGUI->render();
-    window_frame_render();
+    framebuf_show();
   }
 }
 
@@ -415,15 +357,15 @@ void app::show(void)
 /// или текстуре интерфейса меню. После этого изображение в виде
 /// текстуры накладывается на прямоугольник окна приложения.
 ///
-void app::window_frame_render(void)
+void app::framebuf_show(void)
 {
-  ShowScene->use();
+  ShowFrameBuf->use();
   vbo_mtx.lock();
   glBindVertexArray(vao2d);
   glDrawArrays(GL_TRIANGLES, 0, 6);
   GLContext->swap_buffers();
   vbo_mtx.unlock();
-  ShowScene->unuse();
+  ShowFrameBuf->unuse();
 
 #ifndef NDEBUG
   CHECK_OPENGL_ERRORS

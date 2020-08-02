@@ -8,6 +8,7 @@
 #include "tools.hpp"
 
 using sys_clock = std::chrono::system_clock;
+using colors = std::array<tr::float_color, 4>;
 
 namespace tr
 {
@@ -16,14 +17,23 @@ typedef void(*func_ptr)(void);
 typedef void(*func_with_param_ptr)(uint);
 
 enum FONT_STYLE { FONT_NORMAL, FONT_BOLD, FONT_COUNT };
-enum btn_state { BTN_NORMAL, BTN_OVER, BTN_PRESSED, BTN_DISABLE };
+enum STATES { ST_NORMAL, ST_OVER, ST_PRESSED, ST_DISABLE };
 
-static const uint button_default_width = 140; // ширина кнопки GUI
-static const uint button_default_height = 32; // высота кнопки GUI
-static const uint label_default_height = 15;
+static const uint menu_border = 20;   // расстояние от меню до края окна
 
-static const uint MIN_GUI_WIDTH = button_default_width * 5.2; // минимально допустимая ширина окна
-static const uint MIN_GUI_HEIGHT = button_default_height * 4 + 8;  // минимально допустимая высота окна
+static const uint symbol_width = 7;
+static const uint symbol_height = 14;
+static const uint symbol_kerning = 2; // расстояние между символами в надписи на кнопке
+
+static const uint title_height = 80; // Высота поля заголовка
+static const uint row_height = 20;
+
+static const uint btn_width = 200;
+static const uint btn_height = 25;
+static const uint btn_padding = 14;   // расстояние между кнопками
+
+static const uint MIN_GUI_WIDTH = btn_width * 4.2; // минимально допустимая ширина окна
+static const uint MIN_GUI_HEIGHT = btn_height * 4 + 8;  // минимально допустимая высота окна
 
 const uchar_color TextDefaultColor          { 0x24, 0x24, 0x24, 0xFF };
 const uchar_color LinePressedDefaultBgColor { 0xFE, 0xFE, 0xFE, 0xFF };
@@ -117,22 +127,22 @@ class gui: public interface_gl_context
     static int window_height;
     static unsigned int indices;
     bool hud_is_enabled = false;
-    int FPS = 500;                                 // частота кадров
-    GLsizei fps_uv_data = 0;                       // смещение данных FPS в буфере UV
-    static unsigned int menu_border;   // расстояние от меню до края окна
+    int FPS = 500;                     // частота кадров
+    GLsizei fps_uv_data = 0;           // смещение данных FPS в буфере UV
 
-    struct button_data {
+    struct element_data {
         double x0 = 0; // left
         double y0 = 0; // top
         double x1 = 0; // left + width
         double y1 = 0; // top + heigth
-        btn_state state = BTN_NORMAL; // Состояние кнопки
-        GLsizeiptr xy_stride = 0;     // Адрес в VBO координат кнопки
-        GLsizeiptr rgba_stride = 0;   // Адрес в VBO данных цвета кнопки
-        size_t label_size = 0;
+        STATES state = ST_NORMAL; // Состояние
+        GLsizeiptr xy_stride = 0;     // Адрес в VBO блока координат вешин
+        GLsizeiptr rgba_stride = 0;   // Адрес в VBO данных цвета
+        size_t label_size = 0;        // число символов в надписи
         func_ptr caller = nullptr;    // Адрес функции, вызываемой по нажатию
     };
-    static std::vector<button_data> Buttons;
+    static std::vector<element_data> Buttons; // Блок данных кнопок
+    static std::vector<element_data> Rows;    // Список строк
 
     GLuint vao_gui = 0;
     std::shared_ptr<trgl>& OGLContext;       // OpenGL контекст окна приложения
@@ -143,15 +153,20 @@ class gui: public interface_gl_context
     static void clear(void);
     static void start_screen(void);
     static void config_screen(void);
+    static void select_map(void);
     static std::vector<float> rect_xy(int left, int top, uint width, uint height);
     static std::vector<float> rect_rgba(float_color rgba);
     static std::vector<float> rect_uv(const std::string& Symbol);
     static void rectangle(uint left, uint top, uint width, uint height, float_color rgba);
+    static element_data create_element(layout L, const std::string &Label,
+                                       const colors& BgColor, const colors& HemColor,
+                                       func_ptr new_caller, STATES state);
     static void title(const std::string& Label);
     static void button_append(const std::string& Label, func_ptr new_caller);
     static void textrow(uint left, uint top, const std::vector<std::string>& Text, uint sybol_width, uint height, uint kerning);
-    static void button_move(button_data& Button, uint x, uint y);
+    static void button_move(element_data& Button, int x, int y);
     static std::pair<uint, uint> button_allocation(void);
+    static void list_insert(const std::string& String, STATES state);
     static void close(void) { open = false; }
 
     void calc_fps(void);

@@ -8,16 +8,8 @@ std::string font_dir = "../assets/fonts/";
 atlas TextureFont { font_dir + font::texture_file, font::texture_cols, font::texture_rows };
 
 bool gui::open = false;
-unsigned int gui::menu_border = 20;   // расстояние от меню до края окна
 int gui::window_width  = 0; // ширина окна приложения
 int gui::window_height = 0; // высота окна приложения
-
-static const uint btn_symbol_width = 7;
-static const uint btn_symbol_height = 14;
-static const uint btn_kerning = 2;   // расстояние между символами в надписи на кнопке
-static const uint btn_width = 200;
-static const uint btn_height = 23;
-static const uint btn_padding = 14;  // расстояние между кнопками
 
 static std::unique_ptr<vbo> VBO_xy   = nullptr;   // координаты вершин
 static std::unique_ptr<vbo> VBO_rgba = nullptr; // цвет вершин
@@ -28,21 +20,33 @@ unsigned int gui::indices = 0; // число индексов в 2Д режим�
 static const float_color TitleBgColor  { 1.0f, 1.0f, 0.85f, 1.0f };
 static const float_color TitleHemColor { 0.7f, 0.7f, 0.70f, 1.0f };
 
-static const float_color BtnBgColor[4] = {
-  { 0.85f, 0.85f, 0.85f, 1.0f },
-  { 0.95f, 0.95f, 0.95f, 1.0f },
-  { 0.85f, 0.85f, 0.85f, 1.0f },
-  { 0.85f, 0.85f, 0.85f, 1.0f },
-};
+static const colors BtnBgColor =
+  { float_color { 0.89f, 0.89f, 0.89f, 1.0f }, // normal
+    float_color { 0.95f, 0.95f, 0.95f, 1.0f }, // over
+    float_color { 0.85f, 0.85f, 0.85f, 1.0f }, // pressed
+    float_color { 0.85f, 0.85f, 0.85f, 1.0f }  // disabled
+  };
+static const colors BtnHemColor=
+  { float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // normal
+    float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // over
+    float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // pressed
+    float_color { 0.70f, 0.70f, 0.70f, 1.0f }  // disabled
+  };
+static const colors ListBgColor =
+  { float_color { 0.90f, 0.90f, 0.99f, 1.0f }, // normal
+    float_color { 0.95f, 0.95f, 0.95f, 1.0f }, // over
+    float_color { 1.00f, 1.00f, 1.00f, 1.0f }, // pressed
+    float_color { 0.85f, 0.85f, 0.85f, 1.0f }  // disabled
+  };
+static const colors ListHemColor=
+  { float_color { 0.85f, 0.85f, 0.90f, 1.0f }, // normal
+    float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // over
+    float_color { 0.90f, 0.90f, 0.90f, 1.0f }, // pressed
+    float_color { 0.70f, 0.70f, 0.70f, 1.0f }  // disabled
+  };
 
-static const float_color BtnHemColor[4] {
-  { 0.70f, 0.70f, 0.70f, 1.0f },
-  { 0.70f, 0.70f, 0.70f, 1.0f },
-  { 0.70f, 0.70f, 0.70f, 1.0f },
-  { 0.70f, 0.70f, 0.70f, 1.0f },
-};
-
-std::vector<gui::button_data> gui::Buttons {};
+std::vector<gui::element_data> gui::Buttons {};
+std::vector<gui::element_data> gui::Rows {};
 
 inline float fl(const unsigned char c) { return static_cast<float>(c)/255.f; }
 
@@ -294,6 +298,7 @@ void image::paint_over(uint x, uint y, const image& Src)
   }
 }
 
+
 ///
 /// \brief Конструктор c загрузкой данных из файла
 /// \param filename
@@ -462,17 +467,17 @@ void gui::cursor_event(double x, double y)
   {
     if(x > B.x0 && x < B.x1 && y > B.y0 && y < B.y1)
     {
-      if(B.state != BTN_OVER)
+      if(B.state != ST_OVER)
       {
-        B.state = BTN_OVER;
+        B.state = ST_OVER;
         auto Vrgba = rect_rgba(BtnBgColor[B.state]);
         VBO_rgba->update(Vrgba.size() * sizeof(float), Vrgba.data(), B.rgba_stride);
       }
     } else
     {
-      if(B.state == BTN_OVER)
+      if(B.state == ST_OVER)
       {
-        B.state = BTN_NORMAL;
+        B.state = ST_NORMAL;
         auto Vrgba = rect_rgba(BtnBgColor[B.state]);
         VBO_rgba->update(Vrgba.size() * sizeof(float), Vrgba.data(), B.rgba_stride);
       }
@@ -494,7 +499,7 @@ void gui::mouse_event(int _button, int _action, int)
     for(auto& B: Buttons)
     {
       if(nullptr == B.caller) continue;
-      if(B.state == BTN_OVER) B.caller();
+      if(B.state == ST_OVER) B.caller();
     }
 }
 
@@ -633,10 +638,16 @@ void gui::rectangle(uint left, uint top, uint width, uint height,
 ///
 void gui::title(const std::string& Label)
 {
+  // Построение 2Д картинки экрана сначала
+  // Очистка всех массивов VAO
+  clear();
+  // Заливка окна фоновым цветом
+  rectangle(menu_border, menu_border, window_width - 2 * menu_border,
+            window_height - 2 * menu_border, {0.9f, 1.f, 0.9f, 1.f});
+
   auto Text = string2vector(Label);
   uint symbol_width = 14;
   uint symbol_height = 21;
-  uint title_height = 100;
   rectangle(menu_border, menu_border, window_width - 2*menu_border, title_height+1, TitleHemColor);
   rectangle(menu_border, menu_border, window_width - 2*menu_border, title_height, TitleBgColor);
   uint left = menu_border + window_width/2 - Text.size() * symbol_width / 2;
@@ -655,9 +666,29 @@ void gui::title(const std::string& Label)
 std::pair<uint, uint> gui::button_allocation(void)
 {
   uint left = (window_width - btn_width)/2;
-  uint top = (window_height - btn_height)/2;
+  uint top = (window_height - btn_height + title_height)/2;
 
   if(Buttons.empty()) return {left, top};
+
+  // Если размещается 4-я кнопка, то распределяем их в 2 колонки
+  if(Buttons.size() == 3)
+  {
+    uint vert_move_dist = (btn_height + btn_padding) / 2;
+    uint hor_move_dist = (btn_width + btn_padding) / 2;
+
+    // первые две кнопки сдвигаем влево - вниз
+    auto B = Buttons.begin();
+    button_move(*B, -hor_move_dist, vert_move_dist);
+    B++;
+    button_move(*B, -hor_move_dist, vert_move_dist);
+
+    // третью вправо - вверх
+    B++;
+    button_move(*B, hor_move_dist, 0 - vert_move_dist * 3);
+
+    // координаты 4-й кнопки
+    return { left + hor_move_dist, top + vert_move_dist };
+  }
 
   // Вертикальный сдвиг кнопок
   uint move_dist = (btn_height + btn_padding) / 2;
@@ -677,10 +708,10 @@ std::pair<uint, uint> gui::button_allocation(void)
 /// \param x
 /// \param y
 ///
-void gui::button_move(button_data& Button, uint x, uint y)
+void gui::button_move(element_data& Button, int x, int y)
 {
-  auto new_left = static_cast<uint>(Button.x0) + x;
-  auto new_top = static_cast<uint>(Button.y0) + y;
+  auto new_left = static_cast<uint>(Button.x0 + x);
+  auto new_top = static_cast<uint>(Button.y0 + y);
   auto stride = Button.xy_stride;
 
   // Сдвиг рамки
@@ -700,17 +731,54 @@ void gui::button_move(button_data& Button, uint x, uint y)
   Button.y1 = (new_top + btn_height) * 1.0;
 
   // Сдвиг надписи, состоящей из label_size прямоугольников
-  new_left += btn_width/2 - Button.label_size * (btn_symbol_width + btn_kerning) / 2;
+  new_left += btn_width/2 - Button.label_size * (symbol_width + symbol_kerning) / 2;
   new_top += 5;
 
   for(size_t i = 0; i < Button.label_size; ++i)
   {
     stride += stride_interval;
-    Vxy = rect_xy(new_left, new_top, btn_symbol_width, btn_symbol_height);
+    Vxy = rect_xy(new_left, new_top, symbol_width, symbol_height);
     VBO_xy->update(Vxy.size() * sizeof(float), Vxy.data(), stride);
-    new_left += btn_symbol_width + btn_kerning;
+    new_left += symbol_width + symbol_kerning;
   }
+}
 
+
+///
+/// \brief gui::create_element
+/// \param Label
+/// \param new_caller
+/// \return
+///
+gui::element_data gui::create_element(layout L, const std::string &Label,
+                                      const colors& BgColor, const colors& HemColor,
+                                      func_ptr new_caller, STATES state = ST_NORMAL)
+{
+  element_data Element {};
+  Element.caller = new_caller;
+  Element.state = state;
+  Element.x0 = L.left * 1.0;
+  Element.y0 = L.top * 1.0;
+  Element.x1 = (L.left + L.width) * 1.0;
+  Element.y1 = (L.top + L.height) * 1.0;
+
+  // рамка элемента
+  Element.xy_stride = VBO_xy->get_hem();
+  rectangle(L.left-1, L.top-1, L.width+2, L.height+2, HemColor[Element.state]);
+
+  // фоновая заливка
+  Element.rgba_stride = VBO_rgba->get_hem();
+  rectangle(L.left, L.top, L.width, L.height, BgColor[Element.state]);
+
+  auto Text = string2vector(Label);
+  Element.label_size = Text.size();
+
+  // надпись
+  L.left += L.width/2 - Text.size() * (symbol_width + symbol_kerning) / 2;
+  L.top += 1 + (L.height - symbol_height ) / 2;
+  textrow(L.left, L.top, Text, symbol_width, symbol_height, symbol_kerning);
+
+  return Element;
 }
 
 
@@ -721,32 +789,25 @@ void gui::button_move(button_data& Button, uint x, uint y)
 void gui::button_append(const std::string &Label, func_ptr new_caller = nullptr)
 {
   auto XY = button_allocation();
+  layout L {btn_width, btn_height, XY.first, XY.second};
+  auto Element = create_element(L, Label, BtnBgColor, BtnHemColor, new_caller);
+  Buttons.push_back(Element);
+}
 
-  uint left = XY.first;
-  uint top = XY.second;
 
-  button_data Button {};
-  Button.state = BTN_NORMAL;
-  Button.x0 = left * 1.0;
-  Button.y0 = top * 1.0;
-  Button.x1 = (left + btn_width) * 1.0;
-  Button.y1 = (top + btn_height) * 1.0;
-  Button.caller = new_caller;
-
-  Button.xy_stride = VBO_xy->get_hem();
-  rectangle(left-1, top-1, btn_width+2, btn_height+2, BtnHemColor[Button.state]);
-
-  Button.rgba_stride = VBO_rgba->get_hem();
-  rectangle(left, top, btn_width, btn_height, BtnBgColor[Button.state]);
-
-  auto Text = string2vector(Label);
-  Button.label_size = Text.size();
-
-  left += btn_width/2 - Text.size() * (btn_symbol_width + btn_kerning) / 2;
-  top += 5;
-  textrow(left, top, Text, btn_symbol_width, btn_symbol_height, btn_kerning);
-
-  Buttons.push_back(Button);
+///
+/// \brief gui::list_insert
+/// \param String
+///
+void gui::list_insert(const std::string& String, STATES state = ST_NORMAL)
+{
+  layout L { };
+  L.width = window_width - menu_border * 4;
+  L.height = row_height;
+  L.left = menu_border * 2;
+  L.top = L.left + title_height + Rows.size() * (row_height + 1);
+  auto Element = create_element(L, String, ListBgColor, ListHemColor, nullptr, state);
+  Rows.push_back(Element);
 }
 
 
@@ -755,12 +816,9 @@ void gui::button_append(const std::string &Label, func_ptr new_caller = nullptr)
 ///
 void gui::start_screen(void)
 {
-  clear();
-  rectangle(menu_border, menu_border, window_width - 2*menu_border,
-            window_height - 2*menu_border, {0.9f, 1.f, 0.9f, 1.f});
   title("Добро пожаловать в TrickRig!");
   button_append("НАСТРОИТЬ", config_screen);
-  button_append("ВЫБРАТЬ КАРТУ");
+  button_append("ВЫБРАТЬ КАРТУ", select_map);
   button_append("ЗАКРЫТЬ", close);
 }
 
@@ -770,10 +828,31 @@ void gui::start_screen(void)
 ///
 void gui::config_screen(void)
 {
-  clear();
-  rectangle(menu_border, menu_border, window_width - 2*menu_border,
-            window_height - 2*menu_border, {0.9f, 1.f, 0.9f, 1.f});
-  title("НАСТРОЙКИ ПРИЛОЖЕНИЯ");
+  title("ВЫБОР ПАРАМЕТРОВ");
+  button_append("ЗАКРЫТЬ", start_screen);
+}
+
+
+///
+/// \brief gui::select_map
+///
+void gui::select_map(void)
+{
+  title("ВЫБОР КАРТЫ");
+
+  auto MapsDir = cfg::user_dir();     // список директорий с картами
+  std::vector<std::string> Maps {};
+  for(auto& it: std::filesystem::directory_iterator(MapsDir))
+    if (std::filesystem::is_directory(it))
+      list_insert(cfg::map_name(it.path().string()), ST_PRESSED);
+
+  // DEBUG
+  list_insert("debug 1");
+  list_insert("debug 2");
+
+  button_append("НОВАЯ КАРТА");
+  button_append("УДАЛИТЬ КАРТУ");
+  button_append("СТАРТ");
   button_append("ЗАКРЫТЬ", start_screen);
 }
 

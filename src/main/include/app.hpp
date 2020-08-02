@@ -50,7 +50,7 @@ class app: public interface_gl_context
     static bool RUN_3D;
 
     std::shared_ptr<trgl> GLContext = nullptr;
-    static std::unique_ptr<glsl> ShowScene; // Шейдерная программа GUI
+    static std::unique_ptr<glsl> ShowFrameBuf; // Шейдерная программа GUI
     static glm::vec3 Cursor3D;               // положение и размер прицела
 
     int scancode = -1;
@@ -84,15 +84,13 @@ class app: public interface_gl_context
     static void mode_3d(void);
     static void mode_2d(void);
     void cursor_text_row(const atlas& _Fn, image &_Dst, size_t position);
-    static void row_text(size_t id, uint x, uint y, uint w, uint h, const std::string &);
     void menu_map_create(void);
-    void window_frame_render(void);
+    void framebuf_show(void);
     void cancel(void);
     void create_map(void);
     void remove_map(void);
     static void map_open(uint map_id);
     void layout_set(const layout &L);
-    static void app_close(void);
 };
 
 } //tr
