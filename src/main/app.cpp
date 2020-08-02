@@ -14,18 +14,11 @@ double      app::mouse_x = 0.0;        // позиция указателя от
 double      app::mouse_y = 0.0;        // позиция указателя относительно верхней границы
 int         app::mouse_left = EMPTY;   // нажатие на левую кнопку мыши
 
-std::unique_ptr<space_3d> app::Space3d = nullptr;
 std::unique_ptr<gui> app::AppGUI = nullptr;
 
 app::MENU_MODES app::MenuMode = SCREEN_START;    // режим окна приложения
-bool app::RUN_3D = false;
-glm::vec3 app::Cursor3D = { 200.f, 200.f, 2.f }; // положение и размер прицела
-std::unique_ptr<glsl> app::ShowFrameBuf = nullptr;  // Вывод текстуры фреймбуфера на окно
-
-GLuint app::vao2d  = 0;
 
 std::unique_ptr<glsl> Program2d = nullptr;            // построение 2D элементов
-std::unique_ptr<frame_buffer> RenderBuffer = nullptr; // рендер-буфер окна
 
 ///
 /// \brief init_prog_2d
@@ -97,17 +90,15 @@ app::app(void)
   std::clog << "Start: " << title << std::endl;
 
   GLContext = std::make_shared<trgl>(title.c_str());
-  layout_set(cfg::WinLayout);
+
+  Layout = cfg::WinLayout;
+  aspect  = static_cast<float>(Layout.width/Layout.height);
   GLContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
 
   init_prog_2d();      // Шейдерная программа для построения 2D элементов пользовательского интерфейса
   load_font_texture(); // Загрузчик текстуры со шрифтом
 
-  // настройка рендер-буфера
-  RenderBuffer = std::make_unique<frame_buffer>(Layout.width, Layout.height);
-
-  Space3d = std::make_unique<space_3d>(GLContext);
-  AppGUI = std::make_unique<gui>(GLContext, Space3d->ViewFrom);
+  AppGUI = std::make_unique<gui>(GLContext);
 
   TimeStart = std::chrono::system_clock::now();
 
@@ -120,48 +111,6 @@ app::app(void)
   glBindTexture(GL_TEXTURE_2D, texture_gui);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-  /// Инициализация GLSL программы обработки текстуры фреймбуфера.
-  ///
-  /// Текстура фрейм-буфера за счет измения порядка следования координат
-  /// вершин с 1-2-3-4 на 3-4-1-2 перевернута - верх и низ в сцене
-  /// меняются местами. Благодаря этому, нулевой координатой (0,0) окна
-  /// становится более привычный верхний-левый угол, и загруженные из файла
-  /// изображения текстур применяются без дополнительного переворота.
-
-  GLfloat WinData[] = { // XY координаты вершин, UV координаты текстуры
-    -1.f,-1.f, 0.f, 1.f, //3
-     1.f,-1.f, 1.f, 1.f, //4
-     1.f, 1.f, 1.f, 0.f, //2
-
-     1.f, 1.f, 1.f, 0.f, //2
-    -1.f, 1.f, 0.f, 0.f, //1
-    -1.f,-1.f, 0.f, 1.f, //3
-  };
-  int vertex_bytes = sizeof(GLfloat) * 4;
-
-  glGenVertexArrays(1, &vao2d);
-  glBindVertexArray(vao2d);
-
-  std::list<std::pair<GLenum, std::string>> Shaders {};
-  Shaders.push_back({ GL_VERTEX_SHADER, cfg::app_key(SHADER_VERT_SCREEN) });
-  Shaders.push_back({ GL_FRAGMENT_SHADER, cfg::app_key(SHADER_FRAG_SCREEN) });
-
-  ShowFrameBuf = std::make_unique<glsl>(Shaders);
-  ShowFrameBuf->use();
-  ShowFrameBuf->AtribsList.push_back(
-    { ShowFrameBuf->attrib("position"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 0 * sizeof(GLfloat) });
-  ShowFrameBuf->AtribsList.push_back(
-    { ShowFrameBuf->attrib("texcoord"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 2 * sizeof(GLfloat) });
-  glUniform1i(ShowFrameBuf->uniform("WinTexture"), 1); // GL_TEXTURE1 - фрейм-буфер
-  ShowFrameBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
-  ShowFrameBuf->unuse();
-
-  vbo VboWin { GL_ARRAY_BUFFER };
-  VboWin.allocate( sizeof(WinData), WinData );
-  VboWin.set_attributes(ShowFrameBuf->AtribsList); // настройка положения атрибутов GLSL программы
-
-  glBindVertexArray(0);
 }
 
 
@@ -174,20 +123,6 @@ app::~app(void)
 }
 
 
-void app::mode_3d(void)
-{
-  RUN_3D = true;
-  ShowFrameBuf->set_uniform("Cursor", Cursor3D);
-}
-
-
-void app::mode_2d(void)
-{
-  RUN_3D = false;
-  ShowFrameBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
-}
-
-
 ///
 /// \brief gui::add_text_cursor
 /// \param _Fn       шрифт ввода
@@ -195,8 +130,10 @@ void app::mode_2d(void)
 /// \param position  номер позиции курсора в строке ввода
 /// \details Формирование курсора ввода, моргающего с интервалом в пол-секунды
 ///
-void app::cursor_text_row(const atlas &_Fn, image &_Dst, size_t position)
+//void app::cursor_text_row(const atlas &_Fn, image &_Dst, size_t position)
+void app::cursor_text_row(const atlas&, image&, size_t)
 {
+/*
   uchar_color c = {0x11, 0xDD, 0x00, 0xFF};
   auto tm = std::chrono::duration_cast<std::chrono::milliseconds>
       ( std::chrono::system_clock::now()-TimeStart ).count();
@@ -204,47 +141,10 @@ void app::cursor_text_row(const atlas &_Fn, image &_Dst, size_t position)
   auto tc = trunc(tm/1000) * 1000;
   if(tm - tc > 500) c.a = 0xFF;
   else c.a = 0x00;
-
-  image Cursor {3, _Fn.get_cell_height(), c};
-  Cursor.put(_Dst, _Fn.get_cell_width() * (position + 1) + 1,
-              (_Dst.get_height() - _Fn.get_cell_height()) / 2 );
-}
-
-
-///
-/// \brief gui::cancel Отмена текущего режима
-///
-void app::cancel(void)
-{
-  key    = EMPTY;
-  action = EMPTY;
-
-  if(RUN_3D)
-  {
-    cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
-    mode_2d();
-    GLContext->cursor_restore();             // Включить указатель мыши
-    GLContext->set_cursor_observer(*this);   // переключить обработчик смещения курсора
-    GLContext->set_mbutton_observer(*this);   // обработчик кнопок мыши
-    GLContext->set_keyboard_observer(*this); // и клавиатуры
-    return;
-  }
-
-  switch (MenuMode)
-  {
-    case SCREEN_LSELECT:
-      MenuMode = SCREEN_START;
-      break;
-    case SCREEN_CREATE:
-      MenuMode = SCREEN_LSELECT;
-      break;
-    case SCREEN_CONFIG:
-      MenuMode = SCREEN_START;
-      break;
-    case SCREEN_START:
-      AppGUI->open = false;
-      break;
-  }
+*/
+//  image Cursor {3, _Fn.get_cell_height(), c};
+//  Cursor.put(_Dst, _Fn.get_cell_width() * (position + 1) + 1,
+//              (_Dst.get_height() - _Fn.get_cell_height()) / 2 );
 }
 
 
@@ -295,20 +195,6 @@ void app::remove_map(void)
 
 
 ///
-/// \brief app::map_open
-///
-void app::map_open(uint map_id)
-{
-  assert((map_id < Maps.size()) && "Map id out of range");
-
-  cfg::map_view_load(Maps[map_id].Folder, Space3d->ViewFrom, Space3d->look_dir);
-  Space3d->load();
-  AppGUI->hud_enable();
-  mode_3d();
-}
-
-
-///
 /// \brief Создание элементов интерфейса окна
 ///
 /// \details Окно приложения может иметь два состояния: HUD-3D, в котором
@@ -341,36 +227,9 @@ void app::show(void)
 
   AppGUI->open = true;
 
-  while(AppGUI->open)
-  {
-    if(RUN_3D) Space3d->render(); // рендер 3D сцены
-    AppGUI->render();
-    framebuf_show();
-  }
+  while(AppGUI->open) AppGUI->render();
 }
 
-
-///
-/// \brief app::window_frame_render
-/// \details
-/// Кадр сцены рендерится в изображение на (2D) "холсте" фреймбуфера,
-/// или текстуре интерфейса меню. После этого изображение в виде
-/// текстуры накладывается на прямоугольник окна приложения.
-///
-void app::framebuf_show(void)
-{
-  ShowFrameBuf->use();
-  vbo_mtx.lock();
-  glBindVertexArray(vao2d);
-  glDrawArrays(GL_TRIANGLES, 0, 6);
-  GLContext->swap_buffers();
-  vbo_mtx.unlock();
-  ShowFrameBuf->unuse();
-
-#ifndef NDEBUG
-  CHECK_OPENGL_ERRORS
-#endif
-}
 
 ///
 /// \brief gui::window_pos_event
@@ -381,27 +240,6 @@ void app::reposition_event(int _left, int _top)
 {
   Layout.left = static_cast<uint>(_left);
   Layout.top = static_cast<uint>(_top);
-}
-
-
-///
-/// \brief gui::resize_event
-/// \param width
-/// \param height
-///
-void app::resize_event(int w, int h)
-{
-  assert(w >= 0);
-  assert(h >= 0);
-
-  Layout.width  = static_cast<uint>(w);
-  Layout.height = static_cast<uint>(h);
-
-  // пересчет позции координат прицела (центр окна)
-  Cursor3D.x = static_cast<float>(w/2);
-  Cursor3D.y = static_cast<float>(h/2);
-
-  // пересчет размеров изображения GUI
 }
 
 
@@ -443,75 +281,6 @@ void app::close_event(void)
 void app::error_event(const char* message)
 {
   std::cerr << message << std::endl;
-}
-
-
-///
-/// \brief gui::mouse_event
-/// \param _button
-/// \param _action
-/// \param _mods
-///
-void app::mouse_event(int _button, int _action, int _mods)
-{
-  //func_ptr caller = MenuOnImage.mouse_event(_button, _action, _mods);
-  //update_gui_image();
-  //if ( caller != nullptr ) caller();
-  AppGUI->mouse_event(_button, _action, _mods);
-  map_open(0);
-}
-
-
-///
-/// \brief gui::keyboard_event
-/// \param key
-/// \param scancode
-/// \param action
-/// \param mods
-///
-void app::keyboard_event(int _key, int _scancode, int _action, int _mods)
-{
-  key      = _key;
-  scancode = _scancode;
-  action   = _action;
-  mods     = _mods;
-  if((key == KEY_ESCAPE) && (action == RELEASE)) cancel();
-  if (RUN_3D) Space3d->keyboard_event(_key, _scancode, _action, _mods);
-  else AppGUI->keyboard_event(_key, _scancode, _action, _mods);
-}
-
-
-///
-/// \brief gui::focus_event
-/// \details Потеря окном фокуса в режиме рендера 3D сцены
-/// переводит GUI в режим отображения меню
-///
-void app::focus_lost_event()
-{
-  if (RUN_3D)
-  {
-     cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
-     mode_2d();
-     GLContext->cursor_restore();            // Включить указатель мыши
-     GLContext->set_cursor_observer(*this);  // переключить обработчик смещения курсора
-     GLContext->set_mbutton_observer(*this);  // обработчик кнопок мыши
-  }
-}
-
-
-///
-/// \brief gui::set_location
-/// \param width
-/// \param height
-/// \param left
-/// \param top
-///
-void app::layout_set(const layout &L)
-{
-  Layout = L;
-  Cursor3D.x = static_cast<float>(L.width/2);
-  Cursor3D.y = static_cast<float>(L.height/2);
-  aspect  = static_cast<float>(L.width/L.height);
 }
 
 } //tr

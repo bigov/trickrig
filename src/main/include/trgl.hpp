@@ -30,15 +30,15 @@ class trgl
     void get_frame_size(int* width, int* height);
     GLFWwindow* get_id(void) const;
 
-    void set_error_observer(interface_gl_context& ref);    // отслеживание ошибок
-    void set_cursor_observer(interface_gl_context& ref);   // курсор мыши в окне
-    void set_mbutton_observer(interface_gl_context& ref);   // кнопки мыши
-    void set_keyboard_observer(interface_gl_context& ref); // клавиши клавиатуры
-    void set_position_observer(interface_gl_context& ref); // положение окна
-    void add_size_observer(interface_gl_context& ref);     // размер окна
-    void set_char_observer(interface_gl_context& ref);     // ввод текста (символ)
-    void set_close_observer(interface_gl_context& ref);    // закрытие окна
-    void set_focuslost_observer(interface_gl_context& ref);// смена фокуса
+    static void set_error_observer(interface_gl_context& ref);    // отслеживание ошибок
+    static void set_cursor_observer(interface_gl_context& ref);   // курсор мыши в окне
+    static void set_mbutton_observer(interface_gl_context& ref);   // кнопки мыши
+    static void set_keyboard_observer(interface_gl_context& ref); // клавиши клавиатуры
+    static void set_position_observer(interface_gl_context& ref); // положение окна
+    static void add_size_observer(interface_gl_context& ref);     // размер окна
+    static void set_char_observer(interface_gl_context& ref);     // ввод текста (символ)
+    static void set_close_observer(interface_gl_context& ref);    // закрытие окна
+    static void set_focuslost_observer(interface_gl_context& ref);// смена фокуса
 
   private:
     GLFWwindow* win_main = nullptr;

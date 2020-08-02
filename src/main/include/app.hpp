@@ -1,10 +1,8 @@
 #ifndef APP_HPP
 #define APP_HPP
 
-#include "main.hpp"
 #include "trgl.hpp"
 #include "gui.hpp"
-#include "space.hpp"
 
 namespace tr {
 
@@ -31,13 +29,9 @@ class app: public interface_gl_context
     void show(void);
 
     virtual void reposition_event(int left, int top);
-    virtual void resize_event(int width, int height);
     virtual void character_event(uint ch);
     virtual void close_event(void);
     virtual void error_event(const char* message);
-    virtual void mouse_event(int _button, int _action, int _mods);
-    virtual void keyboard_event(int _key, int _scancode, int _action, int _mods);
-    virtual void focus_lost_event();
 
   private:
     enum MENU_MODES {    // режимы окна
@@ -47,11 +41,7 @@ class app: public interface_gl_context
       SCREEN_CONFIG,  // настройки
     };
 
-    static bool RUN_3D;
-
     std::shared_ptr<trgl> GLContext = nullptr;
-    static std::unique_ptr<glsl> ShowFrameBuf; // Шейдерная программа GUI
-    static glm::vec3 Cursor3D;               // положение и размер прицела
 
     int scancode = -1;
     int mods = -1;
@@ -60,7 +50,6 @@ class app: public interface_gl_context
 
     static layout Layout;                    // положение окна и размеры
     float aspect = 1.0f;                     // соотношение размеров окна
-    static std::unique_ptr<space_3d> Space3d;     // = nullptr;
     static std::unique_ptr<gui> AppGUI; // = nullptr
 
     bool text_mode = false;                  // режим ввода текста
@@ -78,19 +67,14 @@ class app: public interface_gl_context
     static MENU_MODES MenuMode;              // режим окна приложения
     static size_t row_selected;            // какая строка выбрана
 
-    static GLuint vao2d;
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
     static void mode_3d(void);
     static void mode_2d(void);
     void cursor_text_row(const atlas& _Fn, image &_Dst, size_t position);
     void menu_map_create(void);
-    void framebuf_show(void);
-    void cancel(void);
     void create_map(void);
     void remove_map(void);
-    static void map_open(uint map_id);
-    void layout_set(const layout &L);
 };
 
 } //tr

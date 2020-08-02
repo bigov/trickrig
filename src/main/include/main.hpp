@@ -107,6 +107,7 @@ using uint  = unsigned int;
 using ulong = unsigned long;
 using v_str = std::vector<std::string>;
 using v_ch  = std::vector<char>;
+using sys_clock = std::chrono::system_clock;
 
 enum APP_INIT {
   PNG_TEXTURE0,   // вначале списка идут названия файлов

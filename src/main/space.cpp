@@ -10,10 +10,11 @@
  */
 
 #include "space.hpp"
-#include "config.hpp"
 
 namespace tr
 {
+std::unique_ptr<frame_buffer> RenderBuffer = nullptr; // рендер-буфер окна
+
 
 ///
 /// \brief space::space
@@ -23,6 +24,11 @@ space_3d::space_3d(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
 {
   render_indices.store(0);
   ViewFrom = std::make_shared<glm::vec3> ();
+
+  // настройка рендер-буфера
+  GLsizei width, height;
+  OGLContext->get_frame_size(&width, &height);
+  RenderBuffer = std::make_unique<frame_buffer>(width, height);
 
   light_direction = glm::normalize(glm::vec3(0.3f, 0.45f, 0.4f)); // направление (x,y,z)
   light_bright = glm::vec3(0.99f, 0.99f, 1.00f);                  // цвет        (r,g,b)

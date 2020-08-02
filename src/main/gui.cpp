@@ -8,8 +8,17 @@ std::string font_dir = "../assets/fonts/";
 atlas TextureFont { font_dir + font::texture_file, font::texture_cols, font::texture_rows };
 
 bool gui::open = false;
+bool gui::RUN_3D = false;
+bool gui::hud_is_enabled = false;
+GLuint gui::vao2d  = 0;
+GLsizei gui::fps_uv_data = 0;           // смещение данных FPS в буфере UV
+
 int gui::window_width  = 0; // ширина окна приложения
 int gui::window_height = 0; // высота окна приложения
+std::unique_ptr<space_3d> gui::Space3d = nullptr;
+std::shared_ptr<trgl> gui::OGLContext = nullptr;
+std::unique_ptr<glsl> gui::ShowFrameBuf = nullptr;  // Вывод текстуры фреймбуфера на окно
+glm::vec3 gui::Cursor3D = { 200.f, 200.f, 2.f }; // положение и размер прицела
 
 static std::unique_ptr<vbo> VBO_xy   = nullptr;   // координаты вершин
 static std::unique_ptr<vbo> VBO_rgba = nullptr; // цвет вершин
@@ -48,39 +57,6 @@ static const colors ListHemColor=
 std::vector<gui::element_data> gui::Buttons {};
 std::vector<gui::element_data> gui::Rows {};
 
-inline float fl(const unsigned char c) { return static_cast<float>(c)/255.f; }
-
-///
-/// \brief blend_1
-/// \param src
-/// \param dst
-/// \return
-///
-uchar_color blend_1(uchar_color& src, uchar_color& dst)
-{
-  uint r=0, g=1, b=2, a=3;
-
-  float S[] = { fl(src.r), fl(src.g), fl(src.b), fl(src.a) };
-  float D[] = { fl(dst.r), fl(dst.g), fl(dst.b), fl(dst.a) };
-  float R[4];
-
-  R[a] = S[a] + D[a] * ( 1.f - S[a] );
-  if(R[a] > 0.f)
-  {
-    R[r] = ( S[r] * S[a] + D[r] * D[a] * ( 1.f - S[a])) / R[a];
-    R[g] = ( S[g] * S[a] + D[g] * D[a] * ( 1.f - S[a])) / R[a];
-    R[b] = ( S[b] * S[a] + D[b] * D[a] * ( 1.f - S[a])) / R[a];
-  } else {
-    R[r] = 0.f;
-    R[g] = 0.f;
-    R[b] = 0.f;
-  }
-  return { static_cast<uchar>(R[r] * 255),
-           static_cast<uchar>(R[g] * 255),
-           static_cast<uchar>(R[b] * 255),
-           static_cast<uchar>(R[a] * 255)
-  };
-}
 
 /// положение символа в текстурной карте
 std::array<unsigned int, 2> map_location(const std::string& Sym)
@@ -90,276 +66,24 @@ std::array<unsigned int, 2> map_location(const std::string& Sym)
   return { font::symbols_map[i].u, font::symbols_map[i].v };
 }
 
+
 ///
-/// \brief Добавление текста из текстурного атласа
+/// \brief gui::mode_3d
 ///
-/// \param текстура шрифта
-/// \param строка текста
-/// \param массив пикселей, в который добавляется текст
-/// \param х - координата
-/// \param y - координата
-///
-void textstring_place(const atlas &FontImg, const std::string &OutTextString,
-                   image& Dst, ulong x, ulong y)
+void gui::mode_3d(void)
 {
-  auto TextString = string2vector(OutTextString);
-
-  #ifndef NDEBUG
-  if(x > Dst.get_width() - TextString.size() * FontImg.get_cell_width())
-    ERR ("gui::add_text - X overflow");
-  if(y > Dst.get_height() - FontImg.get_cell_height())
-    ERR ("gui::add_text - Y overflow");
-  #endif
-
-
-  ulong n = 0;
-  for(const auto& Symbol: TextString)
-  {
-    auto L = map_location(Symbol);
-    FontImg.put(L[0], L[1], Dst, x + (n++) * FontImg.get_cell_width(), y);
-  }
+  RUN_3D = true;
+  ShowFrameBuf->set_uniform("Cursor", Cursor3D);
 }
 
 
 ///
-/// \brief img::img
-/// \param width
-/// \param height
-/// \param pixel
+/// \brief gui::mode_2d
 ///
-image::image(uint new_width, uint new_height, const uchar_color& NewColor)
+void gui::mode_2d(void)
 {
-  width = new_width;  // ширина изображения в пикселях
-  height = new_height; // высота изображения в пикселях
-  Data.resize(width * height, NewColor);
-}
-
-
-///
-/// \brief image::image
-/// \param filename
-///
-image::image(const std::string &filename)
-{
-  load(filename);
-}
-
-
-///
-/// \brief Установка размеров
-/// \param W
-/// \param H
-///
-void image::resize(uint new_width, uint new_height, const uchar_color& Color)
-{
-  width = new_width;    // ширина изображения в пикселях
-  height = new_height;  // высота изображения в пикселях
-  Data.clear();
-  Data.resize(width * height, Color);
-}
-
-
-///
-/// \brief img::fill
-/// \param color
-///
-void image::fill(const uchar_color& new_color)
-{
-  Data.clear();
-  Data.resize(width * height, new_color);
-}
-
-
-///
-/// \brief img::uchar_data
-/// \return
-///
-uchar* image::uchar_t(void) const
-{
-  return reinterpret_cast<uchar*>(color_data());
-}
-
-
-///
-/// \brief img::px_data
-/// \return
-///
-uchar_color* image::color_data(void) const
-{
-  return const_cast<uchar_color*>(Data.data());
-}
-
-
-///
-/// \brief Загрузки избражения из .PNG файла
-///
-/// \param filename
-///
-void image::load(const std::string &fname)
-{
-  png_image info;
-  memset(&info, 0, sizeof info);
-
-  info.version = PNG_IMAGE_VERSION;
-
-  if (!png_image_begin_read_from_file(&info, fname.c_str())) ERR("Can't read PNG image file");
-  info.format = PNG_FORMAT_RGBA;
-
-  width = info.width;    // ширина изображения в пикселях
-  height = info.height;  // высота изображения в пикселях
-  Data.resize(width * height, {0x00, 0x00, 0x00, 0x00});
-
-  if (!png_image_finish_read(&info, nullptr, uchar_t(), 0, nullptr ))
-  {
-    png_image_free(&info);
-    ERR(info.message);
-  }
-}
-
-
-///
-/// \brief     Копирование одного изображения в другое
-///
-/// \param dst изображение-приемник
-/// \param X   координата пикселя приемника
-/// \param Y   координата пикселя приемника
-///
-void image::put(image& dst, ulong x, ulong y) const
-{
-  uint src_width = width;
-  if( dst.width < width + x ) src_width = dst.width - x;
-  uint src_height = height;
-  if( dst.height < height + y ) src_height = dst.height - y;
-
-  uint i_max = src_height * src_width;// число копируемых пикселей
-  uint src_i = 0;                 // индекс начала фрагмента
-  uint dst_i = x + y * dst.width; // индекс начала в приемнике
-  uint i = 0;                     // сумма скопированных пикселей
-
-  while(i < i_max)
-  {
-    uint s_row = src_i;           // текущий индекс источника
-    uint d_row = dst_i;           // текущий индекс приемника
-    uint d_max = d_row + src_width; // конец копируемой строки пикселей
-
-    // В данной версии копируются только полностью непрозрачные пиксели
-    while(d_row < d_max)
-    {
-      if(Data[s_row].a == 0xFF) dst.Data[d_row] = Data[s_row];
-      ++d_row;
-      ++s_row;
-      ++i;
-    }
-
-    dst_i += dst.width; // переход на следующую строку приемника
-    src_i += width;     // переход на следующую строку источника
-  }
-}
-
-
-///
-/// \brief image::paint_over
-/// \param x
-/// \param y
-/// \param src_data
-/// \param src_width
-/// \param src_height
-///
-void image::paint_over(uint x, uint y, const image& Src)
-{
-  uchar_color* src_data = Src.color_data();
-  uint src_width = Src.get_width();
-  uint src_height = Src.get_height();
-
-  auto original_width = src_width;
-  if(src_width + x  > width  ) src_width  = width -  x;
-  if(src_height + y > height ) src_height = height - y;
-
-  uint i = 0;                          // число скопированных пикселей
-  uint i_max = src_height * src_width; // сумма пикселей источника, которые надо скопировать
-  uint src_row_start = 0;              // индекс в начале строки источника
-  uint dst_row_start = x + y * width;  // индекс начального пикселя приемника
-
-  while(i < i_max)
-  {
-    uint row_n = src_width;
-    uint dst = dst_row_start;
-    uint src = src_row_start;
-    while(row_n > 0)
-    {
-      Data[dst] = blend_1( *(src_data + src), Data[dst]);
-      dst += 1;
-      src += 1;
-      row_n -= 1;
-      i += 1;
-    }
-    src_row_start += original_width; // переход на начало следующей строки источника
-    dst_row_start += width;          // переход на начало следующей строки приемника
-  }
-}
-
-
-///
-/// \brief Конструктор c загрузкой данных из файла
-/// \param filename
-/// \param cols
-/// \param rows
-///
-atlas::atlas(const std::string& filename, uint new_cols, uint new_rows)
-{
-  columns = new_cols;
-  rows = new_rows;
-
-  load(filename);
-
-  cell_width = width/columns; // ширина ячейки в пикселях
-  cell_height = height/rows; // высота ячейки в пикселях
-}
-
-
-///
-/// \brief     Копирование указанного фрагмента текстуры в изображение
-///
-/// \param C   номер ячейки в строке таблицы текстур
-/// \param R   номер строки таблицы текстур
-/// \param dst изображение-приемник
-/// \param X   координата пикселя приемника
-/// \param Y   координата пикселя приемника
-///
-void atlas::put(uint C, uint R, image& dst, ulong X, ulong Y) const
-{
-  if(C >= columns) C = 0;
-  if(R >= rows) R = 0;
-
-  uint frag_w = width / columns;   // ширина фрагмента в пикселях
-  uint frag_h = height / rows;   // высота фрагмента в пикселях
-  uint frag_sz = frag_h * frag_w;  // число копируемых пикселей
-
-  uint frag_i = C * frag_w + R * frag_h * width; // индекс начала фрагмента
-
-  auto dst_i = X + Y * dst.get_width();       // индекс начала в приемнике
-  //UINT dst_max = dst.w * dst.h;     // число пикселей в приемнике
-
-  uint i = 0;              // сумма скопированных пикселей
-  while(i < frag_sz)
-  {
-    auto d = dst_i;        // текущий индекс приемника
-    uint s = frag_i;       // текущий индекс источника
-    auto l = d + frag_w;   // конец копируемой строки пикселей
-
-    // В данной версии копируются только полностью непрозрачные пиксели
-    auto *dstData = dst.color_data();
-    while(d < l)
-    {
-      if(Data[s].a == 0xFF) dstData[d] = Data[s];
-      ++d;
-      ++s;
-      ++i;
-    }
-
-    dst_i += dst.get_width(); // переход на следующую строку приемника
-    frag_i += width;    // переход на следующую строку источника
-  }
+  RUN_3D = false;
+  ShowFrameBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
 }
 
 
@@ -367,11 +91,16 @@ void atlas::put(uint C, uint R, image& dst, ulong X, ulong Y) const
 /// \brief graphical_user_interface::graphical_user_interface
 /// \param OpenGLContext
 ///
-gui::gui(std::shared_ptr<trgl>& OpenGLContext, std::shared_ptr<glm::vec3> CameraLocation)
-  : OGLContext(OpenGLContext), ViewFrom(CameraLocation)
+gui::gui(std::shared_ptr<trgl>& Context)
 {
+  OGLContext = Context;
+  Space3d = std::make_unique<space_3d>(OGLContext);
+  ViewFrom = Space3d->ViewFrom;
   OGLContext->get_frame_size(&window_width, &window_height);
+  Cursor3D.x = static_cast<float>(window_width/2);
+  Cursor3D.y = static_cast<float>(window_height/2);
   init_vao();
+  fbuf_program_init();
   start_screen();
 }
 
@@ -435,6 +164,8 @@ void gui::clear(void)
 ///
 void gui::render(void)
 {
+  if(RUN_3D) Space3d->render(); // рендер 3D сцены
+
   calc_fps();
   glDisable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
@@ -453,6 +184,8 @@ void gui::render(void)
 
   RenderBuffer->unbind();
   glBindVertexArray(0);
+
+  framebuf_show();
 }
 
 
@@ -515,6 +248,41 @@ void gui::keyboard_event(int key, int, int action, int)
 {
   if((key == KEY_ESCAPE) && (action == RELEASE)) return;
 }
+
+
+///
+/// \brief gui::focus_event
+/// \details Потеря окном фокуса в режиме рендера 3D сцены
+/// переводит GUI в режим отображения меню
+///
+void gui::focus_lost_event(void)
+{
+  if (RUN_3D)
+  {
+     cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
+     //mode_2d();
+     OGLContext->cursor_restore();            // Включить указатель мыши
+     OGLContext->set_cursor_observer(*this);  // переключить обработчик смещения курсора
+     OGLContext->set_mbutton_observer(*this);  // обработчик кнопок мыши
+  }
+}
+
+
+///
+/// \brief gui::resize_event
+/// \param width
+/// \param height
+///
+void gui::resize_event(int w, int h)
+{
+  window_width  = static_cast<uint>(w);
+  window_height = static_cast<uint>(h);
+
+  // пересчет позции координат прицела (центр окна)
+  Cursor3D.x = static_cast<float>(w/2);
+  Cursor3D.y = static_cast<float>(h/2);
+}
+
 
 
 ///
@@ -834,17 +602,28 @@ void gui::config_screen(void)
 
 
 ///
+/// \brief get_map_dirs
+/// \return
+///
+std::vector<std::string> get_map_dirs(void)
+{
+  std::vector<std::string> Result {};
+
+  for(auto& it: std::filesystem::directory_iterator(cfg::user_dir()))
+    if(std::filesystem::is_directory(it))
+      Result.push_back(it.path().string());
+
+  return Result;
+}
+
+///
 /// \brief gui::select_map
 ///
 void gui::select_map(void)
 {
   title("ВЫБОР КАРТЫ");
-
-  auto MapsDir = cfg::user_dir();     // список директорий с картами
-  std::vector<std::string> Maps {};
-  for(auto& it: std::filesystem::directory_iterator(MapsDir))
-    if (std::filesystem::is_directory(it))
-      list_insert(cfg::map_name(it.path().string()), ST_PRESSED);
+  auto Maps = get_map_dirs();
+  for(const auto& Dir: Maps ) list_insert(cfg::map_name(Dir), ST_PRESSED);
 
   // DEBUG
   list_insert("debug 1");
@@ -854,6 +633,34 @@ void gui::select_map(void)
   button_append("УДАЛИТЬ КАРТУ");
   button_append("СТАРТ");
   button_append("ЗАКРЫТЬ", start_screen);
+}
+
+
+///
+/// \brief app::map_open
+///
+void gui::map_open(uint map_id)
+{
+  auto Maps = get_map_dirs();
+  cfg::map_view_load(Maps[map_id], Space3d->ViewFrom, Space3d->look_dir);
+
+  Space3d->load();
+  hud_enable();
+  mode_3d();
+}
+
+
+///
+/// \brief gui::close_map
+///
+void gui::close_map(void)
+{
+  cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
+  mode_2d();
+  OGLContext->cursor_restore();             // Включить указатель мыши
+  //OGLContext->set_cursor_observer(*this);   // переключить обработчик смещения курсора
+  //OGLContext->set_mbutton_observer(*this);  // обработчик кнопок мыши
+  //OGLContext->set_keyboard_observer(*this); // и клавиатуры
 }
 
 ///
@@ -922,8 +729,77 @@ void gui::hud_update(void)
   glBindBuffer(GL_ARRAY_BUFFER, VBO_uv->get_id());
   glBufferSubData(GL_ARRAY_BUFFER, fps_uv_data, FPSuv.size() * sizeof(float), FPSuv.data());
   glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-
 }
+
+/////
+
+void gui::fbuf_program_init(void)
+{
+/// Инициализация GLSL программы обработки текстуры фреймбуфера.
+///
+/// Текстура фрейм-буфера за счет измения порядка следования координат
+/// вершин с 1-2-3-4 на 3-4-1-2 перевернута - верх и низ в сцене
+/// меняются местами. Благодаря этому, нулевой координатой (0,0) окна
+/// становится более привычный верхний-левый угол, и загруженные из файла
+/// изображения текстур применяются без дополнительного переворота.
+
+GLfloat WinData[] = { // XY координаты вершин, UV координаты текстуры
+  -1.f,-1.f, 0.f, 1.f, //3
+   1.f,-1.f, 1.f, 1.f, //4
+   1.f, 1.f, 1.f, 0.f, //2
+
+   1.f, 1.f, 1.f, 0.f, //2
+  -1.f, 1.f, 0.f, 0.f, //1
+  -1.f,-1.f, 0.f, 1.f, //3
+};
+int vertex_bytes = sizeof(GLfloat) * 4;
+
+glGenVertexArrays(1, &vao2d);
+glBindVertexArray(vao2d);
+
+std::list<std::pair<GLenum, std::string>> Shaders {};
+Shaders.push_back({ GL_VERTEX_SHADER, cfg::app_key(SHADER_VERT_SCREEN) });
+Shaders.push_back({ GL_FRAGMENT_SHADER, cfg::app_key(SHADER_FRAG_SCREEN) });
+
+ShowFrameBuf = std::make_unique<glsl>(Shaders);
+ShowFrameBuf->use();
+ShowFrameBuf->AtribsList.push_back(
+  { ShowFrameBuf->attrib("position"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 0 * sizeof(GLfloat) });
+ShowFrameBuf->AtribsList.push_back(
+  { ShowFrameBuf->attrib("texcoord"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 2 * sizeof(GLfloat) });
+glUniform1i(ShowFrameBuf->uniform("WinTexture"), 1); // GL_TEXTURE1 - фрейм-буфер
+ShowFrameBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
+ShowFrameBuf->unuse();
+
+vbo VboWin { GL_ARRAY_BUFFER };
+VboWin.allocate( sizeof(WinData), WinData );
+VboWin.set_attributes(ShowFrameBuf->AtribsList); // настройка положения атрибутов GLSL программы
+
+glBindVertexArray(0);
+}
+/////
+
+///
+/// \brief app::window_frame_render
+/// \details
+/// Кадр сцены рендерится в изображение на (2D) "холсте" фреймбуфера,
+/// или текстуре интерфейса меню. После этого изображение в виде
+/// текстуры накладывается на прямоугольник окна приложения.
+///
+void gui::framebuf_show(void)
+{
+  ShowFrameBuf->use();
+  vbo_mtx.lock();
+  glBindVertexArray(vao2d);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+  OGLContext->swap_buffers();
+  vbo_mtx.unlock();
+  ShowFrameBuf->unuse();
+
+#ifndef NDEBUG
+  CHECK_OPENGL_ERRORS
+#endif
+}
+
 
 } //namespace tr

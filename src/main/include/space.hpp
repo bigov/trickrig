@@ -10,12 +10,15 @@
 #define SPACE_HPP
 
 #include "area.hpp"
+#include "image.hpp"
 #include "framebuf.hpp"
-#include "gui.hpp"
+#include "config.hpp"
 
 
 namespace tr
 {
+  extern std::unique_ptr<frame_buffer> RenderBuffer; // рендер-буфер окна
+
   class space_3d: public interface_gl_context
   {
     public:
