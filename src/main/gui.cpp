@@ -181,11 +181,23 @@ void gui::render(void)
   glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, nullptr);
   for(const auto& A: Program2d->AtribsList) glDisableVertexAttribArray(A.index);
   Program2d->unuse();
-
   RenderBuffer->unbind();
-  glBindVertexArray(0);
 
-  framebuf_show();
+  /// Кадр сцены рендерится в изображение на (2D) "холсте" фреймбуфера,
+  /// или текстуре интерфейса меню. После этого изображение в виде
+  /// текстуры накладывается на прямоугольник окна приложения.
+  ShowFrameBuf->use();
+  vbo_mtx.lock();
+  glBindVertexArray(vao2d);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+  glBindVertexArray(0);
+  OGLContext->swap_buffers();
+  vbo_mtx.unlock();
+  ShowFrameBuf->unuse();
+
+#ifndef NDEBUG
+  CHECK_OPENGL_ERRORS
+#endif
 }
 
 
@@ -216,6 +228,29 @@ void gui::cursor_event(double x, double y)
       }
     }
   }
+
+  for(auto& B: Rows)
+  {
+    if (B.state == ST_PRESSED) continue;
+
+    if(x > B.x0 && x < B.x1 && y > B.y0 && y < B.y1)
+    {
+      if(B.state != ST_OVER)
+      {
+        B.state = ST_OVER;
+        auto Vrgba = rect_rgba(ListBgColor[B.state]);
+        VBO_rgba->update(Vrgba.size() * sizeof(float), Vrgba.data(), B.rgba_stride);
+      }
+    } else
+    {
+      if(B.state == ST_OVER)
+      {
+        B.state = ST_NORMAL;
+        auto Vrgba = rect_rgba(ListBgColor[B.state]);
+        VBO_rgba->update(Vrgba.size() * sizeof(float), Vrgba.data(), B.rgba_stride);
+      }
+    }
+  }
 }
 
 
@@ -229,11 +264,34 @@ void gui::mouse_event(int _button, int _action, int)
 {
   if( (_button == MOUSE_BUTTON_LEFT)
   and (_action == RELEASE) )
+  {
     for(auto& B: Buttons)
     {
       if(nullptr == B.caller) continue;
       if(B.state == ST_OVER) B.caller();
     }
+
+    for(auto& B: Rows)
+    {
+      if(B.state == ST_OVER)
+      {
+        // сбросить все в исходное
+        for(auto& T: Rows)
+        {
+          T.state = ST_NORMAL;
+          auto Vrgba = rect_rgba(ListBgColor[T.state]);
+          VBO_rgba->update(Vrgba.size() * sizeof(float), Vrgba.data(), T.rgba_stride);
+        }
+
+        // включить текущую
+        B.state = ST_PRESSED;
+        auto Vrgba = rect_rgba(ListBgColor[B.state]);
+        VBO_rgba->update(Vrgba.size() * sizeof(float), Vrgba.data(), B.rgba_stride);
+      }
+      if(nullptr != B.caller)  B.caller();
+    }
+
+  }
 }
 
 
@@ -731,10 +789,10 @@ void gui::hud_update(void)
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-/////
 
-void gui::fbuf_program_init(void)
-{
+///
+/// \brief gui::fbuf_program_init
+///
 /// Инициализация GLSL программы обработки текстуры фреймбуфера.
 ///
 /// Текстура фрейм-буфера за счет измения порядка следования координат
@@ -742,6 +800,9 @@ void gui::fbuf_program_init(void)
 /// меняются местами. Благодаря этому, нулевой координатой (0,0) окна
 /// становится более привычный верхний-левый угол, и загруженные из файла
 /// изображения текстур применяются без дополнительного переворота.
+///
+void gui::fbuf_program_init(void)
+{
 
 GLfloat WinData[] = { // XY координаты вершин, UV координаты текстуры
   -1.f,-1.f, 0.f, 1.f, //3
@@ -777,29 +838,5 @@ VboWin.set_attributes(ShowFrameBuf->AtribsList); // настройка поло�
 
 glBindVertexArray(0);
 }
-/////
-
-///
-/// \brief app::window_frame_render
-/// \details
-/// Кадр сцены рендерится в изображение на (2D) "холсте" фреймбуфера,
-/// или текстуре интерфейса меню. После этого изображение в виде
-/// текстуры накладывается на прямоугольник окна приложения.
-///
-void gui::framebuf_show(void)
-{
-  ShowFrameBuf->use();
-  vbo_mtx.lock();
-  glBindVertexArray(vao2d);
-  glDrawArrays(GL_TRIANGLES, 0, 6);
-  OGLContext->swap_buffers();
-  vbo_mtx.unlock();
-  ShowFrameBuf->unuse();
-
-#ifndef NDEBUG
-  CHECK_OPENGL_ERRORS
-#endif
-}
-
 
 } //namespace tr

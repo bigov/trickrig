@@ -125,7 +125,6 @@ class gui: public interface_gl_context
     static void mode_2d(void);
 
     void fbuf_program_init(void);
-    void framebuf_show(void);
 
 };
 

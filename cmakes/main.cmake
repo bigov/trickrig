@@ -20,6 +20,7 @@ SET( TR_LIBS ${TR_LIBS} ${GLFW_LIBRARIES} ${PNG_LIBRARIES} ${SQLITE_LIBRARIES}
 
 # список исходников
 file( GLOB MAIN_SRC "${CMAKE_SOURCE_DIR}/src/main/*.cpp" )
+
 # расположение заголовков
 include_directories( "${CMAKE_SOURCE_DIR}/src/main/include" )
 
@@ -30,3 +31,17 @@ add_custom_command(TARGET main POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                    ${CMAKE_SOURCE_DIR}/assets/ "assets")
 
+add_custom_command(TARGET main POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy
+                   ${LIBS_DIR}/libstdc++-6.dll libstdc++-6.dll)
+
+if( ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
+  SET( SYS_LIBS_LIST libpng16-16.dll libsqlite3-0.dll glfw3.dll
+      libwinpthread-1.dll zlib1.dll libstdc++-6.dll libgcc_s_seh-1.dll )
+  find_path(SYS_LIBS_DIR libstdc++-6.dll)
+  foreach(SYS_LIB ${SYS_LIBS_LIST} )
+    add_custom_command( TARGET main POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy
+                   ${SYS_LIBS_DIR}/${SYS_LIB} ${SYS_LIB} )
+  endforeach()
+endif( ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
