@@ -31,17 +31,14 @@ add_custom_command(TARGET main POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                    ${CMAKE_SOURCE_DIR}/assets/ "assets")
 
-add_custom_command(TARGET main POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy
-                   ${LIBS_DIR}/libstdc++-6.dll libstdc++-6.dll)
-
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
-  SET( SYS_LIBS_LIST libpng16-16.dll libsqlite3-0.dll glfw3.dll
+  SET( DLL_LIST libpng16-16.dll libsqlite3-0.dll glfw3.dll
       libwinpthread-1.dll zlib1.dll libstdc++-6.dll libgcc_s_seh-1.dll )
-  find_path(SYS_LIBS_DIR libstdc++-6.dll)
-  foreach(SYS_LIB ${SYS_LIBS_LIST} )
-    add_custom_command( TARGET main POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy
-                   ${SYS_LIBS_DIR}/${SYS_LIB} ${SYS_LIB} )
+    find_path( DLL_DIR libstdc++-6.dll )
+    foreach( DLL_LIB ${DLL_LIST} )
+      add_custom_command( TARGET main POST_BUILD
+                  COMMAND ${CMAKE_COMMAND} -E copy
+                  "${DLL_DIR}/${DLL_LIB}" "${DLL_LIB}" )
+    #  message( "${DIR0}/${LDLL}" )
   endforeach()
-endif( ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
+endif()
