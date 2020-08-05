@@ -48,14 +48,14 @@ class app: public interface_gl_context
     int action = -1;
     int key = -1;
 
-    static layout Layout;                    // положение окна и размеры
-    float aspect = 1.0f;                     // соотношение размеров окна
-    static std::unique_ptr<gui> AppGUI; // = nullptr
+    static layout Layout;                   // положение окна и размеры
+    float aspect = 1.0f;                    // соотношение размеров окна
+    static std::unique_ptr<gui> AppGUI;     // = nullptr
 
-    bool text_mode = false;                  // режим ввода текста
-    std::string StringBuffer {};             // строка ввода пользователя
-    static double mouse_x;                    // позиция указателя относительно левой границы
-    static double mouse_y;                    // позиция указателя относительно верхней границы
+    bool text_mode = false;                 // режим ввода текста
+    std::string StringBuffer {};            // строка ввода пользователя
+    static double mouse_x;                  // позиция указателя относительно левой границы
+    static double mouse_y;                  // позиция указателя относительно верхней границы
 
     uchar_color bgColor {0xE0, 0xE0, 0xE0, 0xC0}; // цвет фона неактивного окна
     static uchar_color color_title;         // фон заголовка
@@ -63,14 +63,12 @@ class app: public interface_gl_context
 
     static GLuint texture_gui;              // id тектуры HUD
 
-    static std::vector<map> Maps;          // список карт
-    static MENU_MODES MenuMode;              // режим окна приложения
-    static size_t row_selected;            // какая строка выбрана
+    static std::vector<map> Maps;           // список карт
+    static MENU_MODES MenuMode;             // режим окна приложения
+    static size_t row_selected;             // какая строка выбрана
 
     std::chrono::time_point<std::chrono::system_clock> TimeStart;
 
-    static void mode_3d(void);
-    static void mode_2d(void);
     void cursor_text_row(const atlas& _Fn, image &_Dst, size_t position);
     void menu_map_create(void);
     void create_map(void);

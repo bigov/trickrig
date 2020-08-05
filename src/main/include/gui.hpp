@@ -14,7 +14,7 @@ namespace tr
 {
 
 typedef void(*func_ptr)(void);
-typedef void(*func_with_param_ptr)(uint);
+//typedef void(*func_with_param_ptr)(uint);
 
 enum FONT_STYLE { FONT_NORMAL, FONT_BOLD, FONT_COUNT };
 enum STATES { ST_NORMAL, ST_OVER, ST_PRESSED, ST_DISABLE };
@@ -70,8 +70,11 @@ class gui: public interface_gl_context
     static bool hud_is_enabled;
     int FPS = 500;                     // частота кадров
     static GLsizei fps_uv_data;           // смещение данных FPS в буфере UV
+    static uint map_id_current;
 
     static std::unique_ptr<space_3d> Space3d;     // = nullptr;
+    std::unique_ptr<glsl> Program2d = nullptr;    // построение 2D элементов
+
     static bool RUN_3D;
     static GLuint vao2d;
     static glm::vec3 Cursor3D;               // положение и размер прицела
@@ -96,6 +99,7 @@ class gui: public interface_gl_context
     static std::unique_ptr<glsl> ShowFrameBuf; // Шейдерная программа GUI
 
     void init_vao(void);
+    void init_prog_2d(void);
 
     static void clear(void);
     static void start_screen(void);
@@ -114,7 +118,7 @@ class gui: public interface_gl_context
     static void button_move(element_data& Button, int x, int y);
     static std::pair<uint, uint> button_allocation(void);
     static void list_insert(const std::string& String, STATES state);
-    static void map_open(uint map_id);
+    static void map_open(void);
     static void close_map(void);
     static void close(void) { open = false; }
 

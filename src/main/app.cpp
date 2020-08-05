@@ -18,34 +18,6 @@ std::unique_ptr<gui> app::AppGUI = nullptr;
 
 app::MENU_MODES app::MenuMode = SCREEN_START;    // режим окна приложения
 
-std::unique_ptr<glsl> Program2d = nullptr;            // построение 2D элементов
-
-///
-/// \brief init_prog_2d
-///
-void init_prog_2d(void)
-{
-  std::list<std::pair<GLenum, std::string>> Shaders {};
-  Shaders.push_back({ GL_VERTEX_SHADER, "assets\\shaders\\2d_vert.glsl" });
-  Shaders.push_back({ GL_FRAGMENT_SHADER, "assets\\shaders\\2d_frag.glsl" });
-
-  Program2d = std::make_unique<glsl>(Shaders);
-  Program2d->use();
-
-  // VBO2d_base Обработка массива с данными 2D-координат и цвета вершин
-  GLsizei stride = sizeof(GLfloat) * 6;
-  Program2d->AtribsList.push_back({Program2d->attrib("vCoordXY"), 2, GL_FLOAT, GL_TRUE, stride, 0 * sizeof(GLfloat)});
-  Program2d->AtribsList.push_back({Program2d->attrib("vColor"), 4, GL_FLOAT, GL_TRUE, stride, 2 * sizeof(GLfloat)});
-
-  // VBO2d_uv Массив текстурных координат UV заполняется отдельно. Может меняться динамически.
-  Program2d->AtribsList.push_back({Program2d->attrib("vCoordUV"), 2, GL_FLOAT, GL_TRUE, 0, 0});
-
-  glUniform1i(Program2d->uniform("font_texture"), 4);  // glActiveTexture(GL_TEXTURE4)
-
-  Program2d->unuse();
-}
-
-
 ///
 /// \brief load_font_texture
 /// \details  Загрузка текстуры шрифта
@@ -95,7 +67,6 @@ app::app(void)
   aspect  = static_cast<float>(Layout.width/Layout.height);
   GLContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
 
-  init_prog_2d();      // Шейдерная программа для построения 2D элементов пользовательского интерфейса
   load_font_texture(); // Загрузчик текстуры со шрифтом
 
   AppGUI = std::make_unique<gui>(GLContext);
@@ -213,10 +184,7 @@ void app::show(void)
   GLContext->set_char_observer(*this);      // ввод с клавиатуры
   GLContext->set_error_observer(*this);     // отслеживание ошибок
 
-  //GLContext->set_cursor_observer(*this);    // курсор мыши в окне
   GLContext->set_cursor_observer(*AppGUI.get());    // курсор мыши в окне
-
-  //GLContext->set_mbutton_observer(*this);   // кнопки мыши
   GLContext->set_mbutton_observer(*AppGUI.get());   // кнопки мыши
 
   GLContext->set_keyboard_observer(*this);  // клавиши клавиатуры
@@ -224,8 +192,6 @@ void app::show(void)
   GLContext->add_size_observer(*this);      // размер окна
   GLContext->set_close_observer(*this);     // закрытие окна
   GLContext->set_focuslost_observer(*this); // потеря окном фокуса ввода
-
-  AppGUI->open = true;
 
   while(AppGUI->open) AppGUI->render();
 }

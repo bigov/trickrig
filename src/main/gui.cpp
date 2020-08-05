@@ -8,6 +8,7 @@ std::string font_dir = "../assets/fonts/";
 atlas TextureFont { font_dir + font::texture_file, font::texture_cols, font::texture_rows };
 
 bool gui::open = false;
+uint gui::map_id_current = 0;
 bool gui::RUN_3D = false;
 bool gui::hud_is_enabled = false;
 GLuint gui::vao2d  = 0;
@@ -74,6 +75,9 @@ void gui::mode_3d(void)
 {
   RUN_3D = true;
   ShowFrameBuf->set_uniform("Cursor", Cursor3D);
+  OGLContext->set_cursor_observer(*Space3d.get());    // курсор мыши в окне
+  OGLContext->set_mbutton_observer(*Space3d.get());   // кнопки мыши
+
 }
 
 
@@ -84,6 +88,10 @@ void gui::mode_2d(void)
 {
   RUN_3D = false;
   ShowFrameBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
+
+  OGLContext->set_cursor_observer(*this);    // курсор мыши в окне
+  OGLContext->set_mbutton_observer(*this);   // кнопки мыши
+
 }
 
 
@@ -99,9 +107,37 @@ gui::gui(std::shared_ptr<trgl>& Context)
   OGLContext->get_frame_size(&window_width, &window_height);
   Cursor3D.x = static_cast<float>(window_width/2);
   Cursor3D.y = static_cast<float>(window_height/2);
+  init_prog_2d();      // Шейдерная программа для построения 2D элементов пользовательского интерфейса
   init_vao();
   fbuf_program_init();
   start_screen();
+  open = true;
+}
+
+
+///
+/// \brief init_prog_2d
+///
+void gui::init_prog_2d(void)
+{
+  std::list<std::pair<GLenum, std::string>> Shaders {};
+  Shaders.push_back({ GL_VERTEX_SHADER, "assets\\shaders\\2d_vert.glsl" });
+  Shaders.push_back({ GL_FRAGMENT_SHADER, "assets\\shaders\\2d_frag.glsl" });
+
+  Program2d = std::make_unique<glsl>(Shaders);
+  Program2d->use();
+
+  // VBO2d_base Обработка массива с данными 2D-координат и цвета вершин
+  GLsizei stride = sizeof(GLfloat) * 6;
+  Program2d->AtribsList.push_back({Program2d->attrib("vCoordXY"), 2, GL_FLOAT, GL_TRUE, stride, 0 * sizeof(GLfloat)});
+  Program2d->AtribsList.push_back({Program2d->attrib("vColor"), 4, GL_FLOAT, GL_TRUE, stride, 2 * sizeof(GLfloat)});
+
+  // VBO2d_uv Массив текстурных координат UV заполняется отдельно. Может меняться динамически.
+  Program2d->AtribsList.push_back({Program2d->attrib("vCoordUV"), 2, GL_FLOAT, GL_TRUE, 0, 0});
+
+  glUniform1i(Program2d->uniform("font_texture"), 4);  // glActiveTexture(GL_TEXTURE4)
+
+  Program2d->unuse();
 }
 
 
@@ -302,9 +338,13 @@ void gui::mouse_event(int _button, int _action, int)
 /// \param action
 /// \param mods
 ///
-void gui::keyboard_event(int key, int, int action, int)
+void gui::keyboard_event(int key, int scancode, int action, int mods)
 {
-  if((key == KEY_ESCAPE) && (action == RELEASE)) return;
+  if (RUN_3D)
+  {
+    Space3d->keyboard_event( key, scancode, action, mods);
+    if((key == KEY_ESCAPE) && (action == RELEASE)) mode_2d();
+  }
 }
 
 
@@ -689,7 +729,7 @@ void gui::select_map(void)
 
   button_append("НОВАЯ КАРТА");
   button_append("УДАЛИТЬ КАРТУ");
-  button_append("СТАРТ");
+  button_append("СТАРТ", map_open );
   button_append("ЗАКРЫТЬ", start_screen);
 }
 
@@ -697,10 +737,10 @@ void gui::select_map(void)
 ///
 /// \brief app::map_open
 ///
-void gui::map_open(uint map_id)
+void gui::map_open(void)
 {
   auto Maps = get_map_dirs();
-  cfg::map_view_load(Maps[map_id], Space3d->ViewFrom, Space3d->look_dir);
+  cfg::map_view_load(Maps[map_id_current], Space3d->ViewFrom, Space3d->look_dir);
 
   Space3d->load();
   hud_enable();

@@ -408,7 +408,7 @@ space_3d::~space_3d()
 {
   render_indices.store(0); // Индикатор для остановки потока загрузки в рендер из БД
   if(nullptr != data_loader) if(data_loader->joinable())
-    data_loader->join();      // Ожидание завершения потока
+    data_loader->join();   // Ожидание завершения потока
 }
 
 } // namespace tr
