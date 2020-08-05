@@ -13,9 +13,9 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include "app.hpp"
 #include <time.h>
 
+#include "gui.hpp"
 
 namespace tr
 {
@@ -52,8 +52,9 @@ int main(int, char* argv[])
   try
   {
     cfg::load(argv); // загрузка конфигурации
-    app MyApp {};   // Создать окно приложения
-    MyApp.show();   // Главный цикл
+    gui AppGUI  {};
+    while(AppGUI.open) AppGUI.render();
+
   }
   catch(std::exception & e)
   {

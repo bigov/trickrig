@@ -49,8 +49,16 @@ extern std::unique_ptr<glsl> Program2d;            // построение 2D э
 class gui: public interface_gl_context
 {
   public:
-    gui(std::shared_ptr<trgl>& OpenGLContext);
-    ~gui(void) = default;
+    gui(void);
+    ~gui(void);
+
+    /*
+    // Запретить копирование и перенос экземпляра класса
+    gui(const gui&) = delete;
+    gui& operator=(const gui&) = delete;
+    gui(gui&&) = delete;
+    gui& operator=(gui&&) = delete;
+     */
 
     static bool open;
     virtual void resize_event(int width, int height);
@@ -58,7 +66,12 @@ class gui: public interface_gl_context
     virtual void mouse_event(int _button, int _action, int _mods);                // _button, _action, _mods
     virtual void keyboard_event(int _key, int _scancode, int _action, int _mods); // _key, _scancode, _action, _mods
     virtual void focus_lost_event();
-    //virtual void character_event(unsigned int) {}
+    virtual void character_event(uint ch);
+    virtual void error_event(const char* message);
+    virtual void reposition_event(int left, int top);
+    virtual void close_event(void);
+
+    static std::shared_ptr<trgl> OGLContext;   // OpenGL контекст окна приложения
 
     void render(void);
     static void hud_enable(void);
@@ -71,6 +84,9 @@ class gui: public interface_gl_context
     int FPS = 500;                     // частота кадров
     static GLsizei fps_uv_data;           // смещение данных FPS в буфере UV
     static uint map_id_current;
+    std::string StringBuffer {};            // строка ввода пользователя
+    static layout Layout;                   // положение окна и размеры
+
 
     static std::unique_ptr<space_3d> Space3d;     // = nullptr;
     std::unique_ptr<glsl> Program2d = nullptr;    // построение 2D элементов
@@ -94,12 +110,16 @@ class gui: public interface_gl_context
     static std::vector<element_data> Rows;    // Список строк
 
     GLuint vao_gui = 0;
-    static std::shared_ptr<trgl> OGLContext;   // OpenGL контекст окна приложения
     std::shared_ptr<glm::vec3> ViewFrom; // 3D координаты камеры вида
     static std::unique_ptr<glsl> ShowFrameBuf; // Шейдерная программа GUI
 
     void init_vao(void);
     void init_prog_2d(void);
+    void cursor_text_row(const atlas&, image&, size_t);
+    void remove_map(void);
+
+    void create_map(void);
+
 
     static void clear(void);
     static void start_screen(void);

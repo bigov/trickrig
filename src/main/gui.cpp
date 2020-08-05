@@ -6,6 +6,7 @@ namespace tr
 
 std::string font_dir = "../assets/fonts/";
 atlas TextureFont { font_dir + font::texture_file, font::texture_cols, font::texture_rows };
+layout gui::Layout {};            // размеры и положение окна
 
 bool gui::open = false;
 uint gui::map_id_current = 0;
@@ -69,6 +70,42 @@ std::array<unsigned int, 2> map_location(const std::string& Sym)
 
 
 ///
+/// \brief load_font_texture
+/// \details  Загрузка текстуры шрифта
+///
+void load_textures(void)
+{
+  glActiveTexture(GL_TEXTURE4);
+  GLuint texture_font = 0;
+  glGenTextures(1, &texture_font);
+  glBindTexture(GL_TEXTURE_2D, texture_font);
+
+  GLint level_of_details = 0;
+  GLint frame = 0;
+
+  GLint internalFormat = GL_RED; // Number of color components provided by source image
+  GLenum format = GL_RGBA;       // The format, how the image is represented in memory
+
+  glTexImage2D(GL_TEXTURE_2D, level_of_details, internalFormat,
+               static_cast<GLsizei>(TextureFont.get_width()),
+               static_cast<GLsizei>(TextureFont.get_height()),
+               frame, format, GL_UNSIGNED_BYTE, TextureFont.uchar_t());
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+  glGenerateMipmap(GL_TEXTURE_2D);
+
+  // id тектуры HUD & GUI - меню
+  GLuint texture_gui = 0;
+  glActiveTexture(GL_TEXTURE2);
+  glGenTextures(1, &texture_gui);
+  glBindTexture(GL_TEXTURE_2D, texture_gui);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
+
+
+///
 /// \brief gui::mode_3d
 ///
 void gui::mode_3d(void)
@@ -77,7 +114,6 @@ void gui::mode_3d(void)
   ShowFrameBuf->set_uniform("Cursor", Cursor3D);
   OGLContext->set_cursor_observer(*Space3d.get());    // курсор мыши в окне
   OGLContext->set_mbutton_observer(*Space3d.get());   // кнопки мыши
-
 }
 
 
@@ -89,9 +125,6 @@ void gui::mode_2d(void)
   RUN_3D = false;
   ShowFrameBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
 
-  OGLContext->set_cursor_observer(*this);    // курсор мыши в окне
-  OGLContext->set_mbutton_observer(*this);   // кнопки мыши
-
 }
 
 
@@ -99,9 +132,21 @@ void gui::mode_2d(void)
 /// \brief graphical_user_interface::graphical_user_interface
 /// \param OpenGLContext
 ///
-gui::gui(std::shared_ptr<trgl>& Context)
+gui::gui(void)
 {
-  OGLContext = Context;
+  std::string title = std::string(APP_NAME) + " v." + std::string(APP_VERSION);
+#ifndef NDEBUG
+  if(strcmp(USE_CLANG, "FALSE") == 0) title += " [GCC]";
+  else title += " [Clang]";
+  title += " (debug mode)";
+#endif
+
+  OGLContext = std::make_shared<trgl>(title.c_str());
+  auto Layout = cfg::WinLayout;
+  OGLContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
+
+  load_textures();
+
   Space3d = std::make_unique<space_3d>(OGLContext);
   ViewFrom = Space3d->ViewFrom;
   OGLContext->get_frame_size(&window_width, &window_height);
@@ -110,8 +155,83 @@ gui::gui(std::shared_ptr<trgl>& Context)
   init_prog_2d();      // Шейдерная программа для построения 2D элементов пользовательского интерфейса
   init_vao();
   fbuf_program_init();
-  start_screen();
+
+  OGLContext->set_cursor_observer(*this);    // курсор мыши в окне
+  OGLContext->set_mbutton_observer(*this);   // кнопки мыши
+  OGLContext->set_char_observer(*this);      // ввод с клавиатуры
+  OGLContext->set_error_observer(*this);     // отслеживание ошибок
+  OGLContext->set_cursor_observer(*this);    // курсор мыши в окне
+  OGLContext->set_mbutton_observer(*this);   // кнопки мыши
+  OGLContext->set_keyboard_observer(*this);  // клавиши клавиатуры
+  OGLContext->set_position_observer(*this);  // положение окна
+  OGLContext->add_size_observer(*this);      // размер окна
+  OGLContext->set_close_observer(*this);     // закрытие окна
+  OGLContext->set_focuslost_observer(*this); // потеря окном фокуса ввода
+
   open = true;
+  start_screen();
+}
+
+
+
+///
+/// \brief gui::add_text_cursor
+/// \param _Fn       шрифт ввода
+/// \param _Dst      строка ввода
+/// \param position  номер позиции курсора в строке ввода
+/// \details Формирование курсора ввода, моргающего с интервалом в пол-секунды
+///
+//void app::cursor_text_row(const atlas &_Fn, image &_Dst, size_t position)
+void gui::cursor_text_row(const atlas&, image&, size_t)
+{
+/*
+  uchar_color c = {0x11, 0xDD, 0x00, 0xFF};
+  auto tm = std::chrono::duration_cast<std::chrono::milliseconds>
+      ( std::chrono::system_clock::now()-TimeStart ).count();
+
+  auto tc = trunc(tm/1000) * 1000;
+  if(tm - tc > 500) c.a = 0xFF;
+  else c.a = 0x00;
+*/
+//  image Cursor {3, _Fn.get_cell_height(), c};
+//  Cursor.put(_Dst, _Fn.get_cell_width() * (position + 1) + 1,
+//              (_Dst.get_height() - _Fn.get_cell_height()) / 2 );
+}
+
+
+///
+/// \brief gui::remove_map
+///
+void gui::remove_map(void)
+{
+  /*
+  auto map_dir = Maps[row_selected -1].Folder;
+  if(fs::exists(map_dir))
+  {
+    fs::current_path(cfg::user_dir());
+    dirs_list(cfg::user_dir());
+    try
+    {
+      fs::remove_all(map_dir);
+    }
+    catch(...)
+    {
+#ifndef NDEBUG
+      std::cerr << "Can't remove the map: " + map_dir + "\n";
+#endif
+    }
+  }
+  row_selected = 0;
+
+  // обновить список карт
+  Maps.clear();
+  auto MapsDirs = dirs_list(cfg::user_dir());
+  for(auto &P: MapsDirs)
+  {
+    auto MapName = cfg::map_name(P);
+    Maps.push_back(map(P, MapName));
+  }
+  */
 }
 
 
@@ -349,6 +469,28 @@ void gui::keyboard_event(int key, int scancode, int action, int mods)
 
 
 ///
+/// \brief gui::character_event
+/// \param ch
+///
+void gui::character_event(uint ch)
+{
+  //if(!text_mode) return;
+
+  if(ch < 128)
+  {
+    StringBuffer += char(ch);
+  }
+  else
+  {
+    auto str = wstring2string({static_cast<wchar_t>(ch)});
+    if(str == "№") str = "N";     // № трехбайтный, поэтому заменим на N
+    if(str.size() > 2) str = "_"; // блокировка 3-х байтных символов
+    StringBuffer += str;
+  }
+}
+
+
+///
 /// \brief gui::focus_event
 /// \details Потеря окном фокуса в режиме рендера 3D сцены
 /// переводит GUI в режим отображения меню
@@ -381,6 +523,36 @@ void gui::resize_event(int w, int h)
   Cursor3D.y = static_cast<float>(h/2);
 }
 
+
+///
+/// \brief gui::error_event
+/// \param message
+///
+void gui::error_event(const char* message)
+{
+  std::cerr << message << std::endl;
+}
+
+
+///
+/// \brief gui::window_pos_event
+/// \param left
+/// \param top
+///
+void gui::reposition_event(int _left, int _top)
+{
+  Layout.left = static_cast<uint>(_left);
+  Layout.top = static_cast<uint>(_top);
+}
+
+
+///
+/// \brief win_data::close_event
+///
+void gui::close_event(void)
+{
+  open = false;
+}
 
 
 ///
@@ -703,6 +875,10 @@ void gui::config_screen(void)
 /// \brief get_map_dirs
 /// \return
 ///
+/// // Составить список карт в каталоге пользователя
+/// auto MapsDirs = dirs_list(cfg::user_dir()); // список директорий с картами
+/// for(auto &P: MapsDirs) { Maps.push_back(map(P, cfg::map_name(P))); }
+///
 std::vector<std::string> get_map_dirs(void)
 {
   std::vector<std::string> Result {};
@@ -712,6 +888,7 @@ std::vector<std::string> get_map_dirs(void)
       Result.push_back(it.path().string());
 
   return Result;
+
 }
 
 ///
@@ -731,6 +908,18 @@ void gui::select_map(void)
   button_append("УДАЛИТЬ КАРТУ");
   button_append("СТАРТ", map_open );
   button_append("ЗАКРЫТЬ", start_screen);
+}
+
+
+///
+/// \brief gui::create_map
+/// \details создается новая карта и сразу открывается
+///
+void gui::create_map(void)
+{
+  auto MapDir = cfg::create_map(StringBuffer);
+  //Maps.push_back(map(MapDir, StringBuffer));
+  //row_selected = Maps.size();     // выбрать номер карты
 }
 
 
@@ -877,6 +1066,15 @@ VboWin.allocate( sizeof(WinData), WinData );
 VboWin.set_attributes(ShowFrameBuf->AtribsList); // настройка положения атрибутов GLSL программы
 
 glBindVertexArray(0);
+}
+
+
+///
+/// \brief gui::~gui
+///
+gui::~gui(void)
+{
+  cfg::save(Layout); // Сохранение положения окна
 }
 
 } //namespace tr
