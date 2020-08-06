@@ -52,14 +52,6 @@ class gui: public interface_gl_context
     gui(void);
     ~gui(void);
 
-    /*
-    // Запретить копирование и перенос экземпляра класса
-    gui(const gui&) = delete;
-    gui& operator=(const gui&) = delete;
-    gui(gui&&) = delete;
-    gui& operator=(gui&&) = delete;
-     */
-
     static bool open;
     virtual void event_resize(int width, int height);
     virtual void event_cursor(double x, double y);                                // x, y
@@ -76,13 +68,19 @@ class gui: public interface_gl_context
     bool render(void);
 
   private:
+    // Запретить копирование и перенос экземпляра класса
+    gui(const gui&) = delete;
+    gui& operator=(const gui&) = delete;
+    gui(gui&&) = delete;
+    gui& operator=(gui&&) = delete;
+
     static unsigned int indices;
     int FPS = 500;                 // частота кадров
     static GLsizei fps_uv_data;    // смещение данных FPS в буфере UV
-    static uint map_id_current;
+    static std::string map_current;
     std::string StringBuffer {};   // строка ввода пользователя
     static layout Layout;          // положение окна и размеры
-
+    static func_ptr current_menu;
 
     static std::unique_ptr<space_3d> Space3d;     // = nullptr;
     std::unique_ptr<glsl> Program2d = nullptr;    // построение 2D элементов
@@ -106,6 +104,8 @@ class gui: public interface_gl_context
     static std::vector<element_data> Rows;    // Список строк
 
     GLuint vao_gui = 0;
+    //GLuint texture_gui = 0;
+
     static std::unique_ptr<glsl> ProgramFrBuf; // Шейдерная программа GUI
 
     void init_vao(void);
@@ -117,11 +117,12 @@ class gui: public interface_gl_context
     static void map_open(void);
     static void map_close(void);
 
-
     static void clear(void);
-    static void start_screen(void);
-    static void config_screen(void);
-    static void select_map(void);
+    static void screen_start(void);
+    static void screen_config(void);
+    static void screen_map_select(void);
+    static void screen_pause(void);
+
     static void hud_enable(void);
     static std::vector<float> rect_xy(uint left, uint top, uint width, uint height);
     static std::vector<float> rect_rgba(float_color rgba);

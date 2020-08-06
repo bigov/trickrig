@@ -9,7 +9,7 @@ atlas TextureFont { font_dir + font::texture_file, font::texture_cols, font::tex
 layout gui::Layout {};            // размеры и положение окна
 
 bool gui::open = false;
-uint gui::map_id_current = 0;
+std::string gui::map_current {};
 bool gui::RUN_3D = false;
 GLuint gui::vao2d  = 0;
 GLsizei gui::fps_uv_data = 0;           // смещение данных FPS в буфере UV
@@ -24,6 +24,7 @@ static std::unique_ptr<vbo> VBO_rgba = nullptr; // цвет вершин
 static std::unique_ptr<vbo> VBO_uv   = nullptr;   // текстурные координаты
 
 unsigned int gui::indices = 0; // число индексов в 2Д режиме
+func_ptr gui::current_menu = nullptr;
 
 static const float_color TitleBgColor  { 1.0f, 1.0f, 0.85f, 1.0f };
 static const float_color TitleHemColor { 0.7f, 0.7f, 0.70f, 1.0f };
@@ -95,7 +96,7 @@ void load_textures(void)
   // id тектуры HUD & GUI - меню
   GLuint texture_gui = 0;
   glActiveTexture(GL_TEXTURE2);
-  glGenTextures(1, &texture_gui);
+  glGenTextures(1, &texture_gui); // id тектуры HUD & GUI - меню
   glBindTexture(GL_TEXTURE_2D, texture_gui);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -113,6 +114,8 @@ void gui::mode_3d(void)
   OGLContext->cursor_hide();               // выключить отображение курсора мыши в окне
   OGLContext->set_cursor_pos(Layout.width/2, Layout.height/2);
   ProgramFrBuf->set_uniform("Cursor", Cursor3D);
+
+  glActiveTexture(GL_TEXTURE2);
 }
 
 
@@ -121,14 +124,14 @@ void gui::mode_3d(void)
 ///
 void gui::mode_2d(void)
 {
+  RUN_3D = false;
+
   cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
   cfg::save(Layout); // Сохранение положения окна
 
-  RUN_3D = false;
   ProgramFrBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
   OGLContext->cursor_restore();
-  clear();
-  select_map();
+  screen_pause();
 }
 
 
@@ -170,7 +173,7 @@ gui::gui(void)
   OGLContext->set_focuslost_observer(*this); // потеря окном фокуса ввода
 
   open = true;
-  start_screen();
+  screen_start();
 }
 
 
@@ -534,6 +537,8 @@ void gui::event_resize(int w, int h)
 
   RenderBuffer->resize(Layout.width, Layout.height);
   Space3d->resize_event(w, h);
+
+  if(nullptr != current_menu) current_menu();
 }
 
 
@@ -865,53 +870,41 @@ void gui::list_insert(const std::string& String, STATES state = ST_NORMAL)
 ///
 /// \brief gui::start_screen
 ///
-void gui::start_screen(void)
+void gui::screen_start(void)
 {
   title("Добро пожаловать в TrickRig!");
-  button_append("НАСТРОИТЬ", config_screen);
-  button_append("ВЫБРАТЬ КАРТУ", select_map);
+  button_append("НАСТРОИТЬ", screen_config);
+  button_append("ВЫБРАТЬ КАРТУ", screen_map_select);
   button_append("ЗАКРЫТЬ", close);
+  current_menu = screen_start;
 }
 
 
 ///
 /// \brief gui::config_screen
 ///
-void gui::config_screen(void)
+void gui::screen_config(void)
 {
   title("ВЫБОР ПАРАМЕТРОВ");
-  button_append("ЗАКРЫТЬ", start_screen);
+  button_append("ЗАКРЫТЬ", screen_start);
+  current_menu = screen_config;
 }
 
-
-///
-/// \brief get_map_dirs
-/// \return
-///
-/// // Составить список карт в каталоге пользователя
-/// auto MapsDirs = dirs_list(cfg::user_dir()); // список директорий с картами
-/// for(auto &P: MapsDirs) { Maps.push_back(map(P, cfg::map_name(P))); }
-///
-std::vector<std::string> get_map_dirs(void)
-{
-  std::vector<std::string> Result {};
-
-  for(auto& it: std::filesystem::directory_iterator(cfg::user_dir()))
-    if(std::filesystem::is_directory(it))
-      Result.push_back(it.path().string());
-
-  return Result;
-
-}
 
 ///
 /// \brief gui::select_map
 ///
-void gui::select_map(void)
+void gui::screen_map_select(void)
 {
   title("ВЫБОР КАРТЫ");
-  auto Maps = get_map_dirs();
-  for(const auto& Dir: Maps ) list_insert(cfg::map_name(Dir), ST_PRESSED);
+
+  // Составить список карт в каталоге пользователя
+  for(auto& it: std::filesystem::directory_iterator(cfg::user_dir()))
+    if(std::filesystem::is_directory(it))
+    {
+      map_current = it.path().string();
+      list_insert( cfg::map_name(it.path().string()), ST_PRESSED );
+    }
 
   // DEBUG
   list_insert("debug 1");
@@ -920,7 +913,21 @@ void gui::select_map(void)
   button_append("НОВАЯ КАРТА");
   button_append("УДАЛИТЬ КАРТУ");
   button_append("СТАРТ", map_open );
-  button_append("ЗАКРЫТЬ", start_screen);
+  button_append("ЗАКРЫТЬ", screen_start);
+
+  current_menu = screen_map_select;
+}
+
+
+///
+/// \brief gui::config_screen
+///
+void gui::screen_pause(void)
+{
+  title("П А У З А");
+  button_append("ВЫХОД", screen_start);
+  button_append("ПРОДОЛЖИТЬ", mode_3d);
+  current_menu = screen_pause;
 }
 
 
@@ -941,8 +948,7 @@ void gui::map_create(void)
 ///
 void gui::map_open(void)
 {
-  auto Maps = get_map_dirs();
-  cfg::map_view_load(Maps[map_id_current], Space3d->ViewFrom, Space3d->look_dir);
+  cfg::map_view_load(map_current, Space3d->ViewFrom, Space3d->look_dir);
 
   Space3d->load();
   mode_3d();

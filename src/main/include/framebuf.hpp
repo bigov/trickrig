@@ -19,15 +19,18 @@ class gl_texture
 
     GLint level = 0, border = 0;
     GLenum target = GL_TEXTURE_2D;
+    GLenum texture_num;
     GLint internalformat;
     GLenum format;
     GLenum type;
 
   public:
-    gl_texture(GLint internalformat, GLenum format, GLenum type,
+    gl_texture(GLenum texture_num, GLint internalformat, GLenum format, GLenum type,
                GLsizei width = 0, GLsizei height = 0, const GLvoid* data = nullptr);
     ~gl_texture() {}
 
+    void bind(void);
+    void unbind(void);
     void resize(GLsizei width, GLsizei height, const GLvoid* data = nullptr);
     GLuint id(void) const;
 };

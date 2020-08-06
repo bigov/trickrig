@@ -150,7 +150,6 @@ void space_3d::load_surf_textures(void)
 {
   // Загрузка текстур поверхностей воксов
   glActiveTexture(GL_TEXTURE0);
-  GLuint texture_3d = 0;
   glGenTextures(1, &texture_3d);
   glBindTexture(GL_TEXTURE_2D, texture_3d);
   image ImgTex0 { cfg::app_key(PNG_TEXTURE0) };
@@ -234,6 +233,9 @@ void space_3d::render(void)
   if(render_indices.load() < indices_per_face) return;
   calc_position();
   vbo_mtx.lock();
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, texture_3d);
 
   RenderBuffer->bind();
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

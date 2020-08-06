@@ -36,6 +36,8 @@ namespace tr
       float look_dir[2] = {0.0f, 0.0f};  // Направление: азимут (0 - X) и тангаж (0 - горизОнталь, пи/2 - вертикаль)
 
     private:
+      space_3d(void) = delete;
+
       std::unique_ptr<std::thread> data_loader = nullptr;
 
       // Запретить копирование и перенос экземпляров класса
@@ -43,7 +45,6 @@ namespace tr
       space_3d& operator=(const space_3d&) = delete;
       space_3d(space_3d&&) = delete;
       space_3d& operator=(space_3d&&) = delete;
-      space_3d(void) = delete;
 
       vbo VBO3d      { GL_ARRAY_BUFFER }; // Буфер данных
 
@@ -53,6 +54,7 @@ namespace tr
       static const GLsizei uv_data_size = sizeof(float) * 8; // размер блока UV данных (4 вершины по 2 координаты)
 
       GLuint vao_3d = 0;
+      GLuint texture_3d = 0;
 
       float cursor_dx = 0.f; // Cмещение мыши в активном окне между кадрами
       float cursor_dy = 0.f; // в режиме 3D (режим прицела) при скрытом курсоре.

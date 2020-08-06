@@ -20,10 +20,11 @@ namespace tr
 ///                   GLsizei width, GLsizei height, GLint border,
 ///                   GLenum format, GLenum type, const GLvoid * data);
 ///
-gl_texture::gl_texture( GLint internalformat, GLenum format, GLenum type,
+gl_texture::gl_texture(GLenum texture_num, GLint internalformat, GLenum format, GLenum type,
                        GLsizei width, GLsizei height, const GLvoid* data)
-  : internalformat(internalformat), format(format), type(type)
+  : texture_num(texture_num), internalformat(internalformat), format(format), type(type)
 {
+  glActiveTexture(texture_num);
   glGenTextures(1, &texture_id);
   glBindTexture(target, texture_id);
   glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -43,7 +44,7 @@ gl_texture::gl_texture( GLint internalformat, GLenum format, GLenum type,
 ///
 void gl_texture::resize(GLsizei width, GLsizei height, const GLvoid* data)
 {
-  glBindTexture(target, texture_id);
+  bind();
 
   if(data == nullptr)
   {
@@ -57,6 +58,26 @@ void gl_texture::resize(GLsizei width, GLsizei height, const GLvoid* data)
     glTexImage2D(target, level, internalformat, width, height, border, format, type, data);
   }
 
+  unbind();
+}
+
+
+///
+/// \brief gl_texture::bind
+///
+void gl_texture::bind(void)
+{
+  glActiveTexture(texture_num);
+  glBindTexture(target, texture_id);
+}
+
+
+///
+/// \brief gl_texture::unbind
+///
+void gl_texture::unbind(void)
+{
+  glActiveTexture(texture_num);
   glBindTexture(target, 0);
 }
 
@@ -81,12 +102,10 @@ frame_buffer::frame_buffer(GLsizei w, GLsizei h)
   glGenFramebuffers(1, &id);
   glBindFramebuffer(GL_FRAMEBUFFER, id);
 
-  glActiveTexture(GL_TEXTURE1); // текстура для рендера 3D пространства
-  TexColor = std::make_unique<gl_texture>(GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+  TexColor = std::make_unique<gl_texture>(GL_TEXTURE1, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, TexColor->id(), 0);
 
-  glActiveTexture(GL_TEXTURE3); // текстура идентификации примитивов
-  TexIdent = std::make_unique<gl_texture>(GL_R32I, ident_format, ident_type);
+  TexIdent = std::make_unique<gl_texture>(GL_TEXTURE3, GL_R32I, ident_format, ident_type);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, TexIdent->id(), 0);
 
   GLenum b[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
@@ -134,6 +153,8 @@ void frame_buffer::bind(void)
 {
   glBindFramebuffer(GL_FRAMEBUFFER, id);
   glBindRenderbuffer(GL_RENDERBUFFER, rbuf_id);
+  TexIdent->bind();
+  TexColor->bind();
 }
 
 
@@ -160,9 +181,10 @@ void frame_buffer::read_pixel(GLint x, GLint y, void* pixel_data)
 ///
 void frame_buffer::unbind(void)
 {
-  //glBindTexture(GL_TEXTURE_2D, 0);
   glBindRenderbuffer(GL_RENDERBUFFER, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  //TexIdent->unbind();
+  //TexColor->unbind();
 }
 
 
@@ -172,6 +194,8 @@ void frame_buffer::unbind(void)
 frame_buffer::~frame_buffer(void)
 {
   unbind();
+  TexIdent->unbind();
+  TexColor->unbind();
   glDeleteFramebuffers(1, &id);
 }
 
