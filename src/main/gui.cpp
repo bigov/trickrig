@@ -11,15 +11,12 @@ layout gui::Layout {};            // размеры и положение окн
 bool gui::open = false;
 uint gui::map_id_current = 0;
 bool gui::RUN_3D = false;
-bool gui::hud_is_enabled = false;
 GLuint gui::vao2d  = 0;
 GLsizei gui::fps_uv_data = 0;           // смещение данных FPS в буфере UV
 
-int gui::window_width  = 0; // ширина окна приложения
-int gui::window_height = 0; // высота окна приложения
 std::unique_ptr<space_3d> gui::Space3d = nullptr;
 std::shared_ptr<trgl> gui::OGLContext = nullptr;
-std::unique_ptr<glsl> gui::ShowFrameBuf = nullptr;  // Вывод текстуры фреймбуфера на окно
+std::unique_ptr<glsl> gui::ProgramFrBuf = nullptr;  // Вывод текстуры фреймбуфера на окно
 glm::vec3 gui::Cursor3D = { 200.f, 200.f, 2.f }; // положение и размер прицела
 
 static std::unique_ptr<vbo> VBO_xy   = nullptr;   // координаты вершин
@@ -111,9 +108,11 @@ void load_textures(void)
 void gui::mode_3d(void)
 {
   RUN_3D = true;
-  ShowFrameBuf->set_uniform("Cursor", Cursor3D);
-  OGLContext->set_cursor_observer(*Space3d.get());    // курсор мыши в окне
-  OGLContext->set_mbutton_observer(*Space3d.get());   // кнопки мыши
+  hud_enable();
+
+  OGLContext->cursor_hide();               // выключить отображение курсора мыши в окне
+  OGLContext->set_cursor_pos(Layout.width/2, Layout.height/2);
+  ProgramFrBuf->set_uniform("Cursor", Cursor3D);
 }
 
 
@@ -122,9 +121,14 @@ void gui::mode_3d(void)
 ///
 void gui::mode_2d(void)
 {
-  RUN_3D = false;
-  ShowFrameBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
+  cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
+  cfg::save(Layout); // Сохранение положения окна
 
+  RUN_3D = false;
+  ProgramFrBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
+  OGLContext->cursor_restore();
+  clear();
+  select_map();
 }
 
 
@@ -142,25 +146,22 @@ gui::gui(void)
 #endif
 
   OGLContext = std::make_shared<trgl>(title.c_str());
-  auto Layout = cfg::WinLayout;
+  Layout = cfg::WinLayout;
   OGLContext->set_window(Layout.width, Layout.height, MIN_GUI_WIDTH, MIN_GUI_HEIGHT, Layout.left, Layout.top);
 
   load_textures();
 
   Space3d = std::make_unique<space_3d>(OGLContext);
-  ViewFrom = Space3d->ViewFrom;
-  OGLContext->get_frame_size(&window_width, &window_height);
-  Cursor3D.x = static_cast<float>(window_width/2);
-  Cursor3D.y = static_cast<float>(window_height/2);
+
+  Cursor3D.x = static_cast<float>(Layout.width/2);
+  Cursor3D.y = static_cast<float>(Layout.height/2);
   init_prog_2d();      // Шейдерная программа для построения 2D элементов пользовательского интерфейса
   init_vao();
   fbuf_program_init();
 
-  OGLContext->set_cursor_observer(*this);    // курсор мыши в окне
-  OGLContext->set_mbutton_observer(*this);   // кнопки мыши
-  OGLContext->set_char_observer(*this);      // ввод с клавиатуры
   OGLContext->set_error_observer(*this);     // отслеживание ошибок
   OGLContext->set_cursor_observer(*this);    // курсор мыши в окне
+  OGLContext->set_char_observer(*this);      // ввод с клавиатуры
   OGLContext->set_mbutton_observer(*this);   // кнопки мыши
   OGLContext->set_keyboard_observer(*this);  // клавиши клавиатуры
   OGLContext->set_position_observer(*this);  // положение окна
@@ -318,8 +319,10 @@ void gui::clear(void)
 ///
 /// \brief graphical_user_interface::render
 ///
-void gui::render(void)
+bool gui::render(void)
 {
+  if(!open) return false;
+
   if(RUN_3D) Space3d->render(); // рендер 3D сцены
 
   calc_fps();
@@ -328,7 +331,7 @@ void gui::render(void)
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   RenderBuffer->bind();
-  if(!hud_is_enabled) glClear(GL_COLOR_BUFFER_BIT);
+  if(!RUN_3D) glClear(GL_COLOR_BUFFER_BIT);
   else hud_update();
 
   glBindVertexArray(vao_gui);
@@ -342,18 +345,20 @@ void gui::render(void)
   /// Кадр сцены рендерится в изображение на (2D) "холсте" фреймбуфера,
   /// или текстуре интерфейса меню. После этого изображение в виде
   /// текстуры накладывается на прямоугольник окна приложения.
-  ShowFrameBuf->use();
+  ProgramFrBuf->use();
   vbo_mtx.lock();
   glBindVertexArray(vao2d);
   glDrawArrays(GL_TRIANGLES, 0, 6);
   glBindVertexArray(0);
   OGLContext->swap_buffers();
   vbo_mtx.unlock();
-  ShowFrameBuf->unuse();
+  ProgramFrBuf->unuse();
 
 #ifndef NDEBUG
   CHECK_OPENGL_ERRORS
 #endif
+
+  return true;
 }
 
 
@@ -362,8 +367,14 @@ void gui::render(void)
 /// \param x
 /// \param y
 ///
-void gui::cursor_event(double x, double y)
+void gui::event_cursor(double x, double y)
 {
+  if(RUN_3D)
+  {
+    Space3d->cursor_event(x, y);
+    return;
+  }
+
   for(auto& B: Buttons)
   {
     if(x > B.x0 && x < B.x1 && y > B.y0 && y < B.y1)
@@ -416,8 +427,14 @@ void gui::cursor_event(double x, double y)
 /// \param _action
 /// \param _mods
 ///
-void gui::mouse_event(int _button, int _action, int)
+void gui::event_mouse_btns(int _button, int _action, int _mods)
 {
+  if(RUN_3D)
+  {
+    Space3d->mouse_event(_button, _action, _mods);
+    return;
+  }
+
   if( (_button == MOUSE_BUTTON_LEFT)
   and (_action == RELEASE) )
   {
@@ -458,7 +475,7 @@ void gui::mouse_event(int _button, int _action, int)
 /// \param action
 /// \param mods
 ///
-void gui::keyboard_event(int key, int scancode, int action, int mods)
+void gui::event_keyboard(int key, int scancode, int action, int mods)
 {
   if (RUN_3D)
   {
@@ -472,7 +489,7 @@ void gui::keyboard_event(int key, int scancode, int action, int mods)
 /// \brief gui::character_event
 /// \param ch
 ///
-void gui::character_event(uint ch)
+void gui::event_character(uint ch)
 {
   //if(!text_mode) return;
 
@@ -495,16 +512,9 @@ void gui::character_event(uint ch)
 /// \details Потеря окном фокуса в режиме рендера 3D сцены
 /// переводит GUI в режим отображения меню
 ///
-void gui::focus_lost_event(void)
+void gui::event_focus_lost(void)
 {
-  if (RUN_3D)
-  {
-     cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
-     //mode_2d();
-     OGLContext->cursor_restore();            // Включить указатель мыши
-     OGLContext->set_cursor_observer(*this);  // переключить обработчик смещения курсора
-     OGLContext->set_mbutton_observer(*this);  // обработчик кнопок мыши
-  }
+  if (RUN_3D) mode_2d();
 }
 
 
@@ -513,14 +523,17 @@ void gui::focus_lost_event(void)
 /// \param width
 /// \param height
 ///
-void gui::resize_event(int w, int h)
+void gui::event_resize(int w, int h)
 {
-  window_width  = static_cast<uint>(w);
-  window_height = static_cast<uint>(h);
+  Layout.width  = static_cast<uint>(w);
+  Layout.height = static_cast<uint>(h);
 
   // пересчет позции координат прицела (центр окна)
   Cursor3D.x = static_cast<float>(w/2);
   Cursor3D.y = static_cast<float>(h/2);
+
+  RenderBuffer->resize(Layout.width, Layout.height);
+  Space3d->resize_event(w, h);
 }
 
 
@@ -528,7 +541,7 @@ void gui::resize_event(int w, int h)
 /// \brief gui::error_event
 /// \param message
 ///
-void gui::error_event(const char* message)
+void gui::event_error(const char* message)
 {
   std::cerr << message << std::endl;
 }
@@ -539,7 +552,7 @@ void gui::error_event(const char* message)
 /// \param left
 /// \param top
 ///
-void gui::reposition_event(int _left, int _top)
+void gui::event_reposition(int _left, int _top)
 {
   Layout.left = static_cast<uint>(_left);
   Layout.top = static_cast<uint>(_top);
@@ -549,7 +562,7 @@ void gui::reposition_event(int _left, int _top)
 ///
 /// \brief win_data::close_event
 ///
-void gui::close_event(void)
+void gui::event_close(void)
 {
   open = false;
 }
@@ -562,22 +575,22 @@ void gui::close_event(void)
 /// \param width
 /// \param height
 ///
-std::vector<float> gui::rect_xy(int left, int top, uint width, uint height)
+std::vector<float> gui::rect_xy(uint left, uint top, uint width, uint height)
 {
-  if(left > window_width) left = window_width;
-  if(top > window_height) top = window_height;
+  if(left > Layout.width) left = Layout.width;
+  if(top > Layout.height) top = Layout.height;
 
-  float x0 = static_cast<float>(left) * 2.f / static_cast<float>(window_width) - 1.f;
-  float y0 = static_cast<float>(top) * 2.f / static_cast<float>(window_height) - 1.f;
+  float x0 = static_cast<float>(left) * 2.f / static_cast<float>(Layout.width) - 1.f;
+  float y0 = static_cast<float>(top) * 2.f / static_cast<float>(Layout.height) - 1.f;
 
   left += width;
   top += height;
 
-  if(left > window_width) left = window_width;
-  if(top > window_height) top = window_height;
+  if(left > Layout.width) left = Layout.width;
+  if(top > Layout.height) top = Layout.height;
 
-  float x1 = static_cast<float>(left) * 2.f / static_cast<float>(window_width) - 1.f;
-  float y1 = static_cast<float>(top) * 2.f / static_cast<float>(window_height) - 1.f;
+  float x1 = static_cast<float>(left) * 2.f / static_cast<float>(Layout.width) - 1.f;
+  float y1 = static_cast<float>(top) * 2.f / static_cast<float>(Layout.height) - 1.f;
 
   return { x0,y0,  x1,y0,  x1,y1,  x0,y1 };
 }
@@ -680,15 +693,15 @@ void gui::title(const std::string& Label)
   // Очистка всех массивов VAO
   clear();
   // Заливка окна фоновым цветом
-  rectangle(menu_border, menu_border, window_width - 2 * menu_border,
-            window_height - 2 * menu_border, {0.9f, 1.f, 0.9f, 1.f});
+  rectangle(menu_border, menu_border, Layout.width - 2 * menu_border,
+            Layout.height - 2 * menu_border, {0.9f, 1.f, 0.9f, 1.f});
 
   auto Text = string2vector(Label);
   uint symbol_width = 14;
   uint symbol_height = 21;
-  rectangle(menu_border, menu_border, window_width - 2*menu_border, title_height+1, TitleHemColor);
-  rectangle(menu_border, menu_border, window_width - 2*menu_border, title_height, TitleBgColor);
-  uint left = menu_border + window_width/2 - Text.size() * symbol_width / 2;
+  rectangle(menu_border, menu_border, Layout.width - 2*menu_border, title_height+1, TitleHemColor);
+  rectangle(menu_border, menu_border, Layout.width - 2*menu_border, title_height, TitleBgColor);
+  uint left = menu_border + Layout.width/2 - Text.size() * symbol_width / 2;
   uint top =  menu_border + title_height/2 - symbol_height/2 + 2;
   textrow(left, top, Text, symbol_width, symbol_height);
 }
@@ -703,8 +716,8 @@ void gui::title(const std::string& Label)
 ///
 std::pair<uint, uint> gui::button_allocation(void)
 {
-  uint left = (window_width - btn_width)/2;
-  uint top = (window_height - btn_height + title_height)/2;
+  uint left = (Layout.width - btn_width)/2;
+  uint top = (Layout.height - btn_height + title_height)/2;
 
   if(Buttons.empty()) return {left, top};
 
@@ -840,7 +853,7 @@ void gui::button_append(const std::string &Label, func_ptr new_caller = nullptr)
 void gui::list_insert(const std::string& String, STATES state = ST_NORMAL)
 {
   layout L { };
-  L.width = window_width - menu_border * 4;
+  L.width = Layout.width - menu_border * 4;
   L.height = row_height;
   L.left = menu_border * 2;
   L.top = L.left + title_height + Rows.size() * (row_height + 1);
@@ -915,7 +928,7 @@ void gui::select_map(void)
 /// \brief gui::create_map
 /// \details создается новая карта и сразу открывается
 ///
-void gui::create_map(void)
+void gui::map_create(void)
 {
   auto MapDir = cfg::create_map(StringBuffer);
   //Maps.push_back(map(MapDir, StringBuffer));
@@ -932,7 +945,6 @@ void gui::map_open(void)
   cfg::map_view_load(Maps[map_id_current], Space3d->ViewFrom, Space3d->look_dir);
 
   Space3d->load();
-  hud_enable();
   mode_3d();
 }
 
@@ -940,14 +952,9 @@ void gui::map_open(void)
 ///
 /// \brief gui::close_map
 ///
-void gui::close_map(void)
+void gui::map_close(void)
 {
-  cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
   mode_2d();
-  OGLContext->cursor_restore();             // Включить указатель мыши
-  //OGLContext->set_cursor_observer(*this);   // переключить обработчик смещения курсора
-  //OGLContext->set_mbutton_observer(*this);  // обработчик кнопок мыши
-  //OGLContext->set_keyboard_observer(*this); // и клавиатуры
 }
 
 ///
@@ -978,7 +985,7 @@ void gui::hud_enable(void)
 {
   clear();
   unsigned int height = 60;
-  rectangle(0, window_height - height, window_width, height, {0.0f, 0.5f, 0.0f, 0.25f});
+  rectangle(0, Layout.height - height, Layout.width, height, {0.0f, 0.5f, 0.0f, 0.25f});
 
   // FPS
   uint border = 2;
@@ -992,7 +999,6 @@ void gui::hud_enable(void)
   uint top =  border + row_height/2 - symbol_height/2 + 1;
   textrow(left, top, Text, symbol_width, symbol_height);
   fps_uv_data = (indices/6 - 34) * 8 * sizeof(float); // у 34-х символов обновляемая текстура
-  hud_is_enabled = true;
 }
 
 
@@ -1004,7 +1010,7 @@ void gui::hud_update(void)
   // счетчик FPS и координаты камеры
   char line[35] = {'\0'}; // длина строки с '\0'
   std::sprintf(line, "%.4i, X:%+06.1f, Y:%+06.1f, Z:%+06.1f",
-               FPS, ViewFrom->x, ViewFrom->y, ViewFrom->z);
+               FPS, Space3d->ViewFrom->x, Space3d->ViewFrom->y, Space3d->ViewFrom->z);
   auto FPSLine = string2vector(line);
   std::vector<float>FPSuv {};
   for(const auto& Symbol: FPSLine)
@@ -1051,19 +1057,19 @@ std::list<std::pair<GLenum, std::string>> Shaders {};
 Shaders.push_back({ GL_VERTEX_SHADER, cfg::app_key(SHADER_VERT_SCREEN) });
 Shaders.push_back({ GL_FRAGMENT_SHADER, cfg::app_key(SHADER_FRAG_SCREEN) });
 
-ShowFrameBuf = std::make_unique<glsl>(Shaders);
-ShowFrameBuf->use();
-ShowFrameBuf->AtribsList.push_back(
-  { ShowFrameBuf->attrib("position"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 0 * sizeof(GLfloat) });
-ShowFrameBuf->AtribsList.push_back(
-  { ShowFrameBuf->attrib("texcoord"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 2 * sizeof(GLfloat) });
-glUniform1i(ShowFrameBuf->uniform("WinTexture"), 1); // GL_TEXTURE1 - фрейм-буфер
-ShowFrameBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
-ShowFrameBuf->unuse();
+ProgramFrBuf = std::make_unique<glsl>(Shaders);
+ProgramFrBuf->use();
+ProgramFrBuf->AtribsList.push_back(
+  { ProgramFrBuf->attrib("position"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 0 * sizeof(GLfloat) });
+ProgramFrBuf->AtribsList.push_back(
+  { ProgramFrBuf->attrib("texcoord"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 2 * sizeof(GLfloat) });
+glUniform1i(ProgramFrBuf->uniform("WinTexture"), 1); // GL_TEXTURE1 - фрейм-буфер
+ProgramFrBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
+ProgramFrBuf->unuse();
 
 vbo VboWin { GL_ARRAY_BUFFER };
 VboWin.allocate( sizeof(WinData), WinData );
-VboWin.set_attributes(ShowFrameBuf->AtribsList); // настройка положения атрибутов GLSL программы
+VboWin.set_attributes(ProgramFrBuf->AtribsList); // настройка положения атрибутов GLSL программы
 
 glBindVertexArray(0);
 }

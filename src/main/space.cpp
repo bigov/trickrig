@@ -49,8 +49,6 @@ space_3d::space_3d(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
 
   init_prog_3d();
   load_surf_textures(); // загрузка текстурной карты поверхностей
-  OGLContext->add_size_observer(*this); //пересчет при изменении размера
-
   init_buffers();
 }
 
@@ -128,16 +126,8 @@ void space_3d::load(void)
   // Настройка матрицы проекции
   GLsizei width, height;
   OGLContext->get_frame_size(&width, &height);
-  auto aspect = static_cast<float>(width) / static_cast<float>(height);
-  MatProjection = glm::perspective(fovy, aspect, zNear, zFar);
 
-  xpos = width/2;                          // координаты центра экрана
-  ypos = height/2;
-
-  OGLContext->cursor_hide();               // выключить отображение курсора мыши в окне
-  OGLContext->set_cursor_pos(xpos, ypos);
-  OGLContext->set_cursor_observer(*this);  // Подключить обработчики: курсора мыши
-  OGLContext->set_mbutton_observer(*this);  //  -- кнопки мыши
+  resize_event(width, height);
 
   on_front = 0; // клавиша вперед
   on_back  = 0; // клавиша назад
@@ -285,7 +275,10 @@ void space_3d::resize_event(int width, int height)
   // пересчет матрицы проекции
   auto aspect = static_cast<float>(width) / static_cast<float>(height);
   MatProjection = glm::perspective(fovy, aspect, zNear, zFar);
-  RenderBuffer->resize(width, height);
+
+  // координаты центра экрана
+  xpos = width/2;
+  ypos = height/2;
 }
 
 

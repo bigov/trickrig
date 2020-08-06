@@ -61,31 +61,27 @@ class gui: public interface_gl_context
      */
 
     static bool open;
-    virtual void resize_event(int width, int height);
-    virtual void cursor_event(double x, double y);                             // x, y
-    virtual void mouse_event(int _button, int _action, int _mods);                // _button, _action, _mods
-    virtual void keyboard_event(int _key, int _scancode, int _action, int _mods); // _key, _scancode, _action, _mods
-    virtual void focus_lost_event();
-    virtual void character_event(uint ch);
-    virtual void error_event(const char* message);
-    virtual void reposition_event(int left, int top);
-    virtual void close_event(void);
+    virtual void event_resize(int width, int height);
+    virtual void event_cursor(double x, double y);                                // x, y
+    virtual void event_mouse_btns(int _button, int _action, int _mods);                // _button, _action, _mods
+    virtual void event_keyboard(int _key, int _scancode, int _action, int _mods); // _key, _scancode, _action, _mods
+    virtual void event_focus_lost();
+    virtual void event_character(uint ch);
+    virtual void event_error(const char* message);
+    virtual void event_reposition(int left, int top);
+    virtual void event_close(void);
 
     static std::shared_ptr<trgl> OGLContext;   // OpenGL контекст окна приложения
 
-    void render(void);
-    static void hud_enable(void);
+    bool render(void);
 
   private:
-    static int window_width;
-    static int window_height;
     static unsigned int indices;
-    static bool hud_is_enabled;
-    int FPS = 500;                     // частота кадров
-    static GLsizei fps_uv_data;           // смещение данных FPS в буфере UV
+    int FPS = 500;                 // частота кадров
+    static GLsizei fps_uv_data;    // смещение данных FPS в буфере UV
     static uint map_id_current;
-    std::string StringBuffer {};            // строка ввода пользователя
-    static layout Layout;                   // положение окна и размеры
+    std::string StringBuffer {};   // строка ввода пользователя
+    static layout Layout;          // положение окна и размеры
 
 
     static std::unique_ptr<space_3d> Space3d;     // = nullptr;
@@ -110,22 +106,24 @@ class gui: public interface_gl_context
     static std::vector<element_data> Rows;    // Список строк
 
     GLuint vao_gui = 0;
-    std::shared_ptr<glm::vec3> ViewFrom; // 3D координаты камеры вида
-    static std::unique_ptr<glsl> ShowFrameBuf; // Шейдерная программа GUI
+    static std::unique_ptr<glsl> ProgramFrBuf; // Шейдерная программа GUI
 
     void init_vao(void);
     void init_prog_2d(void);
     void cursor_text_row(const atlas&, image&, size_t);
     void remove_map(void);
 
-    void create_map(void);
+    void map_create(void);
+    static void map_open(void);
+    static void map_close(void);
 
 
     static void clear(void);
     static void start_screen(void);
     static void config_screen(void);
     static void select_map(void);
-    static std::vector<float> rect_xy(int left, int top, uint width, uint height);
+    static void hud_enable(void);
+    static std::vector<float> rect_xy(uint left, uint top, uint width, uint height);
     static std::vector<float> rect_rgba(float_color rgba);
     static std::vector<float> rect_uv(const std::string& Symbol);
     static void rectangle(uint left, uint top, uint width, uint height, float_color rgba);
@@ -138,8 +136,6 @@ class gui: public interface_gl_context
     static void button_move(element_data& Button, int x, int y);
     static std::pair<uint, uint> button_allocation(void);
     static void list_insert(const std::string& String, STATES state);
-    static void map_open(void);
-    static void close_map(void);
     static void close(void) { open = false; }
 
     void calc_fps(void);

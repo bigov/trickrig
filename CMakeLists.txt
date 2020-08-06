@@ -44,7 +44,7 @@ SET( CMAKE_VERBOSE_MAKEFILE OFF )
 
 configure_file( "${CMAKE_SOURCE_DIR}/cmakes/version_hpp.cmake" "${CMAKE_CURRENT_BINARY_DIR}/version.hpp" )
 
-include_directories( SYSTEM "${CMAKE_SOURCE_DIR}/libs" )
+include_directories( SYSTEM "${CMAKE_SOURCE_DIR}/src" )
 include_directories( "${CMAKE_CURRENT_BINARY_DIR}" )
 #include_directories( "${CMAKE_HOME_DIRECTORY}" )
 

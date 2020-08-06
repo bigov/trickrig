@@ -19,7 +19,7 @@ namespace tr
 {
   extern std::unique_ptr<frame_buffer> RenderBuffer; // рендер-буфер окна
 
-  class space_3d: public interface_gl_context
+  class space_3d
   {
     public:
       space_3d(std::shared_ptr<trgl>& OpenGLContext);
@@ -27,11 +27,10 @@ namespace tr
 
       void load(void);
       void render(void);
-
-      virtual void resize_event(int width, int height);
-      virtual void cursor_event(double x, double y);
-      virtual void mouse_event(int _button, int _action, int _mods);
-      virtual void keyboard_event(int _key, int _scancode, int _action, int _mods);
+      void cursor_event(double x, double y);
+      void resize_event(int width, int height);
+      void mouse_event(int _button, int _action, int _mods);
+      void keyboard_event(int _key, int _scancode, int _action, int _mods);
 
       std::shared_ptr<glm::vec3> ViewFrom = nullptr;             // 3D координаты точки положения
       float look_dir[2] = {0.0f, 0.0f};  // Направление: азимут (0 - X) и тангаж (0 - горизОнталь, пи/2 - вертикаль)

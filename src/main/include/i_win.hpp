@@ -13,15 +13,15 @@ public:
     interface_gl_context(void) = default;
     virtual ~interface_gl_context(void) = default;
 
-    virtual void error_event(const char*) {}
-    virtual void character_event(unsigned int) {}
-    virtual void mouse_event(int, int, int) {}
-    virtual void keyboard_event(int, int, int, int) {}
-    virtual void reposition_event(int, int) {}
-    virtual void resize_event(int, int) {}
-    virtual void cursor_event(double, double) {}
-    virtual void close_event(void) {}
-    virtual void focus_lost_event(void) {}
+    virtual void event_error(const char*) {}
+    virtual void event_character(unsigned int) {}
+    virtual void event_mouse_btns(int, int, int) {}
+    virtual void event_keyboard(int, int, int, int) {}
+    virtual void event_reposition(int, int) {}
+    virtual void event_resize(int, int) {}
+    virtual void event_cursor(double, double) {}
+    virtual void event_close(void) {}
+    virtual void event_focus_lost(void) {}
 };
 
 }      // namespace tr

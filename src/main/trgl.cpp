@@ -206,7 +206,7 @@ GLFWwindow* trgl::get_id(void) const
 void trgl::callback_error(int error, const char* description)
 {
   std::string Message = "GLFW error " + std::to_string(error) + ": " + description;
-  if(error_observer != nullptr) error_observer->error_event(Message.c_str());
+  if(error_observer != nullptr) error_observer->event_error(Message.c_str());
 }
 
 
@@ -218,7 +218,7 @@ void trgl::callback_error(int error, const char* description)
 ///
 void trgl::callback_cursor(GLFWwindow*, double x, double y)
 {
-  if(cursor_observer != nullptr) cursor_observer->cursor_event(x, y);
+  if(cursor_observer != nullptr) cursor_observer->event_cursor(x, y);
 }
 
 
@@ -231,7 +231,7 @@ void trgl::callback_cursor(GLFWwindow*, double x, double y)
 ///
 void trgl::callback_button(GLFWwindow*, int button, int action, int mods)
 {
-  if(button_observer != nullptr) button_observer->mouse_event(button, action, mods);
+  if(button_observer != nullptr) button_observer->event_mouse_btns(button, action, mods);
 }
 
 
@@ -240,7 +240,7 @@ void trgl::callback_button(GLFWwindow*, int button, int action, int mods)
 ///
 void trgl::callback_keyboard(GLFWwindow*, int key, int scancode, int action, int mods)
 {
-  if(keyboard_observer != nullptr) keyboard_observer->keyboard_event(key, scancode, action, mods);
+  if(keyboard_observer != nullptr) keyboard_observer->event_keyboard(key, scancode, action, mods);
 }
 
 
@@ -249,7 +249,7 @@ void trgl::callback_keyboard(GLFWwindow*, int key, int scancode, int action, int
 ///
 void trgl::callback_position(GLFWwindow*, int left, int top)
 {
-  if(position_observer != nullptr) position_observer->reposition_event(left, top);
+  if(position_observer != nullptr) position_observer->event_reposition(left, top);
 }
 
 
@@ -262,7 +262,7 @@ void trgl::callback_position(GLFWwindow*, int left, int top)
 ///
 void trgl::callback_size(GLFWwindow*, int width, int height)
 {
-  for(auto& observer: size_observers) observer->resize_event(width, height);
+  for(auto& observer: size_observers) observer->event_resize(width, height);
 }
 
 
@@ -273,7 +273,7 @@ void trgl::callback_size(GLFWwindow*, int width, int height)
 ///
 void trgl::callback_char(GLFWwindow*, uint ch)
 {
-  if(char_observer != nullptr) char_observer->character_event(ch);
+  if(char_observer != nullptr) char_observer->event_character(ch);
 }
 
 
@@ -283,7 +283,7 @@ void trgl::callback_char(GLFWwindow*, uint ch)
 ///
 void trgl::callback_close(GLFWwindow*)
 {
-  if(close_observer != nullptr) close_observer->close_event();
+  if(close_observer != nullptr) close_observer->event_close();
 }
 
 
@@ -295,7 +295,7 @@ void trgl::callback_focus(GLFWwindow*,  int focused)
 {
   if(0 == focused)
   {
-    if(focuslost_observer != nullptr) focuslost_observer->focus_lost_event();
+    if(focuslost_observer != nullptr) focuslost_observer->event_focus_lost();
   }
 }
 

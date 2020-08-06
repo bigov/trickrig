@@ -424,7 +424,7 @@ std::vector<unsigned char> wsql::request_get(const char *request)
   ///
   bool wsql::open(const std::string & FileName)
   {
-    assert(!is_open);
+    assert(!is_open && "Trying to reopen the database file");
     ErrorsList.clear();
 
     if(FileName.empty())

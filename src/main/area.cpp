@@ -39,15 +39,10 @@ void db_control(std::shared_ptr<trgl> OpenGLContext,
   std::clog << "VBO filling is completed" << std::endl;
   log_mtx.unlock();
 
-
   while (render_indices > 0)
   {
      if(!Area.recalc_borders()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
   }
-
-  log_mtx.lock();
-  std::clog << std::endl << "The db-thread is finished" << std::endl;
-  log_mtx.unlock();
 }
 
 

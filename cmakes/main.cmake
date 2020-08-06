@@ -11,8 +11,8 @@ pkg_check_modules( SQLITE REQUIRED sqlite3 )
 pkg_check_modules( GLM REQUIRED glm )
 include_directories( ${GLM_INCLUDE_DIRS} )
 
-# glad             [CMakefile для glad          ]  [бинарник]
-add_subdirectory( "${CMAKE_SOURCE_DIR}/libs/glad" "glad" EXCLUDE_FROM_ALL )
+# glad
+include( "${CMAKE_SOURCE_DIR}/cmakes/glad.cmake" )
 
 ## Список библиотек
 SET( TR_LIBS ${TR_LIBS} ${GLFW_LIBRARIES} ${PNG_LIBRARIES} ${SQLITE_LIBRARIES}
