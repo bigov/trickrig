@@ -86,7 +86,8 @@ class gui: public interface_gl_context
     std::unique_ptr<glsl> Program2d = nullptr;    // построение 2D элементов
 
     static bool RUN_3D;
-    static GLuint vao2d;
+    GLuint vao_fbuf = 0;     // Рендер текстуры фрейм-буфера
+    GLuint vao_2d =   0;     // Рендер элементов меню и HUD
     static glm::vec3 Cursor3D;               // положение и размер прицела
 
     struct element_data {
@@ -103,26 +104,24 @@ class gui: public interface_gl_context
     static std::vector<element_data> Buttons; // Блок данных кнопок
     static std::vector<element_data> Rows;    // Список строк
 
-    GLuint vao_gui = 0;
-    //GLuint texture_gui = 0;
-
     static std::unique_ptr<glsl> ProgramFrBuf; // Шейдерная программа GUI
 
-    void init_vao(void);
-    void init_prog_2d(void);
+    void program_2d_init(void);
+    void program_fbuf_init(void);
     void cursor_text_row(const atlas&, image&, size_t);
     void remove_map(void);
-
     void map_create(void);
+    void calc_fps(void);
+    void hud_update(void);
+
     static void map_open(void);
     static void map_close(void);
-
     static void clear(void);
     static void screen_start(void);
     static void screen_config(void);
     static void screen_map_select(void);
+    static void screen_map_new(void);
     static void screen_pause(void);
-
     static void hud_enable(void);
     static std::vector<float> rect_xy(uint left, uint top, uint width, uint height);
     static std::vector<float> rect_rgba(float_color rgba);
@@ -138,14 +137,8 @@ class gui: public interface_gl_context
     static std::pair<uint, uint> button_allocation(void);
     static void list_insert(const std::string& String, STATES state);
     static void close(void) { open = false; }
-
-    void calc_fps(void);
-    void hud_update(void);
-
     static void mode_3d(void);
     static void mode_2d(void);
-
-    void fbuf_program_init(void);
 
 };
 

@@ -9,7 +9,6 @@
 #ifndef AREA_HPP
 #define AREA_HPP
 
-//#include "vox.hpp"
 #include "glsl.hpp"
 #include "vbo.hpp"
 #include "config.hpp"
@@ -17,7 +16,7 @@
 namespace tr
 {
 
-extern void db_control( std::shared_ptr<trgl> OpenGLContext,
+extern void area_control( std::shared_ptr<trgl> OpenGLContext,
                         std::shared_ptr<glm::vec3> CameraLocation,
                         GLuint id, GLsizeiptr size );
 struct vbo_map
@@ -36,7 +35,7 @@ class area
   public:
     area(void) = delete;
     area(GLuint vbo_id, GLsizeiptr vbo_size);
-    ~area(void) {}
+    ~area(void);
 
     // Запретить копирование и перенос экземпляров класса
     area(const area&) = delete;

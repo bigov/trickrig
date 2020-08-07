@@ -219,7 +219,7 @@ namespace tr {
 std::vector<unsigned char> wsql::request_get(const char *request)
 {
 #ifndef NDEBUG
-  assert(is_open);
+  assert(is_open && "Request get when no open file" );
 #endif
 
   bool complete = false;

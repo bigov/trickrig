@@ -4,6 +4,8 @@
 namespace tr
 {
 
+std::unique_ptr<frame_buffer> RenderBuffer = nullptr; // рендер-буфер окна
+
 std::string font_dir = "../assets/fonts/";
 atlas TextureFont { font_dir + font::texture_file, font::texture_cols, font::texture_rows };
 layout gui::Layout {};            // размеры и положение окна
@@ -11,7 +13,6 @@ layout gui::Layout {};            // размеры и положение окн
 bool gui::open = false;
 std::string gui::map_current {};
 bool gui::RUN_3D = false;
-GLuint gui::vao2d  = 0;
 GLsizei gui::fps_uv_data = 0;           // смещение данных FPS в буфере UV
 
 std::unique_ptr<space_3d> gui::Space3d = nullptr;
@@ -104,38 +105,6 @@ void load_textures(void)
 
 
 ///
-/// \brief gui::mode_3d
-///
-void gui::mode_3d(void)
-{
-  RUN_3D = true;
-  hud_enable();
-
-  OGLContext->cursor_hide();               // выключить отображение курсора мыши в окне
-  OGLContext->set_cursor_pos(Layout.width/2, Layout.height/2);
-  ProgramFrBuf->set_uniform("Cursor", Cursor3D);
-
-  glActiveTexture(GL_TEXTURE2);
-}
-
-
-///
-/// \brief gui::mode_2d
-///
-void gui::mode_2d(void)
-{
-  RUN_3D = false;
-
-  cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
-  cfg::save(Layout); // Сохранение положения окна
-
-  ProgramFrBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
-  OGLContext->cursor_restore();
-  screen_pause();
-}
-
-
-///
 /// \brief graphical_user_interface::graphical_user_interface
 /// \param OpenGLContext
 ///
@@ -154,13 +123,15 @@ gui::gui(void)
 
   load_textures();
 
+  // настройка рендер-буфера
+  RenderBuffer = std::make_unique<frame_buffer>(Layout.width, Layout.height);
   Space3d = std::make_unique<space_3d>(OGLContext);
 
   Cursor3D.x = static_cast<float>(Layout.width/2);
   Cursor3D.y = static_cast<float>(Layout.height/2);
-  init_prog_2d();      // Шейдерная программа для построения 2D элементов пользовательского интерфейса
-  init_vao();
-  fbuf_program_init();
+
+  program_2d_init();      // Шейдерная программа для построения 2D элементов пользовательского интерфейса
+  program_fbuf_init();
 
   OGLContext->set_error_observer(*this);     // отслеживание ошибок
   OGLContext->set_cursor_observer(*this);    // курсор мыши в окне
@@ -240,9 +211,58 @@ void gui::remove_map(void)
 
 
 ///
+/// \brief gui::program_fbuf_init
+///
+/// Инициализация GLSL программы обработки текстуры фреймбуфера.
+///
+/// Текстура фрейм-буфера за счет измения порядка следования координат
+/// вершин с 1-2-3-4 на 3-4-1-2 перевернута - верх и низ в сцене
+/// меняются местами. Благодаря этому, нулевой координатой (0,0) окна
+/// становится более привычный верхний-левый угол, и загруженные из файла
+/// изображения текстур применяются без дополнительного переворота.
+///
+void gui::program_fbuf_init(void)
+{
+GLfloat WinData[] = { // XY координаты вершин, UV координаты текстуры
+  -1.f,-1.f, 0.f, 1.f, //3
+   1.f,-1.f, 1.f, 1.f, //4
+   1.f, 1.f, 1.f, 0.f, //2
+
+   1.f, 1.f, 1.f, 0.f, //2
+  -1.f, 1.f, 0.f, 0.f, //1
+  -1.f,-1.f, 0.f, 1.f, //3
+};
+int vertex_bytes = sizeof(GLfloat) * 4;
+
+glGenVertexArrays(1, &vao_fbuf);
+glBindVertexArray(vao_fbuf);
+
+std::list<std::pair<GLenum, std::string>> Shaders {};
+Shaders.push_back({ GL_VERTEX_SHADER, cfg::app_key(SHADER_VERT_SCREEN) });
+Shaders.push_back({ GL_FRAGMENT_SHADER, cfg::app_key(SHADER_FRAG_SCREEN) });
+
+ProgramFrBuf = std::make_unique<glsl>(Shaders);
+ProgramFrBuf->use();
+ProgramFrBuf->AtribsList.push_back(
+  { ProgramFrBuf->attrib("position"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 0 * sizeof(GLfloat) });
+ProgramFrBuf->AtribsList.push_back(
+  { ProgramFrBuf->attrib("texcoord"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 2 * sizeof(GLfloat) });
+glUniform1i(ProgramFrBuf->uniform("WinTexture"), 1); // GL_TEXTURE1 - фрейм-буфер
+ProgramFrBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
+
+vbo VboWin { GL_ARRAY_BUFFER };
+VboWin.allocate( sizeof(WinData), WinData );
+VboWin.set_attributes(ProgramFrBuf->AtribsList); // настройка положения атрибутов GLSL программы
+
+glBindVertexArray(0);
+ProgramFrBuf->unuse();
+}
+
+
+///
 /// \brief init_prog_2d
 ///
-void gui::init_prog_2d(void)
+void gui::program_2d_init(void)
 {
   std::list<std::pair<GLenum, std::string>> Shaders {};
   Shaders.push_back({ GL_VERTEX_SHADER, "assets\\shaders\\2d_vert.glsl" });
@@ -261,21 +281,12 @@ void gui::init_prog_2d(void)
 
   glUniform1i(Program2d->uniform("font_texture"), 4);  // glActiveTexture(GL_TEXTURE4)
 
-  Program2d->unuse();
-}
-
-
-///
-/// \brief gui::init_vao
-///
-void gui::init_vao(void)
-{
   VBO_xy   = std::make_unique<vbo>(GL_ARRAY_BUFFER);
   VBO_rgba = std::make_unique<vbo>(GL_ARRAY_BUFFER);
   VBO_uv   = std::make_unique<vbo>(GL_ARRAY_BUFFER);
 
-  glGenVertexArrays(1, &vao_gui);
-  glBindVertexArray(vao_gui);
+  glGenVertexArrays(1, &vao_2d);
+  glBindVertexArray(vao_2d);
   size_t max_elements_count = 400; // выделяем память VBO на 400 элементов
 
   vbo VBOindex { GL_ELEMENT_ARRAY_BUFFER }; // Индексный буфер
@@ -303,6 +314,7 @@ void gui::init_vao(void)
   VBO_uv->attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
 
   glBindVertexArray(0);
+  Program2d->unuse();
 }
 
 
@@ -316,6 +328,7 @@ void gui::clear(void)
   VBO_uv->clear();
   VBO_rgba->clear();
   Buttons.clear();
+  Rows.clear();
 }
 
 
@@ -324,8 +337,6 @@ void gui::clear(void)
 ///
 bool gui::render(void)
 {
-  if(!open) return false;
-
   if(RUN_3D) Space3d->render(); // рендер 3D сцены
 
   calc_fps();
@@ -337,7 +348,7 @@ bool gui::render(void)
   if(!RUN_3D) glClear(GL_COLOR_BUFFER_BIT);
   else hud_update();
 
-  glBindVertexArray(vao_gui);
+  glBindVertexArray(vao_2d);
   Program2d->use();
   for(const auto& A: Program2d->AtribsList) glEnableVertexAttribArray(A.index);
   glDrawElements(GL_TRIANGLES, indices, GL_UNSIGNED_INT, nullptr);
@@ -350,7 +361,7 @@ bool gui::render(void)
   /// текстуры накладывается на прямоугольник окна приложения.
   ProgramFrBuf->use();
   vbo_mtx.lock();
-  glBindVertexArray(vao2d);
+  glBindVertexArray(vao_fbuf);
   glDrawArrays(GL_TRIANGLES, 0, 6);
   glBindVertexArray(0);
   OGLContext->swap_buffers();
@@ -361,7 +372,7 @@ bool gui::render(void)
   CHECK_OPENGL_ERRORS
 #endif
 
-  return true;
+  return open;
 }
 
 
@@ -484,6 +495,11 @@ void gui::event_keyboard(int key, int scancode, int action, int mods)
   {
     Space3d->keyboard_event( key, scancode, action, mods);
     if((key == KEY_ESCAPE) && (action == RELEASE)) mode_2d();
+  }
+  else
+  {
+    if((key == KEY_ESCAPE) && (action == RELEASE))
+      if(!Buttons.empty()) Buttons.back().caller(); // Последняя кнопка ВСЕГДА - "выход/отмена"
   }
 }
 
@@ -910,7 +926,7 @@ void gui::screen_map_select(void)
   list_insert("debug 1");
   list_insert("debug 2");
 
-  button_append("НОВАЯ КАРТА");
+  button_append("НОВАЯ КАРТА", screen_map_new);
   button_append("УДАЛИТЬ КАРТУ");
   button_append("СТАРТ", map_open );
   button_append("ЗАКРЫТЬ", screen_start);
@@ -919,15 +935,53 @@ void gui::screen_map_select(void)
 }
 
 
+void gui::screen_map_new(void)
+{
+  title("НОВАЯ КАРТА");
+  button_append("ВЫХОД", current_menu);
+
+  current_menu = screen_map_new;
+}
+
+
+
 ///
 /// \brief gui::config_screen
 ///
 void gui::screen_pause(void)
 {
   title("П А У З А");
-  button_append("ВЫХОД", screen_start);
   button_append("ПРОДОЛЖИТЬ", mode_3d);
-  current_menu = screen_pause;
+  button_append("ВЫХОД", screen_start);
+  //current_menu = screen_pause;
+}
+
+
+///
+/// \brief gui::mode_3d
+///
+void gui::mode_3d(void)
+{
+  RUN_3D = true;
+  ProgramFrBuf->set_uniform("Cursor", Cursor3D);
+  OGLContext->cursor_hide();               // выключить отображение курсора мыши в окне
+  OGLContext->set_cursor_pos(Layout.width/2, Layout.height/2);
+
+  hud_enable();
+}
+
+
+///
+/// \brief gui::mode_2d
+///
+void gui::mode_2d(void)
+{
+  RUN_3D = false;
+  cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
+  cfg::save(Layout); // Сохранение положения окна
+  ProgramFrBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
+  OGLContext->cursor_restore();
+  screen_pause();
 }
 
 
@@ -948,9 +1002,7 @@ void gui::map_create(void)
 ///
 void gui::map_open(void)
 {
-  cfg::map_view_load(map_current, Space3d->ViewFrom, Space3d->look_dir);
-
-  Space3d->load();
+  Space3d->load(map_current);
   mode_3d();
 }
 
@@ -1028,56 +1080,6 @@ void gui::hud_update(void)
   glBindBuffer(GL_ARRAY_BUFFER, VBO_uv->get_id());
   glBufferSubData(GL_ARRAY_BUFFER, fps_uv_data, FPSuv.size() * sizeof(float), FPSuv.data());
   glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
-
-
-///
-/// \brief gui::fbuf_program_init
-///
-/// Инициализация GLSL программы обработки текстуры фреймбуфера.
-///
-/// Текстура фрейм-буфера за счет измения порядка следования координат
-/// вершин с 1-2-3-4 на 3-4-1-2 перевернута - верх и низ в сцене
-/// меняются местами. Благодаря этому, нулевой координатой (0,0) окна
-/// становится более привычный верхний-левый угол, и загруженные из файла
-/// изображения текстур применяются без дополнительного переворота.
-///
-void gui::fbuf_program_init(void)
-{
-
-GLfloat WinData[] = { // XY координаты вершин, UV координаты текстуры
-  -1.f,-1.f, 0.f, 1.f, //3
-   1.f,-1.f, 1.f, 1.f, //4
-   1.f, 1.f, 1.f, 0.f, //2
-
-   1.f, 1.f, 1.f, 0.f, //2
-  -1.f, 1.f, 0.f, 0.f, //1
-  -1.f,-1.f, 0.f, 1.f, //3
-};
-int vertex_bytes = sizeof(GLfloat) * 4;
-
-glGenVertexArrays(1, &vao2d);
-glBindVertexArray(vao2d);
-
-std::list<std::pair<GLenum, std::string>> Shaders {};
-Shaders.push_back({ GL_VERTEX_SHADER, cfg::app_key(SHADER_VERT_SCREEN) });
-Shaders.push_back({ GL_FRAGMENT_SHADER, cfg::app_key(SHADER_FRAG_SCREEN) });
-
-ProgramFrBuf = std::make_unique<glsl>(Shaders);
-ProgramFrBuf->use();
-ProgramFrBuf->AtribsList.push_back(
-  { ProgramFrBuf->attrib("position"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 0 * sizeof(GLfloat) });
-ProgramFrBuf->AtribsList.push_back(
-  { ProgramFrBuf->attrib("texcoord"), 2, GL_FLOAT, GL_TRUE, vertex_bytes, 2 * sizeof(GLfloat) });
-glUniform1i(ProgramFrBuf->uniform("WinTexture"), 1); // GL_TEXTURE1 - фрейм-буфер
-ProgramFrBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
-ProgramFrBuf->unuse();
-
-vbo VboWin { GL_ARRAY_BUFFER };
-VboWin.allocate( sizeof(WinData), WinData );
-VboWin.set_attributes(ProgramFrBuf->AtribsList); // настройка положения атрибутов GLSL программы
-
-glBindVertexArray(0);
 }
 
 

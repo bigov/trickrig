@@ -25,7 +25,7 @@ namespace tr
       space_3d(std::shared_ptr<trgl>& OpenGLContext);
       ~space_3d(void);
 
-      void load(void);
+      void load(const std::string& map_current);
       void render(void);
       void cursor_event(double x, double y);
       void resize_event(int width, int height);
@@ -112,8 +112,7 @@ namespace tr
 
       void load_surf_textures(void);
       void calc_position(void);
-      void init_buffers(void);
-      void init_prog_3d(void);
+      void program_3d_init(void);
   };
 
 } //namespace

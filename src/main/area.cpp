@@ -20,7 +20,7 @@ namespace tr
 ///
 /// \details Создание отдельного потока обмена данными с базой
 ///
-void db_control(std::shared_ptr<trgl> OpenGLContext,
+void area_control(std::shared_ptr<trgl> OpenGLContext,
                 std::shared_ptr<glm::vec3> CameraLocation,
                 GLuint vbo_id, GLsizeiptr vbo_size)
 {
@@ -30,7 +30,7 @@ void db_control(std::shared_ptr<trgl> OpenGLContext,
 
   OpenGLContext->thread_enable();
   area Area {vbo_id, vbo_size};
-  Area.init(std::move(CameraLocation));
+  Area.init( CameraLocation );
   vbo_mtx.lock();
   glFinish();       // синхронизация изменений между потоками после загрузки данных
   vbo_mtx.unlock();
@@ -96,6 +96,21 @@ void area::init(std::shared_ptr<glm::vec3> CameraLocation)
   for(int x = min_x; x<= max_x; x += side_len)
     for(int z = min_z; z<= max_z; z += side_len)
       load(x, z);
+
+  log_mtx.lock();
+  std::clog << "area::init is completed" << std::endl;
+  log_mtx.unlock();
+}
+
+
+///
+/// \brief area::~area
+///
+area::~area(void)
+{
+  //log_mtx.lock();
+  //std::clog << "area::~area is completed" << std::endl;
+  //log_mtx.unlock();
 }
 
 

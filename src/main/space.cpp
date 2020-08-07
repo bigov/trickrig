@@ -13,8 +13,6 @@
 
 namespace tr
 {
-std::unique_ptr<frame_buffer> RenderBuffer = nullptr; // рендер-буфер окна
-
 
 ///
 /// \brief space::space
@@ -23,12 +21,7 @@ std::unique_ptr<frame_buffer> RenderBuffer = nullptr; // рендер-буфер
 space_3d::space_3d(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
 {
   render_indices.store(0);
-  ViewFrom = std::make_shared<glm::vec3> ();
-
-  // настройка рендер-буфера
-  GLsizei width, height;
-  OGLContext->get_frame_size(&width, &height);
-  RenderBuffer = std::make_unique<frame_buffer>(width, height);
+  ViewFrom = std::make_shared<glm::vec3>();
 
   light_direction = glm::normalize(glm::vec3(0.3f, 0.45f, 0.4f)); // направление (x,y,z)
   light_bright = glm::vec3(0.99f, 0.99f, 1.00f);                  // цвет        (r,g,b)
@@ -47,16 +40,44 @@ space_3d::space_3d(std::shared_ptr<trgl>& pGl): OGLContext(pGl)
   glEnable(GL_BLEND);      // поддержка прозрачности
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-  init_prog_3d();
   load_surf_textures(); // загрузка текстурной карты поверхностей
-  init_buffers();
+  if(nullptr == Program3d) program_3d_init();
+}
+
+
+///
+/// \brief space::load_texture
+/// \param index
+/// \param fname
+///
+void space_3d::load_surf_textures(void)
+{
+  // Загрузка текстур поверхностей воксов
+  glActiveTexture(GL_TEXTURE0);
+  glGenTextures(1, &texture_3d);
+  glBindTexture(GL_TEXTURE_2D, texture_3d);
+  image ImgTex0 { cfg::app_key(PNG_TEXTURE0) };
+  GLint level_of_details = 0;
+  GLint frame = 0;
+  glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
+               static_cast<GLsizei>(ImgTex0.get_width()),
+               static_cast<GLsizei>(ImgTex0.get_height()),
+               frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgTex0.uchar_t());
+
+  // Установка опций отрисовки
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glGenerateMipmap(GL_TEXTURE_2D);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
 
 ///
 /// \brief space::init_prog_3d
 ///
-void space_3d::init_prog_3d(void)
+void space_3d::program_3d_init(void)
 {
   std::list<std::pair<GLenum, std::string>> Shaders {};
   Shaders.push_back({ GL_VERTEX_SHADER, cfg::app_key(SHADER_VERT_SCENE) });
@@ -78,15 +99,7 @@ void space_3d::init_prog_3d(void)
   glUniform1i(Program3d->uniform("texture_0"), 0);  // glActiveTexture(GL_TEXTURE0)
 
   Program3d->unuse();
-}
 
-
-///
-/// \brief space::init_buffers
-/// \details Инициализация VAO и VBO
-///
-void space_3d::init_buffers(void)
-{
   glGenVertexArrays(1, &vao_3d);
   glBindVertexArray(vao_3d);
 
@@ -117,11 +130,13 @@ void space_3d::init_buffers(void)
 ///
 /// \brief space::enable
 ///
-void space_3d::load(void)
+void space_3d::load(const std::string& map_current)
 {
+  cfg::map_view_load(map_current, ViewFrom, look_dir);
+
   render_indices.store(0);
   // Поток обмена данными с базой. Загрузка карты занимает некоторое время
-  data_loader = std::make_unique<std::thread>(db_control, OGLContext, ViewFrom, VBO3d.get_id(), VBO3d.get_size());
+  data_loader = std::make_unique<std::thread>(area_control, OGLContext, ViewFrom, VBO3d.get_id(), VBO3d.get_size());
 
   // Настройка матрицы проекции
   GLsizei width, height;
@@ -138,35 +153,6 @@ void space_3d::load(void)
   fb_way   = 0; // движение вперед
   ud_way   = 0; // движение вверх
   rl_way   = 0; // движение в сторону
-}
-
-
-///
-/// \brief space::load_texture
-/// \param index
-/// \param fname
-///
-void space_3d::load_surf_textures(void)
-{
-  // Загрузка текстур поверхностей воксов
-  glActiveTexture(GL_TEXTURE0);
-  glGenTextures(1, &texture_3d);
-  glBindTexture(GL_TEXTURE_2D, texture_3d);
-  image ImgTex0 { cfg::app_key(PNG_TEXTURE0) };
-  GLint level_of_details = 0;
-  GLint frame = 0;
-  glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,
-               static_cast<GLsizei>(ImgTex0.get_width()),
-               static_cast<GLsizei>(ImgTex0.get_height()),
-               frame, GL_RGBA, GL_UNSIGNED_BYTE, ImgTex0.uchar_t());
-
-  // Установка опций отрисовки
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-  glGenerateMipmap(GL_TEXTURE_2D);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
 
@@ -401,9 +387,10 @@ void space_3d::keyboard_event(int _key, int _scancode, int _action, int _mods)
 ///
 space_3d::~space_3d()
 {
-  render_indices.store(0); // Индикатор для остановки потока загрузки в рендер из БД
-  if(nullptr != data_loader) if(data_loader->joinable())
-    data_loader->join();   // Ожидание завершения потока
+  render_indices.store(0);   // Индикатор для остановки потока загрузки в рендер из БД
+  if(nullptr != data_loader)
+    if(data_loader->joinable())
+      data_loader->join();     // Ожидание завершения потока
 }
 
 } // namespace tr
