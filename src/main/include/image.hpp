@@ -7,9 +7,6 @@
 namespace tr
 {
 
-class atlas;
-extern atlas TextureFont;                          //текстура шрифта
-
 ///
 /// Класс для хранения в памяти избражений
 ///

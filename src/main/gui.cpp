@@ -1,12 +1,12 @@
 #include "gui.hpp"
-#include "../assets/fonts/map.hpp"
+#include "../assets/textures/font0.hpp"
 
 namespace tr
 {
 
 std::unique_ptr<frame_buffer> RenderBuffer = nullptr; // рендер-буфер окна
 
-std::string font_dir = "../assets/fonts/";
+std::string font_dir = "../assets/textures/";
 atlas TextureFont { font_dir + font::texture_file, font::texture_cols, font::texture_rows };
 layout gui::Layout {};            // размеры и положение окна
 

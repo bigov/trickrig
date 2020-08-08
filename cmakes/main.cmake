@@ -3,23 +3,16 @@
 #
 
 pkg_check_modules( PNG REQUIRED libpng16 )
-
 pkg_check_modules( GLFW REQUIRED glfw3 )
-
 pkg_check_modules( SQLITE REQUIRED sqlite3 )
-
 pkg_check_modules( GLM REQUIRED glm )
-include_directories( ${GLM_INCLUDE_DIRS} )
-
-# glad
-include( "${CMAKE_SOURCE_DIR}/cmakes/glad.cmake" )
 
 ## Список библиотек
 SET( TR_LIBS ${TR_LIBS} ${GLFW_LIBRARIES} ${PNG_LIBRARIES} ${SQLITE_LIBRARIES}
-   pthread stdc++fs glad)
+   pthread stdc++fs )
 
 # список исходников
-file( GLOB MAIN_SRC "${CMAKE_SOURCE_DIR}/src/main/*.cpp" )
+file( GLOB MAIN_SRC "${CMAKE_SOURCE_DIR}/src/main/*.cpp" "${CMAKE_SOURCE_DIR}/src/glad/glad.c" )
 
 # расположение заголовков
 include_directories( "${CMAKE_SOURCE_DIR}/src/main/include" )

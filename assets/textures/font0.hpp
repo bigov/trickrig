@@ -14,7 +14,7 @@ struct sprite {
     unsigned char v;
 };
 
-static const char texture_file[] = "texture.png";
+static const char texture_file[] = "font0.png";
 
 static const int texture_cols = 16;
 static const int texture_rows = 4;
