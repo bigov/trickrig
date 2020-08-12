@@ -40,7 +40,7 @@ trgl::trgl(const char* title)
   win_main = glfwCreateWindow(1, 1, title, nullptr, nullptr);
   if (nullptr == win_main) ERR("Creating Window fail.");
   win_thread = glfwCreateWindow(1, 1, "", nullptr, win_main);
-  if (nullptr == win_thread) ERR("Creating subt-window fail.");
+  if (nullptr == win_thread) ERR("Creating sub-window fail.");
   glfwMakeContextCurrent(win_main);
 
   if(!gladLoadGLLoader(GLADloadproc(glfwGetProcAddress)))
