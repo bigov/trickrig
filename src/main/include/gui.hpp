@@ -140,7 +140,6 @@ class gui: public interface_gl_context
     static void close_map(void);
     static void mode_3d(void);
     static void mode_2d(void);
-
 };
 
 }

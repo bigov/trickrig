@@ -265,8 +265,8 @@ ProgramFrBuf->unuse();
 void gui::program_2d_init(void)
 {
   std::list<std::pair<GLenum, std::string>> Shaders {};
-  Shaders.push_back({ GL_VERTEX_SHADER, "assets\\shaders\\2d_vert.glsl" });
-  Shaders.push_back({ GL_FRAGMENT_SHADER, "assets\\shaders\\2d_frag.glsl" });
+  Shaders.push_back({ GL_VERTEX_SHADER, "assets/shaders/2d_vert.glsl" });
+  Shaders.push_back({ GL_FRAGMENT_SHADER, "assets/shaders/2d_frag.glsl" });
 
   Program2d = std::make_unique<glsl>(Shaders);
   Program2d->use();

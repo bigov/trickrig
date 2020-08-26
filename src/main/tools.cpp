@@ -228,7 +228,9 @@ i3d i3d_near(const i3d& P, uchar side, int side_len)
     file.seekg (0, file.beg);
     std::vector<char> buffer(static_cast<size_t>(length), '\0');
     file.read (buffer.data(),length);
-    if (!file) fprintf(stderr, "error: only %lld could be read", file.gcount());
+    // Под Linux эта строка вызывает ошибку компиляции -
+    //if (!file) fprintf(stderr, "error: only %lld could be read", file.gcount());
+    if (!file) fprintf(stderr, "error: only %ld could be read", file.gcount());
     file.close();
 
     auto result = std::make_unique<unsigned char[]>(length);

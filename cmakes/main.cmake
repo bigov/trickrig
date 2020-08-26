@@ -11,6 +11,11 @@ pkg_check_modules( GLM REQUIRED glm )
 SET( TR_LIBS ${TR_LIBS} ${GLFW_LIBRARIES} ${PNG_LIBRARIES} ${SQLITE_LIBRARIES}
    pthread stdc++fs )
 
+# On Linux platform glad require: -libdl
+if   ( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
+  SET( TR_LIBS ${TR_LIBS} GL "dl" )
+endif( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
+
 # список исходников
 file( GLOB MAIN_SRC "${CMAKE_SOURCE_DIR}/src/main/*.cpp" "${CMAKE_SOURCE_DIR}/src/glad/glad.c" )
 
