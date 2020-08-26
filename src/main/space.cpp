@@ -141,7 +141,6 @@ void space_3d::load(const std::string& map_current)
   // Настройка матрицы проекции
   GLsizei width, height;
   OGLContext->get_frame_size(&width, &height);
-
   resize_event(width, height);
 
   on_front = 0; // клавиша вперед

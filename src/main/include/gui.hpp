@@ -137,6 +137,7 @@ class gui: public interface_gl_context
     static std::pair<uint, uint> button_allocation(void);
     static void list_insert(const std::string& String, STATES state);
     static void close(void) { open = false; }
+    static void close_map(void);
     static void mode_3d(void);
     static void mode_2d(void);
 

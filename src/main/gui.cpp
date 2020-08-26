@@ -722,7 +722,7 @@ void gui::title(const std::string& Label)
   uint symbol_height = 21;
   rectangle(menu_border, menu_border, Layout.width - 2*menu_border, title_height+1, TitleHemColor);
   rectangle(menu_border, menu_border, Layout.width - 2*menu_border, title_height, TitleBgColor);
-  uint left = menu_border + Layout.width/2 - Text.size() * symbol_width / 2;
+  uint left = Layout.width/2 - Text.size() * symbol_width / 2;
   uint top =  menu_border + title_height/2 - symbol_height/2 + 2;
   textrow(left, top, Text, symbol_width, symbol_height);
 }
@@ -944,16 +944,43 @@ void gui::screen_map_new(void)
 }
 
 
-
 ///
 /// \brief gui::config_screen
 ///
 void gui::screen_pause(void)
 {
-  title("П А У З А");
+  //title("П А У З А");
+
+  clear();
+  // Заливка окна фоновым цветом
+  auto bx = menu_border * 4;
+  auto by = 2 * bx;
+  rectangle(bx, by, Layout.width - 2 * bx,
+            Layout.height - 2 * by, {0.9f, 1.f, 0.9f, 0.5f});
+
+  auto Text = string2vector("П А У З А");
+  uint symbol_width = 14;
+  uint symbol_height = 21;
+  rectangle(bx, by, Layout.width - 2*bx, title_height+1, TitleHemColor);
+  rectangle(bx, by, Layout.width - 2*bx, title_height, TitleBgColor);
+  uint left = Layout.width/2 - Text.size() * symbol_width / 2;
+  uint top =  by + title_height/2 - symbol_height/2 + 2;
+  textrow(left, top, Text, symbol_width, symbol_height);
+
   button_append("ПРОДОЛЖИТЬ", mode_3d);
-  button_append("ВЫХОД", screen_start);
-  //current_menu = screen_pause;
+  button_append("ВЫХОД", close_map);
+  current_menu = screen_pause;
+}
+
+
+///
+/// \brief gui::close_map
+///
+void gui::close_map(void)
+{
+  cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
+  cfg::save(Layout); // Сохранение положения окна
+  screen_start();
 }
 
 
@@ -966,7 +993,6 @@ void gui::mode_3d(void)
   ProgramFrBuf->set_uniform("Cursor", Cursor3D);
   OGLContext->cursor_hide();               // выключить отображение курсора мыши в окне
   OGLContext->set_cursor_pos(Layout.width/2, Layout.height/2);
-
   hud_enable();
 }
 
@@ -977,8 +1003,6 @@ void gui::mode_3d(void)
 void gui::mode_2d(void)
 {
   RUN_3D = false;
-  cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
-  cfg::save(Layout); // Сохранение положения окна
   ProgramFrBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
   OGLContext->cursor_restore();
   screen_pause();
