@@ -8,21 +8,21 @@ std::unique_ptr<frame_buffer> RenderBuffer = nullptr; // рендер-буфер
 
 std::string font_dir = "../assets/textures/";
 atlas TextureFont { font_dir + font::texture_file, font::texture_cols, font::texture_rows };
-layout gui::Layout {};            // размеры и положение окна
+layout gui::Layout {};                // размеры и положение окна
 
 bool gui::open = false;
 std::string gui::map_current {};
 bool gui::RUN_3D = false;
-GLsizei gui::fps_uv_data = 0;           // смещение данных FPS в буфере UV
+GLsizei gui::fps_uv_data = 0;         // смещение данных FPS в буфере UV
 
 std::unique_ptr<space_3d> gui::Space3d = nullptr;
 std::shared_ptr<trgl> gui::OGLContext = nullptr;
-std::unique_ptr<glsl> gui::ProgramFrBuf = nullptr;  // Вывод текстуры фреймбуфера на окно
-glm::vec3 gui::Cursor3D = { 200.f, 200.f, 2.f }; // положение и размер прицела
+std::unique_ptr<glsl> gui::ProgramFrBuf = nullptr; // Вывод текстуры фреймбуфера на окно
+glm::vec3 gui::Cursor3D = { 200.f, 200.f, 2.f };   // положение и размер прицела
 
-static std::unique_ptr<vbo> VBO_xy   = nullptr;   // координаты вершин
-static std::unique_ptr<vbo> VBO_rgba = nullptr; // цвет вершин
-static std::unique_ptr<vbo> VBO_uv   = nullptr;   // текстурные координаты
+static std::unique_ptr<vbo> VBO_xy   = nullptr;    // координаты вершин
+static std::unique_ptr<vbo> VBO_rgba = nullptr;    // цвет вершин
+static std::unique_ptr<vbo> VBO_uv   = nullptr;    // текстурные координаты
 
 unsigned int gui::indices = 0; // число индексов в 2Д режиме
 func_ptr gui::current_menu = nullptr;

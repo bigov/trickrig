@@ -4,6 +4,7 @@
   "debug.allowBreakpointsEverywhere": true,
   "terminal.explorerKind": "external",
   "http.proxyAuthorization": null,
-  "editor.fontFamily": "'DejaVu Sans Mono for Powerline', Book",
+  "editor.fontFamily": "\"DejaVu Sans Mono for Powerline\"",
   "editor.fontSize": 12,
+  "telemetry.enableTelemetry": false,
 }
