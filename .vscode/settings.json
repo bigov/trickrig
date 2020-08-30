@@ -1,0 +1,9 @@
+{
+  "workbench.colorTheme": "Visual Studio Light",
+  "workbench.preferredDarkColorTheme": "Default Light+",
+  "debug.allowBreakpointsEverywhere": true,
+  "terminal.explorerKind": "external",
+  "http.proxyAuthorization": null,
+  "editor.fontFamily": "'DejaVu Sans Mono for Powerline', Book",
+  "editor.fontSize": 12,
+}
