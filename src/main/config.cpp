@@ -93,7 +93,9 @@ void cfg::load(char** argv)
 #endif
 
   fs::path p = argv[0];
-  AssetsDir = fs::absolute(p).parent_path().string() + DS + "assets";
+  //AssetsDir = fs::absolute(p).parent_path().string() + DS + "assets";
+  AssetsDir = "assets";
+
   if(!fs::exists(AssetsDir)) ERR("Not found assets dir: " + AssetsDir);
 
   set_user_dir();
@@ -211,14 +213,6 @@ std::string cfg::map_key(MAP_INIT D)
 ///
 std::string cfg::app_key(APP_INIT D)
 {
-#ifndef NDEBUG
-  if(AppParams[D].empty())
-  {
-    AppParams[D] = std::string("0");
-    std::cerr << "empty call with DB key=" << std::to_string(D) << std::endl;
-  }
-#endif
-
   // Имя файла шейдера
   if((D >= SHADER_VERT_SCENE) and (D <= SHADER_FRAG_SCREEN))
     return AssetsDir + DS + "shaders" + DS + AppParams[D];
@@ -226,6 +220,26 @@ std::string cfg::app_key(APP_INIT D)
   // Имя файла в папке "assets"
   if(D < ASSETS_LIST_END) return AssetsDir + DS + AppParams[D];
   else return AppParams[D];
+}
+
+
+///
+/// \brief file_path_texture
+/// \return
+///
+std::string cfg::file_path_texture(APP_INIT n)
+{
+#ifndef NDEBUG
+  assert((n < TEXTURES_COUNT) && "Недопустимый индекс текстуры.");
+#endif
+
+  std::string FileName = AssetsDir + DS + "textures" + DS + AppParams[n];
+
+#ifndef NDEBUG
+  assert (fs::exists(FileName) && "Отсутствует файл текстуры.");
+#endif
+
+  return FileName;
 }
 
 } //namespace tr

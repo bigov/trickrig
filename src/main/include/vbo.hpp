@@ -29,6 +29,7 @@ class vbo
     vbo(void) = delete;
     vbo(GLenum type);
     vbo(GLenum type, GLuint _id);
+    vbo(GLenum t, GLuint i, GLsizeiptr a): gl_buffer_type(t), id(i), allocated(a) {}
     ~vbo(void) {}
 
     GLuint get_id(void)       { return id; }
@@ -39,6 +40,7 @@ class vbo
     void allocate (GLsizeiptr new_size);
     void allocate (GLsizeiptr new_size, const GLvoid* data);
     void append(const GLsizeiptr data_size, const GLvoid* data);
+    GLsizeiptr remove(const GLsizeiptr data_size, const GLsizeiptr dest);
     void update(const GLsizeiptr data_size, const GLvoid* data, GLsizeiptr stride);
     void clear(void) { hem = 0; }
 
@@ -64,20 +66,22 @@ protected:
 public:
   vbo_ctrl(GLenum t, GLuint i, GLsizeiptr a): gl_buffer_type(t), id(i), allocated(a) {}
 
-  GLsizeiptr append (const GLvoid* data, GLsizeiptr data_size);
-  GLsizeiptr remove (GLsizeiptr dest, GLsizeiptr data_size);
+  GLsizeiptr append (const GLsizeiptr data_size, const GLvoid* data);
+  GLsizeiptr remove (const GLsizeiptr data_size, const GLsizeiptr dest);
 };
 
+
 ///
-/// \brief The VBO extended class
+/// \brief The vbo_transit class
+/// \details Промежуточный GPU буфер для обмена данными с CPU
 ///
-class vbo_ext: public vbo
+class vbo_transit: public vbo
 {
   protected:
-    GLuint id_subbuf = 0; // промежуточный GPU буфер для обмена данными с CPU
+    GLuint id_subbuf = 0;
 
   public:
-    vbo_ext (GLenum type);
+    vbo_transit (GLenum type);
     void data_get (GLintptr offset, GLsizeiptr size, GLvoid* data);
 };
 

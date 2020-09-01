@@ -96,13 +96,26 @@ class gui: public interface_gl_context
         double x1 = 0; // left + width
         double y1 = 0; // top + heigth
         STATES state = ST_NORMAL; // Состояние
-        GLsizeiptr xy_stride = 0;     // Адрес в VBO блока координат вешин
+        GLsizeiptr xy_stride = 0;     // Адрес в VBO блока координат вершин
         GLsizeiptr rgba_stride = 0;   // Адрес в VBO данных цвета
         size_t label_size = 0;        // число символов в надписи
         func_ptr caller = nullptr;    // Адрес функции, вызываемой по нажатию
     };
+
+    struct vbo_stride {
+      GLsizeiptr xy_stride = 0;     // Адрес в VBO блока координат вершин
+      GLsizeiptr rgba_stride = 0;   // Адрес в VBO данных цвета
+      GLsizeiptr uv_stride = 0;     // Адрес в VBO блока координат текстуры
+    };
+
+    struct symbol_3D {
+      vbo_stride Addr {};
+      std::string Text {};
+    };
+
     static std::vector<element_data> Buttons; // Блок данных кнопок
     static std::vector<element_data> Rows;    // Список строк
+    static std::vector<symbol_3D> Symbols; // Строка символов
 
     static std::unique_ptr<glsl> ProgramFrBuf; // Шейдерная программа GUI
 
@@ -113,6 +126,9 @@ class gui: public interface_gl_context
     void map_create(void);
     void calc_fps(void);
     void hud_update(void);
+
+    void callback_render(void);
+    void update_input_cursor(void);
 
     static void map_open(void);
     static void map_close(void);
@@ -128,16 +144,20 @@ class gui: public interface_gl_context
     static std::vector<float> rect_uv(const std::string& Symbol);
     static void rectangle(uint left, uint top, uint width, uint height, float_color rgba);
     static element_data create_element(layout L, const std::string &Label,
-                                       const colors& BgColor, const colors& HemColor,
-                                       func_ptr new_caller, STATES state);
+                            const colors& BgColor, const colors& HemColor,
+                            func_ptr new_caller, STATES state);
     static void title(const std::string& Label);
+    static vbo_stride symbol_append(uint left, uint top, const std::string& Symbol,
+                            uint symbol_width, uint symbol_height, float_color BgColor);
     static void button_append(const std::string& Label, func_ptr new_caller);
-    static void textrow(uint left, uint top, const std::vector<std::string>& Text, uint sybol_width, uint height, uint kerning);
+    static void text_append(uint left, uint top, const std::vector<std::string>& Text,
+                            uint sybol_width, uint symbol_height, uint kerning);
     static void button_move(element_data& Button, int x, int y);
     static std::pair<uint, uint> button_allocation(void);
     static void list_insert(const std::string& String, STATES state);
     static void close(void) { open = false; }
     static void close_map(void);
+    static void input_text(std::vector<symbol_3D>& SL);
     static void mode_3d(void);
     static void mode_2d(void);
 };

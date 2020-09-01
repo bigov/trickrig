@@ -56,7 +56,7 @@ void space_3d::load_surf_textures(void)
   glActiveTexture(GL_TEXTURE0);
   glGenTextures(1, &texture_3d);
   glBindTexture(GL_TEXTURE_2D, texture_3d);
-  image ImgTex0 { cfg::app_key(PNG_TEXTURE0) };
+  image ImgTex0 { cfg::file_path_texture(PNG_TEXTURE0) };
   GLint level_of_details = 0;
   GLint frame = 0;
   glTexImage2D(GL_TEXTURE_2D, level_of_details, GL_RGBA,

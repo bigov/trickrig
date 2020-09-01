@@ -156,6 +156,44 @@ void vbo::append(const GLsizeiptr data_size, const GLvoid* data)
 
 
 ///
+/// \brief vbo::remove
+/// \param data_size
+/// \param dest
+/// \return
+/// \details Для удаления данных из VBO используется перемещение: на место
+/// удаляемого блока перемещаются данные из конца буфера, заменяя их. Длина
+/// активной части буфера уменьшается на размер удаленного блока.
+///
+/// Возвращается значение границы VBO после переноса данных. Она равна
+/// началу адреса блока, данные которого были перемещены.
+
+GLsizeiptr vbo::remove(const GLsizeiptr data_size, const GLsizeiptr dest)
+{
+  if(data_size >= hem) hem = 0;
+  if(hem == 0) return hem;
+
+#ifndef NDEBUG
+  if((dest + data_size) > hem)
+  {
+    std::printf("vbo_ext::remove error: dest %li + data_size %li  > hem %li\n",
+                static_cast<long>(dest), static_cast<long>(data_size), static_cast<long>(hem));
+    return hem;
+  }
+#endif
+  auto src = hem - data_size; // Адрес крайнего на хвосте блока данных, которые будут перемещены.
+
+  if(src != dest)
+  {
+    glBindBuffer(gl_buffer_type, id);
+    glCopyBufferSubData(gl_buffer_type, gl_buffer_type, src, dest, data_size);
+    glBindBuffer(gl_buffer_type, 0);
+  }
+  hem = src;
+  return hem;
+}
+
+
+///
 /// \brief vbo::update
 /// \param data_size
 /// \param data
@@ -189,7 +227,7 @@ void vbo::update(const GLsizeiptr data_size, const GLvoid *data, GLsizeiptr stri
 /// сдвигает границу указателя на размер внесенных данных для приема
 /// следующеего блока данных
 ///
-GLsizeiptr vbo_ctrl::append(const GLvoid* data, GLsizeiptr data_size)
+GLsizeiptr vbo_ctrl::append(const GLsizeiptr data_size, const GLvoid* data)
 {
   #ifndef NDEBUG // проверка свободного места в буфере----------------------
   if((allocated - hem) < data_size) ERR("VBO::SubDataAppend got overflow buffer");
@@ -207,7 +245,7 @@ GLsizeiptr vbo_ctrl::append(const GLvoid* data, GLsizeiptr data_size)
 
 
 ///
-/// \brief vbo_ext::remove
+/// \brief vbo_ctrl::remove
 /// \param dest
 /// \return
 /// \details Для удаления данных из VBO используется перемещение: на место
@@ -217,7 +255,7 @@ GLsizeiptr vbo_ctrl::append(const GLvoid* data, GLsizeiptr data_size)
 /// Возвращается значение границы VBO после переноса данных. Она равна
 /// началу адреса блока, данные которого были перемещены.
 ///
-GLsizeiptr vbo_ctrl::remove(GLsizeiptr dest, GLsizeiptr data_size)
+GLsizeiptr vbo_ctrl::remove(const GLsizeiptr data_size, const GLsizeiptr dest)
 {
   if(data_size >= hem) hem = 0;
   if(hem == 0) return hem;
@@ -232,18 +270,13 @@ GLsizeiptr vbo_ctrl::remove(GLsizeiptr dest, GLsizeiptr data_size)
 #endif
   auto src = hem - data_size; // Адрес крайнего на хвосте блока данных, которые будут перемещены.
 
-  if(src == dest)
-  {             // Если удаляемый блок оказался в конце буфера, то только
-    hem = src;  // сдвигаем гранцу зоны на размер блока (без перемещения данных).
-  }
-  else
+  if(src != dest)
   {
     glBindBuffer(gl_buffer_type, id);
     glCopyBufferSubData(gl_buffer_type, gl_buffer_type, src, dest, data_size);
     glBindBuffer(gl_buffer_type, 0);
-    hem = src;
   }
-
+  hem = src;
   return hem;
 }
 
@@ -260,7 +293,7 @@ GLsizeiptr vbo_ctrl::remove(GLsizeiptr dest, GLsizeiptr data_size)
 /// что сразу становится заметно визуально. Чтобы это обойти, создается
 /// промежуточный (id_subbuf) буфер, через который производится чтение данных.
 ///
-vbo_ext::vbo_ext(GLenum type): vbo(type)
+vbo_transit::vbo_transit(GLenum type): vbo(type)
 {
   // Создание промежуточного буфера, через который будет
   // производится обмен данными между GPU и CPU.
@@ -282,7 +315,7 @@ vbo_ext::vbo_ext(GLenum type): vbo(type)
 /// что сразу становится заметно визуально. Чтобы это обойти, создается
 /// промежуточный (id_subbuf) буфер, через который и производится чтение данных.
 ///
-void vbo_ext::data_get(GLintptr offset, GLsizeiptr sz, GLvoid* dst)
+void vbo_transit::data_get(GLintptr offset, GLsizeiptr sz, GLvoid* dst)
 {
 #ifndef NDEBUG
   if(sz > bytes_per_face) ERR("vbo_ext::data_get > bytes_per_snip");

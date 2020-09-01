@@ -25,7 +25,7 @@ include_directories( "${CMAKE_SOURCE_DIR}/src/main/include" )
 add_executable( main ${MAIN_SRC} )
 target_link_libraries( main ${TR_LIBS} )
 
-add_custom_command(TARGET main POST_BUILD
+add_custom_command(TARGET main PRE_LINK
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                    ${CMAKE_SOURCE_DIR}/assets/ "assets")
 
@@ -37,6 +37,5 @@ if( ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
       add_custom_command( TARGET main POST_BUILD
                   COMMAND ${CMAKE_COMMAND} -E copy
                   "${DLL_DIR}/${DLL_LIB}" "${DLL_LIB}" )
-    #  message( "${DIR0}/${LDLL}" )
   endforeach()
 endif()

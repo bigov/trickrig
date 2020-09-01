@@ -1,12 +1,12 @@
 #include "gui.hpp"
-#include "../assets/textures/font0.hpp"
+#include "font0.hpp"
 
 namespace tr
 {
 
 std::unique_ptr<frame_buffer> RenderBuffer = nullptr; // рендер-буфер окна
 
-std::string font_dir = "../assets/textures/";
+std::string font_dir = "assets/textures/";
 atlas TextureFont { font_dir + font::texture_file, font::texture_cols, font::texture_rows };
 layout gui::Layout {};                // размеры и положение окна
 
@@ -27,8 +27,9 @@ static std::unique_ptr<vbo> VBO_uv   = nullptr;    // текстурные ко�
 unsigned int gui::indices = 0; // число индексов в 2Д режиме
 func_ptr gui::current_menu = nullptr;
 
-static const float_color TitleBgColor  { 1.0f, 1.0f, 0.85f, 1.0f };
-static const float_color TitleHemColor { 0.7f, 0.7f, 0.70f, 1.0f };
+static const float_color DefaultBgColor {0.0f, 0.0f, 0.0f, 0.0f}; // цвет фона текста по-умолчанию
+static const float_color TitleBgColor   { 1.0f, 1.0f, 0.85f, 1.0f };
+static const float_color TitleHemColor  { 0.7f, 0.7f, 0.70f, 1.0f };
 
 static const colors BtnBgColor =
   { float_color { 0.89f, 0.89f, 0.89f, 1.0f }, // normal
@@ -55,9 +56,9 @@ static const colors ListHemColor=
     float_color { 0.70f, 0.70f, 0.70f, 1.0f }  // disabled
   };
 
+std::vector<gui::symbol_3D> gui::Symbols {}; // Строка символов
 std::vector<gui::element_data> gui::Buttons {};
 std::vector<gui::element_data> gui::Rows {};
-
 
 /// положение символа в текстурной карте
 std::array<unsigned int, 2> map_location(const std::string& Sym)
@@ -337,9 +338,16 @@ void gui::clear(void)
 ///
 bool gui::render(void)
 {
-  if(RUN_3D) Space3d->render(); // рендер 3D сцены
+  if(RUN_3D)
+  {
+    Space3d->render(); // рендер 3D сцены
+    calc_fps();
+  }
+  else
+  {
+    callback_render();
+  }
 
-  calc_fps();
   glDisable(GL_DEPTH_TEST);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -650,30 +658,50 @@ std::vector<float> gui::rect_uv(const std::string& Sym)
 
 
 ///
+/// \brief gui::symbol_append
+/// \param left
+/// \param top
+/// \param Symbol
+/// \param symbol_width
+/// \param symbol_height
+/// \param BgColor
+/// \return
+///
+gui::vbo_stride gui::symbol_append(uint left, uint top, const std::string& Symbol,
+                                    uint symbol_width = 7, uint symbol_height = 7,
+                                    float_color BgColor = DefaultBgColor)
+{
+  gui::vbo_stride Result {VBO_xy->get_hem() , VBO_rgba->get_hem(), VBO_uv->get_hem()};
+
+  auto Vxy = rect_xy(left, top, symbol_width, symbol_height);
+  VBO_xy->append(Vxy.size() * sizeof(float), Vxy.data());
+
+  auto Vrgba = rect_rgba(BgColor);
+  VBO_rgba->append(Vrgba.size() * sizeof(float), Vrgba.data());
+
+  auto Vuv = rect_uv(Symbol);
+  VBO_uv->append(Vuv.size() * sizeof(float), Vuv.data());
+
+  indices += 6;
+
+  return Result;
+}
+
+
+///
 /// \brief gui::textrow
 /// \param left
 /// \param top
 /// \param Text
 /// \param symbol_width
-/// \param height
+/// \param symbol_height
 ///
-void gui::textrow(uint left, uint top, const std::vector<std::string>& Text,
-                  uint symbol_width = 7, uint height = 7, uint kerning = 0)
+void gui::text_append(uint left, uint top, const std::vector<std::string>& Text,
+                  uint symbol_width = 7, uint symbol_height = 7, uint kerning = 0)
 {
-
-  float_color BgColor = {0.0f, 0.0f, 0.0f, 0.0f};
   for(const auto& Symbol: Text)
   {
-    auto Vxy = rect_xy(left, top, symbol_width, height);
-    VBO_xy->append(Vxy.size() * sizeof(float), Vxy.data());
-
-    auto Vrgba = rect_rgba(BgColor);
-    VBO_rgba->append(Vrgba.size() * sizeof(float), Vrgba.data());
-
-    auto Vuv = rect_uv(Symbol);
-    VBO_uv->append(Vuv.size() * sizeof(float), Vuv.data());
-
-    indices += 6;
+    symbol_append(left, top, Symbol, symbol_width, symbol_height);
     left += symbol_width + kerning;
   }
 }
@@ -724,7 +752,7 @@ void gui::title(const std::string& Label)
   rectangle(menu_border, menu_border, Layout.width - 2*menu_border, title_height, TitleBgColor);
   uint left = Layout.width/2 - Text.size() * symbol_width / 2;
   uint top =  menu_border + title_height/2 - symbol_height/2 + 2;
-  textrow(left, top, Text, symbol_width, symbol_height);
+  text_append(left, top, Text, symbol_width, symbol_height);
 }
 
 
@@ -836,11 +864,11 @@ gui::element_data gui::create_element(layout L, const std::string &Label,
 
   // рамка элемента
   Element.xy_stride = VBO_xy->get_hem();
-  rectangle(L.left-1, L.top-1, L.width+2, L.height+2, HemColor[Element.state]);
+  rectangle(L.left, L.top, L.width+2, L.height+2, HemColor[Element.state]);
 
   // фоновая заливка
   Element.rgba_stride = VBO_rgba->get_hem();
-  rectangle(L.left, L.top, L.width, L.height, BgColor[Element.state]);
+  rectangle(L.left+1, L.top+1, L.width, L.height, BgColor[Element.state]);
 
   auto Text = string2vector(Label);
   Element.label_size = Text.size();
@@ -848,7 +876,7 @@ gui::element_data gui::create_element(layout L, const std::string &Label,
   // надпись
   L.left += L.width/2 - Text.size() * (symbol_width + symbol_kerning) / 2;
   L.top += 1 + (L.height - symbol_height ) / 2;
-  textrow(L.left, L.top, Text, symbol_width, symbol_height, symbol_kerning);
+  text_append(L.left, L.top, Text, symbol_width, symbol_height, symbol_kerning);
 
   return Element;
 }
@@ -935,9 +963,59 @@ void gui::screen_map_select(void)
 }
 
 
+///
+/// \brief gui::callback_timer
+/// \details Метод вызывается из цикла рендера каждый кадр
+///
+void gui::callback_render(void)
+{
+  if(!Symbols.empty()) update_input_cursor();
+}
+
+
+void gui::update_input_cursor()
+{
+  static const std::chrono::seconds one_second(1);
+
+  std::chrono::time_point<sys_clock> t_now = sys_clock::now();
+  static auto t_last = t_now;
+
+  if (t_now - t_last >= one_second)
+  {
+    t_last = t_now;
+    symbol_3D& S = Symbols[Symbols.size() - 1];
+
+    if(S.Text == "*") S.Text = "+";
+    else S.Text = "*";
+
+    auto Vuv = rect_uv(S.Text);
+    VBO_uv->update(Vuv.size() * sizeof(float), Vuv.data(), S.Addr.uv_stride);
+  }
+}
+
+
+///
+/// \brief gui::input_text
+/// \param SL
+///
+void gui::input_text(std::vector<symbol_3D> &SL)
+{
+  std::string S = "+";
+  SL.push_back({symbol_append(40, 140, S, 28, 28), S});
+}
+
+
+///
+/// \brief gui::screen_map_new
+///
 void gui::screen_map_new(void)
 {
   title("НОВАЯ КАРТА");
+  Symbols.clear();
+
+  input_text(Symbols);
+
+
   button_append("ВЫХОД", current_menu);
 
   current_menu = screen_map_new;
@@ -965,7 +1043,7 @@ void gui::screen_pause(void)
   rectangle(bx, by, Layout.width - 2*bx, title_height, TitleBgColor);
   uint left = Layout.width/2 - Text.size() * symbol_width / 2;
   uint top =  by + title_height/2 - symbol_height/2 + 2;
-  textrow(left, top, Text, symbol_width, symbol_height);
+  text_append(left, top, Text, symbol_width, symbol_height);
 
   button_append("ПРОДОЛЖИТЬ", mode_3d);
   button_append("ВЫХОД", close_map);
@@ -1079,7 +1157,7 @@ void gui::hud_enable(void)
   rectangle(border, border, row_width, row_height, {0.8f, 0.8f, 1.0f, 0.5f});
   uint left = border + row_width/2 - Text.size() * symbol_width / 2;
   uint top =  border + row_height/2 - symbol_height/2 + 1;
-  textrow(left, top, Text, symbol_width, symbol_height);
+  text_append(left, top, Text, symbol_width, symbol_height);
   fps_uv_data = (indices/6 - 34) * 8 * sizeof(float); // у 34-х символов обновляемая текстура
 }
 

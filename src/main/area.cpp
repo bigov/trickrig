@@ -305,7 +305,7 @@ void area::load(int x, int z)
     for( auto& Face: V.Faces )
     {
       vbo_mtx.lock();
-      auto vbo_addr = VboCtrl->append(Face.data() + 1, bytes_per_face);
+      auto vbo_addr = VboCtrl->append(bytes_per_face, Face.data() + 1);
       render_indices.fetch_add(indices_per_face);
       vbo_mtx.unlock();
       // Запомнить положение блока данных в VBO, координаты вокса и индекс поверхности
@@ -334,7 +334,7 @@ void area::truncate(int x, int z)
     {
       dest = id * bytes_per_face;                     // адрес удаляемого блока данных
       vbo_mtx.lock();
-      moved_from = VboCtrl->remove(dest, bytes_per_face); // адрес хвоста VBO (данными отсюда
+      moved_from = VboCtrl->remove(bytes_per_face, dest); // адрес хвоста VBO (данными отсюда
       vbo_mtx.unlock();                                // перезаписываются данные по адресу "dest")
       // Если c адреса "free" на "dest" данные были перенесены, то обновить координты Origin
       if (moved_from != dest) VboMap[id] = VboMap[moved_from/bytes_per_face];

@@ -109,8 +109,8 @@ using v_str = std::vector<std::string>;
 using v_ch  = std::vector<char>;
 using sys_clock = std::chrono::system_clock;
 
-enum APP_INIT {
-  PNG_TEXTURE0,   // вначале списка идут названия файлов
+enum APP_INIT {  // вначале списка идут названия файлов
+  PNG_TEXTURE0,
   DB_TPL_FNAME,
   SHADER_VERT_SCENE,
   SHADER_GEOM_SCENE,
@@ -129,6 +129,8 @@ enum APP_INIT {
   APP_VER_TWEAK,
   APP_INIT_SIZE  // размер списка
 };
+
+static const int TEXTURES_COUNT = 1;
 
 enum MAP_INIT {
   VIEW_FROM_X,
