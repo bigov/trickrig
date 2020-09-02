@@ -43,6 +43,60 @@ const uchar_color LineNormalDefaultBgColor  { 0xE7, 0xE7, 0xE6, 0xFF };
 
 extern std::unique_ptr<glsl> Program2d;            // построение 2D элементов
 
+struct element_data {
+    double x0 = 0; // left
+    double y0 = 0; // top
+    double x1 = 0; // left + width
+    double y1 = 0; // top + heigth
+    STATES state = ST_NORMAL; // Состояние
+    GLsizeiptr xy_stride = 0;     // Адрес в VBO блока координат вершин
+    GLsizeiptr rgba_stride = 0;   // Адрес в VBO данных цвета
+    size_t label_size = 0;        // число символов в надписи
+    func_ptr caller = nullptr;    // Адрес функции, вызываемой по нажатию
+};
+
+
+struct glmem_ptr {
+  GLsizeiptr offset = 0; // Адрес в VBO блока данных
+  GLsizeiptr size = 0;   // Длина VBO блока данных
+};
+
+
+struct vbo_ptr {
+  glmem_ptr xy;     // Адрес в VBO блока координат вершин
+  glmem_ptr rgba;   // Адрес в VBO данных цвета
+  glmem_ptr uv;     // Длина VBO блока координат текстуры
+};
+
+
+class char3d
+{
+public:
+  char3d(uint left, uint top, const std::string& Symbol,
+         uint symbol_width, uint symbol_height, float_color BgColor);
+  ~char3d(void);
+
+  void update_uv(const std::string& Symbol);
+  void update_xy(const layout& L);
+
+  void clear(void);
+
+  std::string Text {};
+
+private:
+  char3d(void) = delete;
+
+  // Запретить копирование и перенос экземпляра класса
+  char3d(const char3d&) = delete;
+  char3d(char3d&&) = delete;
+  char3d& operator=(const char3d&) = delete;
+  char3d& operator=(char3d&&) = delete;
+
+  vbo_ptr Addr {};
+  layout Layout {};
+};
+
+
 ///
 /// \brief The gui class
 ///
@@ -55,7 +109,7 @@ class gui: public interface_gl_context
     static bool open;
     virtual void event_resize(int width, int height);
     virtual void event_cursor(double x, double y);                                // x, y
-    virtual void event_mouse_btns(int _button, int _action, int _mods);                // _button, _action, _mods
+    virtual void event_mouse_btns(int _button, int _action, int _mods);           // _button, _action, _mods
     virtual void event_keyboard(int _key, int _scancode, int _action, int _mods); // _key, _scancode, _action, _mods
     virtual void event_focus_lost();
     virtual void event_character(uint ch);
@@ -74,49 +128,25 @@ class gui: public interface_gl_context
     gui(gui&&) = delete;
     gui& operator=(gui&&) = delete;
 
-    static unsigned int indices;
-    int FPS = 500;                 // частота кадров
+    int FPS = 0;                   // частота кадров
     static GLsizei fps_uv_data;    // смещение данных FPS в буфере UV
     static std::string map_current;
     std::string StringBuffer {};   // строка ввода пользователя
-    static layout Layout;          // положение окна и размеры
     static func_ptr current_menu;
 
-    static std::unique_ptr<space_3d> Space3d;     // = nullptr;
-    std::unique_ptr<glsl> Program2d = nullptr;    // построение 2D элементов
+    static std::unique_ptr<space_3d> Space3d;    // = nullptr;
+    std::unique_ptr<glsl> Program2d = nullptr;  // построение 2D элементов
 
     static bool RUN_3D;
-    GLuint vao_fbuf = 0;     // Рендер текстуры фрейм-буфера
-    GLuint vao_2d =   0;     // Рендер элементов меню и HUD
-    static glm::vec3 Cursor3D;               // положение и размер прицела
+    GLuint vao_fbuf = 0;                         // Рендер текстуры фрейм-буфера
+    GLuint vao_2d =   0;                         // Рендер элементов меню и HUD
+    static glm::vec3 Cursor3D;                   // положение и размер прицела
 
-    struct element_data {
-        double x0 = 0; // left
-        double y0 = 0; // top
-        double x1 = 0; // left + width
-        double y1 = 0; // top + heigth
-        STATES state = ST_NORMAL; // Состояние
-        GLsizeiptr xy_stride = 0;     // Адрес в VBO блока координат вершин
-        GLsizeiptr rgba_stride = 0;   // Адрес в VBO данных цвета
-        size_t label_size = 0;        // число символов в надписи
-        func_ptr caller = nullptr;    // Адрес функции, вызываемой по нажатию
-    };
+    static std::vector<element_data> Buttons;    // Блок данных кнопок
+    static std::vector<element_data> RowsList;   // Список строк
+    static std::vector<std::unique_ptr<char3d>> SymbolsBuffer; // Строка символов
 
-    struct vbo_stride {
-      GLsizeiptr xy_stride = 0;     // Адрес в VBO блока координат вершин
-      GLsizeiptr rgba_stride = 0;   // Адрес в VBO данных цвета
-      GLsizeiptr uv_stride = 0;     // Адрес в VBO блока координат текстуры
-    };
-
-    struct symbol_3D {
-      vbo_stride Addr {};
-      std::string Text {};
-    };
-
-    static std::vector<element_data> Buttons; // Блок данных кнопок
-    static std::vector<element_data> Rows;    // Список строк
-    static std::vector<symbol_3D> Symbols; // Строка символов
-
+    static std::unique_ptr<char3d> Cursor;        // Текстовый курсор для пользователя
     static std::unique_ptr<glsl> ProgramFrBuf; // Шейдерная программа GUI
 
     void program_2d_init(void);
@@ -128,7 +158,7 @@ class gui: public interface_gl_context
     void hud_update(void);
 
     void callback_render(void);
-    void update_input_cursor(void);
+    void update_input(void);
 
     static void map_open(void);
     static void map_close(void);
@@ -139,15 +169,12 @@ class gui: public interface_gl_context
     static void screen_map_new(void);
     static void screen_pause(void);
     static void hud_enable(void);
-    static std::vector<float> rect_xy(uint left, uint top, uint width, uint height);
-    static std::vector<float> rect_rgba(float_color rgba);
-    static std::vector<float> rect_uv(const std::string& Symbol);
     static void rectangle(uint left, uint top, uint width, uint height, float_color rgba);
     static element_data create_element(layout L, const std::string &Label,
                             const colors& BgColor, const colors& HemColor,
                             func_ptr new_caller, STATES state);
     static void title(const std::string& Label);
-    static vbo_stride symbol_append(uint left, uint top, const std::string& Symbol,
+    static void symbol_append(uint left, uint top, const std::string& Symbol,
                             uint symbol_width, uint symbol_height, float_color BgColor);
     static void button_append(const std::string& Label, func_ptr new_caller);
     static void text_append(uint left, uint top, const std::vector<std::string>& Text,
@@ -157,7 +184,6 @@ class gui: public interface_gl_context
     static void list_insert(const std::string& String, STATES state);
     static void close(void) { open = false; }
     static void close_map(void);
-    static void input_text(std::vector<symbol_3D>& SL);
     static void mode_3d(void);
     static void mode_2d(void);
 };
