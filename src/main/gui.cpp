@@ -31,7 +31,6 @@ std::vector<std::unique_ptr<char3d>> gui::SymbolsBuffer {};     // Строка 
 std::vector<element_data> gui::Buttons {};
 std::vector<element_data> gui::RowsList {};
 
-static const float_color DefaultBgColor {0.0f, 0.0f, 0.0f, 0.0f}; // цвет фона текста по-умолчанию
 static const float_color TitleBgColor   { 1.0f, 1.0f, 0.85f, 1.0f };
 static const float_color TitleHemColor  { 0.7f, 0.7f, 0.70f, 1.0f };
 
@@ -77,22 +76,25 @@ std::array<unsigned int, 2> map_location(const std::string& Sym)
 /// \param width
 /// \param height
 ///
-std::vector<float> rect_xy(layout& L)
+std::vector<float> rect_xy(const layout& L)
 {
-  if(L.left > LayoutGui.width) L.left = LayoutGui.width;
-  if(L.top > LayoutGui.height) L.top = LayoutGui.height;
+  auto left = L.left;
+  auto top = L.top;
 
-  float x0 = static_cast<float>(L.left) * 2.f / static_cast<float>(LayoutGui.width) - 1.f;
-  float y0 = static_cast<float>(L.top) * 2.f / static_cast<float>(LayoutGui.height) - 1.f;
+  if(left > LayoutGui.width) left = LayoutGui.width;
+  if(top > LayoutGui.height) top = LayoutGui.height;
 
-  L.left += L.width;
-  L.top += L.height;
+  float x0 = static_cast<float>(left) * 2.f / static_cast<float>(LayoutGui.width) - 1.f;
+  float y0 = static_cast<float>(top) * 2.f / static_cast<float>(LayoutGui.height) - 1.f;
 
-  if(L.left > LayoutGui.width) L.left = LayoutGui.width;
-  if(L.top > LayoutGui.height) L.top = LayoutGui.height;
+  left += L.width;
+  top += L.height;
 
-  float x1 = static_cast<float>(L.left) * 2.f / static_cast<float>(LayoutGui.width) - 1.f;
-  float y1 = static_cast<float>(L.top) * 2.f / static_cast<float>(LayoutGui.height) - 1.f;
+  if(left > LayoutGui.width) left = LayoutGui.width;
+  if(top > LayoutGui.height) top = LayoutGui.height;
+
+  float x1 = static_cast<float>(left) * 2.f / static_cast<float>(LayoutGui.width) - 1.f;
+  float y1 = static_cast<float>(top) * 2.f / static_cast<float>(LayoutGui.height) - 1.f;
 
   return { x0,y0,  x1,y0,  x1,y1,  x0,y1 };
 }
@@ -176,11 +178,9 @@ void load_textures(void)
 /// \param symbol_height
 /// \param BgColor
 ///
-char3d::char3d(uint left, uint top, const std::string& Symbol,
-                  uint symbol_width = 7, uint symbol_height = 7,
-                  float_color BgColor = DefaultBgColor)
+char3d::char3d(const layout& L, const std::string& Symbol,
+                  float_color BgColor)
 {
-
 #ifndef NDEBUG
   assert(VBO_xy   != nullptr && "VBO_xy не инициализирован" );
   assert(VBO_rgba != nullptr && "VBO_rgba не инициализирован" );
@@ -188,11 +188,8 @@ char3d::char3d(uint left, uint top, const std::string& Symbol,
 #endif
 
   if(Symbol.empty()) return;
-  Text = Symbol;
-  Layout.left = left;
-  Layout.top = top;
-  Layout.width = symbol_width;
-  Layout.height = symbol_height;
+  Char = Symbol;
+  Layout = L;
 
   auto Vxy = rect_xy(Layout);
   Addr.xy.offset = VBO_xy->get_hem();
@@ -220,7 +217,7 @@ char3d::char3d(uint left, uint top, const std::string& Symbol,
 void char3d::update_uv(const std::string& Symbol)
 {
   if(Symbol.empty()) return;
-  Text = Symbol;
+  Char = Symbol;
   auto Vuv = rect_uv(Symbol);
   VBO_uv->update(Addr.uv.size, Vuv.data(), Addr.uv.offset);
 }
@@ -234,7 +231,8 @@ void char3d::update_xy(const layout &L)
 {
   Layout = L;
   auto Vxy = rect_xy(Layout);
-  Addr.xy.size = Vxy.size() * sizeof(float);
+  assert( Addr.xy.size == static_cast<GLsizeiptr>(Vxy.size() * sizeof(float))
+          && "Размер массива не должен меняться.");
   VBO_xy->update(Addr.xy.size, Vxy.data(), Addr.xy.offset);
 }
 
@@ -243,25 +241,31 @@ void char3d::update_xy(const layout &L)
 /// \brief char3d::clear
 ///
 void char3d::clear(void){
-  if(Text.empty()) return;
+  if(Char.empty()) return;
+  Char.clear();
 
-  if(Addr.xy.size > 0) VBO_xy->remove(Addr.xy.size, Addr.xy.offset);
-  if(Addr.rgba.size > 0) VBO_rgba->remove(Addr.rgba.size, Addr.rgba.offset);
-  if(Addr.uv.size > 0) VBO_uv->remove(Addr.uv.size, Addr.uv.offset);
-  if(gui_indices > 6) gui_indices -= 6;
+  if(Addr.xy.size + Addr.xy.offset <= VBO_xy->get_hem())
+    VBO_xy->remove(Addr.xy.size, Addr.xy.offset);
 
-  Text.clear();
-  Addr.xy.size = 0;
-  Addr.xy.offset = 0;
-  Addr.rgba.size = 0;
+  if(Addr.rgba.size + Addr.rgba.offset <= VBO_rgba->get_hem())
+    VBO_rgba->remove(Addr.rgba.size, Addr.rgba.offset);
+
+  if(Addr.uv.size + Addr.uv.offset <= VBO_uv->get_hem())
+    VBO_uv->remove(Addr.uv.size, Addr.uv.offset);
+
+  Addr.xy.size     = 0;
+  Addr.xy.offset   = 0;
+  Addr.rgba.size   = 0;
   Addr.rgba.offset = 0;
-  Addr.uv.size = 0;
-  Addr.uv.offset = 0;
+  Addr.uv.size     = 0;
+  Addr.uv.offset   = 0;
+
+  if(gui_indices > 6) gui_indices -= 6;
 }
 
 
 char3d::~char3d(void){
-  if(!Text.empty()) clear();
+  if(!Char.empty()) clear();
 }
 
 
@@ -683,10 +687,10 @@ void gui::event_character(uint ch)
   // Преобразование целого в строковый символ UTF-8
   std::wstring_convert<std::codecvt_utf8<char32_t>,char32_t> convert;
   std::string Str8 = convert.to_bytes(ch);
-
-  //symbol_append(100, 100, Str8, 14, 14, DefaultBgColor);
-
-  std::clog << Str8 << std::endl;
+  layout L = Cursor->get_layout();
+  symbol_append(L, Str8);
+  L.left += L.width + sym_kerning_default;
+  Cursor->update_xy(L);
 }
 
 
@@ -763,12 +767,9 @@ void gui::event_close(void)
 /// \param BgColor
 /// \return
 ///
-void gui::symbol_append(uint left, uint top, const std::string& Symbol,
-                                    uint symbol_width = 7, uint symbol_height = 7,
-                                    float_color BgColor = DefaultBgColor)
+void gui::symbol_append(const layout& L, const std::string& Symbol, float_color BgColor)
 {
-  SymbolsBuffer.emplace_back(std::make_unique<char3d>
-    (left, top, Symbol, symbol_width, symbol_height, BgColor));
+  SymbolsBuffer.emplace_back(std::make_unique<char3d>(L, Symbol, BgColor));
 }
 
 
@@ -780,13 +781,13 @@ void gui::symbol_append(uint left, uint top, const std::string& Symbol,
 /// \param symbol_width
 /// \param symbol_height
 ///
-void gui::text_append(uint left, uint top, const std::vector<std::string>& Text,
-                  uint symbol_width = 7, uint symbol_height = 7, uint kerning = 0)
+void gui::text_append(const layout& L, const std::vector<std::string>& Text, uint kerning = 0)
 {
+  auto vL = L;
   for(const auto& Symbol: Text)
   {
-    symbol_append(left, top, Symbol, symbol_width, symbol_height);
-    left += symbol_width + kerning;
+    symbol_append(vL, Symbol);
+    vL.left += L.width + kerning;
   }
 }
 
@@ -803,7 +804,8 @@ void gui::text_append(uint left, uint top, const std::vector<std::string>& Text,
 void gui::rectangle(uint left, uint top, uint width, uint height,
                    float_color rgba)
 {
-  symbol_append(left, top, " ", width, height, rgba);
+  layout L {width, height, left, top};
+  symbol_append(L, " ", rgba);
 }
 
 
@@ -817,17 +819,17 @@ void gui::title(const std::string& Label)
   // Очистка всех массивов VAO
   clear();
   // Заливка окна фоновым цветом
-  rectangle(menu_border, menu_border, LayoutGui.width - 2 * menu_border,
-            LayoutGui.height - 2 * menu_border, {0.9f, 1.f, 0.9f, 1.f});
+  rectangle(menu_border_default, menu_border_default, LayoutGui.width - 2 * menu_border_default,
+            LayoutGui.height - 2 * menu_border_default, {0.9f, 1.f, 0.9f, 1.f});
 
   auto Text = string2vector(Label);
   uint symbol_width = 14;
   uint symbol_height = 21;
-  rectangle(menu_border, menu_border, LayoutGui.width - 2*menu_border, title_height+1, TitleHemColor);
-  rectangle(menu_border, menu_border, LayoutGui.width - 2*menu_border, title_height, TitleBgColor);
+  rectangle(menu_border_default, menu_border_default, LayoutGui.width - 2*menu_border_default, title_height_default+1, TitleHemColor);
+  rectangle(menu_border_default, menu_border_default, LayoutGui.width - 2*menu_border_default, title_height_default, TitleBgColor);
   uint left = LayoutGui.width/2 - Text.size() * symbol_width / 2;
-  uint top =  menu_border + title_height/2 - symbol_height/2 + 2;
-  text_append(left, top, Text, symbol_width, symbol_height);
+  uint top =  menu_border_default + title_height_default/2 - symbol_height/2 + 2;
+  text_append({symbol_width, symbol_height, left, top}, Text );
 }
 
 
@@ -840,16 +842,16 @@ void gui::title(const std::string& Label)
 ///
 std::pair<uint, uint> gui::button_allocation(void)
 {
-  uint left = (LayoutGui.width - btn_width)/2;
-  uint top = (LayoutGui.height - btn_height + title_height)/2;
+  uint left = (LayoutGui.width - btn_width_default)/2;
+  uint top = (LayoutGui.height - btn_height_default + title_height_default)/2;
 
   if(Buttons.empty()) return {left, top};
 
   // Если размещается 4-я кнопка, то распределяем их в 2 колонки
   if(Buttons.size() == 3)
   {
-    uint vert_move_dist = (btn_height + btn_padding) / 2;
-    uint hor_move_dist = (btn_width + btn_padding) / 2;
+    uint vert_move_dist = (btn_height_default + btn_padding_default) / 2;
+    uint hor_move_dist = (btn_width_default + btn_padding_default) / 2;
 
     // первые две кнопки сдвигаем влево - вниз
     auto B = Buttons.begin();
@@ -866,7 +868,7 @@ std::pair<uint, uint> gui::button_allocation(void)
   }
 
   // Вертикальный сдвиг кнопок
-  uint move_dist = (btn_height + btn_padding) / 2;
+  uint move_dist = (btn_height_default + btn_padding_default) / 2;
   for(auto& B: Buttons)
   {
     button_move(B, 0, -move_dist);
@@ -890,7 +892,7 @@ void gui::button_move(element_data& Button, int x, int y)
   auto stride = Button.xy_stride;
 
   // Сдвиг рамки
-  layout L = { btn_width + 2, btn_height + 2, new_left - 1, new_top - 1 };
+  layout L = { btn_width_default + 2, btn_height_default + 2, new_left - 1, new_top - 1 };
   auto Vxy = rect_xy(L);
   VBO_xy->update(Vxy.size() * sizeof(float), Vxy.data(), stride);
 
@@ -898,26 +900,26 @@ void gui::button_move(element_data& Button, int x, int y)
 
   // Сдвиг основного фона кнопки
   stride += stride_interval;
-  L = {btn_width, btn_height, new_left, new_top};
+  L = {btn_width_default, btn_height_default, new_left, new_top};
   Vxy = rect_xy(L);
   VBO_xy->update(Vxy.size() * sizeof(float), Vxy.data(), stride);
 
   Button.x0 = new_left * 1.0;
   Button.y0 = new_top * 1.0;
-  Button.x1 = (new_left + btn_width) * 1.0;
-  Button.y1 = (new_top + btn_height) * 1.0;
+  Button.x1 = (new_left + btn_width_default) * 1.0;
+  Button.y1 = (new_top + btn_height_default) * 1.0;
 
   // Сдвиг надписи, состоящей из label_size прямоугольников
-  new_left += btn_width/2 - Button.label_size * (symbol_width + symbol_kerning) / 2;
+  new_left += btn_width_default/2 - Button.label_size * (sym_width_default + sym_kerning_default) / 2;
   new_top += 5;
 
   for(size_t i = 0; i < Button.label_size; ++i)
   {
     stride += stride_interval;
-    L = { symbol_width, symbol_height, new_left, new_top};
+    L = { sym_width_default, sym_height_default, new_left, new_top};
     Vxy = rect_xy(L);
     VBO_xy->update(Vxy.size() * sizeof(float), Vxy.data(), stride);
-    new_left += symbol_width + symbol_kerning;
+    new_left += sym_width_default + sym_kerning_default;
   }
 }
 
@@ -952,9 +954,9 @@ element_data gui::create_element(layout L, const std::string &Label,
   Element.label_size = Text.size();
 
   // надпись
-  L.left += L.width/2 - Text.size() * (symbol_width + symbol_kerning) / 2;
-  L.top += 1 + (L.height - symbol_height ) / 2;
-  text_append(L.left, L.top, Text, symbol_width, symbol_height, symbol_kerning);
+  L.left += L.width/2 - Text.size() * (sym_width_default + sym_kerning_default) / 2;
+  L.top += 1 + (L.height - sym_height_default ) / 2;
+  text_append({sym_width_default, sym_height_default, L.left, L.top}, Text, sym_kerning_default);
 
   return Element;
 }
@@ -967,7 +969,7 @@ element_data gui::create_element(layout L, const std::string &Label,
 void gui::button_append(const std::string &Label, func_ptr new_caller = nullptr)
 {
   auto XY = button_allocation();
-  layout L {btn_width, btn_height, XY.first, XY.second};
+  layout L {btn_width_default, btn_height_default, XY.first, XY.second};
   auto Element = create_element(L, Label, BtnBgColor, BtnHemColor, new_caller);
   Buttons.push_back(Element);
 }
@@ -980,10 +982,10 @@ void gui::button_append(const std::string &Label, func_ptr new_caller = nullptr)
 void gui::list_insert(const std::string& String, STATES state = ST_NORMAL)
 {
   layout L { };
-  L.width = LayoutGui.width - menu_border * 4;
+  L.width = LayoutGui.width - menu_border_default * 4;
   L.height = row_height;
-  L.left = menu_border * 2;
-  L.top = L.left + title_height + RowsList.size() * (row_height + 1);
+  L.left = menu_border_default * 2;
+  L.top = L.left + title_height_default + RowsList.size() * (row_height + 1);
   auto Element = create_element(L, String, ListBgColor, ListHemColor, nullptr, state);
   RowsList.push_back(Element);
 }
@@ -1065,7 +1067,7 @@ void gui::update_input(void)
   {
     t_last = t_now;
     std::string Symbol = " ";
-    if(Cursor->Text == Symbol) Symbol = ":";
+    if(Cursor->uv_equal(Symbol)) Symbol = ":";
     Cursor->update_uv(Symbol);
   }
 }
@@ -1078,7 +1080,16 @@ void gui::screen_map_new(void)
 {
   title("ВВЕДИТЕ НАЗВАНИЕ");
 
-  Cursor = std::make_unique<char3d>(40, 140, ":", 28, 28);
+  layout L {};
+  L.width = LayoutGui.width - menu_border_default * 4;
+  L.height = row_height;
+  L.left = menu_border_default * 2;
+  L.top = L.left + title_height_default + RowsList.size() * (row_height + 1);
+
+  SymbolsBuffer.emplace_back(std::make_unique<char3d>(L, " ", ListBgColor[2]));
+
+  L = { sym_width_default, sym_height_default, L.left + 4, L.top + 4 };
+  Cursor = std::make_unique<char3d>(L, ":");
 
   button_append("СОЗДАТЬ", current_menu);
   button_append("ОТМЕНА", current_menu);
@@ -1096,7 +1107,7 @@ void gui::screen_pause(void)
 
   clear();
   // Заливка окна фоновым цветом
-  auto bx = menu_border * 4;
+  auto bx = menu_border_default * 4;
   auto by = 2 * bx;
   rectangle(bx, by, LayoutGui.width - 2 * bx,
             LayoutGui.height - 2 * by, {0.9f, 1.f, 0.9f, 0.5f});
@@ -1104,11 +1115,11 @@ void gui::screen_pause(void)
   auto Text = string2vector("П А У З А");
   uint symbol_width = 14;
   uint symbol_height = 21;
-  rectangle(bx, by, LayoutGui.width - 2*bx, title_height+1, TitleHemColor);
-  rectangle(bx, by, LayoutGui.width - 2*bx, title_height, TitleBgColor);
+  rectangle(bx, by, LayoutGui.width - 2*bx, title_height_default+1, TitleHemColor);
+  rectangle(bx, by, LayoutGui.width - 2*bx, title_height_default, TitleBgColor);
   uint left = LayoutGui.width/2 - Text.size() * symbol_width / 2;
-  uint top =  by + title_height/2 - symbol_height/2 + 2;
-  text_append(left, top, Text, symbol_width, symbol_height);
+  uint top =  by + title_height_default/2 - symbol_height/2 + 2;
+  text_append({symbol_width, symbol_height, left, top}, Text);
 
   button_append("ПРОДОЛЖИТЬ", mode_3d);
   button_append("ВЫХОД", close_map);
@@ -1222,7 +1233,7 @@ void gui::hud_enable(void)
   rectangle(border, border, row_width, row_height, {0.8f, 0.8f, 1.0f, 0.5f});
   uint left = border + row_width/2 - Text.size() * symbol_width / 2;
   uint top =  border + row_height/2 - symbol_height/2 + 1;
-  text_append(left, top, Text, symbol_width, symbol_height);
+  text_append({symbol_width, symbol_height, left, top}, Text);
   fps_uv_data = (gui_indices/6 - 34) * 8 * sizeof(float); // у 34-х символов обновляемая текстура
 }
 

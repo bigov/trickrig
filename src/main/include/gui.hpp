@@ -19,27 +19,29 @@ typedef void(*func_ptr)(void);
 enum FONT_STYLE { FONT_NORMAL, FONT_BOLD, FONT_COUNT };
 enum STATES { ST_NORMAL, ST_OVER, ST_PRESSED, ST_DISABLE };
 
-static const uint menu_border = 20;   // расстояние от меню до края окна
+static const uint menu_border_default = 20;   // расстояние от меню до края окна
 
-static const uint symbol_width = 7;
-static const uint symbol_height = 14;
-static const uint symbol_kerning = 2; // расстояние между символами в надписи на кнопке
+static const uint sym_width_default = 7;
+static const uint sym_height_default = 14;
+static const uint sym_kerning_default = 2; // расстояние между символами в надписи на кнопке
 
-static const uint title_height = 80; // Высота поля заголовка
+static const uint title_height_default = 80; // Высота поля заголовка
 static const uint row_height = 20;
 
-static const uint btn_width = 200;
-static const uint btn_height = 25;
-static const uint btn_padding = 14;   // расстояние между кнопками
+static const uint btn_width_default = 200;
+static const uint btn_height_default = 25;
+static const uint btn_padding_default = 14;   // расстояние между кнопками
 
-static const uint MIN_GUI_WIDTH = btn_width * 4.2; // минимально допустимая ширина окна
-static const uint MIN_GUI_HEIGHT = btn_height * 4 + 8;  // минимально допустимая высота окна
+static const uint MIN_GUI_WIDTH = btn_width_default * 4.2; // минимально допустимая ширина окна
+static const uint MIN_GUI_HEIGHT = btn_height_default * 4 + 8;  // минимально допустимая высота окна
 
-const uchar_color TextDefaultColor          { 0x24, 0x24, 0x24, 0xFF };
-const uchar_color LinePressedDefaultBgColor { 0xFE, 0xFE, 0xFE, 0xFF };
-const uchar_color LineOverDefaultBgColor    { 0xEE, 0xEE, 0xFF, 0xFF };
-const uchar_color LineDisableDefaultBgColor { 0xCD, 0xCD, 0xCD, 0xFF };
-const uchar_color LineNormalDefaultBgColor  { 0xE7, 0xE7, 0xE6, 0xFF };
+const uchar_color TextColorDefault          { 0x24, 0x24, 0x24, 0xFF };
+const uchar_color LinePressedBgColorDefault { 0xFE, 0xFE, 0xFE, 0xFF };
+const uchar_color LineOverBgColorDefault    { 0xEE, 0xEE, 0xFF, 0xFF };
+const uchar_color LineDisableBgColorDefault { 0xCD, 0xCD, 0xCD, 0xFF };
+const uchar_color LineNormalBgColorDefault  { 0xE7, 0xE7, 0xE6, 0xFF };
+
+static const float_color DefaultBgColor {0.0f, 0.0f, 0.0f, 0.0f}; // цвет фона текста по-умолчанию
 
 extern std::unique_ptr<glsl> Program2d;            // построение 2D элементов
 
@@ -72,16 +74,15 @@ struct vbo_ptr {
 class char3d
 {
 public:
-  char3d(uint left, uint top, const std::string& Symbol,
-         uint symbol_width, uint symbol_height, float_color BgColor);
+  char3d(const layout& L, const std::string& Symbol, float_color BgColor = DefaultBgColor);
   ~char3d(void);
 
   void update_uv(const std::string& Symbol);
   void update_xy(const layout& L);
 
+  bool uv_equal(const std::string& S) { return S == Char; }
+  layout get_layout(void) const { return layout{Layout}; }
   void clear(void);
-
-  std::string Text {};
 
 private:
   char3d(void) = delete;
@@ -92,6 +93,7 @@ private:
   char3d& operator=(const char3d&) = delete;
   char3d& operator=(char3d&&) = delete;
 
+  std::string Char {};
   vbo_ptr Addr {};
   layout Layout {};
 };
@@ -146,8 +148,8 @@ class gui: public interface_gl_context
     static std::vector<element_data> RowsList;   // Список строк
     static std::vector<std::unique_ptr<char3d>> SymbolsBuffer; // Строка символов
 
-    static std::unique_ptr<char3d> Cursor;        // Текстовый курсор для пользователя
-    static std::unique_ptr<glsl> ProgramFrBuf; // Шейдерная программа GUI
+    static std::unique_ptr<char3d> Cursor;       // Текстовый курсор для пользователя
+    static std::unique_ptr<glsl> ProgramFrBuf;   // Шейдерная программа GUI
 
     void program_2d_init(void);
     void program_fbuf_init(void);
@@ -174,11 +176,9 @@ class gui: public interface_gl_context
                             const colors& BgColor, const colors& HemColor,
                             func_ptr new_caller, STATES state);
     static void title(const std::string& Label);
-    static void symbol_append(uint left, uint top, const std::string& Symbol,
-                            uint symbol_width, uint symbol_height, float_color BgColor);
+    static void symbol_append(const layout& L, const std::string& Symbol, float_color BgColor = DefaultBgColor);
     static void button_append(const std::string& Label, func_ptr new_caller);
-    static void text_append(uint left, uint top, const std::vector<std::string>& Text,
-                            uint sybol_width, uint symbol_height, uint kerning);
+    static void text_append(const layout& L, const std::vector<std::string>& Text, uint kerning);
     static void button_move(element_data& Button, int x, int y);
     static std::pair<uint, uint> button_allocation(void);
     static void list_insert(const std::string& String, STATES state);
