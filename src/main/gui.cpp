@@ -580,10 +580,10 @@ void gui::event_cursor(double x, double y)
   {
     if(x > B.Diag.x0 && x < B.Diag.x1 && y > B.Diag.y0 && y < B.Diag.y1)
     {
-      if(B.state != ST_OVER) button_set_state(B, ST_OVER);
+      if(B.state != ST_OVER) element_set_state(B, ST_OVER);
     } else
     {
-      if(B.state == ST_OVER) button_set_state(B, ST_NORMAL);
+      if(B.state == ST_OVER) element_set_state(B, ST_NORMAL);
     }
   }
 
@@ -593,20 +593,10 @@ void gui::event_cursor(double x, double y)
 
     if(x > B.Diag.x0 && x < B.Diag.x1 && y > B.Diag.y0 && y < B.Diag.y1)
     {
-      if(B.state != ST_OVER)
-      {
-        B.state = ST_OVER;
-        auto Vrgba = rect_rgba(ListBgColor[B.state]);
-        VBO_rgba->update(Vrgba.size() * sizeof(float), Vrgba.data(), B.rgba_stride);
-      }
+      if(B.state != ST_OVER) element_set_state(B, ST_OVER);
     } else
     {
-      if(B.state == ST_OVER)
-      {
-        B.state = ST_NORMAL;
-        auto Vrgba = rect_rgba(ListBgColor[B.state]);
-        VBO_rgba->update(Vrgba.size() * sizeof(float), Vrgba.data(), B.rgba_stride);
-      }
+      if(B.state == ST_OVER) element_set_state(B, ST_NORMAL);
     }
   }
 }
@@ -639,18 +629,8 @@ void gui::event_mouse_btns(int _button, int _action, int _mods)
     {
       if(B.state == ST_OVER)
       {
-        // сбросить все в исходное
-        for(auto& T: RowsList)
-        {
-          T.state = ST_NORMAL;
-          auto Vrgba = rect_rgba(ListBgColor[T.state]);
-          VBO_rgba->update(Vrgba.size() * sizeof(float), Vrgba.data(), T.rgba_stride);
-        }
-
-        // включить текущую
-        B.state = ST_PRESSED;
-        auto Vrgba = rect_rgba(ListBgColor[B.state]);
-        VBO_rgba->update(Vrgba.size() * sizeof(float), Vrgba.data(), B.rgba_stride);
+        for(auto& T: RowsList) element_set_state(T, ST_NORMAL); // сбросить все в исходное
+        element_set_state(B, ST_PRESSED);                       // и включить текущую
       }
       if(nullptr != B.caller)  B.caller();
     }
@@ -674,8 +654,8 @@ void gui::event_keyboard(int key, int scancode, int action, int mods)
   }
   else
   {
-    if((key == KEY_ESCAPE) && (action == RELEASE))
-      if(!Buttons.empty()) Buttons.back().caller(); // Последняя кнопка ВСЕГДА - "выход/отмена"
+    if((key == KEY_ESCAPE) && (action == RELEASE) && (!Buttons.empty()))
+       Buttons.back().caller(); // Последняя кнопка ВСЕГДА - "выход/отмена"
   }
 }
 
@@ -880,79 +860,60 @@ void gui::button_move(element& Button, int x, int y)
 /// \brief gui::button_set_state
 /// \param New STATE for the button
 ///
-void gui::button_set_state(element& Button, STATES s)
+void gui::element_set_state(element& El, STATES s)
 {
-  Button.state = s;
+  El.state = s;
 
-  // Поверхность кнопки, цвет которой надо изменить, состоит из
+  // Цвет элемента которой надо изменить, состоит из
   // рамки и фоновой заливки. Пока изменим только фоновую заливку
-  auto id_face_bg = Button.Faces[1];
-  SymbolsBuffer[id_face_bg]->update_rgba(BtnBgColor[s]);
-}
+  auto id_face_bg = El.Faces[1];
 
-///
-/// \brief gui::create_element
-/// \param Label
-/// \param new_caller
-/// \return
-///
-element gui::listrow_make(layout L, const std::string &Label,
-                                      const colors& BgColor, const colors& HemColor,
-                                      func_ptr new_caller, STATES state = ST_NORMAL)
-{
-  element Element {};
-  Element.caller = new_caller;
-  Element.state = state;
-  Element.Diag.x0 = L.left * 1.0;
-  Element.Diag.y0 = L.top * 1.0;
-  Element.Diag.x1 = (L.left + L.width) * 1.0;
-  Element.Diag.y1 = (L.top + L.height) * 1.0;
-
-  // рамка элемента
-  Element.Faces.push_back(SymbolsBuffer.size());
-  SymbolsBuffer.emplace_back(std::make_unique<face>(
-         layout{ L.width+2, L.height+2, L.left, L.top }, " ",
-         HemColor[Element.state] ));
-
-  // фоновая заливка
-  Element.Faces.push_back(SymbolsBuffer.size());
-  SymbolsBuffer.emplace_back(std::make_unique<face>(
-         layout{ L.width, L.height, L.left+1, L.top+1 }, " ",
-         BgColor[Element.state] ));
-
-  // надпись
-  auto Text = string2vector(Label);
-  uint left = L.left + L.width/2 - Text.size() * (sym_width_default + sym_kerning_default) / 2;
-  uint top = L.top + 1 + (L.height - sym_height_default ) / 2;
-
-  for(const auto& Symbol: Text)
-  {
-    Element.Faces.push_back(SymbolsBuffer.size());
-    SymbolsBuffer.emplace_back(std::make_unique<face>(
-        layout{ sym_width_default, sym_height_default, left, top },
-         Symbol, DefaultBgColor));
-    left += sym_width_default + sym_kerning_default;
+  switch (El.element_type){
+    case GUI_BUTTON:
+      SymbolsBuffer[id_face_bg]->update_rgba(BtnBgColor[s]);
+      break;
+    case GUI_LISTROW:
+      SymbolsBuffer[id_face_bg]->update_rgba(ListBgColor[s]);
+      break;
   }
-  return Element;
 }
 
 
 ///
-/// \brief gui::button_make
-/// \param L
+/// \brief gui::element_make
 /// \param Label
-/// \param BgColor
-/// \param HemColor
-/// \param new_caller
-/// \param state
+/// \param element_type
+/// \param callback new_caller
+/// \param element state
 /// \return
 ///
-element gui::button_make(const std::string &Label, ELEMENT_TYPES et, func_ptr new_caller, const STATES state )
+element gui::element_make(const std::string &Label, ELEMENT_TYPES et, func_ptr new_caller, const STATES state )
 {
-  auto XY = button_allocation();
-  layout L = {btn_width_default, btn_height_default, XY.first, XY.second};
-
+  layout L {};
   element Element {};
+  colors BgColors {};
+  colors HemColors {};
+  std::pair<uint,uint> XY {};
+
+  switch (et) {
+    case GUI_BUTTON:
+      BgColors = BtnBgColor;
+      HemColors = BtnHemColor;
+      L.width = btn_width_default;
+      L.height = btn_height_default;
+      XY = button_allocation();
+      L.left = XY.first;
+      L.top = XY.second;
+      break;
+    case GUI_LISTROW:
+      BgColors = ListBgColor;
+      HemColors = ListHemColor;
+      L.width = LayoutGui.width - menu_border_default * 4;
+      L.height =  row_height;
+      L.left = menu_border_default * 2;
+      L.top = L.left + title_height_default + RowsList.size() * (row_height + 1);
+  }
+
   Element.element_type = et;
   Element.caller = new_caller;
   Element.state = state;
@@ -960,19 +921,6 @@ element gui::button_make(const std::string &Label, ELEMENT_TYPES et, func_ptr ne
   Element.Diag.y0 = L.top * 1.0;
   Element.Diag.x1 = (L.left + L.width) * 1.0;
   Element.Diag.y1 = (L.top + L.height) * 1.0;
-
-  colors BgColors {};
-  colors HemColors {};
-
-  switch (et) {
-    case GUI_BUTTON:
-      BgColors = BtnBgColor;
-      HemColors = BtnHemColor;
-      break;
-    case GUI_LISTROW:
-      BgColors = ListBgColor;
-      HemColors = ListHemColor;
-  }
 
   // рамка элемента
   Element.Faces.push_back(SymbolsBuffer.size());
@@ -990,6 +938,7 @@ element gui::button_make(const std::string &Label, ELEMENT_TYPES et, func_ptr ne
   auto Text = string2vector(Label);
   uint left = L.left + L.width/2 - Text.size() * (sym_width_default + sym_kerning_default) / 2;
   uint top = L.top + 1 + (L.height - sym_height_default ) / 2;
+
   for(const auto& Symbol: Text)
   {
     Element.Faces.push_back(SymbolsBuffer.size());
@@ -1003,31 +952,15 @@ element gui::button_make(const std::string &Label, ELEMENT_TYPES et, func_ptr ne
 
 
 ///
-/// \brief gui::list_insert
-/// \param String
-///
-void gui::list_insert(const std::string& String, STATES state = ST_NORMAL)
-{
-  layout L { };
-  L.width = LayoutGui.width - menu_border_default * 4;
-  L.height = row_height;
-  L.left = menu_border_default * 2;
-  L.top = L.left + title_height_default + RowsList.size() * (row_height + 1);
-  auto Element = listrow_make(L, String, ListBgColor, ListHemColor, nullptr, state);
-  RowsList.push_back(Element);
-}
-
-
-///
 /// \brief gui::start_screen
 ///
 void gui::screen_start(void)
 {
   clear(); // Очистка всех массивов VAO
   title("Добро пожаловать в TrickRig!");
-  Buttons.push_back(button_make("НАСТРОИТЬ", GUI_BUTTON, screen_config));
-  Buttons.push_back(button_make("ВЫБРАТЬ КАРТУ", GUI_BUTTON, screen_map_select));
-  Buttons.push_back(button_make("ЗАКРЫТЬ", GUI_BUTTON, close));
+  Buttons.push_back(element_make("НАСТРОИТЬ", GUI_BUTTON, screen_config));
+  Buttons.push_back(element_make("ВЫБРАТЬ КАРТУ", GUI_BUTTON, screen_map_select));
+  Buttons.push_back(element_make("ЗАКРЫТЬ", GUI_BUTTON, close));
   current_menu = screen_start;
 }
 
@@ -1039,7 +972,7 @@ void gui::screen_config(void)
 {
   clear(); // Очистка всех массивов VAO
   title("ВЫБОР ПАРАМЕТРОВ");
-  Buttons.push_back(button_make("ЗАКРЫТЬ", GUI_BUTTON, screen_start ));
+  Buttons.push_back(element_make("ЗАКРЫТЬ", GUI_BUTTON, screen_start ));
   current_menu = screen_config;
 }
 
@@ -1057,17 +990,17 @@ void gui::screen_map_select(void)
     if(std::filesystem::is_directory(it))
     {
       map_current = it.path().string();
-      list_insert( cfg::map_name(it.path().string()), ST_PRESSED );
+      RowsList.push_back(element_make( cfg::map_name(it.path().string()), GUI_LISTROW, nullptr, ST_PRESSED ));
     }
 
   // DEBUG
-  list_insert("debug 1");
-  list_insert("debug 2");
+  RowsList.push_back(element_make("debug 1", GUI_LISTROW));
+  RowsList.push_back(element_make("debug 2", GUI_LISTROW));
 
-  Buttons.push_back(button_make("НОВАЯ КАРТА", GUI_BUTTON, screen_map_new ));
-  Buttons.push_back(button_make("УДАЛИТЬ КАРТУ" ));
-  Buttons.push_back(button_make("СТАРТ", GUI_BUTTON, map_open ));
-  Buttons.push_back(button_make("ОТМЕНА", GUI_BUTTON, screen_start ));
+  Buttons.push_back(element_make("НОВАЯ КАРТА", GUI_BUTTON, screen_map_new ));
+  Buttons.push_back(element_make("УДАЛИТЬ КАРТУ" ));
+  Buttons.push_back(element_make("СТАРТ", GUI_BUTTON, map_open ));
+  Buttons.push_back(element_make("ОТМЕНА", GUI_BUTTON, screen_start ));
 
   current_menu = screen_map_select;
 }
@@ -1122,8 +1055,8 @@ void gui::screen_map_new(void)
   L = { sym_width_default, sym_height_default, L.left + 4, L.top + 4 };
   Cursor = std::make_unique<face>(L, ":");
 
-  Buttons.push_back(button_make("СОЗДАТЬ", GUI_BUTTON, current_menu));
-  Buttons.push_back(button_make("ОТМЕНА", GUI_BUTTON, current_menu));
+  Buttons.push_back(element_make("СОЗДАТЬ", GUI_BUTTON, current_menu));
+  Buttons.push_back(element_make("ОТМЕНА", GUI_BUTTON, current_menu));
 
   current_menu = screen_map_new;
 }
@@ -1161,8 +1094,8 @@ void gui::screen_pause(void)
   uint top =  by + title_height_default/2 - symbol_height/2 + 2;
   text_append({symbol_width, symbol_height, left, top}, Text);
 
-  Buttons.push_back(button_make("ПРОДОЛЖИТЬ", GUI_BUTTON, mode_3d));
-  Buttons.push_back(button_make("ВЫХОД", GUI_BUTTON, close_map));
+  Buttons.push_back(element_make("ПРОДОЛЖИТЬ", GUI_BUTTON, mode_3d));
+  Buttons.push_back(element_make("ВЫХОД", GUI_BUTTON, close_map));
   current_menu = screen_pause;
 }
 

@@ -206,19 +206,16 @@ class gui: public interface_gl_context
     static void screen_map_new(void);
     static void screen_pause(void);
     static void hud_enable(void);
-    static element listrow_make(layout L, const std::string &Label,
-                            const colors& BgColor, const colors& HemColor,
-                            func_ptr new_caller, STATES state);
+
     static void title(const std::string& Label);
     static void text_append(const layout& L, const std::vector<std::string>& Text, uint kerning);
 
-    static element button_make(const std::string &Label, ELEMENT_TYPES et = GUI_BUTTON,
+    static element element_make(const std::string &Label, ELEMENT_TYPES et = GUI_BUTTON,
                                     func_ptr new_caller = nullptr, const STATES state = ST_NORMAL);
     static std::pair<uint, uint> button_allocation(void);
     static void button_move(element& Button, int x, int y);
-    static void button_set_state(element& Button, STATES s);
+    static void element_set_state(element& Button, STATES s);
 
-    static void list_insert(const std::string& String, STATES state);
     static void close(void) { open = false; }
     static void close_map(void);
     static void mode_3d(void);
