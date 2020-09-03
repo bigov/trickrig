@@ -18,22 +18,23 @@ typedef void(*func_ptr)(void);
 
 enum FONT_STYLE { FONT_NORMAL, FONT_BOLD, FONT_COUNT };
 enum STATES { ST_NORMAL, ST_OVER, ST_PRESSED, ST_DISABLE };
+enum ELEMENT_TYPES { GUI_BUTTON, GUI_LISTROW };
 
-static const uint menu_border_default = 20;   // расстояние от меню до края окна
+const uint menu_border_default = 20;   // расстояние от меню до края окна
 
-static const uint sym_width_default = 7;
-static const uint sym_height_default = 14;
-static const uint sym_kerning_default = 2; // расстояние между символами в надписи на кнопке
+const uint sym_width_default = 7;
+const uint sym_height_default = 14;
+const uint sym_kerning_default = 2; // расстояние между символами в надписи на кнопке
 
-static const uint title_height_default = 80; // Высота поля заголовка
-static const uint row_height = 20;
+const uint title_height_default = 80; // Высота поля заголовка
+const uint row_height = 20;
 
-static const uint btn_width_default = 200;
-static const uint btn_height_default = 25;
-static const uint btn_padding_default = 14;   // расстояние между кнопками
+const uint btn_width_default = 200;
+const uint btn_height_default = 25;
+const uint btn_padding_default = 14;   // расстояние между кнопками
 
-static const uint MIN_GUI_WIDTH = btn_width_default * 4.2; // минимально допустимая ширина окна
-static const uint MIN_GUI_HEIGHT = btn_height_default * 4 + 8;  // минимально допустимая высота окна
+const uint MIN_GUI_WIDTH = btn_width_default * 4.2; // минимально допустимая ширина окна
+const uint MIN_GUI_HEIGHT = btn_height_default * 4 + 8;  // минимально допустимая высота окна
 
 const uchar_color TextColorDefault          { 0x24, 0x24, 0x24, 0xFF };
 const uchar_color LinePressedBgColorDefault { 0xFE, 0xFE, 0xFE, 0xFF };
@@ -41,28 +42,49 @@ const uchar_color LineOverBgColorDefault    { 0xEE, 0xEE, 0xFF, 0xFF };
 const uchar_color LineDisableBgColorDefault { 0xCD, 0xCD, 0xCD, 0xFF };
 const uchar_color LineNormalBgColorDefault  { 0xE7, 0xE7, 0xE6, 0xFF };
 
-static const float_color DefaultBgColor {0.0f, 0.0f, 0.0f, 0.0f}; // цвет фона текста по-умолчанию
+const float_color DefaultBgColor {0.0f, 0.0f, 0.0f, 0.0f}; // цвет фона текста по-умолчанию
+
+const float_color TitleBgColor   { 1.0f, 1.0f, 0.85f, 1.0f };
+const float_color TitleHemColor  { 0.7f, 0.7f, 0.70f, 1.0f };
+
+const colors BtnBgColor =
+  { float_color { 0.89f, 0.89f, 0.89f, 1.0f }, // normal
+    float_color { 0.95f, 0.95f, 0.95f, 1.0f }, // over
+    float_color { 0.85f, 0.85f, 0.85f, 1.0f }, // pressed
+    float_color { 0.85f, 0.85f, 0.85f, 1.0f }  // disabled
+  };
+const colors BtnHemColor=
+  { float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // normal
+    float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // over
+    float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // pressed
+    float_color { 0.70f, 0.70f, 0.70f, 1.0f }  // disabled
+  };
+const colors ListBgColor =
+  { float_color { 0.90f, 0.90f, 0.99f, 1.0f }, // normal
+    float_color { 0.95f, 0.95f, 0.95f, 1.0f }, // over
+    float_color { 1.00f, 1.00f, 1.00f, 1.0f }, // pressed
+    float_color { 0.85f, 0.85f, 0.85f, 1.0f }  // disabled
+  };
+const colors ListHemColor=
+  { float_color { 0.85f, 0.85f, 0.90f, 1.0f }, // normal
+    float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // over
+    float_color { 0.90f, 0.90f, 0.90f, 1.0f }, // pressed
+    float_color { 0.70f, 0.70f, 0.70f, 1.0f }  // disabled
+  };
 
 extern std::unique_ptr<glsl> Program2d;            // построение 2D элементов
 
-struct element_data {
-    double x0 = 0; // left
-    double y0 = 0; // top
-    double x1 = 0; // left + width
-    double y1 = 0; // top + heigth
-    STATES state = ST_NORMAL; // Состояние
-    GLsizeiptr xy_stride = 0;     // Адрес в VBO блока координат вершин
-    GLsizeiptr rgba_stride = 0;   // Адрес в VBO данных цвета
-    size_t label_size = 0;        // число символов в надписи
-    func_ptr caller = nullptr;    // Адрес функции, вызываемой по нажатию
+struct diagonal {
+  double x0 = 0; // left
+  double y0 = 0; // top
+  double x1 = 0; // left + width
+  double y1 = 0; // top + heigth
 };
-
 
 struct glmem_ptr {
   GLsizeiptr offset = 0; // Адрес в VBO блока данных
   GLsizeiptr size = 0;   // Длина VBO блока данных
 };
-
 
 struct vbo_ptr {
   glmem_ptr xy;     // Адрес в VBO блока координат вершин
@@ -70,32 +92,45 @@ struct vbo_ptr {
   glmem_ptr uv;     // Длина VBO блока координат текстуры
 };
 
-
-class char3d
+class face
 {
 public:
-  char3d(const layout& L, const std::string& Symbol, float_color BgColor = DefaultBgColor);
-  ~char3d(void);
+  face(const layout& L, const std::string& Symbol, float_color BgColor = DefaultBgColor);
+  ~face(void);
 
   void update_uv(const std::string& Symbol);
   void update_xy(const layout& L);
+  void update_rgba(const float_color& Color);
+  void move_xy(const uint x, uint y);
 
   bool uv_equal(const std::string& S) { return S == Char; }
   layout get_layout(void) const { return layout{Layout}; }
   void clear(void);
 
 private:
-  char3d(void) = delete;
+  face(void) = delete;
 
   // Запретить копирование и перенос экземпляра класса
-  char3d(const char3d&) = delete;
-  char3d(char3d&&) = delete;
-  char3d& operator=(const char3d&) = delete;
-  char3d& operator=(char3d&&) = delete;
+  face(const face&) = delete;
+  face(face&&) = delete;
+  face& operator=(const face&) = delete;
+  face& operator=(face&&) = delete;
 
   std::string Char {};
   vbo_ptr Addr {};
   layout Layout {};
+};
+
+
+struct element {
+  std::vector<size_t> Faces {}; // Список ID в массиве SymbolsBuffer
+  func_ptr caller = nullptr;    // Адрес функции, вызываемой по нажатию
+  STATES state = ST_NORMAL;     // Текущее состояние
+  diagonal Diag {};
+  ELEMENT_TYPES element_type = GUI_BUTTON; // тип графического элемента
+  //GLsizeiptr xy_stride = 0;   // Адрес в VBO блока координат вершин
+  //GLsizeiptr rgba_stride = 0; // Адрес в VBO данных цвета
+  //size_t label_size = 0;      // число символов в надписи
 };
 
 
@@ -144,11 +179,11 @@ class gui: public interface_gl_context
     GLuint vao_2d =   0;                         // Рендер элементов меню и HUD
     static glm::vec3 Cursor3D;                   // положение и размер прицела
 
-    static std::vector<element_data> Buttons;    // Блок данных кнопок
-    static std::vector<element_data> RowsList;   // Список строк
-    static std::vector<std::unique_ptr<char3d>> SymbolsBuffer; // Строка символов
+    static std::vector<element> Buttons;    // Блок данных кнопок
+    static std::vector<element> RowsList;   // Список строк
+    static std::vector<std::unique_ptr<face>> SymbolsBuffer; // Массив указателей на 3D элементы меню
 
-    static std::unique_ptr<char3d> Cursor;       // Текстовый курсор для пользователя
+    static std::unique_ptr<face> Cursor;       // Текстовый курсор для пользователя
     static std::unique_ptr<glsl> ProgramFrBuf;   // Шейдерная программа GUI
 
     void program_2d_init(void);
@@ -171,16 +206,18 @@ class gui: public interface_gl_context
     static void screen_map_new(void);
     static void screen_pause(void);
     static void hud_enable(void);
-    static void rectangle(uint left, uint top, uint width, uint height, float_color rgba);
-    static element_data create_element(layout L, const std::string &Label,
+    static element listrow_make(layout L, const std::string &Label,
                             const colors& BgColor, const colors& HemColor,
                             func_ptr new_caller, STATES state);
     static void title(const std::string& Label);
-    static void symbol_append(const layout& L, const std::string& Symbol, float_color BgColor = DefaultBgColor);
-    static void button_append(const std::string& Label, func_ptr new_caller);
     static void text_append(const layout& L, const std::vector<std::string>& Text, uint kerning);
-    static void button_move(element_data& Button, int x, int y);
+
+    static element button_make(const std::string &Label, ELEMENT_TYPES et = GUI_BUTTON,
+                                    func_ptr new_caller = nullptr, const STATES state = ST_NORMAL);
     static std::pair<uint, uint> button_allocation(void);
+    static void button_move(element& Button, int x, int y);
+    static void button_set_state(element& Button, STATES s);
+
     static void list_insert(const std::string& String, STATES state);
     static void close(void) { open = false; }
     static void close_map(void);
