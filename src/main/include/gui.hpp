@@ -131,7 +131,10 @@ public:
   input_ctrl(const layout& L):face(L) {};
 
   void keyboard_event(int key, int scancode, int action, int mods);
-  bool move_next(void);
+  bool move_next(uint symbol_size);
+  uint current_char(void);
+  uint get_row_position(void)const { return position; };
+  uint get_row_size(void)const { return row_size; }
   void move_left(void);
   void move_right(void);
   void blink(void);
@@ -142,6 +145,8 @@ protected:
   input_ctrl(input_ctrl&&) = delete;
   input_ctrl& operator=(const input_ctrl&) = delete;
   input_ctrl& operator=(input_ctrl&&) = delete;
+
+  std::vector<uint> SizeOfSymbols {};
 
   uint position = 0;
   uint row_limit = 128;

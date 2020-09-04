@@ -308,16 +308,30 @@ void input_ctrl::keyboard_event(int key, int /*scancode*/, int action, int /*mod
 /// \brief input_ctrl::move_next
 /// \return
 ///
-bool input_ctrl::move_next(void)
+bool input_ctrl::move_next(uint symbol_size)
 {
   if(row_size >= row_limit) return false;
 
   position += 1;
   row_size += 1;
+  SizeOfSymbols.push_back(symbol_size);
+
   Layout.left += Layout.width + sym_kerning_default;
   update_xy(Layout);
 
   return true;
+}
+
+
+///
+/// \brief input_ctrl::current_pos
+/// \return
+///
+uint input_ctrl::current_char(void)
+{
+  uint result = 0;
+  for(uint i = 0; i < position; i++) result += SizeOfSymbols[i];
+  return result;
 }
 
 
@@ -723,13 +737,23 @@ void gui::event_character(uint ch)
   std::string Str8 = convert.to_bytes(ch);
 
   layout L = InputCursor->get_layout();
+  uint char_position = InputCursor->current_char();
+  uint row_position = InputCursor->get_row_position();
+  uint row_size = InputCursor->get_row_size();
 
   // Перемещение курсора на следующую позицию
-  if (!InputCursor->move_next()) return;;
+  if (!InputCursor->move_next(Str8.size())) return;
 
-  // Рендер введенного символа на месте курсора
-  FacesBuf.emplace_back(std::make_unique<face>(L, Str8, DefaultBgColor));
+  // Вставка введенного символа на месте курсора
+  StringBuffer.insert(char_position, Str8);
+  FacesBuf.emplace(FacesBuf.end() - (row_size - row_position),
+                    std::make_unique<face>(L, Str8, DefaultBgColor));
 
+  if(row_size == row_position) return;
+
+  uint id_max = FacesBuf.size();
+  for (uint id = id_max - row_position; id < id_max; ++id)
+    FacesBuf[id]->move_xy(sym_width_default + sym_kerning_default, 0);
 
 }
 
