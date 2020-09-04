@@ -74,11 +74,11 @@ const colors ListHemColor=
 
 extern std::unique_ptr<glsl> Program2d;            // построение 2D элементов
 
-struct diagonal {
+struct confines {
   double x0 = 0; // left
   double y0 = 0; // top
-  double x1 = 0; // left + width
-  double y1 = 0; // top + heigth
+  double x1 = 0; // right (left + width)
+  double y1 = 0; // bottom (top + heigth)
 };
 
 struct glmem_ptr {
@@ -95,13 +95,13 @@ struct vbo_ptr {
 class face
 {
 public:
-  face(const layout& L, const std::string& Symbol, float_color BgColor = DefaultBgColor);
+  face(const layout& L, const std::string& Symbol = " ", float_color BgColor = DefaultBgColor);
   ~face(void);
 
-  void update_uv(const std::string& Symbol);
   void update_xy(const layout& L);
-  void update_rgba(const float_color& Color);
   void move_xy(const uint x, uint y);
+  void update_rgba(const float_color& Color);
+  void update_uv(const std::string& Symbol);
 
   bool uv_equal(const std::string& S) { return S == Char; }
   layout get_layout(void) const { return layout{Layout}; }
@@ -109,8 +109,6 @@ public:
 
 private:
   face(void) = delete;
-
-  // Запретить копирование и перенос экземпляра класса
   face(const face&) = delete;
   face(face&&) = delete;
   face& operator=(const face&) = delete;
@@ -123,14 +121,11 @@ private:
 
 
 struct element {
-  std::vector<size_t> Faces {}; // Список ID в массиве SymbolsBuffer
+  std::vector<size_t> Faces {}; // Список ID поверхностей в массиве SymbolsBuffer
   func_ptr caller = nullptr;    // Адрес функции, вызываемой по нажатию
   STATES state = ST_NORMAL;     // Текущее состояние
-  diagonal Diag {};
+  confines Margins {};         // Внешние границы элемента для обработки событий курсора
   ELEMENT_TYPES element_type = GUI_BUTTON; // тип графического элемента
-  //GLsizeiptr xy_stride = 0;   // Адрес в VBO блока координат вершин
-  //GLsizeiptr rgba_stride = 0; // Адрес в VBO данных цвета
-  //size_t label_size = 0;      // число символов в надписи
 };
 
 
@@ -172,18 +167,18 @@ class gui: public interface_gl_context
     static func_ptr current_menu;
 
     static std::unique_ptr<space_3d> Space3d;    // = nullptr;
-    std::unique_ptr<glsl> Program2d = nullptr;  // построение 2D элементов
+    std::unique_ptr<glsl> Program2d = nullptr;   // построение 2D элементов
 
     static bool RUN_3D;
     GLuint vao_fbuf = 0;                         // Рендер текстуры фрейм-буфера
     GLuint vao_2d =   0;                         // Рендер элементов меню и HUD
     static glm::vec3 Cursor3D;                   // положение и размер прицела
 
-    static std::vector<element> Buttons;    // Блок данных кнопок
-    static std::vector<element> RowsList;   // Список строк
-    static std::vector<std::unique_ptr<face>> SymbolsBuffer; // Массив указателей на 3D элементы меню
+    static std::vector<element> Buttons;         // Группа кнопок
+    static std::vector<element> RowsList;        // Группа строк списка выбора
+    static std::vector<std::unique_ptr<face>> FacesBuf; // Массив указателей на 3D элементы меню
 
-    static std::unique_ptr<face> Cursor;       // Текстовый курсор для пользователя
+    static std::unique_ptr<face> Cursor;         // Текстовый курсор для пользователя
     static std::unique_ptr<glsl> ProgramFrBuf;   // Шейдерная программа GUI
 
     void program_2d_init(void);
@@ -213,7 +208,7 @@ class gui: public interface_gl_context
     static element element_make(const std::string &Label, ELEMENT_TYPES et = GUI_BUTTON,
                                     func_ptr new_caller = nullptr, const STATES state = ST_NORMAL);
     static std::pair<uint, uint> button_allocation(void);
-    static void button_move(element& Button, int x, int y);
+    static void element_move(element& Elm, int x, int y);
     static void element_set_state(element& Button, STATES s);
 
     static void close(void) { open = false; }

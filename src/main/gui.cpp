@@ -27,7 +27,7 @@ static unsigned int gui_indices = 0; // число индексов в 2Д ре�
 func_ptr gui::current_menu = nullptr;
 
 std::unique_ptr<face> gui::Cursor = nullptr; // Текстовый курсор для пользователя
-std::vector<std::unique_ptr<face>> gui::SymbolsBuffer {};     // Строка символов
+std::vector<std::unique_ptr<face>> gui::FacesBuf {};     // Строка символов
 std::vector<element> gui::Buttons {};
 std::vector<element> gui::RowsList {};
 
@@ -148,8 +148,7 @@ void load_textures(void)
 /// \param symbol_height
 /// \param BgColor
 ///
-face::face(const layout& L, const std::string& Symbol,
-                  float_color BgColor)
+face::face(const layout& L, const std::string& Symbol, float_color BgColor)
 {
 #ifndef NDEBUG
   assert(VBO_xy   != nullptr && "VBO_xy не инициализирован" );
@@ -157,7 +156,6 @@ face::face(const layout& L, const std::string& Symbol,
   assert(VBO_uv   != nullptr && "VBO_uv не инициализирован" );
 #endif
 
-  if(Symbol.empty()) return;
   Char = Symbol;
   Layout = L;
 
@@ -181,19 +179,6 @@ face::face(const layout& L, const std::string& Symbol,
 
 
 ///
-/// \brief char3d::update
-/// \param Symbol
-///
-void face::update_uv(const std::string& Symbol)
-{
-  if(Symbol.empty()) return;
-  Char = Symbol;
-  auto Vuv = rect_uv(Symbol);
-  VBO_uv->update(Addr.uv.size, Vuv.data(), Addr.uv.offset);
-}
-
-
-///
 /// \brief char3d::update_xy
 /// \param Layout
 ///
@@ -212,6 +197,18 @@ void face::update_xy(const layout &L)
 
 
 ///
+/// \brief face::move_xy
+/// \param x
+/// \param y
+///
+void face::move_xy(const uint x, uint y)
+{
+  layout NewLayout = { Layout.width, Layout.height, Layout.left + x, Layout.top + y };
+  update_xy(NewLayout);
+}
+
+
+///
 /// \brief face::update_rgba
 /// \param Color
 ///
@@ -223,14 +220,15 @@ void face::update_rgba(const float_color &Color)
 
 
 ///
-/// \brief face::move_xy
-/// \param x
-/// \param y
+/// \brief char3d::update
+/// \param Symbol
 ///
-void face::move_xy(const uint x, uint y)
+void face::update_uv(const std::string& Symbol)
 {
-  layout NewLayout = { Layout.width, Layout.height, Layout.left + x, Layout.top + y };
-  update_xy(NewLayout);
+  if(Symbol.empty()) return;
+  Char = Symbol;
+  auto Vuv = rect_uv(Symbol);
+  VBO_uv->update(Addr.uv.size, Vuv.data(), Addr.uv.offset);
 }
 
 
@@ -507,7 +505,7 @@ void gui::clear(void)
   VBO_rgba->clear();
   Buttons.clear();
   RowsList.clear();
-  SymbolsBuffer.clear();
+  FacesBuf.clear();
   Cursor = nullptr;
 }
 
@@ -578,7 +576,7 @@ void gui::event_cursor(double x, double y)
 
   for(auto& B: Buttons)
   {
-    if(x > B.Diag.x0 && x < B.Diag.x1 && y > B.Diag.y0 && y < B.Diag.y1)
+    if(x > B.Margins.x0 && x < B.Margins.x1 && y > B.Margins.y0 && y < B.Margins.y1)
     {
       if(B.state != ST_OVER) element_set_state(B, ST_OVER);
     } else
@@ -591,7 +589,7 @@ void gui::event_cursor(double x, double y)
   {
     if (B.state == ST_PRESSED) continue;
 
-    if(x > B.Diag.x0 && x < B.Diag.x1 && y > B.Diag.y0 && y < B.Diag.y1)
+    if(x > B.Margins.x0 && x < B.Margins.x1 && y > B.Margins.y0 && y < B.Margins.y1)
     {
       if(B.state != ST_OVER) element_set_state(B, ST_OVER);
     } else
@@ -670,7 +668,7 @@ void gui::event_character(uint ch)
   std::wstring_convert<std::codecvt_utf8<char32_t>,char32_t> convert;
   std::string Str8 = convert.to_bytes(ch);
   layout L = Cursor->get_layout();
-  SymbolsBuffer.emplace_back(std::make_unique<face>(L, Str8, DefaultBgColor));
+  FacesBuf.emplace_back(std::make_unique<face>(L, Str8, DefaultBgColor));
   L.left += L.width + sym_kerning_default;
   Cursor->update_xy(L);
 }
@@ -752,7 +750,7 @@ void gui::text_append(const layout& L, const std::vector<std::string>& Text, uin
   auto vL = L;
   for(const auto& Symbol: Text)
   {
-    SymbolsBuffer.emplace_back(std::make_unique<face>(vL, Symbol, DefaultBgColor));
+    FacesBuf.emplace_back(std::make_unique<face>(vL, Symbol, DefaultBgColor));
     vL.left += L.width + kerning;
   }
 }
@@ -767,7 +765,7 @@ void gui::title(const std::string& Label)
   auto b = menu_border_default;
   // Заливка окна фоновым цветом
   //rectangle(b, b, LayoutGui.width - 2 * b, LayoutGui.height - 2 * b, { 0.9f, 1.f, 0.9f, 1.f });
-  SymbolsBuffer.emplace_back(std::make_unique<face>(
+  FacesBuf.emplace_back(std::make_unique<face>(
          layout{ LayoutGui.width - 2 * b, LayoutGui.height - 2 * b, b, b }, " ",
          float_color{ 0.9f, 1.f, 0.9f, 1.f } ));
 
@@ -775,12 +773,12 @@ void gui::title(const std::string& Label)
   uint symbol_width = 14;
   uint symbol_height = 21;
   //rectangle(b, b, LayoutGui.width - 2 * b, title_height_default+1, TitleHemColor);
-  SymbolsBuffer.emplace_back(std::make_unique<face>(
+  FacesBuf.emplace_back(std::make_unique<face>(
          layout{ LayoutGui.width - 2 * b, title_height_default + 1, b, b }, " ",
          TitleHemColor ));
 
   //rectangle(b, b, LayoutGui.width - 2 * b, title_height_default, TitleBgColor);
-  SymbolsBuffer.emplace_back(std::make_unique<face>(
+  FacesBuf.emplace_back(std::make_unique<face>(
          layout{ LayoutGui.width - 2 * b, title_height_default, b, b }, " ",
          TitleBgColor ));
 
@@ -812,13 +810,13 @@ std::pair<uint, uint> gui::button_allocation(void)
 
     // первые две кнопки сдвигаем влево - вниз
     auto B = Buttons.begin();
-    button_move(*B, -hor_move_dist, vert_move_dist);
+    element_move(*B, -hor_move_dist, vert_move_dist);
     B++;
-    button_move(*B, -hor_move_dist, vert_move_dist);
+    element_move(*B, -hor_move_dist, vert_move_dist);
 
     // третью вправо - вверх
     B++;
-    button_move(*B, hor_move_dist, 0 - vert_move_dist * 3);
+    element_move(*B, hor_move_dist, 0 - vert_move_dist * 3);
 
     // координаты 4-й кнопки
     return { left + hor_move_dist, top + vert_move_dist };
@@ -828,7 +826,7 @@ std::pair<uint, uint> gui::button_allocation(void)
   uint move_dist = (btn_height_default + btn_padding_default) / 2;
   for(auto& B: Buttons)
   {
-    button_move(B, 0, -move_dist);
+    element_move(B, 0, -move_dist);
     top += move_dist;
   }
 
@@ -842,17 +840,21 @@ std::pair<uint, uint> gui::button_allocation(void)
 /// \param x
 /// \param y
 ///
-void gui::button_move(element& Button, int x, int y)
+void gui::element_move(element& Elm, int x, int y)
 {
-  for(auto& id: Button.Faces )
-  {
-    SymbolsBuffer[id]->move_xy(x, y);
-  }
-  auto L = SymbolsBuffer[0]->get_layout();
-  Button.Diag.x0 = L.left * 1.0;
-  Button.Diag.y0 = L.top * 1.0;
-  Button.Diag.x1 = (L.left + L.width) * 1.0;
-  Button.Diag.y1 = (L.top + L.height) * 1.0;
+  if(Elm.Faces.empty()) return;
+
+  // Передвинуть все поверхности
+  for(auto& id: Elm.Faces ) FacesBuf[id]->move_xy(x, y);
+
+  // Координаты рамки
+  auto L = FacesBuf[Elm.Faces.front()]->get_layout();
+
+  // Обновить значения границ элемента в окне
+  Elm.Margins.x0 = L.left * 1.0;
+  Elm.Margins.y0 = L.top * 1.0;
+  Elm.Margins.x1 = (L.left + L.width) * 1.0;
+  Elm.Margins.y1 = (L.top + L.height) * 1.0;
 }
 
 
@@ -870,10 +872,10 @@ void gui::element_set_state(element& El, STATES s)
 
   switch (El.element_type){
     case GUI_BUTTON:
-      SymbolsBuffer[id_face_bg]->update_rgba(BtnBgColor[s]);
+      FacesBuf[id_face_bg]->update_rgba(BtnBgColor[s]);
       break;
     case GUI_LISTROW:
-      SymbolsBuffer[id_face_bg]->update_rgba(ListBgColor[s]);
+      FacesBuf[id_face_bg]->update_rgba(ListBgColor[s]);
       break;
   }
 }
@@ -899,9 +901,9 @@ element gui::element_make(const std::string &Label, ELEMENT_TYPES et, func_ptr n
     case GUI_BUTTON:
       BgColors = BtnBgColor;
       HemColors = BtnHemColor;
+      XY = button_allocation();
       L.width = btn_width_default;
       L.height = btn_height_default;
-      XY = button_allocation();
       L.left = XY.first;
       L.top = XY.second;
       break;
@@ -917,21 +919,21 @@ element gui::element_make(const std::string &Label, ELEMENT_TYPES et, func_ptr n
   Element.element_type = et;
   Element.caller = new_caller;
   Element.state = state;
-  Element.Diag.x0 = L.left * 1.0;
-  Element.Diag.y0 = L.top * 1.0;
-  Element.Diag.x1 = (L.left + L.width) * 1.0;
-  Element.Diag.y1 = (L.top + L.height) * 1.0;
+  Element.Margins.x0 = L.left * 1.0;
+  Element.Margins.y0 = L.top * 1.0;
+  Element.Margins.x1 = (L.left + L.width) * 1.0;
+  Element.Margins.y1 = (L.top + L.height) * 1.0;
 
   // рамка элемента
-  Element.Faces.push_back(SymbolsBuffer.size());
-  SymbolsBuffer.emplace_back(std::make_unique<face>(
-         layout{ L.width+2, L.height+2, L.left, L.top }, " ",
+  Element.Faces.push_back(FacesBuf.size());
+  FacesBuf.emplace_back(std::make_unique<face>(
+         layout{ L.width, L.height, L.left, L.top }, " ",
          HemColors[Element.state] ));
 
   // фоновая заливка
-  Element.Faces.push_back(SymbolsBuffer.size());
-  SymbolsBuffer.emplace_back(std::make_unique<face>(
-         layout{ L.width, L.height, L.left+1, L.top+1 }, " ",
+  Element.Faces.push_back(FacesBuf.size());
+  FacesBuf.emplace_back(std::make_unique<face>(
+         layout{ L.width-2, L.height-2, L.left+1, L.top+1 }, " ",
          BgColors[Element.state] ));
 
   // надпись
@@ -941,8 +943,8 @@ element gui::element_make(const std::string &Label, ELEMENT_TYPES et, func_ptr n
 
   for(const auto& Symbol: Text)
   {
-    Element.Faces.push_back(SymbolsBuffer.size());
-    SymbolsBuffer.emplace_back(std::make_unique<face>(
+    Element.Faces.push_back(FacesBuf.size());
+    FacesBuf.emplace_back(std::make_unique<face>(
         layout{ sym_width_default, sym_height_default, left, top },
         Symbol, DefaultBgColor));
     left += sym_width_default + sym_kerning_default;
@@ -1050,7 +1052,7 @@ void gui::screen_map_new(void)
   L.left = menu_border_default * 2;
   L.top = L.left + title_height_default + RowsList.size() * (row_height + 1);
 
-  SymbolsBuffer.emplace_back(std::make_unique<face>(L, " ", ListBgColor[2]));
+  FacesBuf.emplace_back(std::make_unique<face>(L, " ", ListBgColor[2]));
 
   L = { sym_width_default, sym_height_default, L.left + 4, L.top + 4 };
   Cursor = std::make_unique<face>(L, ":");
@@ -1074,7 +1076,7 @@ void gui::screen_pause(void)
   auto bx = menu_border_default * 4;
   auto by = 2 * bx;
 
-  SymbolsBuffer.emplace_back(std::make_unique<face>(
+  FacesBuf.emplace_back(std::make_unique<face>(
          layout{ LayoutGui.width - 2 * bx, LayoutGui.height - 2 * by, bx, by }, " ",
          float_color{ 0.9f, 1.f, 0.9f, 0.5f } ));
 
@@ -1082,11 +1084,11 @@ void gui::screen_pause(void)
   uint symbol_width = 14;
   uint symbol_height = 21;
 
-  SymbolsBuffer.emplace_back(std::make_unique<face>(
+  FacesBuf.emplace_back(std::make_unique<face>(
          layout{ LayoutGui.width - 2 * bx, title_height_default + 1, bx, by }, " ",
          TitleHemColor ));
 
-  SymbolsBuffer.emplace_back(std::make_unique<face>(
+  FacesBuf.emplace_back(std::make_unique<face>(
          layout{ LayoutGui.width - 2 * bx, title_height_default, bx, by }, " ",
          TitleBgColor ));
 
@@ -1195,7 +1197,7 @@ void gui::hud_enable(void)
   clear();
   unsigned int height = 60;
 
-  SymbolsBuffer.emplace_back(std::make_unique<face>(
+  FacesBuf.emplace_back(std::make_unique<face>(
          layout{ LayoutGui.width, height, 0, LayoutGui.height - height }, " ",
          float_color{ 0.0f, 0.5f, 0.0f, 0.25f } ));
 
@@ -1207,7 +1209,7 @@ void gui::hud_enable(void)
   uint row_height = symbol_height + 6;
   uint row_width = Text.size() * (symbol_width + 1);
 
-  SymbolsBuffer.emplace_back(std::make_unique<face>(
+  FacesBuf.emplace_back(std::make_unique<face>(
          layout{ row_width, row_height, border, border }, " ",
          float_color{0.8f, 0.8f, 1.0f, 0.5f} ));
 
