@@ -107,12 +107,14 @@ public:
   layout get_layout(void) const { return layout{Layout}; }
   void clear(void);
 
-private:
+protected:
   face(void) = delete;
   face(const face&) = delete;
   face(face&&) = delete;
   face& operator=(const face&) = delete;
   face& operator=(face&&) = delete;
+
+  void init(const layout& L, const std::string& Symbol, float_color BgColor);
 
   std::string Char {};
   vbo_ptr Addr {};
@@ -120,6 +122,38 @@ private:
 };
 
 
+///
+/// \brief The input_ctrl class
+///
+class input_ctrl: public face
+{
+public:
+  input_ctrl(const layout& L):face(L) {};
+
+  void keyboard_event(int key, int scancode, int action, int mods);
+  bool move_next(void);
+  void move_left(void);
+  void move_right(void);
+  void blink(void);
+
+protected:
+  input_ctrl(void) = delete;
+  input_ctrl(const input_ctrl&) = delete;
+  input_ctrl(input_ctrl&&) = delete;
+  input_ctrl& operator=(const input_ctrl&) = delete;
+  input_ctrl& operator=(input_ctrl&&) = delete;
+
+  uint position = 0;
+  uint row_limit = 128;
+  uint row_size = 0;
+  float_color ColorBgOn {0.0f, 0.8f, 0.0f, 0.6f};
+  bool visible = false;
+};
+
+
+///
+/// \brief The element struct
+///
 struct element {
   std::vector<size_t> Faces {}; // Список ID поверхностей в массиве SymbolsBuffer
   func_ptr caller = nullptr;    // Адрес функции, вызываемой по нажатию
@@ -177,13 +211,11 @@ class gui: public interface_gl_context
     static std::vector<element> Buttons;         // Группа кнопок
     static std::vector<element> RowsList;        // Группа строк списка выбора
     static std::vector<std::unique_ptr<face>> FacesBuf; // Массив указателей на 3D элементы меню
-
-    static std::unique_ptr<face> Cursor;         // Текстовый курсор для пользователя
-    static std::unique_ptr<glsl> ProgramFrBuf;   // Шейдерная программа GUI
+    static std::unique_ptr<input_ctrl> InputCursor;      // Текстовый курсор ввода пользователя
+    static std::unique_ptr<glsl> ProgramFrBuf;           // Шейдерная программа GUI
 
     void program_2d_init(void);
     void program_fbuf_init(void);
-    void cursor_text_row(const atlas&, image&, size_t);
     void remove_map(void);
     void map_create(void);
     void calc_fps(void);

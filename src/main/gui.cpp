@@ -26,8 +26,9 @@ static std::unique_ptr<vbo> VBO_uv   = nullptr;    // текстурные ко�
 static unsigned int gui_indices = 0; // число индексов в 2Д режиме
 func_ptr gui::current_menu = nullptr;
 
-std::unique_ptr<face> gui::Cursor = nullptr; // Текстовый курсор для пользователя
-std::vector<std::unique_ptr<face>> gui::FacesBuf {};     // Строка символов
+std::unique_ptr<input_ctrl> gui::InputCursor = nullptr;      // Текстовый курсор для пользователя
+
+std::vector<std::unique_ptr<face>> gui::FacesBuf {}; // Массив указателей на 3D элементы меню
 std::vector<element> gui::Buttons {};
 std::vector<element> gui::RowsList {};
 
@@ -155,7 +156,18 @@ face::face(const layout& L, const std::string& Symbol, float_color BgColor)
   assert(VBO_rgba != nullptr && "VBO_rgba не инициализирован" );
   assert(VBO_uv   != nullptr && "VBO_uv не инициализирован" );
 #endif
+  init(L, Symbol, BgColor);
+}
 
+
+///
+/// \brief face::init
+/// \param L
+/// \param Symbol
+/// \param BgColor
+///
+void face::init(const layout &L, const std::string &Symbol, float_color BgColor)
+{
   Char = Symbol;
   Layout = L;
 
@@ -281,6 +293,72 @@ face::~face(void){
 
 
 ///
+/// \brief input_ctrl::keyboard_event
+/// \param key
+/// \param action
+///
+void input_ctrl::keyboard_event(int key, int /*scancode*/, int action, int /*mods*/)
+{
+  if((key == KEY_LEFT) && (action == RELEASE)) move_left();
+  else if((key == KEY_RIGHT) && (action == RELEASE)) move_right();
+}
+
+
+///
+/// \brief input_ctrl::move_next
+/// \return
+///
+bool input_ctrl::move_next(void)
+{
+  if(row_size >= row_limit) return false;
+
+  position += 1;
+  row_size += 1;
+  Layout.left += Layout.width + sym_kerning_default;
+  update_xy(Layout);
+
+  return true;
+}
+
+
+///
+/// \brief input_ctrl::move_left
+///
+void input_ctrl::move_left(void)
+{
+  if(position == 0) return;
+
+  Layout.left -= (Layout.width + sym_kerning_default);
+  update_xy(Layout);
+  position -= 1;
+}
+
+
+///
+/// \brief input_ctrl::move_right
+///
+void input_ctrl::move_right(void)
+{
+  if(position >= row_size) return;
+
+  position += 1;
+  Layout.left += Layout.width + sym_kerning_default;
+  update_xy(Layout);
+}
+
+
+///
+/// \brief input_ctrl::blink
+///
+void input_ctrl::blink(void)
+{
+  if(visible) update_rgba(DefaultBgColor);
+  else update_rgba(ColorBgOn);
+  visible = !visible;
+}
+
+
+///
 /// \brief graphical_user_interface::graphical_user_interface
 /// \param OpenGLContext
 ///
@@ -321,32 +399,6 @@ gui::gui(void)
 
   open = true;
   screen_start();
-}
-
-
-
-///
-/// \brief gui::add_text_cursor
-/// \param _Fn       шрифт ввода
-/// \param _Dst      строка ввода
-/// \param position  номер позиции курсора в строке ввода
-/// \details Формирование курсора ввода, моргающего с интервалом в пол-секунды
-///
-//void app::cursor_text_row(const atlas &_Fn, image &_Dst, size_t position)
-void gui::cursor_text_row(const atlas&, image&, size_t)
-{
-/*
-  uchar_color c = {0x11, 0xDD, 0x00, 0xFF};
-  auto tm = std::chrono::duration_cast<std::chrono::milliseconds>
-      ( std::chrono::system_clock::now()-TimeStart ).count();
-
-  auto tc = trunc(tm/1000) * 1000;
-  if(tm - tc > 500) c.a = 0xFF;
-  else c.a = 0x00;
-*/
-//  image Cursor {3, _Fn.get_cell_height(), c};
-//  Cursor.put(_Dst, _Fn.get_cell_width() * (position + 1) + 1,
-//              (_Dst.get_height() - _Fn.get_cell_height()) / 2 );
 }
 
 
@@ -506,7 +558,7 @@ void gui::clear(void)
   Buttons.clear();
   RowsList.clear();
   FacesBuf.clear();
-  Cursor = nullptr;
+  InputCursor = nullptr;
 }
 
 
@@ -654,6 +706,8 @@ void gui::event_keyboard(int key, int scancode, int action, int mods)
   {
     if((key == KEY_ESCAPE) && (action == RELEASE) && (!Buttons.empty()))
        Buttons.back().caller(); // Последняя кнопка ВСЕГДА - "выход/отмена"
+
+    InputCursor->keyboard_event(key, scancode,action, mods);
   }
 }
 
@@ -667,10 +721,16 @@ void gui::event_character(uint ch)
   // Преобразование целого в строковый символ UTF-8
   std::wstring_convert<std::codecvt_utf8<char32_t>,char32_t> convert;
   std::string Str8 = convert.to_bytes(ch);
-  layout L = Cursor->get_layout();
+
+  layout L = InputCursor->get_layout();
+
+  // Перемещение курсора на следующую позицию
+  if (!InputCursor->move_next()) return;;
+
+  // Рендер введенного символа на месте курсора
   FacesBuf.emplace_back(std::make_unique<face>(L, Str8, DefaultBgColor));
-  L.left += L.width + sym_kerning_default;
-  Cursor->update_xy(L);
+
+
 }
 
 
@@ -1009,12 +1069,12 @@ void gui::screen_map_select(void)
 
 
 ///
-/// \brief gui::callback_timer
+/// \brief gui::callback_render
 /// \details Метод вызывается из цикла рендера каждый кадр
 ///
 void gui::callback_render(void)
 {
-  if( Cursor != nullptr) update_input();
+  if(InputCursor != nullptr) update_input();
 }
 
 
@@ -1031,9 +1091,7 @@ void gui::update_input(void)
   if (t_now - t_last >= pause)
   {
     t_last = t_now;
-    std::string Symbol = " ";
-    if(Cursor->uv_equal(Symbol)) Symbol = ":";
-    Cursor->update_uv(Symbol);
+    InputCursor->blink();
   }
 }
 
@@ -1055,11 +1113,10 @@ void gui::screen_map_new(void)
   FacesBuf.emplace_back(std::make_unique<face>(L, " ", ListBgColor[2]));
 
   L = { sym_width_default, sym_height_default, L.left + 4, L.top + 4 };
-  Cursor = std::make_unique<face>(L, ":");
+  InputCursor = std::make_unique<input_ctrl>(L);
 
   Buttons.push_back(element_make("СОЗДАТЬ", GUI_BUTTON, current_menu));
   Buttons.push_back(element_make("ОТМЕНА", GUI_BUTTON, current_menu));
-
   current_menu = screen_map_new;
 }
 

@@ -175,9 +175,14 @@ const int MOUSE_BUTTON_RIGHT = GLFW_MOUSE_BUTTON_RIGHT;
 const int PRESS              = GLFW_PRESS;
 const int REPEAT             = GLFW_REPEAT;
 const int RELEASE            = GLFW_RELEASE;
-const int KEY_ESCAPE         = GLFW_KEY_ESCAPE;
-const int KEY_BACKSPACE      = GLFW_KEY_BACKSPACE;
 const int EMPTY              = -1;
+
+const int KEY_ESCAPE         = GLFW_KEY_ESCAPE;
+const int KEY_ENTER          = GLFW_KEY_ENTER;
+const int KEY_LEFT           = GLFW_KEY_LEFT;
+const int KEY_RIGHT          = GLFW_KEY_RIGHT;
+const int KEY_BACKSPACE      = GLFW_KEY_BACKSPACE;
+const int KEY_DLETE          = GLFW_KEY_DELETE;
 
 const int KEY_MOVE_FRONT = GLFW_KEY_W;
 const int KEY_MOVE_BACK  = GLFW_KEY_S;
