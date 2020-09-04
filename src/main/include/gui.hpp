@@ -133,7 +133,7 @@ public:
   void keyboard_event(int key, int scancode, int action, int mods);
   bool move_next(uint symbol_size);
   uint current_char(void);
-  uint get_row_position(void)const { return position; };
+  uint get_row_position(void)const { return row_position; };
   uint get_row_size(void)const { return row_size; }
   void move_left(void);
   void move_right(void);
@@ -148,7 +148,7 @@ protected:
 
   std::vector<uint> SizeOfSymbols {};
 
-  uint position = 0;
+  uint row_position = 0;
   uint row_limit = 128;
   uint row_size = 0;
   float_color ColorBgOn {0.0f, 0.8f, 0.0f, 0.6f};
@@ -202,7 +202,7 @@ class gui: public interface_gl_context
     int FPS = 0;                   // частота кадров
     static GLsizei fps_uv_data;    // смещение данных FPS в буфере UV
     static std::string map_current;
-    std::string StringBuffer {};   // строка ввода пользователя
+    static std::string StringBuffer;   // строка ввода пользователя
     static func_ptr current_menu;
 
     static std::unique_ptr<space_3d> Space3d;    // = nullptr;
@@ -222,7 +222,7 @@ class gui: public interface_gl_context
     void program_2d_init(void);
     void program_fbuf_init(void);
     void remove_map(void);
-    void map_create(void);
+    static void map_create(void);
     void calc_fps(void);
     void hud_update(void);
 

@@ -18,6 +18,8 @@ std::unique_ptr<space_3d> gui::Space3d = nullptr;
 std::shared_ptr<trgl> gui::OGLContext = nullptr;
 std::unique_ptr<glsl> gui::ProgramFrBuf = nullptr; // Вывод текстуры фреймбуфера на окно
 glm::vec3 gui::Cursor3D = { 200.f, 200.f, 2.f };   // положение и размер прицела
+std::string gui::StringBuffer {};   // строка ввода пользователя
+
 
 static std::unique_ptr<vbo> VBO_xy   = nullptr;    // координаты вершин
 static std::unique_ptr<vbo> VBO_rgba = nullptr;    // цвет вершин
@@ -312,8 +314,9 @@ bool input_ctrl::move_next(uint symbol_size)
 {
   if(row_size >= row_limit) return false;
 
-  position += 1;
   row_size += 1;
+  row_position += 1;
+
   SizeOfSymbols.push_back(symbol_size);
 
   Layout.left += Layout.width + sym_kerning_default;
@@ -330,7 +333,7 @@ bool input_ctrl::move_next(uint symbol_size)
 uint input_ctrl::current_char(void)
 {
   uint result = 0;
-  for(uint i = 0; i < position; i++) result += SizeOfSymbols[i];
+  for(uint i = 0; i < row_position; i++) result += SizeOfSymbols[i];
   return result;
 }
 
@@ -340,11 +343,13 @@ uint input_ctrl::current_char(void)
 ///
 void input_ctrl::move_left(void)
 {
-  if(position == 0) return;
+  if(row_position == 0) return;
 
   Layout.left -= (Layout.width + sym_kerning_default);
   update_xy(Layout);
-  position -= 1;
+
+  row_position -= 1;
+
 }
 
 
@@ -353,9 +358,9 @@ void input_ctrl::move_left(void)
 ///
 void input_ctrl::move_right(void)
 {
-  if(position >= row_size) return;
+  if(row_position >= row_size) return;
 
-  position += 1;
+  row_position += 1;
   Layout.left += Layout.width + sym_kerning_default;
   update_xy(Layout);
 }
@@ -736,25 +741,23 @@ void gui::event_character(uint ch)
   std::wstring_convert<std::codecvt_utf8<char32_t>,char32_t> convert;
   std::string Str8 = convert.to_bytes(ch);
 
-  layout L = InputCursor->get_layout();
-  uint char_position = InputCursor->current_char();
-  uint row_position = InputCursor->get_row_position();
-  uint row_size = InputCursor->get_row_size();
+  // Сохраняем данные до ввода символа
+  layout CursorLayout = InputCursor->get_layout();      // координаты курсора
+  uint char_position = InputCursor->current_char();     // позиция символа для вставки текста
+  uint row_position = InputCursor->get_row_position();  // текущую позицию ввода
+  uint row_size = InputCursor->get_row_size();          // размер строки
 
-  // Перемещение курсора на следующую позицию
+  // Перемещение курсора на следующую позицию в строке
   if (!InputCursor->move_next(Str8.size())) return;
 
-  // Вставка введенного символа на месте курсора
+  // Вставка введенного символа в текстовую строку на месте курсора
   StringBuffer.insert(char_position, Str8);
-  FacesBuf.emplace(FacesBuf.end() - (row_size - row_position),
-                    std::make_unique<face>(L, Str8, DefaultBgColor));
 
-  if(row_size == row_position) return;
-
-  uint id_max = FacesBuf.size();
-  for (uint id = id_max - row_position; id < id_max; ++id)
-    FacesBuf[id]->move_xy(sym_width_default + sym_kerning_default, 0);
-
+  auto it = FacesBuf.end() - (row_size - row_position);
+  FacesBuf.emplace(it, std::make_unique<face>(CursorLayout, Str8, DefaultBgColor));
+  ++it;
+  for(; it < FacesBuf.end(); it++)
+    (*it)->move_xy(sym_width_default + sym_kerning_default, 0);
 }
 
 
@@ -1076,7 +1079,7 @@ void gui::screen_map_select(void)
     if(std::filesystem::is_directory(it))
     {
       map_current = it.path().string();
-      RowsList.push_back(element_make( cfg::map_name(it.path().string()), GUI_LISTROW, nullptr, ST_PRESSED ));
+      RowsList.push_back(element_make( cfg::map_name(it.path().string()), GUI_LISTROW, nullptr, ST_NORMAL ));
     }
 
   // DEBUG
@@ -1139,9 +1142,10 @@ void gui::screen_map_new(void)
   L = { sym_width_default, sym_height_default, L.left + 4, L.top + 4 };
   InputCursor = std::make_unique<input_ctrl>(L);
 
-  Buttons.push_back(element_make("СОЗДАТЬ", GUI_BUTTON, current_menu));
+  Buttons.push_back(element_make("СОЗДАТЬ", GUI_BUTTON, map_create));
   Buttons.push_back(element_make("ОТМЕНА", GUI_BUTTON, current_menu));
   current_menu = screen_map_new;
+  StringBuffer.clear();
 }
 
 
@@ -1226,6 +1230,7 @@ void gui::mode_2d(void)
 void gui::map_create(void)
 {
   auto MapDir = cfg::create_map(StringBuffer);
+  screen_map_select();
   //Maps.push_back(map(MapDir, StringBuffer));
   //row_selected = Maps.size();     // выбрать номер карты
 }
