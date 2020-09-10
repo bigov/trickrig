@@ -13,12 +13,12 @@ using colors = std::array<tr::float_color, 4>;
 namespace tr
 {
 
-typedef void(*func_ptr)(void);
+typedef void(*func_ptr)(int);
 //typedef void(*func_with_param_ptr)(uint);
 
 enum FONT_STYLE { FONT_NORMAL, FONT_BOLD, FONT_COUNT };
 enum STATES { ST_NORMAL, ST_OVER, ST_PRESSED, ST_DISABLE };
-enum ELEMENT_TYPES { GUI_BUTTON, GUI_LISTROW };
+enum ELEMENT_TYPES { GUI_BUTTON, GUI_ROWSLIST };
 
 const uint menu_border_default = 20;   // расстояние от меню до края окна
 
@@ -27,7 +27,7 @@ const uint sym_height_default = 14;
 const uint sym_kerning_default = 2; // расстояние между символами в надписи на кнопке
 
 const uint title_height_default = 80; // Высота поля заголовка
-const uint row_height = 20;
+const uint listrow_height_default = 20;
 
 const uint btn_width_default = 200;
 const uint btn_height_default = 25;
@@ -51,7 +51,7 @@ const colors BtnBgColor =
   { float_color { 0.89f, 0.89f, 0.89f, 1.0f }, // normal
     float_color { 0.95f, 0.95f, 0.95f, 1.0f }, // over
     float_color { 0.85f, 0.85f, 0.85f, 1.0f }, // pressed
-    float_color { 0.85f, 0.85f, 0.85f, 1.0f }  // disabled
+    float_color { 0.85f, 0.85f, 0.85f, 0.1f }  // disabled
   };
 const colors BtnHemColor=
   { float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // normal
@@ -160,11 +160,39 @@ protected:
 /// \brief The element struct
 ///
 struct element {
-  std::vector<size_t> Faces {}; // Список ID поверхностей в массиве SymbolsBuffer
-  func_ptr caller = nullptr;    // Адрес функции, вызываемой по нажатию
-  STATES state = ST_NORMAL;     // Текущее состояние
-  confines Margins {};         // Внешние границы элемента для обработки событий курсора
+  std::vector<size_t> Faces {};            // Список ID поверхностей в массиве SymbolsBuffer
+  func_ptr caller = nullptr;               // Адрес функции, вызываемой по нажатию
+  STATES state = ST_NORMAL;                // Текущее состояние
+  confines Margins {};                     // Внешние границы элемента для обработки событий курсора
   ELEMENT_TYPES element_type = GUI_BUTTON; // тип графического элемента
+};
+
+
+struct group_params {
+  std::string Label {};
+  func_ptr callback = nullptr;
+  STATES state = ST_NORMAL;
+  uint left = 0;
+  uint top = 0;
+};
+
+
+class group
+{
+private:
+  ELEMENT_TYPES element_type;
+  std::vector<group_params> params {};
+
+  uint buttons_align(uint top = 0);
+  uint listrows_align(uint top = 0);
+  element make_button(const group_params& P);
+  element make_listrow(const group_params& P);
+
+public:
+  group(void) = delete;
+  group(ELEMENT_TYPES _type);
+  void append(const std::string& Label, func_ptr callback = nullptr, STATES state = ST_NORMAL);
+  uint display(uint top);
 };
 
 
@@ -213,44 +241,37 @@ class gui: public interface_gl_context
     GLuint vao_2d =   0;                         // Рендер элементов меню и HUD
     static glm::vec3 Cursor3D;                   // положение и размер прицела
 
-    static std::vector<element> Buttons;         // Группа кнопок
-    static std::vector<element> RowsList;        // Группа строк списка выбора
-    static std::vector<std::unique_ptr<face>> FacesBuf; // Массив указателей на 3D элементы меню
     static std::unique_ptr<input_ctrl> InputCursor;      // Текстовый курсор ввода пользователя
     static std::unique_ptr<glsl> ProgramFrBuf;           // Шейдерная программа GUI
 
     void program_2d_init(void);
     void program_fbuf_init(void);
     void remove_map(void);
-    static void map_create(void);
+    static void map_create(int);
     void calc_fps(void);
     void hud_update(void);
 
     void callback_render(void);
     void update_input(void);
 
-    static void map_open(void);
+    static void map_open(int);
     static void map_close(void);
     static void clear(void);
-    static void screen_start(void);
-    static void screen_config(void);
-    static void screen_map_select(void);
-    static void screen_map_new(void);
-    static void screen_pause(void);
+    static void screen_start(int);
+    static void screen_config(int);
+    static void screen_map_select(int);
+    static void screen_map_new(int);
+    static void screen_pause(int);
     static void hud_enable(void);
 
-    static void title(const std::string& Label);
+    static uint title(const std::string& Label);
     static void text_append(const layout& L, const std::vector<std::string>& Text, uint kerning);
-
-    static element element_make(const std::string &Label, ELEMENT_TYPES et = GUI_BUTTON,
-                                    func_ptr new_caller = nullptr, const STATES state = ST_NORMAL);
-    static std::pair<uint, uint> button_allocation(void);
     static void element_move(element& Elm, int x, int y);
     static void element_set_state(element& Button, STATES s);
 
-    static void close(void) { open = false; }
-    static void close_map(void);
-    static void mode_3d(void);
+    static void close(int) { open = false; }
+    static void close_map(int);
+    static void mode_3d(int);
     static void mode_2d(void);
 };
 

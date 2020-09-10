@@ -27,7 +27,7 @@ db          cfg::DataBase  {};
 v_str       cfg::AppParams {}; // параметры конфигурации приложения
 v_str       cfg::MapParams {}; // параметры когфигурации карты
 std::string cfg::AssetsDir {}; // папка служебных файлов
-std::string cfg::UserDir   {}; // папка конфигов пользователя
+std::string cfg::UserDirDB   {}; // папка конфигов пользователя
 std::string cfg::DS        {}; // символ разделителя папок
 std::string cfg::CfgFname  {}; // конфиг, выбранный пользователем
 layout      cfg::WinLayout {}; // размер и положение главного окна
@@ -40,7 +40,7 @@ layout      cfg::WinLayout {}; // размер и положение главн�
 ///
 std::string cfg::user_dir(void)
 {
-  return UserDir;
+  return UserDirDB;
 }
 
 
@@ -96,10 +96,10 @@ void cfg::load(char** argv)
   //AssetsDir = fs::absolute(p).parent_path().string() + DS + "assets";
   AssetsDir = "assets";
 
-  if(!fs::exists(AssetsDir)) ERR("Not found assets dir: " + AssetsDir);
+  if(!fs::exists(AssetsDir)) ERR("\nNot found assets dir: " + AssetsDir);
 
   set_user_dir();
-  AppParams = DataBase.open_app(UserDir + DS);
+  AppParams = DataBase.open_app(UserDirDB + DS);
 
   if(std::stoi(AppParams[APP_VER_MAJOR]) != VER_MAJOR) ERR("Incompatible APP_MAJOR database version");
   if(std::stoi(AppParams[APP_VER_MINOR]) != VER_MINOR) ERR("Incompatible APP_MINOR database version");
@@ -124,7 +124,7 @@ void cfg::set_user_dir(void)
   std::vector<char> libvar {};
   libvar.resize(requiredSize);
   getenv_s( &requiredSize, libvar.data(), requiredSize, env_key );
-  UserDir = std::string(libvar.data()) + std::string("\\AppData\\Roaming");
+  UserDirDB = std::string(libvar.data()) + std::string("\\AppData\\Roaming");
 #else
   DS = "/";
   const char *env_p = getenv("HOME");
@@ -135,14 +135,14 @@ void cfg::set_user_dir(void)
 
 #ifndef NDEBUG
   // На время разработки конфиг пользователя и база данных данных расположена в папке приложения
-  UserDir = AssetsDir + DS + "database";
+  UserDirDB = AssetsDir + DS + "database";
 #else
   if(!fs::exists(UserDir)) fs::create_directory(UserDir);
   UserDir += DS + "TrickRig";
 #endif
 
-  if(!fs::exists(UserDir)) fs::create_directory(UserDir);
-  if(!fs::exists(UserDir)) ERR("Fatal error: can't create: " + UserDir);
+  if(!fs::exists(UserDirDB)) fs::create_directory(UserDirDB);
+  if(!fs::exists(UserDirDB)) ERR("Fatal error: can't create: " + UserDirDB);
 }
 
 
@@ -153,20 +153,22 @@ void cfg::set_user_dir(void)
 ///
 std::string cfg::create_map(const std::string &MapName)
 {
-  // число секунд от начала эпохи
-  auto t = std::chrono::duration_cast<std::chrono::seconds>
+  auto MapSrc { UserDirDB + DS + "space.db" };    // шаблон карты
+  if(!fs::exists(MapSrc)) ERR("\nFAILURE: not found template: " + MapSrc);
+
+  // число секунд от начала эпохи - ID новой карты
+  auto t_id = std::chrono::duration_cast<std::chrono::seconds>
       (std::chrono::system_clock::now().time_since_epoch()).count();
 
-  auto DirPName { UserDir + DS + std::to_string(t) }; // название папки
+  auto DirPName { UserDirDB + DS + std::to_string(t_id) }; // название папки
   if(!fs::exists(DirPName)) fs::create_directory(DirPName);
   else ERR("Err: map dir exist: " + DirPName);
 
-  auto MapSrc { AssetsDir + DS + "space.db" };   // шаблон карты
-  auto MapPathName { DirPName + DS + fname_map};    // новая карта
+  auto MapPathName { DirPName + DS + fname_map};  // новая карта
 
-  std::ifstream src(MapSrc, std::ios::binary);   // TODO: контроль чтения
+  std::ifstream src(MapSrc, std::ios::binary);    // TODO: контроль чтения
   std::ofstream dst(MapPathName, std::ios::binary);
-  dst << src.rdbuf();                            // скопировать шаблон карты
+  dst << src.rdbuf();                             // скопировать шаблон карты
 
   DataBase.init_map_config(DirPName + DS + fname_cfg);
   DataBase.map_name_save(DirPName + DS, MapName); // записать название пользователя

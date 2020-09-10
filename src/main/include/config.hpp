@@ -24,7 +24,7 @@ namespace tr
       cfg(cfg&&) = delete;
       cfg& operator=(cfg&&) = delete;
 
-      static std::string UserDir;     // папка конфигов пользователя
+      static std::string UserDirDB;   // папка конфигов пользователя
       static v_str AppParams;         // общие настройки приложения
       static v_str MapParams;         // параметры сессии
 
@@ -32,11 +32,11 @@ namespace tr
 
     public:
       static db DataBase;
-      static std::string CfgFname; // конфиг текущей сесии
-      static layout WinLayout;     // размер и положение главного окна
+      static std::string CfgFname;  // конфиг текущей сесии
+      static layout WinLayout;      // размер и положение главного окна
 
-      static std::string DS;       // символ разделителя папок
-      static std::string AssetsDir;   // папка служебных файлов приложения
+      static std::string DS;        // символ разделителя папок
+      static std::string AssetsDir; // папка служебных файлов приложения
 
       static void map_view_load(const std::string& DirName, std::shared_ptr<glm::vec3> ViewFrom, float* look);
       static void map_view_save(std::shared_ptr<glm::vec3> View, float* look_dir);

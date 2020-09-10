@@ -28,11 +28,10 @@ static std::unique_ptr<vbo> VBO_uv   = nullptr;    // текстурные ко�
 static unsigned int gui_indices = 0; // число индексов в 2Д режиме
 func_ptr gui::current_menu = nullptr;
 
-std::unique_ptr<input_ctrl> gui::InputCursor = nullptr;      // Текстовый курсор для пользователя
+std::unique_ptr<input_ctrl> gui::InputCursor = nullptr; // Текстовый курсор для пользователя
 
-std::vector<std::unique_ptr<face>> gui::FacesBuf {}; // Массив указателей на 3D элементы меню
-std::vector<element> gui::Buttons {};
-std::vector<element> gui::RowsList {};
+static std::vector<std::unique_ptr<face>> FacesBuf {};  // Массив указателей на 3D элементы меню
+static std::vector<element> ActiveElements {};          // Группа кнопок
 
 /// положение символа в текстурной карте
 std::array<unsigned int, 2> map_location(const std::string& Sym)
@@ -378,6 +377,236 @@ void input_ctrl::blink(void)
 
 
 ///
+/// \brief elements_group::elements_group
+/// \param _type
+///
+group::group(ELEMENT_TYPES _type): element_type(_type)
+{
+  params.clear();
+};
+
+
+///
+/// \brief elements_group::append
+/// \param Label
+/// \param state
+/// \param callback
+///
+void group::append(const std::string& Label, func_ptr callback, STATES state)
+{
+  params.emplace_back( group_params { Label, callback, state, 0, 0 } );
+}
+
+
+///
+/// \brief group::buttons_align
+///
+uint group::buttons_align(uint top)
+{
+  auto items_count = params.size();
+
+#ifndef NDEBUG
+  assert(items_count < 7 && "Больше 6 кнопок располагать запрещено");
+#endif
+
+  auto el_w = btn_width_default + btn_padding_default;  // ширина элемента
+  auto el_h = btn_height_default + btn_padding_default; // высота элемента
+  uint gr_w = el_w * 3;                                 // ширина группы
+  uint gr_h = el_h;                                     // высота группы
+
+  uint i_max = 3;
+  if(items_count < i_max)
+  {
+    gr_w = el_w * items_count;
+    i_max = items_count;
+  }
+
+  if(items_count > 3) gr_h += el_h;
+
+  uint left = (LayoutGui.width - gr_w) / 2;
+  top = (LayoutGui.height + top - gr_h) / 2;
+
+  uint i = 0;
+  for(; i < i_max; ++i)
+  {
+    params[i].left = i * el_w + left;
+    params[i].top = top;
+  }
+
+  top += el_h;
+  if(items_count < 4) return top;
+
+  // Если кнопок от 4 до 6, то располагаем их в два ряда.
+  //Cмещаем нижний ряд кнопок, чтобы он был по центру
+  uint shift = (6 - items_count) * el_w / 2;
+
+  for(; i < items_count; ++i)
+  {
+    params[i].left = params[i - 3].left + shift;
+    params[i].top = top;
+  }
+
+  top += el_h;
+  return top;
+}
+
+
+///
+/// \brief group::listrows_align
+///
+uint group::listrows_align(uint top)
+{
+  auto items_count = params.size();
+
+#ifndef NDEBUG
+  assert(items_count < 10 && "Больше 9 строк использовать запрещено");
+#endif
+
+  uint left = menu_border_default * 1.2f;
+  top += listrow_height_default;
+
+  for(uint i = 0; i < items_count; ++i)
+  {
+    params[i].left = left;
+    params[i].top = top;
+    top += listrow_height_default;
+  }
+
+  return top;
+}
+
+
+///
+/// \brief group::make_button
+/// \param P
+/// \return
+///
+element group::make_button(const group_params& P)
+{
+  layout L {};
+  element Element {};
+  colors BgColors {};
+  colors HemColors {};
+  BgColors = BtnBgColor;
+  HemColors = BtnHemColor;
+  L.width = btn_width_default;
+  L.height = btn_height_default;
+  L.left = P.left;
+  L.top = P.top;
+
+  Element.element_type = element_type;
+  Element.caller = P.callback;
+  Element.state = P.state;
+  Element.Margins.x0 = L.left * 1.0;
+  Element.Margins.y0 = L.top * 1.0;
+  Element.Margins.x1 = (L.left + L.width) * 1.0;
+  Element.Margins.y1 = (L.top + L.height) * 1.0;
+
+  // рамка элемента
+  Element.Faces.push_back(FacesBuf.size());
+  FacesBuf.emplace_back(std::make_unique<face>(
+         layout{ L.width, L.height, L.left, L.top }, " ",
+         HemColors[Element.state] ));
+
+  // фоновая заливка
+  Element.Faces.push_back(FacesBuf.size());
+  FacesBuf.emplace_back(std::make_unique<face>(
+         layout{ L.width-2, L.height-2, L.left+1, L.top+1 }, " ",
+         BgColors[Element.state] ));
+
+  // надпись
+  auto Text = string2vector(P.Label);
+  uint left = L.left + L.width/2 - Text.size() * (sym_width_default + sym_kerning_default) / 2;
+  uint top = L.top + 1 + (L.height - sym_height_default ) / 2;
+
+  for(const auto& Symbol: Text)
+  {
+    Element.Faces.push_back(FacesBuf.size());
+    FacesBuf.emplace_back(std::make_unique<face>(
+        layout{ sym_width_default, sym_height_default, left, top },
+        Symbol, DefaultBgColor));
+    left += sym_width_default + sym_kerning_default;
+  }
+  return Element;
+}
+
+
+///
+/// \brief group::make_rowlist
+/// \param P
+/// \return
+///
+element group::make_listrow(const group_params& P)
+{
+  layout L {};
+  element Element {};
+  colors BgColors {};
+  colors HemColors {};
+
+  BgColors = ListBgColor;
+  HemColors = ListHemColor;
+  L.width = LayoutGui.width - menu_border_default * 4;
+  L.height =  listrow_height_default;
+  L.left = menu_border_default * 2;
+  L.top = L.left + title_height_default + ActiveElements.size() * (listrow_height_default + 1);
+
+  Element.element_type = element_type;
+  Element.caller = P.callback;
+  Element.state = P.state;
+  Element.Margins.x0 = L.left * 1.0;
+  Element.Margins.y0 = L.top * 1.0;
+  Element.Margins.x1 = (L.left + L.width) * 1.0;
+  Element.Margins.y1 = (L.top + L.height) * 1.0;
+
+  // рамка элемента
+  Element.Faces.push_back(FacesBuf.size());
+  FacesBuf.emplace_back(std::make_unique<face>(
+         layout{ L.width, L.height, L.left, L.top }, " ",
+         HemColors[Element.state] ));
+
+  // фоновая заливка
+  Element.Faces.push_back(FacesBuf.size());
+  FacesBuf.emplace_back(std::make_unique<face>(
+         layout{ L.width-2, L.height-2, L.left+1, L.top+1 }, " ",
+         BgColors[Element.state] ));
+
+  // надпись
+  auto Text = string2vector(P.Label);
+  uint left = L.left + L.width/2 - Text.size() * (sym_width_default + sym_kerning_default) / 2;
+  uint top = L.top + 1 + (L.height - sym_height_default ) / 2;
+
+  for(const auto& Symbol: Text)
+  {
+    Element.Faces.push_back(FacesBuf.size());
+    FacesBuf.emplace_back(std::make_unique<face>(
+        layout{ sym_width_default, sym_height_default, left, top },
+        Symbol, DefaultBgColor));
+    left += sym_width_default + sym_kerning_default;
+  }
+  return Element;
+}
+
+
+///
+/// \brief group::display
+///
+uint group::display(uint top)
+{
+  switch (element_type) {
+    case GUI_BUTTON:
+      top = buttons_align(top);
+      for(const auto& P: params) ActiveElements.push_back(make_button(P));
+      break;
+    case GUI_ROWSLIST:
+      top = listrows_align(top);
+      for(const auto& P: params) ActiveElements.push_back(make_listrow(P));
+      break;
+  }
+  return top;
+}
+
+
+///
 /// \brief graphical_user_interface::graphical_user_interface
 /// \param OpenGLContext
 ///
@@ -417,7 +646,7 @@ gui::gui(void)
   OGLContext->set_focuslost_observer(*this); // потеря окном фокуса ввода
 
   open = true;
-  screen_start();
+  screen_start(0);
 }
 
 
@@ -574,8 +803,7 @@ void gui::clear(void)
   VBO_xy->clear();
   VBO_uv->clear();
   VBO_rgba->clear();
-  Buttons.clear();
-  RowsList.clear();
+  ActiveElements.clear();
   FacesBuf.clear();
   InputCursor = nullptr;
 }
@@ -645,24 +873,14 @@ void gui::event_cursor(double x, double y)
     return;
   }
 
-  for(auto& B: Buttons)
-  {
-    if(x > B.Margins.x0 && x < B.Margins.x1 && y > B.Margins.y0 && y < B.Margins.y1)
-    {
-      if(B.state != ST_OVER) element_set_state(B, ST_OVER);
-    } else
-    {
-      if(B.state == ST_OVER) element_set_state(B, ST_NORMAL);
-    }
-  }
-
-  for(auto& B: RowsList)
+  for(auto& B: ActiveElements)
   {
     if (B.state == ST_PRESSED) continue;
+    if (B.state == ST_DISABLE) continue;
 
     if(x > B.Margins.x0 && x < B.Margins.x1 && y > B.Margins.y0 && y < B.Margins.y1)
     {
-      if(B.state != ST_OVER) element_set_state(B, ST_OVER);
+      if(B.state == ST_NORMAL) element_set_state(B, ST_OVER);
     } else
     {
       if(B.state == ST_OVER) element_set_state(B, ST_NORMAL);
@@ -685,23 +903,22 @@ void gui::event_mouse_btns(int _button, int _action, int _mods)
     return;
   }
 
-  if( (_button == MOUSE_BUTTON_LEFT)
-  and (_action == RELEASE) )
+  // Переключение элемента, над которым нажата левая кнопка мыши
+  if((_button == MOUSE_BUTTON_LEFT) and (_action == PRESS))
   {
-    for(auto& B: Buttons)
+    for(auto& B: ActiveElements)
     {
-      if(nullptr == B.caller) continue;
-      if(B.state == ST_OVER) B.caller();
+      if(B.state == ST_OVER) element_set_state(B, ST_PRESSED);
+      else if(B.state == ST_PRESSED) element_set_state(B, ST_NORMAL);
     }
+  }
 
-    for(auto& B: RowsList)
+  // При отпускании вызываем обработчик
+  if((_button == MOUSE_BUTTON_LEFT) and (_action == RELEASE))
+  {
+    for(auto& B: ActiveElements)
     {
-      if(B.state == ST_OVER)
-      {
-        for(auto& T: RowsList) element_set_state(T, ST_NORMAL); // сбросить все в исходное
-        element_set_state(B, ST_PRESSED);                       // и включить текущую
-      }
-      if(nullptr != B.caller)  B.caller();
+      if(B.state == ST_PRESSED) if(nullptr != B.caller) B.caller(0);
     }
   }
 }
@@ -723,8 +940,8 @@ void gui::event_keyboard(int key, int scancode, int action, int mods)
   }
   else
   {
-    if((key == KEY_ESCAPE) && (action == RELEASE) && (!Buttons.empty()))
-       Buttons.back().caller(); // Последняя кнопка ВСЕГДА - "выход/отмена"
+    if((key == KEY_ESCAPE) && (action == RELEASE) && (!ActiveElements.empty()))
+       ActiveElements.back().caller(0); // Последняя кнопка ВСЕГДА - "выход/отмена"
 
     InputCursor->keyboard_event(key, scancode,action, mods);
   }
@@ -739,23 +956,29 @@ void gui::event_character(uint ch)
 {
   // Преобразование целого в строковый символ UTF-8
   std::wstring_convert<std::codecvt_utf8<char32_t>,char32_t> convert;
-  std::string Str8 = convert.to_bytes(ch);
+  std::string Str8 = convert.to_bytes(ch);              // Введенный символ (8 или 16 бит)
 
-  // Сохраняем данные до ввода символа
+  // Текущие данные курсора
   layout CursorLayout = InputCursor->get_layout();      // координаты курсора
   uint char_position = InputCursor->current_char();     // позиция символа для вставки текста
   uint row_position = InputCursor->get_row_position();  // текущую позицию ввода
   uint row_size = InputCursor->get_row_size();          // размер строки
 
-  // Перемещение курсора на следующую позицию в строке
+  // Переместить курсор на следующую позицию в строке
   if (!InputCursor->move_next(Str8.size())) return;
 
-  // Вставка введенного символа в текстовую строку на месте курсора
+  // Вставить введенный символ в текстовую строку в позиции курсора
   StringBuffer.insert(char_position, Str8);
 
+  // 3D элементы, отображающие вводимые пользователем символы, расположены в
+  // конце буфера.Значение указателя вектора на символ под курсором ввода
+  // соответствует разности между длиной строки и номером позиции курсора:
   auto it = FacesBuf.end() - (row_size - row_position);
+  // Вставить введенный символ в 3D буфер по месту положения указателя
   FacesBuf.emplace(it, std::make_unique<face>(CursorLayout, Str8, DefaultBgColor));
+  // Переключить указатель на следующий элемент
   ++it;
+  // Все элементы от указателя до конца буфера сдвинуть на одну позицию вправо
   for(; it < FacesBuf.end(); it++)
     (*it)->move_xy(sym_width_default + sym_kerning_default, 0);
 }
@@ -789,7 +1012,7 @@ void gui::event_resize(int w, int h)
   RenderBuffer->resize(LayoutGui.width, LayoutGui.height);
   Space3d->resize_event(w, h);
 
-  if(nullptr != current_menu) current_menu();
+  if(nullptr != current_menu) current_menu(0);
 }
 
 
@@ -847,7 +1070,7 @@ void gui::text_append(const layout& L, const std::vector<std::string>& Text, uin
 /// \brief gui::title
 /// \param Label
 ///
-void gui::title(const std::string& Label)
+uint gui::title(const std::string& Label)
 {
   auto b = menu_border_default;
   // Заливка окна фоновым цветом
@@ -872,52 +1095,8 @@ void gui::title(const std::string& Label)
   uint left = LayoutGui.width/2 - Text.size() * symbol_width / 2;
   uint top =  b + title_height_default/2 - symbol_height/2 + 2;
   text_append({symbol_width, symbol_height, left, top}, Text );
-}
 
-
-///
-/// \brief gui::button_allocation
-/// \return
-///
-/// \details Возвращает координаты новой кнопки и перераспределяет
-/// по экрану уже существующие кнопки с учетом добавления новой
-///
-std::pair<uint, uint> gui::button_allocation(void)
-{
-  uint left = (LayoutGui.width - btn_width_default)/2;
-  uint top = (LayoutGui.height - btn_height_default + title_height_default)/2;
-
-  if(Buttons.empty()) return {left, top};
-
-  // Если размещается 4-я кнопка, то распределяем их в 2 колонки
-  if(Buttons.size() == 3)
-  {
-    uint vert_move_dist = (btn_height_default + btn_padding_default) / 2;
-    uint hor_move_dist = (btn_width_default + btn_padding_default) / 2;
-
-    // первые две кнопки сдвигаем влево - вниз
-    auto B = Buttons.begin();
-    element_move(*B, -hor_move_dist, vert_move_dist);
-    B++;
-    element_move(*B, -hor_move_dist, vert_move_dist);
-
-    // третью вправо - вверх
-    B++;
-    element_move(*B, hor_move_dist, 0 - vert_move_dist * 3);
-
-    // координаты 4-й кнопки
-    return { left + hor_move_dist, top + vert_move_dist };
-  }
-
-  // Вертикальный сдвиг кнопок
-  uint move_dist = (btn_height_default + btn_padding_default) / 2;
-  for(auto& B: Buttons)
-  {
-    element_move(B, 0, -move_dist);
-    top += move_dist;
-  }
-
-  return {left, top};
+  return title_height_default + menu_border_default;
 }
 
 
@@ -961,7 +1140,7 @@ void gui::element_set_state(element& El, STATES s)
     case GUI_BUTTON:
       FacesBuf[id_face_bg]->update_rgba(BtnBgColor[s]);
       break;
-    case GUI_LISTROW:
+    case GUI_ROWSLIST:
       FacesBuf[id_face_bg]->update_rgba(ListBgColor[s]);
       break;
   }
@@ -969,87 +1148,19 @@ void gui::element_set_state(element& El, STATES s)
 
 
 ///
-/// \brief gui::element_make
-/// \param Label
-/// \param element_type
-/// \param callback new_caller
-/// \param element state
-/// \return
-///
-element gui::element_make(const std::string &Label, ELEMENT_TYPES et, func_ptr new_caller, const STATES state )
-{
-  layout L {};
-  element Element {};
-  colors BgColors {};
-  colors HemColors {};
-  std::pair<uint,uint> XY {};
-
-  switch (et) {
-    case GUI_BUTTON:
-      BgColors = BtnBgColor;
-      HemColors = BtnHemColor;
-      XY = button_allocation();
-      L.width = btn_width_default;
-      L.height = btn_height_default;
-      L.left = XY.first;
-      L.top = XY.second;
-      break;
-    case GUI_LISTROW:
-      BgColors = ListBgColor;
-      HemColors = ListHemColor;
-      L.width = LayoutGui.width - menu_border_default * 4;
-      L.height =  row_height;
-      L.left = menu_border_default * 2;
-      L.top = L.left + title_height_default + RowsList.size() * (row_height + 1);
-  }
-
-  Element.element_type = et;
-  Element.caller = new_caller;
-  Element.state = state;
-  Element.Margins.x0 = L.left * 1.0;
-  Element.Margins.y0 = L.top * 1.0;
-  Element.Margins.x1 = (L.left + L.width) * 1.0;
-  Element.Margins.y1 = (L.top + L.height) * 1.0;
-
-  // рамка элемента
-  Element.Faces.push_back(FacesBuf.size());
-  FacesBuf.emplace_back(std::make_unique<face>(
-         layout{ L.width, L.height, L.left, L.top }, " ",
-         HemColors[Element.state] ));
-
-  // фоновая заливка
-  Element.Faces.push_back(FacesBuf.size());
-  FacesBuf.emplace_back(std::make_unique<face>(
-         layout{ L.width-2, L.height-2, L.left+1, L.top+1 }, " ",
-         BgColors[Element.state] ));
-
-  // надпись
-  auto Text = string2vector(Label);
-  uint left = L.left + L.width/2 - Text.size() * (sym_width_default + sym_kerning_default) / 2;
-  uint top = L.top + 1 + (L.height - sym_height_default ) / 2;
-
-  for(const auto& Symbol: Text)
-  {
-    Element.Faces.push_back(FacesBuf.size());
-    FacesBuf.emplace_back(std::make_unique<face>(
-        layout{ sym_width_default, sym_height_default, left, top },
-        Symbol, DefaultBgColor));
-    left += sym_width_default + sym_kerning_default;
-  }
-  return Element;
-}
-
-
-///
 /// \brief gui::start_screen
 ///
-void gui::screen_start(void)
+void gui::screen_start(int)
 {
   clear(); // Очистка всех массивов VAO
-  title("Добро пожаловать в TrickRig!");
-  Buttons.push_back(element_make("НАСТРОИТЬ", GUI_BUTTON, screen_config));
-  Buttons.push_back(element_make("ВЫБРАТЬ КАРТУ", GUI_BUTTON, screen_map_select));
-  Buttons.push_back(element_make("ЗАКРЫТЬ", GUI_BUTTON, close));
+  auto top = title("Добро пожаловать в TrickRig!");
+
+  group Buttons { GUI_BUTTON };
+  Buttons.append("НАСТРОИТЬ", screen_config);
+  Buttons.append("ВЫБРАТЬ КАРТУ", screen_map_select);
+  Buttons.append("ЗАКРЫТЬ", close);
+  Buttons.display(top);
+
   current_menu = screen_start;
 }
 
@@ -1057,11 +1168,14 @@ void gui::screen_start(void)
 ///
 /// \brief gui::config_screen
 ///
-void gui::screen_config(void)
+void gui::screen_config(int)
 {
   clear(); // Очистка всех массивов VAO
-  title("ВЫБОР ПАРАМЕТРОВ");
-  Buttons.push_back(element_make("ЗАКРЫТЬ", GUI_BUTTON, screen_start ));
+  auto top = title("ВЫБОР ПАРАМЕТРОВ");
+
+  group Buttons { GUI_BUTTON };
+  Buttons.append("ЗАКРЫТЬ", screen_start );
+  Buttons.display(top);
   current_menu = screen_config;
 }
 
@@ -1069,27 +1183,34 @@ void gui::screen_config(void)
 ///
 /// \brief gui::select_map
 ///
-void gui::screen_map_select(void)
+void gui::screen_map_select(int)
 {
   clear(); // Очистка всех массивов VAO
-  title("ВЫБОР КАРТЫ");
+  auto top = title("ВЫБОР КАРТЫ");
 
+  group ListMaps {GUI_ROWSLIST};
   // Составить список карт в каталоге пользователя
-  for(auto& it: std::filesystem::directory_iterator(cfg::user_dir()))
+  auto DirList = std::filesystem::directory_iterator(cfg::user_dir());
+
+  for(auto& it: DirList)
     if(std::filesystem::is_directory(it))
     {
       map_current = it.path().string();
-      RowsList.push_back(element_make( cfg::map_name(it.path().string()), GUI_LISTROW, nullptr, ST_NORMAL ));
+      //ActiveElements.push_back(element_make( cfg::map_name(it.path().string()), GUI_LISTROW, nullptr, ST_NORMAL ));
+      ListMaps.append(cfg::map_name(it.path().string()));
     }
 
   // DEBUG
-  RowsList.push_back(element_make("debug 1", GUI_LISTROW));
-  RowsList.push_back(element_make("debug 2", GUI_LISTROW));
+  ListMaps.append("debug 1");
+  ListMaps.append("debug 2");
+  top = ListMaps.display(top);
 
-  Buttons.push_back(element_make("НОВАЯ КАРТА", GUI_BUTTON, screen_map_new ));
-  Buttons.push_back(element_make("УДАЛИТЬ КАРТУ" ));
-  Buttons.push_back(element_make("СТАРТ", GUI_BUTTON, map_open ));
-  Buttons.push_back(element_make("ОТМЕНА", GUI_BUTTON, screen_start ));
+  group Buttons { GUI_BUTTON };
+  Buttons.append("НОВАЯ КАРТА", screen_map_new);
+  Buttons.append("УДАЛИТЬ КАРТУ");
+  Buttons.append("СТАРТ", map_open, ST_DISABLE);
+  Buttons.append("ОТМЕНА", screen_start);
+  Buttons.display(top);
 
   current_menu = screen_map_select;
 }
@@ -1126,24 +1247,26 @@ void gui::update_input(void)
 ///
 /// \brief gui::screen_map_new
 ///
-void gui::screen_map_new(void)
+void gui::screen_map_new(int)
 {
   clear(); // Очистка всех массивов VAO
-  title("ВВЕДИТЕ НАЗВАНИЕ");
+  auto top = title("ВВЕДИТЕ НАЗВАНИЕ");
 
   layout L {};
   L.width = LayoutGui.width - menu_border_default * 4;
-  L.height = row_height;
+  L.height = listrow_height_default;
   L.left = menu_border_default * 2;
-  L.top = L.left + title_height_default + RowsList.size() * (row_height + 1);
+  L.top = L.left + title_height_default + ActiveElements.size() * (listrow_height_default + 1);
 
   FacesBuf.emplace_back(std::make_unique<face>(L, " ", ListBgColor[2]));
 
   L = { sym_width_default, sym_height_default, L.left + 4, L.top + 4 };
   InputCursor = std::make_unique<input_ctrl>(L);
 
-  Buttons.push_back(element_make("СОЗДАТЬ", GUI_BUTTON, map_create));
-  Buttons.push_back(element_make("ОТМЕНА", GUI_BUTTON, current_menu));
+  group Buttons {GUI_BUTTON };
+  Buttons.append("СОЗДАТЬ", map_create);
+  Buttons.append("ОТМЕНА", current_menu);
+  Buttons.display(top);
   current_menu = screen_map_new;
   StringBuffer.clear();
 }
@@ -1152,7 +1275,7 @@ void gui::screen_map_new(void)
 ///
 /// \brief gui::config_screen
 ///
-void gui::screen_pause(void)
+void gui::screen_pause(int)
 {
   //title("П А У З А");
 
@@ -1180,9 +1303,12 @@ void gui::screen_pause(void)
   uint left = LayoutGui.width/2 - Text.size() * symbol_width / 2;
   uint top =  by + title_height_default/2 - symbol_height/2 + 2;
   text_append({symbol_width, symbol_height, left, top}, Text);
+  top += title_height_default;
 
-  Buttons.push_back(element_make("ПРОДОЛЖИТЬ", GUI_BUTTON, mode_3d));
-  Buttons.push_back(element_make("ВЫХОД", GUI_BUTTON, close_map));
+  group Buttons { GUI_BUTTON };
+  Buttons.append("ПРОДОЛЖИТЬ", mode_3d);
+  Buttons.append("ВЫХОД", close_map);
+  Buttons.display(top);
   current_menu = screen_pause;
 }
 
@@ -1190,18 +1316,18 @@ void gui::screen_pause(void)
 ///
 /// \brief gui::close_map
 ///
-void gui::close_map(void)
+void gui::close_map(int)
 {
   cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
   cfg::save(LayoutGui); // Сохранение положения окна
-  screen_start();
+  screen_start(0);
 }
 
 
 ///
 /// \brief gui::mode_3d
 ///
-void gui::mode_3d(void)
+void gui::mode_3d(int)
 {
   RUN_3D = true;
   ProgramFrBuf->set_uniform("Cursor", Cursor3D);
@@ -1219,30 +1345,27 @@ void gui::mode_2d(void)
   RUN_3D = false;
   ProgramFrBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
   OGLContext->cursor_restore();
-  screen_pause();
+  screen_pause(0);
 }
 
 
 ///
 /// \brief gui::create_map
-/// \details создается новая карта и сразу открывается
 ///
-void gui::map_create(void)
+void gui::map_create(int)
 {
   auto MapDir = cfg::create_map(StringBuffer);
-  screen_map_select();
-  //Maps.push_back(map(MapDir, StringBuffer));
-  //row_selected = Maps.size();     // выбрать номер карты
+  screen_map_select(0);
 }
 
 
 ///
 /// \brief app::map_open
 ///
-void gui::map_open(void)
+void gui::map_open(int)
 {
   Space3d->load(map_current);
-  mode_3d();
+  mode_3d(0);
 }
 
 
