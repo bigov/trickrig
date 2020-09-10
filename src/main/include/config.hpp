@@ -46,7 +46,7 @@ namespace tr
       static std::string app_key(APP_INIT);
       static std::string map_key(MAP_INIT);
       static std::string file_path_texture(APP_INIT);
-      static std::string user_dir(void);
+      static std::string app_data_dir(void);
       static std::string map_name(const std::string &FolderName);
   };
 

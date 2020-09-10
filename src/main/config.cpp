@@ -38,7 +38,7 @@ layout      cfg::WinLayout {}; // размер и положение главн�
 ///
 /// \details Возвращает полный путь к папке конфигов пользователя
 ///
-std::string cfg::user_dir(void)
+std::string cfg::app_data_dir(void)
 {
   return UserDirDB;
 }

@@ -33,14 +33,7 @@ std::unique_ptr<input_ctrl> gui::InputCursor = nullptr; // Текстовый к
 static std::vector<std::unique_ptr<face>> FacesBuf {};  // Массив указателей на 3D элементы меню
 static std::vector<element> ActiveElements {};          // Группа кнопок
 
-/// положение символа в текстурной карте
-std::array<unsigned int, 2> map_location(const std::string& Sym)
-{
-  unsigned int i;
-  for(i = 0; i < font::symbols_map.size(); i++) if( font::symbols_map[i].S == Sym ) break;
-  return { font::symbols_map[i].u, font::symbols_map[i].v };
-}
-
+static uint selected_list_row = 0;
 
 ///
 /// \brief rect_xy
@@ -348,7 +341,6 @@ void input_ctrl::move_left(void)
   update_xy(Layout);
 
   row_position -= 1;
-
 }
 
 
@@ -382,7 +374,7 @@ void input_ctrl::blink(void)
 ///
 group::group(ELEMENT_TYPES _type): element_type(_type)
 {
-  params.clear();
+  Params.clear();
 };
 
 
@@ -394,7 +386,7 @@ group::group(ELEMENT_TYPES _type): element_type(_type)
 ///
 void group::append(const std::string& Label, func_ptr callback, STATES state)
 {
-  params.emplace_back( group_params { Label, callback, state, 0, 0 } );
+  Params.emplace_back( params { Label, callback, state, 0, 0 } );
 }
 
 
@@ -403,7 +395,7 @@ void group::append(const std::string& Label, func_ptr callback, STATES state)
 ///
 uint group::buttons_align(uint top)
 {
-  auto items_count = params.size();
+  auto items_count = Params.size();
 
 #ifndef NDEBUG
   assert(items_count < 7 && "Больше 6 кнопок располагать запрещено");
@@ -429,8 +421,8 @@ uint group::buttons_align(uint top)
   uint i = 0;
   for(; i < i_max; ++i)
   {
-    params[i].left = i * el_w + left;
-    params[i].top = top;
+    Params[i].left = i * el_w + left;
+    Params[i].top = top;
   }
 
   top += el_h;
@@ -442,8 +434,8 @@ uint group::buttons_align(uint top)
 
   for(; i < items_count; ++i)
   {
-    params[i].left = params[i - 3].left + shift;
-    params[i].top = top;
+    Params[i].left = Params[i - 3].left + shift;
+    Params[i].top = top;
   }
 
   top += el_h;
@@ -456,7 +448,7 @@ uint group::buttons_align(uint top)
 ///
 uint group::listrows_align(uint top)
 {
-  auto items_count = params.size();
+  auto items_count = Params.size();
 
 #ifndef NDEBUG
   assert(items_count < 10 && "Больше 9 строк использовать запрещено");
@@ -467,8 +459,8 @@ uint group::listrows_align(uint top)
 
   for(uint i = 0; i < items_count; ++i)
   {
-    params[i].left = left;
-    params[i].top = top;
+    Params[i].left = left;
+    Params[i].top = top;
     top += listrow_height_default;
   }
 
@@ -481,7 +473,7 @@ uint group::listrows_align(uint top)
 /// \param P
 /// \return
 ///
-element group::make_button(const group_params& P)
+element group::make_button(const params& P)
 {
   layout L {};
   element Element {};
@@ -495,7 +487,7 @@ element group::make_button(const group_params& P)
   L.top = P.top;
 
   Element.element_type = element_type;
-  Element.caller = P.callback;
+  Element.caller = P.caller;
   Element.state = P.state;
   Element.Margins.x0 = L.left * 1.0;
   Element.Margins.y0 = L.top * 1.0;
@@ -536,7 +528,7 @@ element group::make_button(const group_params& P)
 /// \param P
 /// \return
 ///
-element group::make_listrow(const group_params& P)
+element group::make_listrow(const params& P, uint new_id)
 {
   layout L {};
   element Element {};
@@ -551,7 +543,8 @@ element group::make_listrow(const group_params& P)
   L.top = L.left + title_height_default + ActiveElements.size() * (listrow_height_default + 1);
 
   Element.element_type = element_type;
-  Element.caller = P.callback;
+  Element.caller = P.caller;
+  Element.id = new_id;
   Element.state = P.state;
   Element.Margins.x0 = L.left * 1.0;
   Element.Margins.y0 = L.top * 1.0;
@@ -595,11 +588,12 @@ uint group::display(uint top)
   switch (element_type) {
     case GUI_BUTTON:
       top = buttons_align(top);
-      for(const auto& P: params) ActiveElements.push_back(make_button(P));
+      for(const auto& P: Params) ActiveElements.push_back(make_button(P));
       break;
     case GUI_ROWSLIST:
       top = listrows_align(top);
-      for(const auto& P: params) ActiveElements.push_back(make_listrow(P));
+      uint id = 0;
+      for(const auto& P: Params) ActiveElements.push_back(make_listrow(P, id++));
       break;
   }
   return top;
@@ -890,6 +884,16 @@ void gui::event_cursor(double x, double y)
 
 
 ///
+/// \brief gui::select_row
+/// \param id
+///
+void gui::select_row(uint id)
+{
+  selected_list_row = id;
+}
+
+
+///
 /// \brief gui::mouse_event
 /// \param _button
 /// \param _action
@@ -918,7 +922,7 @@ void gui::event_mouse_btns(int _button, int _action, int _mods)
   {
     for(auto& B: ActiveElements)
     {
-      if(B.state == ST_PRESSED) if(nullptr != B.caller) B.caller(0);
+      if(B.state == ST_PRESSED) if(nullptr != B.caller) B.caller(B.id);
     }
   }
 }
@@ -1150,7 +1154,7 @@ void gui::element_set_state(element& El, STATES s)
 ///
 /// \brief gui::start_screen
 ///
-void gui::screen_start(int)
+void gui::screen_start(uint)
 {
   clear(); // Очистка всех массивов VAO
   auto top = title("Добро пожаловать в TrickRig!");
@@ -1168,7 +1172,7 @@ void gui::screen_start(int)
 ///
 /// \brief gui::config_screen
 ///
-void gui::screen_config(int)
+void gui::screen_config(uint)
 {
   clear(); // Очистка всех массивов VAO
   auto top = title("ВЫБОР ПАРАМЕТРОВ");
@@ -1183,32 +1187,33 @@ void gui::screen_config(int)
 ///
 /// \brief gui::select_map
 ///
-void gui::screen_map_select(int)
+void gui::screen_map_select(uint)
 {
   clear(); // Очистка всех массивов VAO
+  STATES start_state = ST_DISABLE;
+
+
   auto top = title("ВЫБОР КАРТЫ");
 
   group ListMaps {GUI_ROWSLIST};
   // Составить список карт в каталоге пользователя
-  auto DirList = std::filesystem::directory_iterator(cfg::user_dir());
+  auto DirList = std::filesystem::directory_iterator(cfg::app_data_dir());
+  if( DirList->exists() ) start_state = ST_NORMAL;
 
+  STATES st = ST_PRESSED; // Первая строка всегда выбрана по-умолчанию
   for(auto& it: DirList)
     if(std::filesystem::is_directory(it))
     {
-      map_current = it.path().string();
-      //ActiveElements.push_back(element_make( cfg::map_name(it.path().string()), GUI_LISTROW, nullptr, ST_NORMAL ));
-      ListMaps.append(cfg::map_name(it.path().string()));
+      ListMaps.append(cfg::map_name(it.path().string()), select_row, st);
+      st = ST_NORMAL;
     }
 
-  // DEBUG
-  ListMaps.append("debug 1");
-  ListMaps.append("debug 2");
   top = ListMaps.display(top);
 
   group Buttons { GUI_BUTTON };
   Buttons.append("НОВАЯ КАРТА", screen_map_new);
   Buttons.append("УДАЛИТЬ КАРТУ");
-  Buttons.append("СТАРТ", map_open, ST_DISABLE);
+  Buttons.append("СТАРТ", map_open, start_state);
   Buttons.append("ОТМЕНА", screen_start);
   Buttons.display(top);
 
@@ -1247,7 +1252,7 @@ void gui::update_input(void)
 ///
 /// \brief gui::screen_map_new
 ///
-void gui::screen_map_new(int)
+void gui::screen_map_new(uint)
 {
   clear(); // Очистка всех массивов VAO
   auto top = title("ВВЕДИТЕ НАЗВАНИЕ");
@@ -1275,7 +1280,7 @@ void gui::screen_map_new(int)
 ///
 /// \brief gui::config_screen
 ///
-void gui::screen_pause(int)
+void gui::screen_pause(uint)
 {
   //title("П А У З А");
 
@@ -1316,7 +1321,7 @@ void gui::screen_pause(int)
 ///
 /// \brief gui::close_map
 ///
-void gui::close_map(int)
+void gui::close_map(uint)
 {
   cfg::map_view_save(Space3d->ViewFrom, Space3d->look_dir);
   cfg::save(LayoutGui); // Сохранение положения окна
@@ -1327,7 +1332,7 @@ void gui::close_map(int)
 ///
 /// \brief gui::mode_3d
 ///
-void gui::mode_3d(int)
+void gui::mode_3d(uint)
 {
   RUN_3D = true;
   ProgramFrBuf->set_uniform("Cursor", Cursor3D);
@@ -1352,7 +1357,7 @@ void gui::mode_2d(void)
 ///
 /// \brief gui::create_map
 ///
-void gui::map_create(int)
+void gui::map_create(uint)
 {
   auto MapDir = cfg::create_map(StringBuffer);
   screen_map_select(0);
@@ -1362,9 +1367,19 @@ void gui::map_create(int)
 ///
 /// \brief app::map_open
 ///
-void gui::map_open(int)
+void gui::map_open(uint)
 {
-  Space3d->load(map_current);
+  std::vector<std::string> Maps {};
+  // Список карт в каталоге пользователя
+  auto DirList = std::filesystem::directory_iterator(cfg::app_data_dir());
+
+  for(auto& it: DirList)
+    if(std::filesystem::is_directory(it))
+      Maps.push_back(it.path().string());
+
+  if(Maps.size() < selected_list_row) ERR("\nОшибка выбора карты");
+
+  Space3d->load(Maps[selected_list_row]);
   mode_3d(0);
 }
 

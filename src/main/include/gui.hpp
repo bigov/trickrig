@@ -13,7 +13,7 @@ using colors = std::array<tr::float_color, 4>;
 namespace tr
 {
 
-typedef void(*func_ptr)(int);
+typedef void(*func_ptr)(uint);
 //typedef void(*func_with_param_ptr)(uint);
 
 enum FONT_STYLE { FONT_NORMAL, FONT_BOLD, FONT_COUNT };
@@ -165,12 +165,13 @@ struct element {
   STATES state = ST_NORMAL;                // Текущее состояние
   confines Margins {};                     // Внешние границы элемента для обработки событий курсора
   ELEMENT_TYPES element_type = GUI_BUTTON; // тип графического элемента
+  uint id = 0;
 };
 
 
-struct group_params {
+struct params {
   std::string Label {};
-  func_ptr callback = nullptr;
+  func_ptr caller = nullptr;
   STATES state = ST_NORMAL;
   uint left = 0;
   uint top = 0;
@@ -181,12 +182,12 @@ class group
 {
 private:
   ELEMENT_TYPES element_type;
-  std::vector<group_params> params {};
+  std::vector<params> Params {};
 
   uint buttons_align(uint top = 0);
   uint listrows_align(uint top = 0);
-  element make_button(const group_params& P);
-  element make_listrow(const group_params& P);
+  element make_button(const params& P);
+  element make_listrow(const params& P, uint new_id);
 
 public:
   group(void) = delete;
@@ -247,31 +248,32 @@ class gui: public interface_gl_context
     void program_2d_init(void);
     void program_fbuf_init(void);
     void remove_map(void);
-    static void map_create(int);
     void calc_fps(void);
     void hud_update(void);
 
     void callback_render(void);
     void update_input(void);
 
-    static void map_open(int);
     static void map_close(void);
     static void clear(void);
-    static void screen_start(int);
-    static void screen_config(int);
-    static void screen_map_select(int);
-    static void screen_map_new(int);
-    static void screen_pause(int);
+    static void screen_start(uint);
+    static void screen_config(uint);
+    static void screen_map_select(uint);
+    static void screen_map_new(uint);
+    static void screen_pause(uint);
     static void hud_enable(void);
 
     static uint title(const std::string& Label);
+    static void map_create(uint);
+    static void map_open(uint);
     static void text_append(const layout& L, const std::vector<std::string>& Text, uint kerning);
     static void element_move(element& Elm, int x, int y);
     static void element_set_state(element& Button, STATES s);
+    static void select_row(uint id);
+    static void close_map(uint);
+    static void mode_3d(uint);
+    static void close(uint) { open = false; }
 
-    static void close(int) { open = false; }
-    static void close_map(int);
-    static void mode_3d(int);
     static void mode_2d(void);
 };
 
