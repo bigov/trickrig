@@ -105,7 +105,6 @@ public:
 
   bool uv_equal(const std::string& S) { return S == Char; }
   layout get_layout(void) const { return layout{Layout}; }
-  void clear(void);
 
 protected:
   face(void) = delete;
@@ -115,6 +114,7 @@ protected:
   face& operator=(face&&) = delete;
 
   void init(const layout& L, const std::string& Symbol, float_color BgColor);
+  void clear(void);
 
   std::string Char {};
   vbo_ptr Addr {};
@@ -160,7 +160,7 @@ protected:
 /// \brief The element struct
 ///
 struct element {
-  std::vector<size_t> Faces {};            // Список ID поверхностей в массиве SymbolsBuffer
+  std::vector<size_t> FacesID {};          // Список ID поверхностей в массиве SymbolsBuffer
   func_ptr caller = nullptr;               // Адрес функции, вызываемой по нажатию
   STATES state = ST_NORMAL;                // Текущее состояние
   confines Margins {};                     // Внешние границы элемента для обработки событий курсора

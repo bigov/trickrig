@@ -241,27 +241,19 @@ void face::update_uv(const std::string& Symbol)
 ///
 /// \brief char3d::clear
 ///
-void face::clear(void){
+void face::clear(void)
+{
   if(Char.empty()) return;
   Char.clear();
 
   if(Addr.xy.size + Addr.xy.offset <= VBO_xy->get_hem())
     VBO_xy->remove(Addr.xy.size, Addr.xy.offset);
-  else
-    std::cerr << "\n" << __PRETTY_FUNCTION__ << "\n"
-              << "VBO_xy укорочен независимым процессом" << std::endl;
 
   if(Addr.rgba.size + Addr.rgba.offset <= VBO_rgba->get_hem())
     VBO_rgba->remove(Addr.rgba.size, Addr.rgba.offset);
-  else
-    std::cerr << "\n" << __PRETTY_FUNCTION__ << "\n"
-              << "VBO_rgba укорочен независимым процессом" << std::endl;
 
   if(Addr.uv.size + Addr.uv.offset <= VBO_uv->get_hem())
     VBO_uv->remove(Addr.uv.size, Addr.uv.offset);
-  else
-    std::cerr << "\n" << __PRETTY_FUNCTION__ << "\n"
-              << "VBO_uv укорочен независимым процессом" << std::endl;
 
   Addr.xy.size     = 0;
   Addr.xy.offset   = 0;
@@ -270,11 +262,7 @@ void face::clear(void){
   Addr.uv.size     = 0;
   Addr.uv.offset   = 0;
 
-  if(gui_indices >= 6)
-    gui_indices -= 6;
-  else
-    std::cerr << "\n" << __PRETTY_FUNCTION__ << "\n"
-              << "gui_indices укорочен независимым процессом" << std::endl;
+  if(gui_indices >= 6) gui_indices -= 6;
 }
 
 
@@ -495,13 +483,13 @@ element group::make_button(const params& P)
   Element.Margins.y1 = (L.top + L.height) * 1.0;
 
   // рамка элемента
-  Element.Faces.push_back(FacesBuf.size());
+  Element.FacesID.push_back(FacesBuf.size());
   FacesBuf.emplace_back(std::make_unique<face>(
          layout{ L.width, L.height, L.left, L.top }, " ",
          HemColors[Element.state] ));
 
   // фоновая заливка
-  Element.Faces.push_back(FacesBuf.size());
+  Element.FacesID.push_back(FacesBuf.size());
   FacesBuf.emplace_back(std::make_unique<face>(
          layout{ L.width-2, L.height-2, L.left+1, L.top+1 }, " ",
          BgColors[Element.state] ));
@@ -513,7 +501,7 @@ element group::make_button(const params& P)
 
   for(const auto& Symbol: Text)
   {
-    Element.Faces.push_back(FacesBuf.size());
+    Element.FacesID.push_back(FacesBuf.size());
     FacesBuf.emplace_back(std::make_unique<face>(
         layout{ sym_width_default, sym_height_default, left, top },
         Symbol, DefaultBgColor));
@@ -552,13 +540,13 @@ element group::make_listrow(const params& P, uint new_id)
   Element.Margins.y1 = (L.top + L.height) * 1.0;
 
   // рамка элемента
-  Element.Faces.push_back(FacesBuf.size());
+  Element.FacesID.push_back(FacesBuf.size());
   FacesBuf.emplace_back(std::make_unique<face>(
          layout{ L.width, L.height, L.left, L.top }, " ",
          HemColors[Element.state] ));
 
   // фоновая заливка
-  Element.Faces.push_back(FacesBuf.size());
+  Element.FacesID.push_back(FacesBuf.size());
   FacesBuf.emplace_back(std::make_unique<face>(
          layout{ L.width-2, L.height-2, L.left+1, L.top+1 }, " ",
          BgColors[Element.state] ));
@@ -570,7 +558,7 @@ element group::make_listrow(const params& P, uint new_id)
 
   for(const auto& Symbol: Text)
   {
-    Element.Faces.push_back(FacesBuf.size());
+    Element.FacesID.push_back(FacesBuf.size());
     FacesBuf.emplace_back(std::make_unique<face>(
         layout{ sym_width_default, sym_height_default, left, top },
         Symbol, DefaultBgColor));
@@ -793,12 +781,24 @@ void gui::program_2d_init(void)
 ///
 void gui::clear(void)
 {
-  gui_indices = 0;
+  std::cerr << "before VBO_xy->hem = " << VBO_xy->get_hem()
+            << ", gui_indices = " << gui_indices << std::endl;
+  FacesBuf.clear();
+  ActiveElements.clear();
+  std::cerr << "after VBO_xy->hem = " << VBO_xy->get_hem()
+            << ", gui_indices = " << gui_indices << std::endl;
+
+
+  //if(VBO_xy->get_hem() != 0) std::cerr << "VBO_xy->hem = " << VBO_xy->get_hem() << std::endl;
+  //if(VBO_uv->get_hem() != 0) std::cerr << "VBO_uv->hem = " << VBO_uv->get_hem() << std::endl;
+  //if(VBO_rgba->get_hem() != 0) std::cerr << "VBO_rgba->hem = " << VBO_rgba->get_hem() << std::endl;
+
   VBO_xy->clear();
   VBO_uv->clear();
   VBO_rgba->clear();
-  ActiveElements.clear();
-  FacesBuf.clear();
+
+  //gui_indices = 0;
+
   InputCursor = nullptr;
 }
 
@@ -1078,24 +1078,23 @@ uint gui::title(const std::string& Label)
 {
   auto b = menu_border_default;
   // Заливка окна фоновым цветом
-  //rectangle(b, b, LayoutGui.width - 2 * b, LayoutGui.height - 2 * b, { 0.9f, 1.f, 0.9f, 1.f });
   FacesBuf.emplace_back(std::make_unique<face>(
          layout{ LayoutGui.width - 2 * b, LayoutGui.height - 2 * b, b, b }, " ",
          float_color{ 0.9f, 1.f, 0.9f, 1.f } ));
 
-  auto Text = string2vector(Label);
-  uint symbol_width = 14;
-  uint symbol_height = 21;
-  //rectangle(b, b, LayoutGui.width - 2 * b, title_height_default+1, TitleHemColor);
+  // Создание рамки
   FacesBuf.emplace_back(std::make_unique<face>(
          layout{ LayoutGui.width - 2 * b, title_height_default + 1, b, b }, " ",
          TitleHemColor ));
 
-  //rectangle(b, b, LayoutGui.width - 2 * b, title_height_default, TitleBgColor);
+  // Фоновая заливка заголовка
   FacesBuf.emplace_back(std::make_unique<face>(
          layout{ LayoutGui.width - 2 * b, title_height_default, b, b }, " ",
          TitleBgColor ));
 
+  auto Text = string2vector(Label);
+  uint symbol_width = 14;
+  uint symbol_height = 21;
   uint left = LayoutGui.width/2 - Text.size() * symbol_width / 2;
   uint top =  b + title_height_default/2 - symbol_height/2 + 2;
   text_append({symbol_width, symbol_height, left, top}, Text );
@@ -1112,13 +1111,13 @@ uint gui::title(const std::string& Label)
 ///
 void gui::element_move(element& Elm, int x, int y)
 {
-  if(Elm.Faces.empty()) return;
+  if(Elm.FacesID.empty()) return;
 
   // Передвинуть все поверхности
-  for(auto& id: Elm.Faces ) FacesBuf[id]->move_xy(x, y);
+  for(auto& id: Elm.FacesID ) FacesBuf[id]->move_xy(x, y);
 
   // Координаты рамки
-  auto L = FacesBuf[Elm.Faces.front()]->get_layout();
+  auto L = FacesBuf[Elm.FacesID.front()]->get_layout();
 
   // Обновить значения границ элемента в окне
   Elm.Margins.x0 = L.left * 1.0;
@@ -1138,7 +1137,7 @@ void gui::element_set_state(element& El, STATES s)
 
   // Цвет элемента которой надо изменить, состоит из
   // рамки и фоновой заливки. Пока изменим только фоновую заливку
-  auto id_face_bg = El.Faces[1];
+  auto id_face_bg = El.FacesID[1];
 
   switch (El.element_type){
     case GUI_BUTTON:
@@ -1148,76 +1147,6 @@ void gui::element_set_state(element& El, STATES s)
       FacesBuf[id_face_bg]->update_rgba(ListBgColor[s]);
       break;
   }
-}
-
-
-///
-/// \brief gui::start_screen
-///
-void gui::screen_start(uint)
-{
-  clear(); // Очистка всех массивов VAO
-  auto top = title("Добро пожаловать в TrickRig!");
-
-  group Buttons { GUI_BUTTON };
-  Buttons.append("НАСТРОИТЬ", screen_config);
-  Buttons.append("ВЫБРАТЬ КАРТУ", screen_map_select);
-  Buttons.append("ЗАКРЫТЬ", close);
-  Buttons.display(top);
-
-  current_menu = screen_start;
-}
-
-
-///
-/// \brief gui::config_screen
-///
-void gui::screen_config(uint)
-{
-  clear(); // Очистка всех массивов VAO
-  auto top = title("ВЫБОР ПАРАМЕТРОВ");
-
-  group Buttons { GUI_BUTTON };
-  Buttons.append("ЗАКРЫТЬ", screen_start );
-  Buttons.display(top);
-  current_menu = screen_config;
-}
-
-
-///
-/// \brief gui::select_map
-///
-void gui::screen_map_select(uint)
-{
-  clear(); // Очистка всех массивов VAO
-  STATES start_state = ST_DISABLE;
-
-
-  auto top = title("ВЫБОР КАРТЫ");
-
-  group ListMaps {GUI_ROWSLIST};
-  // Составить список карт в каталоге пользователя
-  auto DirList = std::filesystem::directory_iterator(cfg::app_data_dir());
-  if( DirList->exists() ) start_state = ST_NORMAL;
-
-  STATES st = ST_PRESSED; // Первая строка всегда выбрана по-умолчанию
-  for(auto& it: DirList)
-    if(std::filesystem::is_directory(it))
-    {
-      ListMaps.append(cfg::map_name(it.path().string()), select_row, st);
-      st = ST_NORMAL;
-    }
-
-  top = ListMaps.display(top);
-
-  group Buttons { GUI_BUTTON };
-  Buttons.append("НОВАЯ КАРТА", screen_map_new);
-  Buttons.append("УДАЛИТЬ КАРТУ");
-  Buttons.append("СТАРТ", map_open, start_state);
-  Buttons.append("ОТМЕНА", screen_start);
-  Buttons.display(top);
-
-  current_menu = screen_map_select;
 }
 
 
@@ -1250,12 +1179,82 @@ void gui::update_input(void)
 
 
 ///
+/// \brief gui::start_screen
+///
+void gui::screen_start(uint)
+{
+  clear(); // Экрана
+  auto top_mark = title("Добро пожаловать в TrickRig!");
+
+  group Buttons { GUI_BUTTON };
+  Buttons.append("НАСТРОИТЬ", screen_config);
+  Buttons.append("ВЫБРАТЬ КАРТУ", screen_map_select);
+  Buttons.append("ЗАКРЫТЬ", close);
+  Buttons.display(top_mark);
+
+  current_menu = screen_start;
+}
+
+
+///
+/// \brief gui::config_screen
+///
+void gui::screen_config(uint)
+{
+  clear(); // Очистка всех массивов VAO
+  auto top_mark = title("ВЫБОР ПАРАМЕТРОВ");
+
+  group Buttons { GUI_BUTTON };
+  Buttons.append("ЗАКРЫТЬ", screen_start );
+  Buttons.display(top_mark);
+  current_menu = screen_config;
+}
+
+
+///
+/// \brief gui::select_map
+///
+void gui::screen_map_select(uint)
+{
+  clear(); // Очистка всех массивов VAO
+  STATES start_state = ST_DISABLE;
+
+
+  auto top_mark = title("ВЫБОР КАРТЫ");
+
+  group ListMaps {GUI_ROWSLIST};
+  // Составить список карт в каталоге пользователя
+  auto DirList = std::filesystem::directory_iterator(cfg::app_data_dir());
+  if( DirList->exists() ) start_state = ST_NORMAL;
+
+  STATES st = ST_PRESSED; // Первая строка всегда выбрана по-умолчанию
+  for(auto& it: DirList)
+    if(std::filesystem::is_directory(it))
+    {
+      ListMaps.append(cfg::map_name(it.path().string()), select_row, st);
+      st = ST_NORMAL;
+    }
+
+  top_mark = ListMaps.display(top_mark);
+
+  group Buttons { GUI_BUTTON };
+  Buttons.append("НОВАЯ КАРТА", screen_map_new);
+  Buttons.append("УДАЛИТЬ КАРТУ");
+  Buttons.append("СТАРТ", map_open, start_state);
+  Buttons.append("ОТМЕНА", screen_start);
+  Buttons.display(top_mark);
+
+  current_menu = screen_map_select;
+}
+
+
+///
 /// \brief gui::screen_map_new
 ///
 void gui::screen_map_new(uint)
 {
   clear(); // Очистка всех массивов VAO
-  auto top = title("ВВЕДИТЕ НАЗВАНИЕ");
+  auto top_mark = title("ВВЕДИТЕ НАЗВАНИЕ");
 
   layout L {};
   L.width = LayoutGui.width - menu_border_default * 4;
@@ -1271,7 +1270,7 @@ void gui::screen_map_new(uint)
   group Buttons {GUI_BUTTON };
   Buttons.append("СОЗДАТЬ", map_create);
   Buttons.append("ОТМЕНА", current_menu);
-  Buttons.display(top);
+  Buttons.display(top_mark);
   current_menu = screen_map_new;
   StringBuffer.clear();
 }
