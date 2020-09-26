@@ -35,6 +35,7 @@ static std::vector<element> ActiveElements {};          // Группа кноп
 
 static uint selected_list_row = 0;
 
+
 ///
 /// \brief rect_xy
 /// \param left
@@ -1472,6 +1473,9 @@ void gui::hud_update(void)
 gui::~gui(void)
 {
   cfg::save(LayoutGui); // Сохранение положения окна
+  ProgramFrBuf = nullptr;
+  OGLContext = nullptr;
+  Space3d = nullptr;
 }
 
 } //namespace tr

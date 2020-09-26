@@ -87,7 +87,6 @@ trgl::~trgl(void)
   glfwTerminate();
 }
 
-
 void trgl::set_error_observer(interface_gl_context& ref)
 {
   error_observer = &ref;
