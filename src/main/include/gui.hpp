@@ -95,7 +95,7 @@ struct vbo_ptr {
 class face
 {
 public:
-  face(const layout& L, const std::string& Symbol = " ", float_color BgColor = DefaultBgColor);
+  face(const layout& Layout, const std::string& Symbol = " ", float_color BgColor = DefaultBgColor);
   ~face(void);
 
   void update_xy(const layout& L);
@@ -232,7 +232,7 @@ class gui: public interface_gl_context
     static GLsizei fps_uv_data;    // смещение данных FPS в буфере UV
     static std::string map_current;
     static std::string StringBuffer;   // строка ввода пользователя
-    static func_ptr current_menu;
+    static func_ptr last_menu;
 
     static std::unique_ptr<space_3d> Space3d;    // = nullptr;
     std::unique_ptr<glsl> Program2d = nullptr;   // построение 2D элементов

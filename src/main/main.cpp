@@ -52,9 +52,7 @@ int main(int, char* argv[])
   try
   {
     cfg::load(argv); // загрузка конфигурации
-    gui AppGUI  {};
-    while(AppGUI.render()) continue;
-
+    gui AppGUI {};   // Открыть GUI интерфейс
   }
   catch(std::exception & e)
   {

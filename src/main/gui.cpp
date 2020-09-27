@@ -26,7 +26,7 @@ static std::unique_ptr<vbo> VBO_rgba = nullptr;    // цвет вершин
 static std::unique_ptr<vbo> VBO_uv   = nullptr;    // текстурные координаты
 
 static unsigned int gui_indices = 0; // число индексов в 2Д режиме
-func_ptr gui::current_menu = nullptr;
+func_ptr gui::last_menu = nullptr;
 
 std::unique_ptr<input_ctrl> gui::InputCursor = nullptr; // Текстовый курсор для пользователя
 
@@ -143,14 +143,14 @@ void load_textures(void)
 /// \param symbol_height
 /// \param BgColor
 ///
-face::face(const layout& L, const std::string& Symbol, float_color BgColor)
+face::face(const layout& Layout, const std::string& Symbol, float_color BgColor)
 {
 #ifndef NDEBUG
   assert(VBO_xy   != nullptr && "VBO_xy не инициализирован" );
   assert(VBO_rgba != nullptr && "VBO_rgba не инициализирован" );
   assert(VBO_uv   != nullptr && "VBO_uv не инициализирован" );
 #endif
-  init(L, Symbol, BgColor);
+  init(Layout, Symbol, BgColor);
 }
 
 
@@ -271,6 +271,10 @@ void face::clear(void)
 ///
 face::~face(void){
   if(!Char.empty()) clear();
+  else
+    std::cerr << "\n" << __PRETTY_FUNCTION__ << "\n"
+    << "Face can't use empty char\n" << std::endl;
+
 }
 
 
@@ -629,6 +633,8 @@ gui::gui(void)
 
   open = true;
   screen_start(0);
+
+  while(render()) continue;
 }
 
 
@@ -781,17 +787,13 @@ void gui::program_2d_init(void)
 ///
 void gui::clear(void)
 {
-  std::cerr << "before VBO_xy->hem = " << VBO_xy->get_hem()
-            << ", gui_indices = " << gui_indices << std::endl;
+  std::clog << "Before: xy-dots = " << VBO_xy->get_hem() / 2 / 4
+            << ", faces = " << gui_indices / 6 << std::endl;
   FacesBuf.clear();
+  std::clog << "After: xy-dots = " << VBO_xy->get_hem() / 2 / 4
+            << ", faces = " << gui_indices / 6 << std::endl;
+
   ActiveElements.clear();
-  std::cerr << "after VBO_xy->hem = " << VBO_xy->get_hem()
-            << ", gui_indices = " << gui_indices << std::endl;
-
-
-  //if(VBO_xy->get_hem() != 0) std::cerr << "VBO_xy->hem = " << VBO_xy->get_hem() << std::endl;
-  //if(VBO_uv->get_hem() != 0) std::cerr << "VBO_uv->hem = " << VBO_uv->get_hem() << std::endl;
-  //if(VBO_rgba->get_hem() != 0) std::cerr << "VBO_rgba->hem = " << VBO_rgba->get_hem() << std::endl;
 
   VBO_xy->clear();
   VBO_uv->clear();
@@ -1016,7 +1018,7 @@ void gui::event_resize(int w, int h)
   RenderBuffer->resize(LayoutGui.width, LayoutGui.height);
   Space3d->resize_event(w, h);
 
-  if(nullptr != current_menu) current_menu(0);
+  if(nullptr != last_menu) last_menu(0);
 }
 
 
@@ -1183,7 +1185,17 @@ void gui::update_input(void)
 ///
 void gui::screen_start(uint)
 {
-  clear(); // Экрана
+  clear();
+
+  //debug ->
+//  uint b = 10;
+//  FacesBuf.emplace_back(std::make_unique<face>(
+//         layout{ LayoutGui.width - 2 * b, LayoutGui.height - 2 * b, b, b }, " ",
+//         float_color{ 0.9f, 1.f, 0.9f, 1.f } ));
+//  return;
+  //debug <-
+
+
   auto top_mark = title("Добро пожаловать в TrickRig!");
 
   group Buttons { GUI_BUTTON };
@@ -1192,7 +1204,7 @@ void gui::screen_start(uint)
   Buttons.append("ЗАКРЫТЬ", close);
   Buttons.display(top_mark);
 
-  current_menu = screen_start;
+  last_menu = screen_start;
 }
 
 
@@ -1207,7 +1219,7 @@ void gui::screen_config(uint)
   group Buttons { GUI_BUTTON };
   Buttons.append("ЗАКРЫТЬ", screen_start );
   Buttons.display(top_mark);
-  current_menu = screen_config;
+  last_menu = screen_config;
 }
 
 
@@ -1244,7 +1256,7 @@ void gui::screen_map_select(uint)
   Buttons.append("ОТМЕНА", screen_start);
   Buttons.display(top_mark);
 
-  current_menu = screen_map_select;
+  last_menu = screen_map_select;
 }
 
 
@@ -1269,9 +1281,9 @@ void gui::screen_map_new(uint)
 
   group Buttons {GUI_BUTTON };
   Buttons.append("СОЗДАТЬ", map_create);
-  Buttons.append("ОТМЕНА", current_menu);
+  Buttons.append("ОТМЕНА", last_menu);
   Buttons.display(top_mark);
-  current_menu = screen_map_new;
+  last_menu = screen_map_new;
   StringBuffer.clear();
 }
 
@@ -1313,7 +1325,7 @@ void gui::screen_pause(uint)
   Buttons.append("ПРОДОЛЖИТЬ", mode_3d);
   Buttons.append("ВЫХОД", close_map);
   Buttons.display(top);
-  current_menu = screen_pause;
+  last_menu = screen_pause;
 }
 
 
@@ -1472,6 +1484,14 @@ void gui::hud_update(void)
 gui::~gui(void)
 {
   cfg::save(LayoutGui); // Сохранение положения окна
+  clear();
+  glUseProgram(0);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  ProgramFrBuf = nullptr;
+  Program2d = nullptr;
+  Space3d = nullptr;
+  RenderBuffer = nullptr;
+  OGLContext = nullptr;
 }
 
 } //namespace tr
