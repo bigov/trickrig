@@ -6,7 +6,7 @@
 // GL_TEXTURE1 - текстура для рендера 3D сцены
 // GL_TEXTURE2 - рендер идентификации примитивов 3D сцены (цвет = id примитива)
 //             - текстура GUI в режиме "меню"
-//             - текстура HUD в 3D режиме
+//             - текстура HUD в 3D режиме.
 //
 //===========================================================================
 
@@ -14,7 +14,6 @@
 #include <fstream>
 #include <string>
 #include <time.h>
-
 #include "gui.hpp"
 
 namespace tr
@@ -37,8 +36,8 @@ int main(int, char* argv[])
   std::streambuf* _cerr = std::cerr.rdbuf();
   std::streambuf* _clog = std::clog.rdbuf();
 
-  char const err_fname[] = "tr_errs.txt"; // Errors log-file
-  char const log_fname[] = "tr_logs.txt"; // Inform log-file
+  char const err_fname[] = "errs.txt"; // Errors log-file
+  char const log_fname[] = "logs.txt"; // Inform log-file
 
   std::ofstream tr_err_file(err_fname);
   std::cerr.rdbuf(tr_err_file.rdbuf()); // Redirect std::cerr in file
@@ -70,7 +69,7 @@ int main(int, char* argv[])
   }
 
   log_mtx.lock();
-  std::clog << "TrickRig exit success" << std::endl;
+  std::clog << "No exceptions: TrickRig exit success" << std::endl;
   log_mtx.unlock();
 
   std::cerr.rdbuf(_cerr);  // restore System std::cerr

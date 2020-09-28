@@ -129,8 +129,8 @@ void cfg::set_user_dir(void)
   DS = "/";
   const char *env_p = getenv("HOME");
   if(nullptr == env_p) ERR("config::set_user_dir: can't setup users directory");
-  UserDir = std::string(env_p);
-  UserDir += DS +".config";
+  UserDirDB = std::string(env_p);
+  UserDirDB += DS +".config";
 #endif
 
 #ifndef NDEBUG
