@@ -240,22 +240,12 @@ void face::update_uv(const std::string& Symbol)
 
 
 ///
-/// \brief char3d::clear
+/// \brief char3d::~char3d
 ///
-void face::clear(void)
+face::~face(void)
 {
-  if(Char.empty()) return;
+
   Char.clear();
-
-  if(Addr.xy.size + Addr.xy.offset <= VBO_xy->get_hem())
-    VBO_xy->remove(Addr.xy.size, Addr.xy.offset);
-
-  if(Addr.rgba.size + Addr.rgba.offset <= VBO_rgba->get_hem())
-    VBO_rgba->remove(Addr.rgba.size, Addr.rgba.offset);
-
-  if(Addr.uv.size + Addr.uv.offset <= VBO_uv->get_hem())
-    VBO_uv->remove(Addr.uv.size, Addr.uv.offset);
-
   Addr.xy.size     = 0;
   Addr.xy.offset   = 0;
   Addr.rgba.size   = 0;
@@ -263,19 +253,38 @@ void face::clear(void)
   Addr.uv.size     = 0;
   Addr.uv.offset   = 0;
 
+  ///
+  /// ВАЖНО!!!
+  ///
+  /// Данные поверхностей располагаются в буфере GPU непрерывным блоком.
+  /// Поэтому, при удалении данных одной поверхности фактически происходит
+  /// поиск последнего блока данных в конце буфера и его перенос на место
+  /// расположения данных удаляемой поверхности.
+  ///
+  /// Поэтому, если выборочно удалять поверхности из буфера, то необходимо
+  /// найти поверхность, данные которой были перенесены и внести изменения в
+  /// адрес смещения ее данных в VBO.
+  ///
+  /*
+  GLsizeiptr new_offset = 0;
+
+  if(Addr.xy.size + Addr.xy.offset <= VBO_xy->get_hem())
+    new_offset = VBO_xy->remove(Addr.xy.size, Addr.xy.offset);
+
+  fix_face_data_xy(new_offset, Addr.xy.offset);
+
+  if(Addr.rgba.size + Addr.rgba.offset <= VBO_rgba->get_hem())
+    new_offset = VBO_rgba->remove(Addr.rgba.size, Addr.rgba.offset);
+
+  fix_face_data_rgba(new_offset, Addr.rgba.offset);
+
+  if(Addr.uv.size + Addr.uv.offset <= VBO_uv->get_hem())
+    new_offset = VBO_uv->remove(Addr.uv.size, Addr.uv.offset);
+
+  fix_face_data_uv(new_offset, Addr.uv.offset);
+
   if(gui_indices >= 6) gui_indices -= 6;
-}
-
-
-///
-/// \brief char3d::~char3d
-///
-face::~face(void){
-  if(!Char.empty()) clear();
-  else
-    std::cerr << "\n" << __PRETTY_FUNCTION__ << "\n"
-    << "Face can't use empty char\n" << std::endl;
-
+*/
 }
 
 
@@ -788,20 +797,12 @@ void gui::program_2d_init(void)
 ///
 void gui::clear(void)
 {
-  std::clog << "Before: xy-dots = " << VBO_xy->get_hem() / 2 / 4
-            << ", faces = " << gui_indices / 6 << std::endl;
   FacesBuf.clear();
-  std::clog << "After: xy-dots = " << VBO_xy->get_hem() / 2 / 4
-            << ", faces = " << gui_indices / 6 << std::endl;
-
   ActiveElements.clear();
-
   VBO_xy->clear();
   VBO_uv->clear();
   VBO_rgba->clear();
-
-  //gui_indices = 0;
-
+  gui_indices = 0;
   InputCursor = nullptr;
 }
 
@@ -979,7 +980,7 @@ void gui::event_character(uint ch)
 
   // 3D элементы, отображающие вводимые пользователем символы, расположены в
   // конце буфера.Значение указателя вектора на символ под курсором ввода
-  // соответствует разности между длиной строки и номером позиции курсора:
+  // соответствует разности между длинной строки и номером позиции курсора:
   auto it = FacesBuf.end() - (row_size - row_position);
   // Вставить введенный символ в 3D буфер по месту положения указателя
   FacesBuf.emplace(it, std::make_unique<face>(CursorLayout, Str8, DefaultBgColor));

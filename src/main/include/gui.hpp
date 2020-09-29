@@ -114,7 +114,6 @@ protected:
   face& operator=(face&&) = delete;
 
   void init(const layout& L, const std::string& Symbol, float_color BgColor);
-  void clear(void);
 
   std::string Char {};
   vbo_ptr Addr {};
