@@ -38,8 +38,8 @@ class vbo
     GLenum get_type(void)     { return gl_buffer_type; }
 
     void allocate (GLsizeiptr new_size);
-    void allocate (GLsizeiptr new_size, const GLvoid* data);
-    void append(const GLsizeiptr data_size, const GLvoid* data);
+    void allocate (const GLsizeiptr new_size, const GLvoid* data);
+    GLsizeiptr append(const GLsizeiptr data_size, const GLvoid* data);
     GLsizeiptr remove(const GLsizeiptr data_size, const GLsizeiptr dest);
     void update(const GLsizeiptr data_size, const GLvoid* data, GLsizeiptr stride);
     void clear(void) { hem = 0; }
@@ -50,27 +50,7 @@ class vbo
     void attrib_i (GLuint, GLint, GLenum, GLsizei, const GLvoid*);
 };
 
-
-///
-/// \brief The vbo_ctrl class
-/// \details Класс, предназначенный для выполнения в раздельном потоке
-/// операций записи с ранее созданным буфером
-///
-class vbo_ctrl
-{
-protected:
-  GLenum gl_buffer_type;
-  GLuint id;              // индекс VBO
-  GLsizeiptr allocated;   // (максимальный) выделяемый размер буфера
-  GLsizeiptr hem = 0;     // граница размещения данных в VBO
-public:
-  vbo_ctrl(GLenum t, GLuint i, GLsizeiptr a): gl_buffer_type(t), id(i), allocated(a) {}
-
-  GLsizeiptr append (const GLsizeiptr data_size, const GLvoid* data);
-  GLsizeiptr remove (const GLsizeiptr data_size, const GLsizeiptr dest);
-};
-
-
+/*
 ///
 /// \brief The vbo_transit class
 /// \details Промежуточный GPU буфер для обмена данными с CPU
@@ -84,6 +64,7 @@ class vbo_transit: public vbo
     vbo_transit (GLenum type);
     void data_get (GLintptr offset, GLsizeiptr size, GLvoid* data);
 };
+*/
 
 } //tr
 #endif

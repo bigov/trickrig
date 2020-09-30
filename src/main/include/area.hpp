@@ -48,7 +48,7 @@ class area
 
   private:
     std::shared_ptr<glm::vec3> ViewFrom = nullptr;
-    std::unique_ptr<vbo_ctrl> VboCtrl = nullptr;   // Управление содержимым VBO
+    std::unique_ptr<vbo> VBO = nullptr;   // Управление содержимым VBO
 
     // В контрольный массив (VboMap) записываются координаты Origin воксов для видимых сторон,
     // переданных в VBO в порядке их размещения. Соответственно, размер массива должен

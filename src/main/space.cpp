@@ -136,7 +136,8 @@ void space_3d::load(const std::string& map_current)
 
   render_indices.store(0);
   // Поток обмена данными с базой. Загрузка карты занимает некоторое время
-  data_loader = std::make_unique<std::thread>(area_control, OGLContext, ViewFrom, VBO3d.get_id(), VBO3d.get_size());
+  data_loader = std::make_unique<std::thread>(area_control, OGLContext,
+                                              ViewFrom, VBO3d.get_id(), VBO3d.get_size());
 
   // Настройка матрицы проекции
   GLsizei width, height;

@@ -58,7 +58,7 @@ area::area (GLuint VBO_id, GLsizeiptr VBO_size)
   f_side_len = size_v4 * 1.f;
   lod_dist = border_dist_b4 * size_v4;
 
-  VboCtrl = std::make_unique<vbo_ctrl> (GL_ARRAY_BUFFER, VBO_id, VBO_size);
+  VBO = std::make_unique<vbo> (GL_ARRAY_BUFFER, VBO_id, VBO_size);
 
   // Зарезервировать место для размещения числа сторон в соответствии с размером буфера VBO
   VboMap = std::unique_ptr<vbo_map[]> {new vbo_map[VBO_size/bytes_per_face]};
@@ -305,7 +305,7 @@ void area::load(int x, int z)
     for( auto& Face: V.Faces )
     {
       vbo_mtx.lock();
-      auto vbo_addr = VboCtrl->append(bytes_per_face, Face.data() + 1);
+      auto vbo_addr = VBO->append(bytes_per_face, Face.data() + 1);
       render_indices.fetch_add(indices_per_face);
       vbo_mtx.unlock();
       // Запомнить положение блока данных в VBO, координаты вокса и индекс поверхности
@@ -334,7 +334,7 @@ void area::truncate(int x, int z)
     {
       dest = id * bytes_per_face;                     // адрес удаляемого блока данных
       vbo_mtx.lock();
-      moved_from = VboCtrl->remove(bytes_per_face, dest); // адрес хвоста VBO (данными отсюда
+      moved_from = VBO->remove(bytes_per_face, dest); // адрес хвоста VBO (данными отсюда
       vbo_mtx.unlock();                                // перезаписываются данные по адресу "dest")
       // Если c адреса "free" на "dest" данные были перенесены, то обновить координты Origin
       if (moved_from != dest) VboMap[id] = VboMap[moved_from/bytes_per_face];
