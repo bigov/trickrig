@@ -37,17 +37,12 @@ class vbo
     GLsizeiptr get_hem(void)  { return hem; }
     GLenum get_type(void)     { return gl_buffer_type; }
 
-    void allocate (GLsizeiptr new_size);
-    void allocate (const GLsizeiptr new_size, const GLvoid* data);
+    void allocate (const GLsizeiptr new_size, const GLvoid* data = nullptr);
     GLsizeiptr append(const GLsizeiptr data_size, const GLvoid* data);
     GLsizeiptr remove(const GLsizeiptr data_size, const GLsizeiptr dest);
     void update(const GLsizeiptr data_size, const GLvoid* data, GLsizeiptr stride);
     void clear(void) { hem = 0; }
-
-    GLsizeiptr max_size(void);
-    void set_attributes (const std::list<glsl_attributes>&);
-    void attrib (GLuint, GLint, GLenum, GLboolean, GLsizei, size_t);
-    void attrib_i (GLuint, GLint, GLenum, GLsizei, const GLvoid*);
+    void set_attrib (GLuint, GLint, GLenum, GLboolean, GLsizei, size_t);
 };
 
 /*

@@ -726,7 +726,11 @@ ProgramFrBuf->set_uniform("Cursor", {0.f, 0.f, 0.f});
 
 vbo VboWin { GL_ARRAY_BUFFER };
 VboWin.allocate( sizeof(WinData), WinData );
-VboWin.set_attributes(ProgramFrBuf->AtribsList); // настройка положения атрибутов GLSL программы
+
+// настройка положения атрибутов GLSL программы
+for(auto& A: ProgramFrBuf->AtribsList)
+  VboWin.set_attrib(A.index, A.d_size, A.type, A.normalized, A.stride, A.pointer);
+
 
 glBindVertexArray(0);
 ProgramFrBuf->unuse();
@@ -781,11 +785,11 @@ void gui::program_2d_init(void)
   VBO_rgba->allocate(sizeof(float) * 4 * max_elements_count); // RGBA VBO
 
   auto A = Program2d->AtribsList.begin();
-  VBO_xy->attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
+  VBO_xy->set_attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
   ++A;
-  VBO_rgba->attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
+  VBO_rgba->set_attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
   ++A;
-  VBO_uv->attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
+  VBO_uv->set_attrib(A->index, A->d_size, A->type, A->normalized, 0, 0);
 
   glBindVertexArray(0);
   Program2d->unuse();

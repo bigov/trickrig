@@ -106,7 +106,10 @@ void space_3d::program_3d_init(void)
   // Число сторон куба в объеме с длиной стороны LOD (2*dist_xx) элементов:
   uint n = static_cast<uint>(pow((border_dist_b4 + border_dist_b4 + 1), 3));
   VBO3d.allocate(n * bytes_per_face);          // Размер данных VBO для размещения сторон вокселей:
-  VBO3d.set_attributes(Program3d->AtribsList); // настройка положения атрибутов GLSL программы
+
+  // настройка положения атрибутов GLSL программы
+  for(auto& A: Program3d->AtribsList)
+    VBO3d.set_attrib(A.index, A.d_size, A.type, A.normalized, A.stride, A.pointer);
 
   // Так как все четырехугольники сторон индексируются одинаково, то индексный массив
   // заполняем один раз "под завязку" и забываем про него. Число используемых индексов

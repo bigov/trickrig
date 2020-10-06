@@ -10,15 +10,6 @@
 namespace tr
 {
 
-///
-/// \brief vbo_base::max_size
-/// \return
-///
-GLsizeiptr vbo::max_size (void)
-{
-  return allocated;
-}
-
 
 vbo::vbo(GLenum type)
 {
@@ -33,28 +24,6 @@ vbo::vbo(GLenum type, GLuint _id)
   id = _id;
 }
 
-///
-/// \brief vbo::allocate
-/// \param al
-///
-/// \details Настройка размера буфера
-///
-void vbo::allocate (GLsizeiptr new_size)
-{
-  allocated = new_size;
-  glBindBuffer(gl_buffer_type, id);
-  glBufferData(gl_buffer_type, allocated, nullptr, GL_STATIC_DRAW); // GL_STREAM_DRAW
-
-#ifndef NDEBUG //--контроль создания буфера--------------------------------
-  GLint d_size = 0;
-  glGetBufferParameteriv(gl_buffer_type, GL_BUFFER_SIZE, &d_size);
-  assert(allocated == d_size);
-#endif //------------------------------------------------------------------
-
-  glBindBuffer(gl_buffer_type, 0);
-  hem = 0;  // данные не переданы, поэтому указатель ставим в начало
-}
-
 
 ///
 /// \brief vbo::allocate
@@ -65,29 +34,25 @@ void vbo::allocate (GLsizeiptr new_size)
 ///
 void vbo::allocate(const GLsizeiptr new_size, const GLvoid* data)
 {
+#ifndef NDEBUG //--контроль создания буфера--------------------------------
+  assert(id > 0 && "Ошибка: не инициализированный буфер");
+#endif
+  //if(0 == id) glGenBuffers(1, &id);
+
+  hem = 0;
   allocated = new_size;
-  glGenBuffers(1, &id);
   glBindBuffer(gl_buffer_type, id);
   glBufferData(gl_buffer_type, new_size, data, GL_STATIC_DRAW);
 
   #ifndef NDEBUG //--контроль создания буфера--------------------------------
   GLint d_size = 0;
   glGetBufferParameteriv(gl_buffer_type, GL_BUFFER_SIZE, &d_size);
-  assert(allocated == d_size);
+  assert(new_size == d_size);
   #endif //------------------------------------------------------------------
 
   if(GL_ARRAY_BUFFER == gl_buffer_type) glBindBuffer(GL_ARRAY_BUFFER, 0);
-  hem = new_size;
-}
-
-
-///
-/// \brief vbo_base::set_attributes
-/// \param AtribsList
-///
-void vbo::set_attributes(const std::list<glsl_attributes>& AtribsList)
-{
-  for(auto& A: AtribsList) attrib(A.index, A.d_size, A.type, A.normalized, A.stride, A.pointer);
+  //glBindBuffer(gl_buffer_type, 0);
+  if(nullptr != data) hem = new_size;
 }
 
 
@@ -102,31 +67,12 @@ void vbo::set_attributes(const std::list<glsl_attributes>& AtribsList)
 ///
 /// \details Настройка атрибутов для float
 ///
-void vbo::attrib(GLuint index, GLint d_size, GLenum type, GLboolean normalized,
-  GLsizei stride, size_t pointer)
+void vbo::set_attrib(GLuint index, GLint d_size, GLenum type, GLboolean normalized,
+                 GLsizei stride, size_t pointer)
 {
   glEnableVertexAttribArray(index);
   glBindBuffer(gl_buffer_type, id);
   glVertexAttribPointer(index, d_size, type, normalized, stride, reinterpret_cast<void*>(pointer));
-  glBindBuffer(gl_buffer_type, 0);
-}
-
-
-///
-/// \brief vbo::attrib_i
-/// \param index
-/// \param d_size
-/// \param type
-/// \param stride
-/// \param pointer
-///
-/// \details  Настройка атрибутов для int
-///
-void vbo::attrib_i(GLuint index, GLint d_size, GLenum type, GLsizei stride, const GLvoid* pointer)
-{
-  glEnableVertexAttribArray(index);
-  glBindBuffer(gl_buffer_type, id);
-  glVertexAttribIPointer(index, d_size, type, stride, pointer);
   glBindBuffer(gl_buffer_type, 0);
 }
 
