@@ -35,7 +35,7 @@ vbo::vbo(GLenum type, GLuint _id)
 void vbo::allocate(const GLsizeiptr new_size, const GLvoid* data)
 {
 #ifndef NDEBUG //--контроль создания буфера--------------------------------
-  assert(id > 0 && "Ошибка: не инициализированный буфер");
+  assert(id > 0 && "Ошибка: VBO буфер не инициализирован");
 #endif
   //if(0 == id) glGenBuffers(1, &id);
 

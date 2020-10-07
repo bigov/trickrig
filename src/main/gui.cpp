@@ -898,6 +898,11 @@ void gui::event_cursor(double x, double y)
 void gui::select_row(uint id)
 {
   selected_list_row = id;
+
+  for(auto& B: ActiveElements)
+  {
+    if(B.state == ST_DISABLE) element_set_state(B, ST_NORMAL);
+  }
 }
 
 
@@ -1235,30 +1240,31 @@ void gui::screen_config(uint)
 void gui::screen_map_select(uint)
 {
   clear(); // Очистка всех массивов VAO
-  STATES start_state = ST_DISABLE;
-
+  //STATES start_state = ST_DISABLE;
 
   auto top_mark = title("ВЫБОР КАРТЫ");
 
   group ListMaps {GUI_ROWSLIST};
-  // Составить список карт в каталоге пользователя
+  // Составить список названий карт из каталога пользователя
   auto DirList = std::filesystem::directory_iterator(cfg::app_data_dir());
-  if( DirList->exists() ) start_state = ST_NORMAL;
 
-  STATES st = ST_PRESSED; // Первая строка всегда выбрана по-умолчанию
+  //if( DirList->exists() ) start_state = ST_NORMAL;
+  //STATES st = ST_PRESSED; // Первая строка всегда выбрана по-умолчанию
   for(auto& it: DirList)
     if(std::filesystem::is_directory(it))
     {
-      ListMaps.append(cfg::map_name(it.path().string()), select_row, st);
-      st = ST_NORMAL;
+      //ListMaps.append(cfg::map_name(it.path().string()), select_row, st);
+      ListMaps.append(cfg::map_name(it.path().string()), select_row, ST_NORMAL);
+      //st = ST_NORMAL;
     }
 
   top_mark = ListMaps.display(top_mark);
 
   group Buttons { GUI_BUTTON };
   Buttons.append("НОВАЯ КАРТА", screen_map_new);
-  Buttons.append("УДАЛИТЬ КАРТУ");
-  Buttons.append("СТАРТ", map_open, start_state);
+  Buttons.append("УДАЛИТЬ КАРТУ", nullptr, ST_DISABLE);
+  //Buttons.append("СТАРТ", map_open, start_state);
+  Buttons.append("СТАРТ", map_open, ST_DISABLE);
   Buttons.append("ОТМЕНА", screen_start);
   Buttons.display(top_mark);
 
