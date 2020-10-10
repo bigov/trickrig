@@ -187,38 +187,45 @@ struct params {
 };
 
 
-/*
-class interface_group
+///
+/// \brief The gui_group class
+///
+class gui_group
 {
-public:
-  interface_group(void) = delete;
-  virtual ~interface_group(void) = default;
-
-  std::vector<params> Params {};          // массив параметров всех элементов создаваемой группы
-
-  virtual uint align(uint) {}
-};
-*/
-
-
-class group
-{
-private:
-  ELEMENT_TYPES element_type;
-  std::vector<params> Params {};          // массив параметров всех элементов создаваемой группы
+protected:
+  std::vector<params> Params {};    // Данные всех элементов группы
 
 public:
-  group(void) = delete;
-  group(ELEMENT_TYPES _type);
-
-  void make_buttons(void);
-  void make_listrow(void);
+  gui_group(void) = default;
+  virtual ~gui_group(void) = default;
 
   void append(const std::string& newLabel, func_ptr callback = nullptr,
               STATES state = ST_NORMAL, bool dependant = false);
 
-  void buttons_align(void);
-  void listrows_align(void);
+  virtual void align(void) = 0;
+  virtual void make(void) = 0;
+};
+
+
+///
+/// \brief The buttons_group class
+///
+class buttons: public gui_group
+{
+public:
+  virtual void align(void);
+  virtual void make(void);
+};
+
+
+///
+/// \brief The rows class
+///
+class rows: public gui_group
+{
+public:
+  virtual void make(void);
+  virtual void align(void);
 };
 
 

@@ -370,22 +370,12 @@ void input_ctrl::blink(void)
 
 
 ///
-/// \brief elements_group::elements_group
-/// \param _type
-///
-group::group(ELEMENT_TYPES _type): element_type(_type)
-{
-  Params.clear();
-};
-
-
-///
-/// \brief elements_group::append
+/// \brief groups::append
 /// \param Label
 /// \param state
 /// \param callback
 ///
-void group::append(const std::string& newLabel, func_ptr callback, STATES state, bool dependant)
+void gui_group::append(const std::string& newLabel, func_ptr callback, STATES state, bool dependant)
 {
   Params.emplace_back( params { newLabel, callback, state, dependant, 0, 0 } );
 }
@@ -394,7 +384,8 @@ void group::append(const std::string& newLabel, func_ptr callback, STATES state,
 ///
 /// \brief group::buttons_align
 ///
-void group::buttons_align(void)
+//void group::buttons_align(void)
+void buttons::align(void)
 {
   auto items_count = Params.size();
 
@@ -447,7 +438,7 @@ void group::buttons_align(void)
 ///
 /// \brief group::listrows_align
 ///
-void group::listrows_align(void)
+void rows::align(void)
 {
   auto items_count = Params.size();
 
@@ -472,9 +463,11 @@ void group::listrows_align(void)
 /// \param P
 /// \return
 ///
-void group::make_buttons(void)
+//void group::make_buttons(void)
+void buttons::make(void)
 {
-  buttons_align();
+  //buttons_align();
+  align();
 
   for(const auto& P: Params)
   {
@@ -489,7 +482,9 @@ void group::make_buttons(void)
     L.left = P.left;
     L.top = P.top;
 
-    Element.element_type = element_type;
+    //Element.element_type = element_type;
+    Element.element_type = GUI_BUTTON;
+
     Element.caller = P.caller;
     Element.state = P.state;
     Element.Margins.x0 = L.left * 1.0;
@@ -533,9 +528,9 @@ void group::make_buttons(void)
 /// \param P
 /// \return
 ///
-void group::make_listrow(void)
+void rows::make(void)
 {
-  listrows_align();
+  align();
   uint id = 0;
 
   for(const auto& P: Params)
@@ -552,7 +547,7 @@ void group::make_listrow(void)
     L.left = menu_border_default * 2;
     L.top = L.left + title_height_default + ActiveElements.size() * (listrow_height_default + 1);
 
-    Element.element_type = element_type;
+    Element.element_type = GUI_ROWSLIST;
     Element.caller = P.caller;
     Element.id = id++;
     Element.state = P.state;
@@ -1189,11 +1184,11 @@ void gui::screen_start(uint)
   clear();
   title("Добро пожаловать в TrickRig!");
 
-  group Buttons { GUI_BUTTON };
+  buttons Buttons {};
   Buttons.append("НАСТРОИТЬ", screen_config);
   Buttons.append("ВЫБРАТЬ КАРТУ", screen_map_select);
   Buttons.append("ЗАКРЫТЬ", close);
-  Buttons.make_buttons();
+  Buttons.make();
 
   last_menu = screen_start;
 }
@@ -1207,9 +1202,9 @@ void gui::screen_config(uint)
   clear(); // Очистка всех массивов VAO
   title("ВЫБОР ПАРАМЕТРОВ");
 
-  group Buttons { GUI_BUTTON };
+  buttons Buttons {};
   Buttons.append("ЗАКРЫТЬ", screen_start );
-  Buttons.make_buttons();
+  Buttons.make();
   last_menu = screen_config;
 }
 
@@ -1222,7 +1217,7 @@ void gui::screen_map_select(uint)
   clear(); // Очистка всех массивов VAO
   title("ВЫБОР КАРТЫ");
 
-  group ListMaps {GUI_ROWSLIST};
+  rows ListMaps { };
   // Составить список названий карт из каталога пользователя
   auto DirList = std::filesystem::directory_iterator(cfg::app_data_dir());
 
@@ -1233,14 +1228,14 @@ void gui::screen_map_select(uint)
       ListMaps.append(cfg::map_name(it.path().string()), select_row, ST_NORMAL);
     }
 
-  ListMaps.make_listrow();
+  ListMaps.make();
 
-  group Buttons { GUI_BUTTON };
+  buttons Buttons {};
   Buttons.append("НОВАЯ КАРТА", screen_map_new);
   Buttons.append("УДАЛИТЬ КАРТУ", nullptr, ST_DISABLE);
   Buttons.append("СТАРТ", map_open, ST_DISABLE);
   Buttons.append("ОТМЕНА", screen_start);
-  Buttons.make_buttons();
+  Buttons.make();
 
   last_menu = screen_map_select;
 }
@@ -1265,10 +1260,10 @@ void gui::screen_map_new(uint)
   L = { sym_width_default, sym_height_default, L.left + 4, L.top + 4 };
   InputCursor = std::make_unique<input_ctrl>(L);
 
-  group Buttons {GUI_BUTTON };
+  buttons Buttons {};
   Buttons.append("СОЗДАТЬ", map_create);
   Buttons.append("ОТМЕНА", last_menu);
-  Buttons.make_buttons();
+  Buttons.make();
   last_menu = screen_map_new;
   StringBuffer.clear();
 }
@@ -1307,10 +1302,10 @@ void gui::screen_pause(uint)
   text_append({symbol_width, symbol_height, left, top}, Text);
   top += title_height_default;
 
-  group Buttons { GUI_BUTTON };
+  buttons Buttons {};
   Buttons.append("ПРОДОЛЖИТЬ", mode_3d);
   Buttons.append("ВЫХОД", close_map);
-  Buttons.make_buttons();
+  Buttons.make();
   last_menu = screen_pause;
 }
 
