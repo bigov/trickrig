@@ -31,6 +31,8 @@ std::unique_ptr<input_ctrl> gui::InputCursor = nullptr; // Текстовый к
 
 static std::vector<std::unique_ptr<face>> FacesBuf {};  // Массив указателей на 3D элементы меню
 static std::vector<element> ActiveElements {};          // Элементы взаимодействия в пользователем
+//static element* under_cursor = nullptr;                 // Указатель на элемент под курсором
+//static std::vector<element>::iterator under_cursor = ActiveElements.end();
 
 static uint selected_list_row = 0;
 static uint top_line = 0;                               // верхняя граница размещения группы элементов GIU
@@ -375,9 +377,9 @@ void input_ctrl::blink(void)
 /// \param state
 /// \param callback
 ///
-void gui_group::append(const std::string& newLabel, func_ptr callback, STATES state, bool dependant)
+void gui_group::append(const std::string& newLabel, func_ptr callback, TR_STATES state, bool dependant)
 {
-  Params.emplace_back( params { newLabel, callback, state, dependant, 0, 0 } );
+  Params.emplace_back( element { newLabel, callback, state, dependant } );
 }
 
 
@@ -463,30 +465,27 @@ void rows::align(void)
 /// \param P
 /// \return
 ///
-//void group::make_buttons(void)
-void buttons::make(void)
+void buttons::show(void)
 {
-  //buttons_align();
   align();
 
-  for(const auto& P: Params)
+  for(auto& Element: Params)
   {
     layout L {};
-    element Element {};
+    //element Element {};
     colors BgColors {};
     colors HemColors {};
     BgColors = BtnBgColor;
     HemColors = BtnHemColor;
     L.width = btn_width_default;
     L.height = btn_height_default;
-    L.left = P.left;
-    L.top = P.top;
+    L.left = Element.left;
+    L.top = Element.top;
 
-    //Element.element_type = element_type;
     Element.element_type = GUI_BUTTON;
 
-    Element.caller = P.caller;
-    Element.state = P.state;
+    //Element.caller = P.caller;
+    //Element.state = P.state;
     Element.Margins.x0 = L.left * 1.0;
     Element.Margins.y0 = L.top * 1.0;
     Element.Margins.x1 = (L.left + L.width) * 1.0;
@@ -505,7 +504,7 @@ void buttons::make(void)
          BgColors[Element.state] ));
 
     // надпись
-    auto Text = string2vector(P.Label);
+    auto Text = string2vector(Element.Label);
     uint left = L.left + L.width/2 - Text.size() * (sym_width_default + sym_kerning_default) / 2;
     uint top = L.top + 1 + (L.height - sym_height_default ) / 2;
 
@@ -528,15 +527,15 @@ void buttons::make(void)
 /// \param P
 /// \return
 ///
-void rows::make(void)
+void rows::show(void)
 {
   align();
   uint id = 0;
 
-  for(const auto& P: Params)
+  for(auto& Element: Params)
   {
     layout L {};
-    element Element {};
+    //element Element {};
     colors BgColors {};
     colors HemColors {};
 
@@ -547,10 +546,10 @@ void rows::make(void)
     L.left = menu_border_default * 2;
     L.top = L.left + title_height_default + ActiveElements.size() * (listrow_height_default + 1);
 
-    Element.element_type = GUI_ROWSLIST;
-    Element.caller = P.caller;
+    Element.element_type = GUI_LISTROW;
+    //Element.caller = P.caller;
     Element.id = id++;
-    Element.state = P.state;
+    //Element.state = P.state;
     Element.Margins.x0 = L.left * 1.0;
     Element.Margins.y0 = L.top * 1.0;
     Element.Margins.x1 = (L.left + L.width) * 1.0;
@@ -569,7 +568,7 @@ void rows::make(void)
          BgColors[Element.state] ));
 
     // надпись
-    auto Text = string2vector(P.Label);
+    auto Text = string2vector(Element.Label);
     uint left = L.left + L.width/2 - Text.size() * (sym_width_default + sym_kerning_default) / 2;
     uint top = L.top + 1 + (L.height - sym_height_default ) / 2;
 
@@ -862,15 +861,15 @@ void gui::event_cursor(double x, double y)
 
   for(auto& B: ActiveElements)
   {
-    if (B.state == ST_PRESSED) continue;
-    if (B.state == ST_DISABLE) continue;
-
     if(x > B.Margins.x0 && x < B.Margins.x1 && y > B.Margins.y0 && y < B.Margins.y1)
     {
-      if(B.state == ST_NORMAL) element_set_state(B, ST_OVER);
-    } else
+      B.under_cursor = true;
+      if(B.state == ST_NORMAL) element_set_color(B, COLOR_OVER);
+    }
+    else
     {
-      if(B.state == ST_OVER) element_set_state(B, ST_NORMAL);
+      B.under_cursor = false;
+      if(B.state == ST_NORMAL) element_set_color(B, COLOR_NORMAL);
     }
   }
 }
@@ -886,7 +885,7 @@ void gui::select_row(uint id)
 
   for(auto& B: ActiveElements)
   {
-    if(B.state == ST_DISABLE) element_set_state(B, ST_NORMAL);
+    if(B.state == ST_DISABLE && B.dependant) element_set_state(B, ST_NORMAL);
   }
 }
 
@@ -908,19 +907,19 @@ void gui::event_mouse_btns(int _button, int _action, int _mods)
   // Переключение элемента, над которым нажата левая кнопка мыши
   if((_button == MOUSE_BUTTON_LEFT) and (_action == PRESS))
   {
-    for(auto& B: ActiveElements)
+    for(auto& El: ActiveElements)
     {
-      if(B.state == ST_OVER) element_set_state(B, ST_PRESSED);
-      else if(B.state == ST_PRESSED) element_set_state(B, ST_NORMAL);
+      if(El.state == ST_DISABLE) continue;
+      if(El.under_cursor) element_set_state(El, ST_PRESSED);
     }
   }
 
   // При отпускании вызываем обработчик
   if((_button == MOUSE_BUTTON_LEFT) and (_action == RELEASE))
   {
-    for(auto& B: ActiveElements)
+    for(auto& El: ActiveElements)
     {
-      if(B.state == ST_PRESSED) if(nullptr != B.caller) B.caller(B.id);
+      if(El.state == ST_PRESSED) if(nullptr != El.caller) El.caller(El.id);
     }
   }
 }
@@ -1102,26 +1101,49 @@ void gui::title(const std::string& Label)
 
 
 ///
-/// \brief gui::button_move
-/// \param Button
-/// \param x
-/// \param y
+/// \brief gui::button_set_state
+/// \param New STATE for the button
 ///
-void gui::element_move(element& Elm, int x, int y)
+void gui::element_set_color(element& El, TR_COLORS c)
 {
-  if(Elm.FacesID.empty()) return;
+  // Цвет элемента которой надо изменить, состоит из
+  // рамки и фоновой заливки. Пока изменим только фоновую заливку
 
-  // Передвинуть все поверхности
-  for(auto& id: Elm.FacesID ) FacesBuf[id]->move_xy(x, y);
+  switch (El.element_type){
+    case GUI_BUTTON:
+      FacesBuf[El.FacesID[1]]->update_rgba(BtnBgColor[c]);
+      break;
+    case GUI_LISTROW:
+      FacesBuf[El.FacesID[1]]->update_rgba(ListBgColor[c]);
+      break;
+  }
+}
 
-  // Координаты рамки
-  auto L = FacesBuf[Elm.FacesID.front()]->get_layout();
 
-  // Обновить значения границ элемента в окне
-  Elm.Margins.x0 = L.left * 1.0;
-  Elm.Margins.y0 = L.top * 1.0;
-  Elm.Margins.x1 = (L.left + L.width) * 1.0;
-  Elm.Margins.y1 = (L.top + L.height) * 1.0;
+///
+/// \brief gui::row_set_state
+/// \param Row
+/// \param st
+///
+void gui::row_set_state(element& Row, TR_STATES st)
+{
+  FacesBuf[Row.FacesID[1]]->update_rgba(ListBgColor[st]);
+  if(st != ST_PRESSED) return;
+
+  // Если какая-то строка в списке включается, то
+  // остальные строки списка надо выключить
+
+  for(auto& El: ActiveElements)
+  {
+    if(El.element_type == GUI_BUTTON) continue; // кнопки не трогаем
+    if(El.id == Row.id) continue;               // включенную строку пропускаем
+
+    if(El.state == ST_PRESSED)
+    {
+      El.state = ST_NORMAL;
+      FacesBuf[El.FacesID[1]]->update_rgba(ListBgColor[ST_NORMAL]);
+    }
+  }
 }
 
 
@@ -1129,20 +1151,16 @@ void gui::element_move(element& Elm, int x, int y)
 /// \brief gui::button_set_state
 /// \param New STATE for the button
 ///
-void gui::element_set_state(element& El, STATES s)
+void gui::element_set_state(element& Element, TR_STATES s)
 {
-  El.state = s;
+  Element.state = s;
 
-  // Цвет элемента которой надо изменить, состоит из
-  // рамки и фоновой заливки. Пока изменим только фоновую заливку
-  auto id_face_bg = El.FacesID[1];
-
-  switch (El.element_type){
+  switch (Element.element_type){
     case GUI_BUTTON:
-      FacesBuf[id_face_bg]->update_rgba(BtnBgColor[s]);
+      FacesBuf[Element.FacesID[1]]->update_rgba(BtnBgColor[s]); // Пока изменим только фоновую заливку
       break;
-    case GUI_ROWSLIST:
-      FacesBuf[id_face_bg]->update_rgba(ListBgColor[s]);
+    case GUI_LISTROW:
+      row_set_state(Element, s);
       break;
   }
 }
@@ -1188,7 +1206,7 @@ void gui::screen_start(uint)
   Buttons.append("НАСТРОИТЬ", screen_config);
   Buttons.append("ВЫБРАТЬ КАРТУ", screen_map_select);
   Buttons.append("ЗАКРЫТЬ", close);
-  Buttons.make();
+  Buttons.show();
 
   last_menu = screen_start;
 }
@@ -1204,7 +1222,7 @@ void gui::screen_config(uint)
 
   buttons Buttons {};
   Buttons.append("ЗАКРЫТЬ", screen_start );
-  Buttons.make();
+  Buttons.show();
   last_menu = screen_config;
 }
 
@@ -1228,14 +1246,14 @@ void gui::screen_map_select(uint)
       ListMaps.append(cfg::map_name(it.path().string()), select_row, ST_NORMAL);
     }
 
-  ListMaps.make();
+  ListMaps.show();
 
   buttons Buttons {};
   Buttons.append("НОВАЯ КАРТА", screen_map_new);
-  Buttons.append("УДАЛИТЬ КАРТУ", nullptr, ST_DISABLE);
-  Buttons.append("СТАРТ", map_open, ST_DISABLE);
+  Buttons.append("УДАЛИТЬ КАРТУ", nullptr, ST_DISABLE, true);
+  Buttons.append("СТАРТ", map_open, ST_DISABLE, true);
   Buttons.append("ОТМЕНА", screen_start);
-  Buttons.make();
+  Buttons.show();
 
   last_menu = screen_map_select;
 }
@@ -1263,7 +1281,7 @@ void gui::screen_map_new(uint)
   buttons Buttons {};
   Buttons.append("СОЗДАТЬ", map_create);
   Buttons.append("ОТМЕНА", last_menu);
-  Buttons.make();
+  Buttons.show();
   last_menu = screen_map_new;
   StringBuffer.clear();
 }
@@ -1305,7 +1323,7 @@ void gui::screen_pause(uint)
   buttons Buttons {};
   Buttons.append("ПРОДОЛЖИТЬ", mode_3d);
   Buttons.append("ВЫХОД", close_map);
-  Buttons.make();
+  Buttons.show();
   last_menu = screen_pause;
 }
 

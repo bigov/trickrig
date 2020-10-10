@@ -17,8 +17,9 @@ typedef void(*func_ptr)(uint);
 //typedef void(*func_with_param_ptr)(uint);
 
 enum FONT_STYLE { FONT_NORMAL, FONT_BOLD, FONT_COUNT };
-enum STATES { ST_NORMAL, ST_OVER, ST_PRESSED, ST_DISABLE };
-enum ELEMENT_TYPES { GUI_BUTTON, GUI_ROWSLIST };
+enum TR_STATES { ST_NORMAL, ST_PRESSED, ST_DISABLE };
+enum TR_COLORS { COLOR_NORMAL, COLOR_PRESSED, COLOR_DISABLE, COLOR_OVER };
+enum ELEMENT_TYPES { GUI_BUTTON, GUI_LISTROW };
 
 const uint menu_border_default = 20;   // расстояние от меню до края окна
 
@@ -49,27 +50,27 @@ const float_color TitleHemColor  { 0.7f, 0.7f, 0.70f, 1.0f };
 
 const colors BtnBgColor =
   { float_color { 0.89f, 0.89f, 0.89f, 1.0f }, // normal
-    float_color { 0.95f, 0.95f, 0.95f, 1.0f }, // over
     float_color { 0.85f, 0.85f, 0.85f, 1.0f }, // pressed
-    float_color { 0.85f, 0.85f, 0.85f, 0.1f }  // disabled
+    float_color { 0.85f, 0.85f, 0.85f, 0.1f },  // disabled
+    float_color { 0.95f, 0.95f, 0.95f, 1.0f }, // over
   };
 const colors BtnHemColor=
   { float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // normal
-    float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // over
     float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // pressed
-    float_color { 0.70f, 0.70f, 0.70f, 1.0f }  // disabled
+    float_color { 0.70f, 0.70f, 0.70f, 1.0f },  // disabled
+    float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // over
   };
 const colors ListBgColor =
   { float_color { 0.90f, 0.90f, 0.99f, 1.0f }, // normal
-    float_color { 0.95f, 0.95f, 0.95f, 1.0f }, // over
     float_color { 1.00f, 1.00f, 1.00f, 1.0f }, // pressed
-    float_color { 0.85f, 0.85f, 0.85f, 1.0f }  // disabled
+    float_color { 0.85f, 0.85f, 0.85f, 1.0f },  // disabled
+    float_color { 0.95f, 0.95f, 0.95f, 1.0f }, // over
   };
 const colors ListHemColor=
   { float_color { 0.85f, 0.85f, 0.90f, 1.0f }, // normal
-    float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // over
     float_color { 0.90f, 0.90f, 0.90f, 1.0f }, // pressed
-    float_color { 0.70f, 0.70f, 0.70f, 1.0f }  // disabled
+    float_color { 0.70f, 0.70f, 0.70f, 1.0f },  // disabled
+    float_color { 0.70f, 0.70f, 0.70f, 1.0f }, // over
   };
 
 extern std::unique_ptr<glsl> Program2d;            // построение 2D элементов
@@ -158,32 +159,20 @@ protected:
 ///
 /// \brief The element struct
 ///
-struct element {
-  std::vector<size_t> FacesID {};          // Список ID поверхностей в массиве SymbolsBuffer
-  func_ptr caller = nullptr;               // Адрес функции, вызываемой по нажатию
-  STATES state = ST_NORMAL;                // Текущее состояние
-  confines Margins {};                     // Внешние границы элемента для обработки событий курсора
-  ELEMENT_TYPES element_type = GUI_BUTTON; // тип графического элемента
-  uint id = 0;
-};
-
-
-///
-/// \brief Структура для хранения параметров создаваемых элементов интерфейса.
-///
-/// \details
-/// Для того, чтобы корректно распределить все элементы графического интерфейса в окне,
-/// необходимо знать их общее количество. Поэтому все данные создаваемых элементов
-/// вначале собираются в общий массив, потом выполняется расчет их положения в окне,
-/// и уже после этого элементы создаются.
-///
-struct params {
+struct element
+{
   std::string Label {};
-  func_ptr caller = nullptr;
-  STATES state = ST_NORMAL;                // Текущее состояние
+  func_ptr caller = nullptr;               // Адрес функции, вызываемой по нажатию
+  TR_STATES state = ST_NORMAL;                // Текущее состояние
   bool dependant = false;                  // Зависит ли состояние элемента от других элементов
-  uint left = 0;
-  uint top = 0;
+
+  uint id = 0;
+  ELEMENT_TYPES element_type = GUI_BUTTON; // тип графического элемента
+  std::vector<size_t> FacesID {};          // Список ID поверхностей в массиве SymbolsBuffer
+  confines Margins {};                     // Внешние границы элемента для обработки событий курсора
+  bool under_cursor = false;               // Курсор мыши над элементом
+  uint left = 0;                           // для расчета положения по горизонтали
+  uint top = 0;                            // для расчета положения по вертикали
 };
 
 
@@ -193,17 +182,17 @@ struct params {
 class gui_group
 {
 protected:
-  std::vector<params> Params {};    // Данные всех элементов группы
+  std::vector<element> Params {};    // Данные всех элементов группы
 
 public:
   gui_group(void) = default;
   virtual ~gui_group(void) = default;
 
   void append(const std::string& newLabel, func_ptr callback = nullptr,
-              STATES state = ST_NORMAL, bool dependant = false);
+              TR_STATES state = ST_NORMAL, bool dependant = false);
 
   virtual void align(void) = 0;
-  virtual void make(void) = 0;
+  virtual void show(void) = 0;
 };
 
 
@@ -214,7 +203,7 @@ class buttons: public gui_group
 {
 public:
   virtual void align(void);
-  virtual void make(void);
+  virtual void show(void);
 };
 
 
@@ -224,7 +213,7 @@ public:
 class rows: public gui_group
 {
 public:
-  virtual void make(void);
+  virtual void show(void);
   virtual void align(void);
 };
 
@@ -260,19 +249,19 @@ class gui: public interface_gl_context
     gui(gui&&) = delete;
     gui& operator=(gui&&) = delete;
 
-    int FPS = 0;                   // частота кадров
-    static GLsizei fps_uv_data;    // смещение данных FPS в буфере UV
+    int FPS = 0;                               // частота кадров
+    static GLsizei fps_uv_data;                // смещение данных FPS в буфере UV
     static std::string map_current;
-    static std::string StringBuffer;   // строка ввода пользователя
+    static std::string StringBuffer;           // строка ввода пользователя
     static func_ptr last_menu;
 
-    static std::unique_ptr<space_3d> Space3d;    // = nullptr;
-    std::unique_ptr<glsl> Program2d = nullptr;   // построение 2D элементов
+    static std::unique_ptr<space_3d> Space3d;  // = nullptr;
+    std::unique_ptr<glsl> Program2d = nullptr; // построение 2D элементов
 
     static bool RUN_3D;
-    GLuint vao_fbuf = 0;                         // Рендер текстуры фрейм-буфера
-    GLuint vao_2d =   0;                         // Рендер элементов меню и HUD
-    static glm::vec3 Cursor3D;                   // положение и размер прицела
+    GLuint vao_fbuf = 0;                       // Рендер текстуры фрейм-буфера
+    GLuint vao_2d =   0;                       // Рендер элементов меню и HUD
+    static glm::vec3 Cursor3D;                 // положение и размер прицела
 
     static std::unique_ptr<input_ctrl> InputCursor;      // Текстовый курсор ввода пользователя
     static std::unique_ptr<glsl> ProgramFrBuf;           // Шейдерная программа GUI
@@ -299,8 +288,9 @@ class gui: public interface_gl_context
     static void map_create(uint);
     static void map_open(uint);
     static void text_append(const layout& L, const std::vector<std::string>& Text, uint kerning);
-    static void element_move(element& Elm, int x, int y);
-    static void element_set_state(element& Button, STATES s);
+    static void row_set_state(element& Row, TR_STATES st);
+    static void element_set_state(element& Element, TR_STATES s);
+    static void element_set_color(element& Button, TR_COLORS c);
     static void select_row(uint id);
     static void close_map(uint);
     static void mode_3d(uint);
