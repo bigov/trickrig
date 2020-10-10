@@ -168,31 +168,57 @@ struct element {
 };
 
 
+///
+/// \brief Структура для хранения параметров создаваемых элементов интерфейса.
+///
+/// \details
+/// Для того, чтобы корректно распределить все элементы графического интерфейса в окне,
+/// необходимо знать их общее количество. Поэтому все данные создаваемых элементов
+/// вначале собираются в общий массив, потом выполняется расчет их положения в окне,
+/// и уже после этого элементы создаются.
+///
 struct params {
   std::string Label {};
   func_ptr caller = nullptr;
-  STATES state = ST_NORMAL;
+  STATES state = ST_NORMAL;                // Текущее состояние
+  bool dependant = false;                  // Зависит ли состояние элемента от других элементов
   uint left = 0;
   uint top = 0;
 };
+
+
+/*
+class interface_group
+{
+public:
+  interface_group(void) = delete;
+  virtual ~interface_group(void) = default;
+
+  std::vector<params> Params {};          // массив параметров всех элементов создаваемой группы
+
+  virtual uint align(uint) {}
+};
+*/
 
 
 class group
 {
 private:
   ELEMENT_TYPES element_type;
-  std::vector<params> Params {};
-
-  uint buttons_align(uint top = 0);
-  uint listrows_align(uint top = 0);
-  element make_button(const params& P);
-  element make_listrow(const params& P, uint new_id);
+  std::vector<params> Params {};          // массив параметров всех элементов создаваемой группы
 
 public:
   group(void) = delete;
   group(ELEMENT_TYPES _type);
-  void append(const std::string& Label, func_ptr callback = nullptr, STATES state = ST_NORMAL);
-  uint display(uint top);
+
+  void make_buttons(void);
+  void make_listrow(void);
+
+  void append(const std::string& newLabel, func_ptr callback = nullptr,
+              STATES state = ST_NORMAL, bool dependant = false);
+
+  void buttons_align(void);
+  void listrows_align(void);
 };
 
 
@@ -262,7 +288,7 @@ class gui: public interface_gl_context
     static void screen_pause(uint);
     static void hud_enable(void);
 
-    static uint title(const std::string& Label);
+    static void title(const std::string& Label);
     static void map_create(uint);
     static void map_open(uint);
     static void text_append(const layout& L, const std::vector<std::string>& Text, uint kerning);

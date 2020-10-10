@@ -20,7 +20,6 @@ std::unique_ptr<glsl> gui::ProgramFrBuf = nullptr; // Вывод текстур�
 glm::vec3 gui::Cursor3D = { 200.f, 200.f, 2.f };   // положение и размер прицела
 std::string gui::StringBuffer {};   // строка ввода пользователя
 
-
 static std::unique_ptr<vbo> VBO_xy   = nullptr;    // координаты вершин
 static std::unique_ptr<vbo> VBO_rgba = nullptr;    // цвет вершин
 static std::unique_ptr<vbo> VBO_uv   = nullptr;    // текстурные координаты
@@ -31,10 +30,10 @@ func_ptr gui::last_menu = nullptr;
 std::unique_ptr<input_ctrl> gui::InputCursor = nullptr; // Текстовый курсор для пользователя
 
 static std::vector<std::unique_ptr<face>> FacesBuf {};  // Массив указателей на 3D элементы меню
-static std::vector<element> ActiveElements {};          // Группа кнопок
+static std::vector<element> ActiveElements {};          // Элементы взаимодействия в пользователем
 
 static uint selected_list_row = 0;
-
+static uint top_line = 0;                               // верхняя граница размещения группы элементов GIU
 
 ///
 /// \brief rect_xy
@@ -386,16 +385,16 @@ group::group(ELEMENT_TYPES _type): element_type(_type)
 /// \param state
 /// \param callback
 ///
-void group::append(const std::string& Label, func_ptr callback, STATES state)
+void group::append(const std::string& newLabel, func_ptr callback, STATES state, bool dependant)
 {
-  Params.emplace_back( params { Label, callback, state, 0, 0 } );
+  Params.emplace_back( params { newLabel, callback, state, dependant, 0, 0 } );
 }
 
 
 ///
 /// \brief group::buttons_align
 ///
-uint group::buttons_align(uint top)
+void group::buttons_align(void)
 {
   auto items_count = Params.size();
 
@@ -418,17 +417,17 @@ uint group::buttons_align(uint top)
   if(items_count > 3) gr_h += el_h;
 
   uint left = (LayoutGui.width - gr_w) / 2;
-  top = (LayoutGui.height + top - gr_h) / 2;
+  top_line = (LayoutGui.height + top_line - gr_h) / 2;
 
   uint i = 0;
   for(; i < i_max; ++i)
   {
     Params[i].left = i * el_w + left;
-    Params[i].top = top;
+    Params[i].top = top_line;
   }
 
-  top += el_h;
-  if(items_count < 4) return top;
+  top_line += el_h;
+  if(items_count < 4) return;
 
   // Если кнопок от 4 до 6, то располагаем их в два ряда.
   //Cмещаем нижний ряд кнопок, чтобы он был по центру
@@ -437,18 +436,18 @@ uint group::buttons_align(uint top)
   for(; i < items_count; ++i)
   {
     Params[i].left = Params[i - 3].left + shift;
-    Params[i].top = top;
+    Params[i].top = top_line;
   }
 
-  top += el_h;
-  return top;
+  top_line += el_h;
+  return;
 }
 
 
 ///
 /// \brief group::listrows_align
 ///
-uint group::listrows_align(uint top)
+void group::listrows_align(void)
 {
   auto items_count = Params.size();
 
@@ -457,16 +456,14 @@ uint group::listrows_align(uint top)
 #endif
 
   uint left = menu_border_default * 1.2f;
-  top += listrow_height_default;
+  top_line += listrow_height_default;
 
   for(uint i = 0; i < items_count; ++i)
   {
     Params[i].left = left;
-    Params[i].top = top;
-    top += listrow_height_default;
+    Params[i].top = top_line;
+    top_line += listrow_height_default;
   }
-
-  return top;
 }
 
 
@@ -475,53 +472,59 @@ uint group::listrows_align(uint top)
 /// \param P
 /// \return
 ///
-element group::make_button(const params& P)
+void group::make_buttons(void)
 {
-  layout L {};
-  element Element {};
-  colors BgColors {};
-  colors HemColors {};
-  BgColors = BtnBgColor;
-  HemColors = BtnHemColor;
-  L.width = btn_width_default;
-  L.height = btn_height_default;
-  L.left = P.left;
-  L.top = P.top;
+  buttons_align();
 
-  Element.element_type = element_type;
-  Element.caller = P.caller;
-  Element.state = P.state;
-  Element.Margins.x0 = L.left * 1.0;
-  Element.Margins.y0 = L.top * 1.0;
-  Element.Margins.x1 = (L.left + L.width) * 1.0;
-  Element.Margins.y1 = (L.top + L.height) * 1.0;
+  for(const auto& P: Params)
+  {
+    layout L {};
+    element Element {};
+    colors BgColors {};
+    colors HemColors {};
+    BgColors = BtnBgColor;
+    HemColors = BtnHemColor;
+    L.width = btn_width_default;
+    L.height = btn_height_default;
+    L.left = P.left;
+    L.top = P.top;
 
-  // рамка элемента
-  Element.FacesID.push_back(FacesBuf.size());
-  FacesBuf.emplace_back(std::make_unique<face>(
-         layout{ L.width, L.height, L.left, L.top }, " ",
-         HemColors[Element.state] ));
+    Element.element_type = element_type;
+    Element.caller = P.caller;
+    Element.state = P.state;
+    Element.Margins.x0 = L.left * 1.0;
+    Element.Margins.y0 = L.top * 1.0;
+    Element.Margins.x1 = (L.left + L.width) * 1.0;
+    Element.Margins.y1 = (L.top + L.height) * 1.0;
 
-  // фоновая заливка
-  Element.FacesID.push_back(FacesBuf.size());
-  FacesBuf.emplace_back(std::make_unique<face>(
+    // рамка элемента
+    Element.FacesID.push_back(FacesBuf.size());
+    FacesBuf.emplace_back(std::make_unique<face>(
+                            layout{ L.width, L.height, L.left, L.top }, " ",
+                            HemColors[Element.state] ));
+
+    // фоновая заливка
+    Element.FacesID.push_back(FacesBuf.size());
+    FacesBuf.emplace_back(std::make_unique<face>(
          layout{ L.width-2, L.height-2, L.left+1, L.top+1 }, " ",
          BgColors[Element.state] ));
 
-  // надпись
-  auto Text = string2vector(P.Label);
-  uint left = L.left + L.width/2 - Text.size() * (sym_width_default + sym_kerning_default) / 2;
-  uint top = L.top + 1 + (L.height - sym_height_default ) / 2;
+    // надпись
+    auto Text = string2vector(P.Label);
+    uint left = L.left + L.width/2 - Text.size() * (sym_width_default + sym_kerning_default) / 2;
+    uint top = L.top + 1 + (L.height - sym_height_default ) / 2;
 
-  for(const auto& Symbol: Text)
-  {
-    Element.FacesID.push_back(FacesBuf.size());
-    FacesBuf.emplace_back(std::make_unique<face>(
+    for(const auto& Symbol: Text)
+    {
+      Element.FacesID.push_back(FacesBuf.size());
+      FacesBuf.emplace_back(std::make_unique<face>(
         layout{ sym_width_default, sym_height_default, left, top },
         Symbol, DefaultBgColor));
-    left += sym_width_default + sym_kerning_default;
+      left += sym_width_default + sym_kerning_default;
+    }
+
+    ActiveElements.push_back(Element);
   }
-  return Element;
 }
 
 
@@ -530,75 +533,61 @@ element group::make_button(const params& P)
 /// \param P
 /// \return
 ///
-element group::make_listrow(const params& P, uint new_id)
+void group::make_listrow(void)
 {
-  layout L {};
-  element Element {};
-  colors BgColors {};
-  colors HemColors {};
+  listrows_align();
+  uint id = 0;
 
-  BgColors = ListBgColor;
-  HemColors = ListHemColor;
-  L.width = LayoutGui.width - menu_border_default * 4;
-  L.height =  listrow_height_default;
-  L.left = menu_border_default * 2;
-  L.top = L.left + title_height_default + ActiveElements.size() * (listrow_height_default + 1);
+  for(const auto& P: Params)
+  {
+    layout L {};
+    element Element {};
+    colors BgColors {};
+    colors HemColors {};
 
-  Element.element_type = element_type;
-  Element.caller = P.caller;
-  Element.id = new_id;
-  Element.state = P.state;
-  Element.Margins.x0 = L.left * 1.0;
-  Element.Margins.y0 = L.top * 1.0;
-  Element.Margins.x1 = (L.left + L.width) * 1.0;
-  Element.Margins.y1 = (L.top + L.height) * 1.0;
+    BgColors = ListBgColor;
+    HemColors = ListHemColor;
+    L.width = LayoutGui.width - menu_border_default * 4;
+    L.height =  listrow_height_default;
+    L.left = menu_border_default * 2;
+    L.top = L.left + title_height_default + ActiveElements.size() * (listrow_height_default + 1);
 
-  // рамка элемента
-  Element.FacesID.push_back(FacesBuf.size());
-  FacesBuf.emplace_back(std::make_unique<face>(
+    Element.element_type = element_type;
+    Element.caller = P.caller;
+    Element.id = id++;
+    Element.state = P.state;
+    Element.Margins.x0 = L.left * 1.0;
+    Element.Margins.y0 = L.top * 1.0;
+    Element.Margins.x1 = (L.left + L.width) * 1.0;
+    Element.Margins.y1 = (L.top + L.height) * 1.0;
+
+    // рамка элемента
+    Element.FacesID.push_back(FacesBuf.size());
+    FacesBuf.emplace_back(std::make_unique<face>(
          layout{ L.width, L.height, L.left, L.top }, " ",
          HemColors[Element.state] ));
 
-  // фоновая заливка
-  Element.FacesID.push_back(FacesBuf.size());
-  FacesBuf.emplace_back(std::make_unique<face>(
+    // фоновая заливка
+    Element.FacesID.push_back(FacesBuf.size());
+    FacesBuf.emplace_back(std::make_unique<face>(
          layout{ L.width-2, L.height-2, L.left+1, L.top+1 }, " ",
          BgColors[Element.state] ));
 
-  // надпись
-  auto Text = string2vector(P.Label);
-  uint left = L.left + L.width/2 - Text.size() * (sym_width_default + sym_kerning_default) / 2;
-  uint top = L.top + 1 + (L.height - sym_height_default ) / 2;
+    // надпись
+    auto Text = string2vector(P.Label);
+    uint left = L.left + L.width/2 - Text.size() * (sym_width_default + sym_kerning_default) / 2;
+    uint top = L.top + 1 + (L.height - sym_height_default ) / 2;
 
-  for(const auto& Symbol: Text)
-  {
-    Element.FacesID.push_back(FacesBuf.size());
-    FacesBuf.emplace_back(std::make_unique<face>(
-        layout{ sym_width_default, sym_height_default, left, top },
-        Symbol, DefaultBgColor));
-    left += sym_width_default + sym_kerning_default;
+    for(const auto& Symbol: Text)
+    {
+      Element.FacesID.push_back(FacesBuf.size());
+      FacesBuf.emplace_back(std::make_unique<face>(
+                              layout{ sym_width_default, sym_height_default, left, top },
+                              Symbol, DefaultBgColor));
+      left += sym_width_default + sym_kerning_default;
+    }
+    ActiveElements.push_back(Element);
   }
-  return Element;
-}
-
-
-///
-/// \brief group::display
-///
-uint group::display(uint top)
-{
-  switch (element_type) {
-    case GUI_BUTTON:
-      top = buttons_align(top);
-      for(const auto& P: Params) ActiveElements.push_back(make_button(P));
-      break;
-    case GUI_ROWSLIST:
-      top = listrows_align(top);
-      uint id = 0;
-      for(const auto& P: Params) ActiveElements.push_back(make_listrow(P, id++));
-      break;
-  }
-  return top;
 }
 
 
@@ -803,6 +792,7 @@ void gui::clear(void)
 {
   FacesBuf.clear();
   ActiveElements.clear();
+  top_line = 0;
   VBO_xy->clear();
   VBO_uv->clear();
   VBO_rgba->clear();
@@ -1087,7 +1077,7 @@ void gui::text_append(const layout& L, const std::vector<std::string>& Text, uin
 /// \brief gui::title
 /// \param Label
 ///
-uint gui::title(const std::string& Label)
+void gui::title(const std::string& Label)
 {
   auto b = menu_border_default;
   // Заливка окна фоновым цветом
@@ -1112,7 +1102,7 @@ uint gui::title(const std::string& Label)
   uint top =  b + title_height_default/2 - symbol_height/2 + 2;
   text_append({symbol_width, symbol_height, left, top}, Text );
 
-  return title_height_default + menu_border_default;
+  top_line = title_height_default + menu_border_default;
 }
 
 
@@ -1197,23 +1187,13 @@ void gui::update_input(void)
 void gui::screen_start(uint)
 {
   clear();
-
-  //debug ->
-//  uint b = 10;
-//  FacesBuf.emplace_back(std::make_unique<face>(
-//         layout{ LayoutGui.width - 2 * b, LayoutGui.height - 2 * b, b, b }, " ",
-//         float_color{ 0.9f, 1.f, 0.9f, 1.f } ));
-//  return;
-  //debug <-
-
-
-  auto top_mark = title("Добро пожаловать в TrickRig!");
+  title("Добро пожаловать в TrickRig!");
 
   group Buttons { GUI_BUTTON };
   Buttons.append("НАСТРОИТЬ", screen_config);
   Buttons.append("ВЫБРАТЬ КАРТУ", screen_map_select);
   Buttons.append("ЗАКРЫТЬ", close);
-  Buttons.display(top_mark);
+  Buttons.make_buttons();
 
   last_menu = screen_start;
 }
@@ -1225,11 +1205,11 @@ void gui::screen_start(uint)
 void gui::screen_config(uint)
 {
   clear(); // Очистка всех массивов VAO
-  auto top_mark = title("ВЫБОР ПАРАМЕТРОВ");
+  title("ВЫБОР ПАРАМЕТРОВ");
 
   group Buttons { GUI_BUTTON };
   Buttons.append("ЗАКРЫТЬ", screen_start );
-  Buttons.display(top_mark);
+  Buttons.make_buttons();
   last_menu = screen_config;
 }
 
@@ -1240,33 +1220,27 @@ void gui::screen_config(uint)
 void gui::screen_map_select(uint)
 {
   clear(); // Очистка всех массивов VAO
-  //STATES start_state = ST_DISABLE;
-
-  auto top_mark = title("ВЫБОР КАРТЫ");
+  title("ВЫБОР КАРТЫ");
 
   group ListMaps {GUI_ROWSLIST};
   // Составить список названий карт из каталога пользователя
   auto DirList = std::filesystem::directory_iterator(cfg::app_data_dir());
 
-  //if( DirList->exists() ) start_state = ST_NORMAL;
-  //STATES st = ST_PRESSED; // Первая строка всегда выбрана по-умолчанию
+
   for(auto& it: DirList)
     if(std::filesystem::is_directory(it))
     {
-      //ListMaps.append(cfg::map_name(it.path().string()), select_row, st);
       ListMaps.append(cfg::map_name(it.path().string()), select_row, ST_NORMAL);
-      //st = ST_NORMAL;
     }
 
-  top_mark = ListMaps.display(top_mark);
+  ListMaps.make_listrow();
 
   group Buttons { GUI_BUTTON };
   Buttons.append("НОВАЯ КАРТА", screen_map_new);
   Buttons.append("УДАЛИТЬ КАРТУ", nullptr, ST_DISABLE);
-  //Buttons.append("СТАРТ", map_open, start_state);
   Buttons.append("СТАРТ", map_open, ST_DISABLE);
   Buttons.append("ОТМЕНА", screen_start);
-  Buttons.display(top_mark);
+  Buttons.make_buttons();
 
   last_menu = screen_map_select;
 }
@@ -1278,7 +1252,7 @@ void gui::screen_map_select(uint)
 void gui::screen_map_new(uint)
 {
   clear(); // Очистка всех массивов VAO
-  auto top_mark = title("ВВЕДИТЕ НАЗВАНИЕ");
+  title("ВВЕДИТЕ НАЗВАНИЕ");
 
   layout L {};
   L.width = LayoutGui.width - menu_border_default * 4;
@@ -1294,7 +1268,7 @@ void gui::screen_map_new(uint)
   group Buttons {GUI_BUTTON };
   Buttons.append("СОЗДАТЬ", map_create);
   Buttons.append("ОТМЕНА", last_menu);
-  Buttons.display(top_mark);
+  Buttons.make_buttons();
   last_menu = screen_map_new;
   StringBuffer.clear();
 }
@@ -1336,7 +1310,7 @@ void gui::screen_pause(uint)
   group Buttons { GUI_BUTTON };
   Buttons.append("ПРОДОЛЖИТЬ", mode_3d);
   Buttons.append("ВЫХОД", close_map);
-  Buttons.display(top);
+  Buttons.make_buttons();
   last_menu = screen_pause;
 }
 
