@@ -1250,7 +1250,7 @@ void gui::screen_map_select(uint)
 
   buttons Buttons {};
   Buttons.append("НОВАЯ КАРТА", screen_map_new);
-  Buttons.append("УДАЛИТЬ КАРТУ", nullptr, ST_DISABLE, true);
+  //Buttons.append("УДАЛИТЬ КАРТУ", nullptr, ST_DISABLE, true);
   Buttons.append("СТАРТ", map_open, ST_DISABLE, true);
   Buttons.append("ОТМЕНА", screen_start);
   Buttons.show();
