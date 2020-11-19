@@ -139,7 +139,7 @@ void space_3d::load(const std::string& map_current)
 
   render_indices.store(0);
   // Поток обмена данными с базой. Загрузка карты занимает некоторое время
-  data_loader = std::make_unique<std::thread>(area_control, OGLContext,
+  thread_01 = std::make_unique<std::thread>(area_control, OGLContext,
                                               ViewFrom, VBO3d.get_id(), VBO3d.get_size());
 
   // Настройка матрицы проекции
@@ -391,9 +391,9 @@ void space_3d::keyboard_event(int _key, int _scancode, int _action, int _mods)
 space_3d::~space_3d()
 {
   render_indices.store(0);   // Индикатор для остановки потока загрузки в рендер из БД
-  if(nullptr != data_loader)
-    if(data_loader->joinable())
-      data_loader->join();     // Ожидание завершения потока
+  if(nullptr != thread_01)
+    if(thread_01->joinable())
+      thread_01->join();     // Ожидание завершения потока
 }
 
 } // namespace tr

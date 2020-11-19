@@ -38,7 +38,7 @@ namespace tr
     private:
       space_3d(void) = delete;
 
-      std::unique_ptr<std::thread> data_loader = nullptr;
+      std::unique_ptr<std::thread> thread_01 = nullptr;
 
       // Запретить копирование и перенос экземпляров класса
       space_3d(const space_3d&) = delete;
