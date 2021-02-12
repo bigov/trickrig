@@ -31,11 +31,11 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
   message(FATAL_ERROR "Prevented in-tree built. Please create a build directory outside of the source code and call cmake from there. Thank you.")
 endif()
 
-project( TrickRig VERSION "0.0.5.1"
+project( TrickRig VERSION "0.0.5.2"
   DESCRIPTION "3D engine project"
   HOMEPAGE_URL "https://www.trickrig.net" )
-SET( PROJECT_AUTHOR "bigov" )
-SET( PROJECT_AUTHOR_EMAIL "bigov@yandex.ru" )
+SET( PROJECT_AUTHOR "Igor Balezin aka bigov" )
+SET( PROJECT_AUTHOR_EMAIL "bigov@yandex.com" )
 
 #  SET( CXX_FLAGS "${CXX_FLAGS} -pthread" )
 #else()
@@ -63,9 +63,13 @@ else() # Иначе собирается "Debug"
   SET( CMAKE_BUILD_TYPE "Debug")
 endif()
 
-SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a -fexceptions -Werror \
-  -Wpedantic -Wextra -Woverloaded-virtual -Wctor-dtor-privacy \
-  -Wnon-virtual-dtor -Wall -Winit-self " ) ## -O3")
+if( MSVC )
+  SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --std=c++2a --fexceptions" )
+else( MSVC )
+  SET( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2a -fexceptions -Werror \
+    -Wpedantic -Wextra -Woverloaded-virtual -Wctor-dtor-privacy \
+    -Wnon-virtual-dtor -Wall -Winit-self " ) ## -O3")
+endif( MSVC )
 
 SET( CMAKE_TRY_COMPILE_TARGET_TYPE EXECUTABLE )
 

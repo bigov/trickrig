@@ -1,3 +1,3 @@
-[submodule "libs/wft"]
-	path = libs/wft
-	url = https://bigov@github.com/bigov/wft.git
+[submodule "libs/glfw"]
+	path = libs/glfw
+	url = https://github.com/glfw/glfw

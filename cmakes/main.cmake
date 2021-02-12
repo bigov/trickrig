@@ -2,13 +2,26 @@
 # https://cmake.org/Wiki/CMake_Useful_Variables
 #
 
+#find_package( OpenGL REQUIRED )
+#include_directories( ${OPENGL_INCLUDE_DIRS} )
+
 pkg_check_modules( PNG REQUIRED libpng16 )
-pkg_check_modules( GLFW REQUIRED glfw3 )
 pkg_check_modules( SQLITE REQUIRED sqlite3 )
+
 pkg_check_modules( GLM REQUIRED glm )
+include_directories( ${GLM_INCLUDE_DIRS} )
+
+set( GLFW_BUILD_DOCS OFF CACHE BOOL  "GLFW lib only" )
+set( GLFW_INSTALL OFF CACHE BOOL  "GLFW lib only" )
+add_subdirectory( libs/glfw )
+
+if( MSVC )
+    SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup" )
+endif()
 
 ## Список библиотек
-SET( TR_LIBS ${TR_LIBS} ${GLFW_LIBRARIES} ${PNG_LIBRARIES} ${SQLITE_LIBRARIES}
+##SET( TR_LIBS ${TR_LIBS} ${OPENGL_LIBRARIES} glfw ${PNG_LIBRARIES} ${SQLITE_LIBRARIES}
+  SET( TR_LIBS ${TR_LIBS}                     glfw ${PNG_LIBRARIES} ${SQLITE_LIBRARIES}
    pthread stdc++fs )
 
 # On Linux platform glad require: -libdl
@@ -17,25 +30,31 @@ if   ( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
 endif( ${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
 
 # список исходников
-file( GLOB MAIN_SRC "${CMAKE_SOURCE_DIR}/src/main/*.cpp" "${CMAKE_SOURCE_DIR}/src/glad/glad.c" )
+file( GLOB MAIN_SRC "${CMAKE_SOURCE_DIR}/src/main/*.cpp" "${CMAKE_SOURCE_DIR}/libs/glad/glad.c" )
 
 # расположение заголовков
 include_directories( "${CMAKE_SOURCE_DIR}/src/main/include" )
+include_directories( "libs" )
 
-add_executable( main ${MAIN_SRC} )
-target_link_libraries( main ${TR_LIBS} )
+add_executable( TrickRig ${MAIN_SRC} )
+target_link_libraries( TrickRig ${TR_LIBS} )
 
-add_custom_command(TARGET main PRE_LINK
+add_custom_command(TARGET TrickRig PRE_LINK
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                    ${CMAKE_SOURCE_DIR}/assets/ "assets")
 
 if( ${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
-  SET( DLL_LIST libpng16-16.dll libsqlite3-0.dll glfw3.dll
-      libwinpthread-1.dll zlib1.dll libstdc++-6.dll libgcc_s_seh-1.dll )
+  SET( DLL_LIST libpng16-16.dll libsqlite3-0.dll libwinpthread-1.dll
+                zlib1.dll libstdc++-6.dll libgcc_s_seh-1.dll
+     )
     find_path( DLL_DIR libstdc++-6.dll )
     foreach( DLL_LIB ${DLL_LIST} )
-      add_custom_command( TARGET main POST_BUILD
+      add_custom_command( TARGET TrickRig POST_BUILD
                   COMMAND ${CMAKE_COMMAND} -E copy
                   "${DLL_DIR}/${DLL_LIB}" "${DLL_LIB}" )
   endforeach()
 endif()
+
+if( MSVC )
+  set_property( DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT TrickRig )
+endif() 
