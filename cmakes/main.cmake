@@ -8,7 +8,8 @@
 pkg_check_modules( PNG REQUIRED libpng16 )
 pkg_check_modules( SQLITE REQUIRED sqlite3 )
 
-pkg_check_modules( GLM REQUIRED glm )
+add_subdirectory( libs/glm )
+#pkg_check_modules( GLM REQUIRED glm )
 include_directories( ${GLM_INCLUDE_DIRS} )
 
 set( GLFW_BUILD_DOCS OFF CACHE BOOL  "GLFW lib only" )
