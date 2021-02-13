@@ -14,8 +14,8 @@ pkg_check_modules( GLFW REQUIRED glfw3 )
 #add_subdirectory( "libs/glfw" "${CMAKE_CURRENT_BINARY_DIR}/glfw/" EXCLUDE_FROM_ALL )
 include_directories( ${GLFW_INCLUDE_DIRS} )
 
-add_subdirectory( libs/glm )
-#pkg_check_modules( GLM REQUIRED glm )
+#add_subdirectory( libs/glm )
+pkg_check_modules( GLM REQUIRED glm )
 include_directories( ${GLM_INCLUDE_DIRS} )
 
 if( MSVC )
