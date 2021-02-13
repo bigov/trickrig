@@ -15,7 +15,7 @@ include_directories( ${GLM_INCLUDE_DIRS} )
 set( GLFW_BUILD_DOCS OFF CACHE BOOL  "GLFW lib only" )
 set( GLFW_INSTALL OFF CACHE BOOL  "GLFW lib only" )
 
-add_subdirectory( "libs/glfw" "${CMAKE_CURRENT_BINARY_DIR}/glfw/src" EXCLUDE_FROM_ALL )
+add_subdirectory( "libs/glfw" "${CMAKE_CURRENT_BINARY_DIR}/glfw/" EXCLUDE_FROM_ALL )
 include_directories( ${GFW_INCLUDE_DIRS} )
 
 if( MSVC )
