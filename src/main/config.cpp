@@ -27,7 +27,7 @@ db          cfg::DataBase  {};
 v_str       cfg::AppParams {}; // параметры конфигурации приложения
 v_str       cfg::MapParams {}; // параметры когфигурации карты
 std::string cfg::AssetsDir {}; // папка служебных файлов
-std::string cfg::UserDirDB   {}; // папка конфигов пользователя
+std::string cfg::UserDirDB {}; // папка конфигов пользователя
 std::string cfg::DS        {}; // символ разделителя папок
 std::string cfg::CfgFname  {}; // конфиг, выбранный пользователем
 layout      cfg::WinLayout {}; // размер и положение главного окна
@@ -137,8 +137,8 @@ void cfg::set_user_dir(void)
   // На время разработки конфиг пользователя и база данных данных расположена в папке приложения
   UserDirDB = AssetsDir + DS + "database";
 #else
-  if(!fs::exists(UserDir)) fs::create_directory(UserDir);
-  UserDir += DS + "TrickRig";
+  if(!fs::exists(UserDirDB)) fs::create_directory(UserDirDB);
+  UserDirDB += DS + "TrickRig";
 #endif
 
   if(!fs::exists(UserDirDB)) fs::create_directory(UserDirDB);
