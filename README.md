@@ -1,6 +1,8 @@
 # TRICKRIG
 ## минималистичный 3D движок
 
+<a title="GitHub Actions" href="https://github.com/bigov/trickrig/actions?query=workflow%3Agithub%20pages"><img alt="github pages' workflow Status" src="https://img.shields.io/github/workflow/status/bigov/trickrig/github%20pages?longCache=true&style=flat-square&label=build&logo=github"></a>
+
 Trickrig - это разрабатываемое на C++ ядро минималистичного графического 3D движка на основе _OpenGL_, с ипользованием свободных библиотек _glfw3, libpng16, sqlite3, glm_. В движке реализована многопоточность, минималистичное меню не привязанное к внешним библиотекам, заложена возможность реализации LOD.
  
 Разрабатываемый код является мультиплатфоменным. Сборка на платформе _MS-Windows_ не требует наличия "Visual Studio", а производится с использованием открытых инструментов MSYS2. На платформе _Linux_ сборки выполняется с использованием "стандартных" средств разработки.
