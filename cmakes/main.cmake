@@ -16,7 +16,7 @@ set( GLFW_BUILD_DOCS OFF CACHE BOOL  "GLFW lib only" )
 set( GLFW_INSTALL OFF CACHE BOOL  "GLFW lib only" )
 
 add_subdirectory( "libs/glfw" "${CMAKE_CURRENT_BINARY_DIR}/glfw/" EXCLUDE_FROM_ALL )
-include_directories( ${GFW_INCLUDE_DIRS} )
+include_directories( ${GLFW_INCLUDE_DIRS} )
 
 if( MSVC )
     SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup" )
