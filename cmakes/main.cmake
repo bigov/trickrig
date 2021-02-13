@@ -8,15 +8,15 @@
 pkg_check_modules( PNG REQUIRED libpng16 )
 pkg_check_modules( SQLITE REQUIRED sqlite3 )
 
+pkg_check_modules( GLFW REQUIRED glfw3 )
+#set( GLFW_BUILD_DOCS OFF CACHE BOOL  "GLFW lib only" )
+#set( GLFW_INSTALL OFF CACHE BOOL  "GLFW lib only" )
+#add_subdirectory( "libs/glfw" "${CMAKE_CURRENT_BINARY_DIR}/glfw/" EXCLUDE_FROM_ALL )
+include_directories( ${GLFW_INCLUDE_DIRS} )
+
 add_subdirectory( libs/glm )
 #pkg_check_modules( GLM REQUIRED glm )
 include_directories( ${GLM_INCLUDE_DIRS} )
-
-set( GLFW_BUILD_DOCS OFF CACHE BOOL  "GLFW lib only" )
-set( GLFW_INSTALL OFF CACHE BOOL  "GLFW lib only" )
-
-add_subdirectory( "libs/glfw" "${CMAKE_CURRENT_BINARY_DIR}/glfw/" EXCLUDE_FROM_ALL )
-include_directories( ${GLFW_INCLUDE_DIRS} )
 
 if( MSVC )
     SET( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ENTRY:mainCRTStartup" )
@@ -24,7 +24,7 @@ endif()
 
 ## Список библиотек
 ##SET( TR_LIBS ${TR_LIBS} ${OPENGL_LIBRARIES} glfw ${PNG_LIBRARIES} ${SQLITE_LIBRARIES}
-  SET( TR_LIBS ${TR_LIBS}                     glfw ${PNG_LIBRARIES} ${SQLITE_LIBRARIES}
+  SET( TR_LIBS ${TR_LIBS} ${GLFW_LIBRARIES} ${PNG_LIBRARIES} ${SQLITE_LIBRARIES}
    pthread stdc++fs )
 
 # On Linux platform glad require: -libdl
