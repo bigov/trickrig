@@ -1460,7 +1460,7 @@ void gui::hud_enable(void)
 void gui::hud_update(void)
 {
   // счетчик FPS и координаты камеры
-  char line[35] = {'\0'}; // длина строки с '\0'
+  char line[64] = {'\0'}; // длина строки с '\0'
   std::sprintf(line, "%.4i, X:%+06.1f, Y:%+06.1f, Z:%+06.1f",
                FPS, Space3d->ViewFrom->x, Space3d->ViewFrom->y, Space3d->ViewFrom->z);
   auto FPSLine = string2vector(line);
