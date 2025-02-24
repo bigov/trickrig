@@ -15,7 +15,8 @@ pkg_check_modules( GLFW REQUIRED glfw3 )
 include_directories( ${GLFW_INCLUDE_DIRS} )
 
 #add_subdirectory( libs/glm )
-pkg_check_modules( GLM REQUIRED glm )
+#pkg_check_modules( GLM REQUIRED glm )
+find_package( glm REQUIRED )
 include_directories( ${GLM_INCLUDE_DIRS} )
 
 if( MSVC )

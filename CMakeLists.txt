@@ -31,7 +31,7 @@ if("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_BINARY_DIR}")
   message(FATAL_ERROR "Prevented in-tree built. Please create a build directory outside of the source code and call cmake from there. Thank you.")
 endif()
 
-project( TrickRig VERSION "0.0.7.1"
+project( TrickRig VERSION "0.0.7.2"
   DESCRIPTION "3D engine project"
   HOMEPAGE_URL "https://bigov.github.io" )
 SET( PROJECT_AUTHOR "Igor Balezin aka bigov" )
